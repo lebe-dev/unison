@@ -59,6 +59,7 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 		Logger:       log,
 		Limits:       cfg.limits,
 		BlobLimit:    cfg.blobLimit,
+		ShareSink:    blobSink{platform: platform, log: log},
 		ListenPacket: cfg.listen,
 	})
 	if err != nil {
@@ -263,4 +264,50 @@ var _ api.LocalClip = localClip{}
 // Submit records content and announces it to the peers.
 func (l localClip) Submit(ctx context.Context, content ports.Content) (model.ClipItem, error) {
 	return l.pipeline.Submit(ctx, content)
+}
+
+// blobSink writes the files a peer shares into the sink of the platform.
+type blobSink struct {
+	platform Platform
+	log      *slog.Logger
+}
+
+var _ share.Sink = blobSink{}
+
+// Write hands one file to the platform and copies the payload into it. It
+// returns the file name, which is what the platform shows to the user.
+func (b blobSink) Write(_ context.Context, file share.File, src io.Reader) (path string, err error) {
+	defer func() {
+		if recover() != nil {
+			path, err = "", errors.New("mobile: the platform sink panicked")
+		}
+	}()
+
+	meta, err := proto.Marshal(&mobilev1.FilePayload{
+		MimeType: file.MIME,
+		FileName: file.Name,
+		Size:     file.Size,
+	})
+	if err != nil {
+		return "", fmt.Errorf("mobile: encode the file metadata: %w", err)
+	}
+	fd := b.platform.OpenBlobSink(meta)
+	if fd < 0 {
+		return "", errors.New("mobile: the platform did not open a sink")
+	}
+	sink := os.NewFile(uintptr(fd), "sink")
+	if sink == nil {
+		return "", errors.New("mobile: invalid sink descriptor")
+	}
+	defer func() { _ = sink.Close() }()
+
+	written, err := io.Copy(sink, src)
+	if err != nil {
+		return "", fmt.Errorf("mobile: write the file: %w", err)
+	}
+	if written != file.Size {
+		return "", fmt.Errorf("mobile: wrote %d bytes of %d", written, file.Size)
+	}
+	b.log.Info("saved a shared file", "name", file.Name, "size", file.Size)
+	return file.Name, nil
 }
