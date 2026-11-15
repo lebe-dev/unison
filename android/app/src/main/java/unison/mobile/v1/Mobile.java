@@ -4557,6 +4557,51 @@ public final class Mobile {
      * @return The size.
      */
     long getSize();
+
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @return A list containing the deviceIds.
+     */
+    java.util.List<java.lang.String>
+        getDeviceIdsList();
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @return The count of deviceIds.
+     */
+    int getDeviceIdsCount();
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param index The index of the element to return.
+     * @return The deviceIds at the given index.
+     */
+    java.lang.String getDeviceIds(int index);
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param index The index of the element to return.
+     * @return The deviceIds at the given index.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdsBytes(int index);
   }
   /**
    * <pre>
@@ -4573,6 +4618,7 @@ public final class Mobile {
     private FilePayload() {
       mimeType_ = "";
       fileName_ = "";
+      deviceIds_ = emptyProtobufList();
     }
     public static final int MIME_TYPE_FIELD_NUMBER = 1;
     private java.lang.String mimeType_;
@@ -4704,6 +4750,144 @@ public final class Mobile {
     private void clearSize() {
 
       size_ = 0L;
+    }
+
+    public static final int DEVICE_IDS_FIELD_NUMBER = 4;
+    private com.google.protobuf.Internal.ProtobufList<java.lang.String> deviceIds_;
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @return A list containing the deviceIds.
+     */
+    @java.lang.Override
+    public java.util.List<java.lang.String> getDeviceIdsList() {
+      return deviceIds_;
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @return The count of deviceIds.
+     */
+    @java.lang.Override
+    public int getDeviceIdsCount() {
+      return deviceIds_.size();
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param index The index of the element to return.
+     * @return The deviceIds at the given index.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceIds(int index) {
+      return deviceIds_.get(index);
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the deviceIds at the given index.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdsBytes(int index) {
+      return com.google.protobuf.ByteString.copyFromUtf8(
+          deviceIds_.get(index));
+    }
+    private void ensureDeviceIdsIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<java.lang.String> tmp =
+          deviceIds_;  if (!tmp.isModifiable()) {
+        deviceIds_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param index The index to set the value at.
+     * @param value The deviceIds to set.
+     */
+    private void setDeviceIds(
+        int index, java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureDeviceIdsIsMutable();
+      deviceIds_.set(index, value);
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param value The deviceIds to add.
+     */
+    private void addDeviceIds(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureDeviceIdsIsMutable();
+      deviceIds_.add(value);
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param values The deviceIds to add.
+     */
+    private void addAllDeviceIds(
+        java.lang.Iterable<java.lang.String> values) {
+      ensureDeviceIdsIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, deviceIds_);
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     */
+    private void clearDeviceIds() {
+      deviceIds_ = emptyProtobufList();
+    }
+    /**
+     * <pre>
+     * Receivers, device IDs in lowercase hex. Every online paired device is used
+     * when empty.
+     * </pre>
+     *
+     * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+     * @param value The bytes of the deviceIds to add.
+     */
+    private void addDeviceIdsBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      ensureDeviceIdsIsMutable();
+      deviceIds_.add(value.toStringUtf8());
     }
 
     public static unison.mobile.v1.Mobile.FilePayload parseFrom(
@@ -4945,6 +5129,143 @@ public final class Mobile {
         return this;
       }
 
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @return A list containing the deviceIds.
+       */
+      @java.lang.Override
+      public java.util.List<java.lang.String>
+          getDeviceIdsList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getDeviceIdsList());
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @return The count of deviceIds.
+       */
+      @java.lang.Override
+      public int getDeviceIdsCount() {
+        return instance.getDeviceIdsCount();
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @param index The index of the element to return.
+       * @return The deviceIds at the given index.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceIds(int index) {
+        return instance.getDeviceIds(index);
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the deviceIds at the given index.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdsBytes(int index) {
+        return instance.getDeviceIdsBytes(index);
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @param index The index to set the value at.
+       * @param value The deviceIds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIds(
+          int index, java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceIds(index, value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @param value The deviceIds to add.
+       * @return This builder for chaining.
+       */
+      public Builder addDeviceIds(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.addDeviceIds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @param values The deviceIds to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllDeviceIds(
+          java.lang.Iterable<java.lang.String> values) {
+        copyOnWrite();
+        instance.addAllDeviceIds(values);
+        return this;
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceIds() {
+        copyOnWrite();
+        instance.clearDeviceIds();
+        return this;
+      }
+      /**
+       * <pre>
+       * Receivers, device IDs in lowercase hex. Every online paired device is used
+       * when empty.
+       * </pre>
+       *
+       * <code>repeated string device_ids = 4 [json_name = "deviceIds"];</code>
+       * @param value The bytes of the deviceIds to add.
+       * @return This builder for chaining.
+       */
+      public Builder addDeviceIdsBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.addDeviceIdsBytes(value);
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.mobile.v1.FilePayload)
     }
     @java.lang.Override
@@ -4964,10 +5285,11 @@ public final class Mobile {
               "mimeType_",
               "fileName_",
               "size_",
+              "deviceIds_",
             };
             java.lang.String info =
-                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
-                "\u0003\u0002";
+                "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0001\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\u0002\u0004\u021a";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
