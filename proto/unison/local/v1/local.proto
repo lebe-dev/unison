@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package unison.local.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/local/v1;localv1";
+
+// Local API of the daemon, served over a unix socket or a named pipe.
+service UnisonService {
+  // Version and runtime state of the daemon.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+}
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  string version = 1;
+  // Device ID in lowercase hex.
+  string device_id = 2;
+  string device_name = 3;
+  bool running = 4;
+}

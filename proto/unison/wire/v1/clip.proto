@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/types.proto";
+
+// Announcement of a new clip item.
+message ClipAnnounce {
+  ClipItem item = 1;
+}
+
+// Version vector of the sender.
+message HistorySync {
+  // Device ID in lowercase hex, mapped to the highest sequence number.
+  map<string, uint64> vector = 1;
+}
+
+// Batch of history entries.
+message HistoryBatch {
+  repeated ClipItem items = 1;
+}

@@ -57,12 +57,17 @@ just test                 # unit tests
 just lint                 # linters and format check
 just fmt                  # format the Go sources
 just tidy                 # update go.mod and go.sum
-just check                # lint and tests, run before committing
+just proto                # generate Go code from proto/ with buf
+just proto-lint           # lint the protobuf definitions
+just check                # lint, proto lint and tests, run before committing
 just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64
 just clean                # remove bin/
 ```
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
+
+The protobuf code generators are pinned as tools in `go.mod`, so `just proto` needs only `buf` and
+`go` installed. Generated Go code is committed and builds do not require `buf`.
 
 The version of all binaries comes from the `VERSION` file and is injected at build time, so
 `bin/unisond --version` and `just build` always agree.

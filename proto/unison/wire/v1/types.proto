@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+// Role of a paired device.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_PERSONAL = 1;
+  ROLE_FRIENDS = 2;
+}
+
+// Operating system of a device.
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_MACOS = 1;
+  PLATFORM_WINDOWS = 2;
+  PLATFORM_ANDROID = 3;
+}
+
+// Content kind of a clip item.
+enum Kind {
+  KIND_UNSPECIFIED = 0;
+  KIND_TEXT = 1;
+  KIND_IMAGE = 2;
+  KIND_FILES = 3;
+}
+
+// Where a clip item was captured.
+enum Source {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_CLIPBOARD = 1;
+  SOURCE_SHARE = 2;
+  SOURCE_CLI = 3;
+}
+
+// One representation of a clip item payload.
+message Representation {
+  // MIME type, for example "text/plain" or "image/png".
+  string mime_type = 1;
+  // Payload size in bytes.
+  uint64 size = 2;
+  // BLAKE3 hash of the payload, 32 bytes.
+  bytes blake3 = 3;
+  // Payload itself, set only for small payloads.
+  bytes inline_bytes = 4;
+  // File name, set for "application/x-unison-file" representations.
+  string file_name = 5;
+  // File modification time, unix milliseconds.
+  int64 mtime_unix_ms = 6;
+}
+
+// A single clipboard history entry.
+message ClipItem {
+  // UUIDv7, 16 bytes.
+  bytes id = 1;
+  // Device ID of the origin device, 32 bytes.
+  bytes origin = 2;
+  // Monotonic per-origin counter.
+  uint64 seq = 3;
+  // Creation time, unix milliseconds.
+  int64 created_at_unix_ms = 4;
+  // Expiry time set by the origin device, unix milliseconds.
+  int64 expires_at_unix_ms = 5;
+  Kind kind = 6;
+  repeated Representation representations = 7;
+  Source source = 8;
+  // Tombstone of a manual deletion.
+  bool deleted = 9;
+}
+
+// Metadata of a shared file.
+message FileMeta {
+  string name = 1;
+  uint64 size = 2;
+  // BLAKE3 hash of the file, 32 bytes.
+  bytes blake3 = 3;
+  // File modification time, unix milliseconds.
+  int64 mtime_unix_ms = 4;
+  string mime_type = 5;
+}
+
+// Policy applied to a peer.
+message PeerPolicy {
+  // Do not apply incoming clips automatically.
+  bool require_confirmation = 1;
+}
