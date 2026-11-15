@@ -394,8 +394,8 @@ func TestHandlerRegistration(t *testing.T) {
 	if err := client.HandleRequest("", trust.ActionSyncHistory, streamHandler); !errors.Is(err, ErrInvalidHeader) {
 		t.Fatalf("empty payload type error = %v, want ErrInvalidHeader", err)
 	}
-	if err := client.HandleRequest("blob", trust.ActionNone, streamHandler); !errors.Is(err, ErrHandler) {
-		t.Fatalf("missing action error = %v, want ErrHandler", err)
+	if err := client.HandleRequest("share", trust.ActionNone, streamHandler); err != nil {
+		t.Fatalf("handle request without an action: %v", err)
 	}
 	if err := client.HandleRequest("blob", trust.ActionFetchBlob, streamHandler); err != nil {
 		t.Fatalf("handle request: %v", err)

@@ -42,6 +42,10 @@ const (
 	KindGossipDigest
 	// KindGossipRecords carries the trust data a peer lacks.
 	KindGossipRecords
+	// KindShareCancel stops a share transfer.
+	KindShareCancel
+	// KindShareResult reports the final outcome of a share transfer.
+	KindShareResult
 )
 
 // String returns the name of the kind.
@@ -75,6 +79,10 @@ func (k Kind) String() string {
 		return "gossip-digest"
 	case KindGossipRecords:
 		return "gossip-records"
+	case KindShareCancel:
+		return "share-cancel"
+	case KindShareResult:
+		return "share-result"
 	default:
 		return "unknown"
 	}
@@ -115,6 +123,10 @@ func kindOf(msg *wirev1.ControlMessage) (Kind, error) {
 		return KindGossipDigest, nil
 	case *wirev1.ControlMessage_GossipRecords:
 		return KindGossipRecords, nil
+	case *wirev1.ControlMessage_ShareCancel:
+		return KindShareCancel, nil
+	case *wirev1.ControlMessage_ShareResult:
+		return KindShareResult, nil
 	default:
 		return KindUnknown, fmt.Errorf("%w: payload %T", ErrUnknownKind, msg.GetBody())
 	}
@@ -123,9 +135,12 @@ func kindOf(msg *wirev1.ControlMessage) (Kind, error) {
 // actionOf returns the capability a message needs. A kind that is missing here
 // is refused: a new message kind has to state its capability explicitly.
 //
-// ShareDecision returns ActionNone on purpose. It answers an offer the local
-// device made, so it grants the sender no capability of its own; the share
-// handler matches it against the offer it remembers.
+// The share messages return ActionNone on purpose. They belong to an exchange
+// started by an offer, and the share service authorizes them against the offer
+// it remembers: an offer itself needs the receive-share capability, which a
+// Friends device has only after the user confirms it. ShareDecision and
+// ShareResult answer an offer of the local device, so they grant the sender no
+// capability of its own.
 func actionOf(kind Kind) (trust.Action, error) {
 	switch kind {
 	case KindClipAnnounce:
@@ -134,9 +149,7 @@ func actionOf(kind Kind) (trust.Action, error) {
 		return trust.ActionSyncHistory, nil
 	case KindHaveBlob, KindHaveBlobResp:
 		return trust.ActionFetchBlob, nil
-	case KindShareOffer:
-		return trust.ActionReceiveShare, nil
-	case KindShareDecision:
+	case KindShareOffer, KindShareDecision, KindShareCancel, KindShareResult:
 		return trust.ActionNone, nil
 	case KindIntroduction:
 		return trust.ActionIntroduce, nil
