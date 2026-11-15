@@ -29,7 +29,7 @@ class CoreException(val code: Int, message: String) : Exception(message) {
 }
 
 /** Client of the local API served by the core in process. */
-class CoreClient(private val transport: CoreTransport = MobileTransport) {
+class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreApi {
 
     /** Version of the core library. */
     val version: String
@@ -53,11 +53,24 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) {
     }
 
     /** Version and runtime state of the core. */
-    suspend fun status(): Local.GetStatusResponse = call(
+    override suspend fun status(): Local.GetStatusResponse = call(
         method = "GetStatus",
         request = Local.GetStatusRequest.getDefaultInstance(),
         parse = { Local.GetStatusResponse.parseFrom(it) },
     )
+
+    /** Stores the device name used from the next start. */
+    override suspend fun setDeviceName(name: String): Local.Settings {
+        val request = Local.UpdateSettingsRequest.newBuilder()
+            .setDeviceName(name)
+            .build()
+        val response = call(
+            method = "UpdateSettings",
+            request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
 
     /** Current pause of the clipboard synchronization. */
     suspend fun pause(): Local.Pause {
@@ -70,7 +83,7 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) {
     }
 
     /** Changes the pause of the clipboard synchronization. */
-    suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long = 0): Local.Pause {
+    override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
         val request = Local.SetPauseRequest.newBuilder()
             .setMode(mode)
             .setUntilUnixMs(untilUnixMs)

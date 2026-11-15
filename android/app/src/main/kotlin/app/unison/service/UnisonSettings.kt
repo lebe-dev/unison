@@ -36,6 +36,9 @@ object UnisonSettings {
     /** Hash of the last clipboard content this device sent or applied. */
     const val KEY_LAST_CLIP = "clipboard.last_hash"
 
+    /** Set once the first run screen was completed. */
+    const val KEY_ONBOARDED = "onboarding.done"
+
     fun operatingMode(context: Context): OperatingMode {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
         return OperatingMode.fromValue(prefs.getString(KEY_OPERATING_MODE, null))
@@ -65,5 +68,16 @@ object UnisonSettings {
     fun setLastClipHash(context: Context, hash: String) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putString(KEY_LAST_CLIP, hash) }
+    }
+
+    /** True when the user already saw the first run screen. */
+    fun onboarded(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_ONBOARDED, false)
+    }
+
+    fun setOnboarded(context: Context, done: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putBoolean(KEY_ONBOARDED, done) }
     }
 }
