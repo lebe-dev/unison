@@ -75,6 +75,10 @@
     }
     return `${formatBytes(transfer.bytes)} of ${formatBytes(total)}`;
   }
+
+  function measured(transfer: Transfer): boolean {
+    return transfer.state === TransferState.TRANSFERRING && Number(transfer.totalBytes) > 0;
+  }
 </script>
 
 {#if !daemon.connected}
@@ -184,12 +188,10 @@
                 {transfer.deviceName || "a device"} - {progressText(transfer)}
               </p>
 
-              <div
-                class="progress"
-                class:measured={transfer.state === TransferState.TRANSFERRING &&
-                  Number(transfer.totalBytes) > 0}
-              >
-                <div style:width={`${progressPercent(transfer)}%`}></div>
+              <div class="progress" class:measured={measured(transfer)}>
+                <div
+                  style:width={measured(transfer) ? `${progressPercent(transfer)}%` : "40%"}
+                ></div>
               </div>
 
               {#if transfer.files.length > 1}
@@ -374,7 +376,6 @@
   }
 
   .progress:not(.measured) div {
-    width: 40%;
     animation: slide 1.2s ease-in-out infinite alternate;
   }
 
