@@ -300,6 +300,8 @@ type ControlMessage struct {
 	//	*ControlMessage_Introduction
 	//	*ControlMessage_Revocation
 	//	*ControlMessage_SetPeerPolicy
+	//	*ControlMessage_GossipDigest
+	//	*ControlMessage_GossipRecords
 	Body          isControlMessage_Body `protobuf_oneof:"body"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -450,6 +452,24 @@ func (x *ControlMessage) GetSetPeerPolicy() *SetPeerPolicy {
 	return nil
 }
 
+func (x *ControlMessage) GetGossipDigest() *GossipDigest {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_GossipDigest); ok {
+			return x.GossipDigest
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetGossipRecords() *GossipRecords {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_GossipRecords); ok {
+			return x.GossipRecords
+		}
+	}
+	return nil
+}
+
 type isControlMessage_Body interface {
 	isControlMessage_Body()
 }
@@ -502,6 +522,14 @@ type ControlMessage_SetPeerPolicy struct {
 	SetPeerPolicy *SetPeerPolicy `protobuf:"bytes,12,opt,name=set_peer_policy,json=setPeerPolicy,proto3,oneof"`
 }
 
+type ControlMessage_GossipDigest struct {
+	GossipDigest *GossipDigest `protobuf:"bytes,13,opt,name=gossip_digest,json=gossipDigest,proto3,oneof"`
+}
+
+type ControlMessage_GossipRecords struct {
+	GossipRecords *GossipRecords `protobuf:"bytes,14,opt,name=gossip_records,json=gossipRecords,proto3,oneof"`
+}
+
 func (*ControlMessage_Hello) isControlMessage_Body() {}
 
 func (*ControlMessage_AuthProof) isControlMessage_Body() {}
@@ -526,6 +554,10 @@ func (*ControlMessage_Revocation) isControlMessage_Body() {}
 
 func (*ControlMessage_SetPeerPolicy) isControlMessage_Body() {}
 
+func (*ControlMessage_GossipDigest) isControlMessage_Body() {}
+
+func (*ControlMessage_GossipRecords) isControlMessage_Body() {}
+
 var File_unison_wire_v1_session_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_session_proto_rawDesc = "" +
@@ -547,7 +579,7 @@ const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\vself_policy\x18\x05 \x01(\v2\x1a.unison.wire.v1.PeerPolicyR\n" +
 	"selfPolicy\"(\n" +
 	"\tAuthProof\x12\x1b\n" +
-	"\tmldsa_sig\x18\x01 \x01(\fR\bmldsaSig\"\xa0\x06\n" +
+	"\tmldsa_sig\x18\x01 \x01(\fR\bmldsaSig\"\xad\a\n" +
 	"\x0eControlMessage\x12-\n" +
 	"\x05hello\x18\x01 \x01(\v2\x15.unison.wire.v1.HelloH\x00R\x05hello\x12:\n" +
 	"\n" +
@@ -565,7 +597,9 @@ const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"revocation\x18\v \x01(\v2\x1a.unison.wire.v1.RevocationH\x00R\n" +
 	"revocation\x12G\n" +
-	"\x0fset_peer_policy\x18\f \x01(\v2\x1d.unison.wire.v1.SetPeerPolicyH\x00R\rsetPeerPolicyB\x06\n" +
+	"\x0fset_peer_policy\x18\f \x01(\v2\x1d.unison.wire.v1.SetPeerPolicyH\x00R\rsetPeerPolicy\x12C\n" +
+	"\rgossip_digest\x18\r \x01(\v2\x1c.unison.wire.v1.GossipDigestH\x00R\fgossipDigest\x12F\n" +
+	"\x0egossip_records\x18\x0e \x01(\v2\x1d.unison.wire.v1.GossipRecordsH\x00R\rgossipRecordsB\x06\n" +
 	"\x04body*\\\n" +
 	"\n" +
 	"StreamKind\x12\x1b\n" +
@@ -606,6 +640,8 @@ var file_unison_wire_v1_session_proto_goTypes = []any{
 	(*Introduction)(nil),   // 15: unison.wire.v1.Introduction
 	(*Revocation)(nil),     // 16: unison.wire.v1.Revocation
 	(*SetPeerPolicy)(nil),  // 17: unison.wire.v1.SetPeerPolicy
+	(*GossipDigest)(nil),   // 18: unison.wire.v1.GossipDigest
+	(*GossipRecords)(nil),  // 19: unison.wire.v1.GossipRecords
 }
 var file_unison_wire_v1_session_proto_depIdxs = []int32{
 	0,  // 0: unison.wire.v1.StreamHeader.kind:type_name -> unison.wire.v1.StreamKind
@@ -624,11 +660,13 @@ var file_unison_wire_v1_session_proto_depIdxs = []int32{
 	15, // 13: unison.wire.v1.ControlMessage.introduction:type_name -> unison.wire.v1.Introduction
 	16, // 14: unison.wire.v1.ControlMessage.revocation:type_name -> unison.wire.v1.Revocation
 	17, // 15: unison.wire.v1.ControlMessage.set_peer_policy:type_name -> unison.wire.v1.SetPeerPolicy
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	18, // 16: unison.wire.v1.ControlMessage.gossip_digest:type_name -> unison.wire.v1.GossipDigest
+	19, // 17: unison.wire.v1.ControlMessage.gossip_records:type_name -> unison.wire.v1.GossipRecords
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_unison_wire_v1_session_proto_init() }
@@ -653,6 +691,8 @@ func file_unison_wire_v1_session_proto_init() {
 		(*ControlMessage_Introduction)(nil),
 		(*ControlMessage_Revocation)(nil),
 		(*ControlMessage_SetPeerPolicy)(nil),
+		(*ControlMessage_GossipDigest)(nil),
+		(*ControlMessage_GossipRecords)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -60,5 +60,7 @@ message ControlMessage {
     Introduction introduction = 10;
     Revocation revocation = 11;
     SetPeerPolicy set_peer_policy = 12;
+    GossipDigest gossip_digest = 13;
+    GossipRecords gossip_records = 14;
   }
 }
