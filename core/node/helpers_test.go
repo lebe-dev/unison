@@ -274,7 +274,8 @@ func dialBoth(t *testing.T, a, b *testNode) {
 				results <- err
 				return
 			}
-			results <- from.attach(from.ctx, conn, false)
+			_, err = from.attach(from.ctx, conn, false)
+			results <- err
 		}(pair[0], pair[1])
 	}
 
