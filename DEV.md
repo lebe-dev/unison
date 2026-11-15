@@ -193,6 +193,34 @@ not been told its network state treats itself as online. Blobs live in the `blob
 data directory; `Blobs`, `Fetcher` and `BlobPeers` give the local API and the share flow the store,
 the fetcher and the peers that may serve a blob.
 
+`core/api` serves the local API over a node: the `UnisonService` of `proto/unison/local/v1` with
+the status, device, pairing, clipboard, pause and settings calls. The service takes the node, the
+daemon version and the device name the node runs with, and an optional `LocalClip`, which is how
+`SetClip` reaches the clipboard pipeline: without it the call reports that it is not implemented.
+`Handler` returns the connect handler with the request and response size limits. The errors of the
+core are mapped to connect codes: a missing peer is `not_found`, a closed pairing window or a
+stopped node `failed_precondition`, invalid input `invalid_argument` and a refused device
+`permission_denied`. The calls that manage paired devices are part of the contract but report
+`unimplemented`.
+
+`core/api/localconn` serves that API on the endpoint of the daemon: the unix socket
+`~/Library/Application Support/Unison/unisond.sock` on macOS and the named pipe
+`\\.\pipe\unison-<user-sid>` on Windows. `UNISON_LOCAL_API` overrides the endpoint, so a second
+daemon can run next to the installed one. The directory is created with mode 0700 and the socket
+with 0600, and a client refuses a socket that belongs to another user or that other users can
+reach; the descriptor of the pipe grants access to the current user only. The endpoint speaks
+HTTP/2 in clear text, so no certificate is involved: `Serve` runs the connect handler on the
+endpoint and `NewClient` returns a generated client for it. `NewHTTPClient` serves the clients that
+run across a proxy.
+
+`WatchEvents` carries the events of the node bus: a peer that comes online or goes offline, a
+clipboard item, a peer that has to be updated and the pairing events with the address of a
+candidate and the SAS. Device IDs are lowercase hex and times are unix milliseconds. The response
+of a server stream arrives with the first event, so a client opens the stream before it needs the
+events. `GetClip` returns the latest clipboard item. The settings hold the device name, which the
+daemon reads at the next start, the confirmation flag of the local device, which the next handshake
+advertises, and the blob store limit, which applies at once.
+
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
 
