@@ -6,6 +6,17 @@ ldflags := "-s -w -X main.version=" + version
 # Binaries are pure Go so every target can be cross-compiled without a C toolchain.
 export CGO_ENABLED := "0"
 
+# The daemon reaches the Keychain and the pasteboard through cgo on macOS.
+daemon_cgo := if os() == "macos" { "1" } else { "0" }
+
+# Data directory of the second daemon, which pairs with the first one on the
+# same machine.
+daemon_second_dir := if os() == "windows" {
+    env_var("LOCALAPPDATA") + "/Unison-2"
+} else {
+    home_directory() + "/Library/Application Support/Unison-2"
+}
+
 # List available recipes.
 default:
     @just --list
@@ -23,6 +34,18 @@ build-unisond-all:
     just build-unisond darwin arm64
     just build-unisond darwin amd64
     just build-unisond windows amd64
+
+# Build unisond for the host with the Keychain and pasteboard of the platform.
+build-unisond-host:
+    CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond ./cmd/unisond
+
+# Run the daemon of the default data directory, with its log on stderr.
+run-daemon *args:
+    CGO_ENABLED={{daemon_cgo}} go run -ldflags "{{ldflags}}" ./cmd/unisond --log-stderr {{args}}
+
+# Run a second daemon next to the first one, for pairing on a single machine.
+run-daemon-2 *args:
+    CGO_ENABLED={{daemon_cgo}} go run -ldflags "{{ldflags}}" ./cmd/unisond --log-stderr --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
 
 # Run the unit tests.
 test:
