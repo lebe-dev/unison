@@ -106,7 +106,7 @@ class UnisonService : Service() {
             .setDeviceName(UnisonSettings.deviceName(this))
             .setDebugLog(debug)
             .build()
-        Mobile.start(config.toByteArray(), CorePlatform())
+        Mobile.start(config.toByteArray(), CorePlatform(this))
         Log.i(TAG, "core started")
         true
     } catch (e: Exception) {

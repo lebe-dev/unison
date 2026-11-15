@@ -13,4 +13,29 @@
         <item quantity="one">%d device online</item>
         <item quantity="other">%d devices online</item>
     </plurals>
+    <string name="send_clipboard">Send clipboard</string>
+    <string name="tile_send_subtitle">Tap to send</string>
+    <string name="tile_send_paused">Paused</string>
+    <string name="tile_pause_clipboard">Clipboard pause</string>
+    <string name="tile_pause_off">Sending is on</string>
+    <string name="tile_pause_indefinite">Until turned off</string>
+    <string name="tile_pause_until">Until %1$s</string>
+    <string name="clipboard_sent">Clipboard sent</string>
+    <string name="clipboard_empty">Clipboard is empty</string>
+    <string name="clipboard_sensitive">Sensitive content is not sent</string>
+    <string name="clipboard_unsupported">Only text can be sent</string>
+    <string name="clipboard_paused">Clipboard synchronization is paused</string>
+    <string name="clipboard_core_unavailable">Unison is not running</string>
+    <string name="clipboard_failed">Sending failed</string>
+    <string name="clipboard_offer_title">Send the clipboard?</string>
+    <string name="clipboard_offer_body">The clipboard changed since the last synchronization.</string>
+    <string name="action_send">Send</string>
+    <string name="action_dismiss">Not now</string>
+    <string name="pause_title">Clipboard pause</string>
+    <string name="pause_five_minutes">5 minutes</string>
+    <string name="pause_one_hour">1 hour</string>
+    <string name="pause_indefinite">Until turned off</string>
+    <string name="pause_resume">Resume</string>
+    <string name="pause_changed">Clipboard pause updated</string>
+    <string name="pause_failed">Clipboard pause failed</string>
 </resources>

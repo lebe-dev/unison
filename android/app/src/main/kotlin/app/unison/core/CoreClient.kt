@@ -58,4 +58,28 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) {
         request = Local.GetStatusRequest.getDefaultInstance(),
         parse = { Local.GetStatusResponse.parseFrom(it) },
     )
+
+    /** Current pause of the clipboard synchronization. */
+    suspend fun pause(): Local.Pause {
+        val response = call(
+            method = "GetPause",
+            request = Local.GetPauseRequest.getDefaultInstance(),
+            parse = { Local.GetPauseResponse.parseFrom(it) },
+        )
+        return response.pause
+    }
+
+    /** Changes the pause of the clipboard synchronization. */
+    suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long = 0): Local.Pause {
+        val request = Local.SetPauseRequest.newBuilder()
+            .setMode(mode)
+            .setUntilUnixMs(untilUnixMs)
+            .build()
+        val response = call(
+            method = "SetPause",
+            request = request,
+            parse = { Local.SetPauseResponse.parseFrom(it) },
+        )
+        return response.pause
+    }
 }
