@@ -1,0 +1,309 @@
+package node
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/pairing"
+	"github.com/lebe-dev/unison/core/ports"
+)
+
+// PairingCandidate is a device that is open for pairing on the local network.
+type PairingCandidate struct {
+	// Addr is the address to pass to StartPairing.
+	Addr string
+	// TXT is the service metadata of the candidate.
+	TXT map[string]string
+	// FirstSeen is when the candidate was discovered.
+	FirstSeen time.Time
+}
+
+// pairingWindow is the open pairing window of the node.
+type pairingWindow struct {
+	window     *pairing.Window
+	ctx        context.Context
+	cancel     context.CancelFunc
+	candidates map[string]PairingCandidate
+}
+
+// OpenPairing opens a pairing window that proposes role to the devices it
+// pairs with. The window closes on timeout, on ClosePairing or when the node
+// stops.
+func (n *Node) OpenPairing(role model.Role) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if role != model.RolePersonal && role != model.RoleFriends {
+		return fmt.Errorf("node: role %s cannot be proposed", role)
+	}
+
+	n.mu.Lock()
+	if n.pairing != nil {
+		n.mu.Unlock()
+		return ErrPairingOpen
+	}
+	ctx, cancel := context.WithCancel(n.ctx)
+	pw := &pairingWindow{
+		ctx:        ctx,
+		cancel:     cancel,
+		candidates: make(map[string]PairingCandidate),
+	}
+	n.pairing = pw
+	n.mu.Unlock()
+
+	window, err := pairing.Open(ctx, pairing.Options{
+		Identity:     n.identity,
+		Trust:        n.trust,
+		Discovery:    pairingDiscovery{Discovery: n.cfg.Discovery},
+		Name:         n.cfg.Name,
+		Platform:     n.cfg.Platform,
+		Role:         role,
+		Clock:        n.clock,
+		Logger:       n.log,
+		ListenPacket: n.listenPairing,
+		Config:       n.cfg.Transport,
+	})
+	if err != nil {
+		cancel()
+		n.mu.Lock()
+		if n.pairing == pw {
+			n.pairing = nil
+		}
+		n.mu.Unlock()
+		return err
+	}
+
+	n.mu.Lock()
+	pw.window = window
+	n.mu.Unlock()
+
+	n.spawn(func() { n.watchPairing(pw, window) })
+	return nil
+}
+
+// ClosePairing closes the pairing window. It is safe to call when no window is
+// open.
+func (n *Node) ClosePairing() error {
+	n.mu.Lock()
+	pw := n.pairing
+	n.pairing = nil
+	n.mu.Unlock()
+
+	if pw == nil {
+		return nil
+	}
+	if pw.cancel != nil {
+		pw.cancel()
+	}
+	if pw.window == nil {
+		return nil
+	}
+	return pw.window.Close()
+}
+
+// PairingDeadline returns when the window closes and whether a window is open.
+func (n *Node) PairingDeadline() (time.Time, bool) {
+	pw := n.pairingWindow()
+	if pw == nil {
+		return time.Time{}, false
+	}
+	return pw.window.Deadline(), true
+}
+
+// PairingAddr returns the address of the pairing listener. It is nil when no
+// window is open.
+func (n *Node) PairingAddr() net.Addr {
+	pw := n.pairingWindow()
+	if pw == nil {
+		return nil
+	}
+	return pw.window.Addr()
+}
+
+// ExtendPairing restarts the auto-close timer of the window.
+func (n *Node) ExtendPairing() error {
+	pw := n.pairingWindow()
+	if pw == nil {
+		return ErrPairingClosed
+	}
+	return pw.window.Extend()
+}
+
+// PairingCandidates returns the discovered devices that are open for pairing.
+func (n *Node) PairingCandidates() []PairingCandidate {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.pairing == nil {
+		return nil
+	}
+	candidates := make([]PairingCandidate, 0, len(n.pairing.candidates))
+	for _, candidate := range n.pairing.candidates {
+		candidates = append(candidates, candidate)
+	}
+	slices.SortFunc(candidates, func(a, b PairingCandidate) int {
+		return strings.Compare(a.Addr, b.Addr)
+	})
+	return candidates
+}
+
+// StartPairing starts a pairing exchange with the candidate address. The
+// exchange runs in the background and reports through the events.
+func (n *Node) StartPairing(addr string) error {
+	if addr == "" {
+		return errors.New("node: empty pairing address")
+	}
+	pw := n.pairingWindow()
+	if pw == nil {
+		return ErrPairingClosed
+	}
+
+	n.spawn(func() {
+		if err := pw.window.Dial(pw.ctx, addr); err != nil && pw.ctx.Err() == nil {
+			n.log.Info("pairing exchange failed", "addr", addr, "error", err)
+		}
+	})
+	return nil
+}
+
+// ConfirmPairing accepts the request of the device.
+func (n *Node) ConfirmPairing(ctx context.Context, id model.DeviceID) error {
+	pw := n.pairingWindow()
+	if pw == nil {
+		return ErrPairingClosed
+	}
+	return pw.window.Confirm(ctx, id)
+}
+
+// RejectPairing refuses the request of the device.
+func (n *Node) RejectPairing(ctx context.Context, id model.DeviceID) error {
+	pw := n.pairingWindow()
+	if pw == nil {
+		return ErrPairingClosed
+	}
+	return pw.window.Reject(ctx, id)
+}
+
+// pairingWindow returns the open window, or nil.
+func (n *Node) pairingWindow() *pairingWindow {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.pairing == nil || n.pairing.window == nil {
+		return nil
+	}
+	return n.pairing
+}
+
+// watchPairing forwards the window events until the window closes.
+func (n *Node) watchPairing(pw *pairingWindow, window *pairing.Window) {
+	for event := range window.Events() {
+		n.pairingEvent(pw, event)
+	}
+
+	n.mu.Lock()
+	if n.pairing == pw {
+		n.pairing = nil
+	}
+	n.mu.Unlock()
+	pw.cancel()
+}
+
+// pairingEvent publishes one window event.
+func (n *Node) pairingEvent(pw *pairingWindow, event pairing.Event) {
+	switch event.Kind {
+	case pairing.EventCandidate:
+		n.rememberPairingCandidate(pw, event)
+		n.publish(Event{Kind: EventPairingCandidate, Addr: event.Addr})
+	case pairing.EventRequest:
+		n.log.Info("pairing request", "peer", event.DeviceID, "role", event.Role)
+		n.publish(Event{
+			Kind:     EventPairingRequest,
+			Peer:     event.DeviceID,
+			Name:     event.Name,
+			Platform: event.Platform,
+			Role:     event.Role,
+			SAS:      event.SAS,
+		})
+	case pairing.EventPaired:
+		n.log.Info("pairing completed", "peer", event.DeviceID, "role", event.Role)
+		n.publish(Event{
+			Kind:     EventPairingPaired,
+			Peer:     event.DeviceID,
+			Name:     event.Name,
+			Platform: event.Platform,
+			Role:     event.Role,
+			SAS:      event.SAS,
+		})
+		if peer, err := n.trust.Get(n.ctx, event.DeviceID); err == nil {
+			n.startLink(peer).retry()
+			n.probeCandidates(n.ctx)
+		}
+	case pairing.EventFailed:
+		n.log.Info("pairing exchange failed", "peer", event.DeviceID, "error", event.Err)
+		n.publish(Event{
+			Kind:     EventPairingFailed,
+			Peer:     event.DeviceID,
+			Name:     event.Name,
+			Platform: event.Platform,
+			Role:     event.Role,
+			Err:      event.Err,
+		})
+	case pairing.EventClosed:
+		n.publish(Event{Kind: EventPairingClosed})
+	}
+}
+
+// rememberPairingCandidate caches a discovered pairing candidate.
+func (n *Node) rememberPairingCandidate(pw *pairingWindow, event pairing.Event) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.pairing != pw || event.Addr == "" {
+		return
+	}
+	if _, ok := pw.candidates[event.Addr]; !ok && len(pw.candidates) >= maxCandidates {
+		oldest := ""
+		var seen time.Time
+		for addr, candidate := range pw.candidates {
+			if oldest == "" || candidate.FirstSeen.Before(seen) {
+				oldest, seen = addr, candidate.FirstSeen
+			}
+		}
+		delete(pw.candidates, oldest)
+	}
+	pw.candidates[event.Addr] = PairingCandidate{
+		Addr:      event.Addr,
+		TXT:       event.TXT,
+		FirstSeen: n.clock.Now(),
+	}
+}
+
+// listenPairing binds a packet connection for a pairing exchange.
+func (n *Node) listenPairing(ctx context.Context) (net.PacketConn, error) {
+	return n.cfg.ListenPacket(ctx, 0)
+}
+
+// serviceStopper is a discovery that withdraws one announcement.
+type serviceStopper interface {
+	StopService(service ports.Service) error
+}
+
+// pairingDiscovery adapts the injected discovery to the pairing window, which
+// withdraws its announcement when it closes.
+type pairingDiscovery struct {
+	ports.Discovery
+}
+
+// StopService withdraws the pairing announcement. A discovery without the call
+// keeps the announcement until it stops.
+func (d pairingDiscovery) StopService(service ports.Service) error {
+	stopper, ok := d.Discovery.(serviceStopper)
+	if !ok {
+		return nil
+	}
+	return stopper.StopService(service)
+}

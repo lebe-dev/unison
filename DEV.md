@@ -157,6 +157,42 @@ its Hello. The limits are constants of that package: one MiB per control message
 frame, 16 request and 32 transfer streams in flight, a ten second Hello and stream header timeout,
 five clip announcements per second with a burst of ten.
 
+`core/node` assembles the core into a running device and is the only package that composes the
+domains. `node.New(node.Config{...})` takes the data directory, the device name and platform, the
+platform ports (keystore, clipboard, discovery), an optional clock and logger, the connection
+limits and a function that binds the packet connections, so a test runs the node on the virtual
+network. `Start` opens the database with the migrations of the trust, clipboard and blob domains,
+loads the identity, binds the main listener on the persisted port and a second socket for outgoing
+connections, announces the device, opens the blob store with its transfer service and fetcher,
+reads the clipboard policy from the settings and starts the clipboard pipeline. `Stop` ends the
+sessions, the sockets, discovery and the database.
+
+Every paired device has one connection. A simultaneous dial is settled by comparing the device IDs:
+both sides keep the connection that the device with the lower ID initiated, and that device dials
+again when it is online on a connection the other side initiated. Addresses come from three
+places: the discovery candidates, the address cache of the peer and a manually entered address. The
+address a peer connected from is cached last, because it is the ephemeral port of the peer dialer.
+After a lost connection the node reconnects with a delay that doubles from one second up to thirty
+seconds and falls back to the cached and the discovered addresses. `NetworkChanged` announces the
+device again and retries every peer that is offline. The main listener port is stored by the
+transport in `transport.main_port`, so the address cached by the other devices survives a restart.
+
+The clipboard pipeline announces every captured item to the online Personal peers and applies what
+they announce. `Subscribe` returns a `*node.Subscriber` with an event queue of its own: a subscriber
+that falls behind misses events instead of holding up the core. The events are `peer-online`,
+`peer-offline`, `clipboard`, `peer-incompatible` and the pairing events `pairing-candidate`,
+`pairing-request`, `pairing-paired`, `pairing-failed` and `pairing-closed`. The node also owns the
+pairing window (`OpenPairing`, `PairingCandidates`, `StartPairing`, `ConfirmPairing`,
+`RejectPairing`, `ExtendPairing`, `ClosePairing`) and translates the window events. `AddSessionHook`
+registers handlers on every new session, which is how the clipboard and the blob transfer attach to
+the protocol. Peers are always reported on the LAN path.
+
+Incoming items pass the clipboard policy of `core/policy`, which the node builds over the trust
+store, the network state and the peer path, and loads from the `policy.*` settings. A node that has
+not been told its network state treats itself as online. Blobs live in the `blobs` directory of the
+data directory; `Blobs`, `Fetcher` and `BlobPeers` give the local API and the share flow the store,
+the fetcher and the peers that may serve a blob.
+
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
 
