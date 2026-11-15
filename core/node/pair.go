@@ -239,9 +239,9 @@ func (n *Node) pairingEvent(pw *pairingWindow, event pairing.Event) {
 			Role:     event.Role,
 			SAS:      event.SAS,
 		})
-		if peer, err := n.trust.Get(n.ctx, event.DeviceID); err == nil {
-			n.startLink(peer).retry()
-			n.probeCandidates(n.ctx)
+		n.syncLinks()
+		if n.gossip != nil {
+			n.gossip.Notify(n.ctx)
 		}
 	case pairing.EventFailed:
 		n.log.Info("pairing exchange failed", "peer", event.DeviceID, "error", event.Err)
@@ -256,6 +256,16 @@ func (n *Node) pairingEvent(pw *pairingWindow, event pairing.Event) {
 	case pairing.EventClosed:
 		n.publish(Event{Kind: EventPairingClosed})
 	}
+}
+
+// syncLinks starts the connection loops of every stored device and retries the
+// discovered addresses. It runs after a pair, which may have added the devices
+// of the group.
+func (n *Node) syncLinks() {
+	for _, peer := range n.pairedPeers(n.ctx) {
+		n.startLink(peer).retry()
+	}
+	n.probeCandidates(n.ctx)
 }
 
 // rememberPairingCandidate caches a discovered pairing candidate.

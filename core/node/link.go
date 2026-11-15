@@ -600,6 +600,9 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 	if upgrade {
 		l.wake()
 	}
+	if n.gossip != nil {
+		n.gossip.Opened(sess)
+	}
 	n.spawn(func() { n.watchSession(l, sess, gen) })
 	return nil
 }
