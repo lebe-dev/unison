@@ -166,3 +166,35 @@ func TestApplyWritesACopyOfThePayload(t *testing.T) {
 		t.Fatalf("clipboard holds %q after the item changed", got)
 	}
 }
+
+func TestApplyHistoryWritesClipboard(t *testing.T) {
+	f := newFixture(t)
+	item := textItem("recorded", "")
+
+	if err := f.pipe.ApplyHistory(t.Context(), item); err != nil {
+		t.Fatalf("apply the recorded item: %v", err)
+	}
+
+	content, ok := f.board.LastWrite()
+	if !ok {
+		t.Fatal("clipboard was not written")
+	}
+	if len(content.Representations) != 1 || string(content.Representations[0].Data) != "recorded" {
+		t.Fatal("the clipboard does not hold the item")
+	}
+	if _, ok := f.pipe.Last(); ok {
+		t.Fatal("applying a recorded item recorded another one")
+	}
+}
+
+func TestApplyHistoryRejectsUnsupportedContent(t *testing.T) {
+	f := newFixture(t)
+
+	err := f.pipe.ApplyHistory(t.Context(), model.ClipItem{Kind: model.KindText, ID: model.ClipID{0x07}})
+	if !errors.Is(err, ErrUnsupportedContent) {
+		t.Fatalf("got error %v, want %v", err, ErrUnsupportedContent)
+	}
+	if _, ok := f.board.LastWrite(); ok {
+		t.Fatal("clipboard was written for unsupported content")
+	}
+}
