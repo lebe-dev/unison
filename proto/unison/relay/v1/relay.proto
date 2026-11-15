@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package unison.relay.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/relay/v1;relayv1";
+
+// Outcome of a registration and the reason a connection was closed.
+enum RelayStatus {
+  RELAY_STATUS_UNSPECIFIED = 0;
+  // The request succeeded.
+  RELAY_STATUS_OK = 1;
+  // The token is unknown or empty.
+  RELAY_STATUS_UNAUTHORIZED = 2;
+  // The traffic quota of the token is used up.
+  RELAY_STATUS_QUOTA_EXCEEDED = 3;
+  // The request is malformed, for example a mailbox id of the wrong size.
+  RELAY_STATUS_INVALID_ARGUMENT = 4;
+  // The relay is at its capacity.
+  RELAY_STATUS_UNAVAILABLE = 5;
+  // The connection does not support unreliable messages.
+  RELAY_STATUS_DATAGRAMS_REQUIRED = 6;
+  // The relay shuts down.
+  RELAY_STATUS_SHUTTING_DOWN = 7;
+}
+
+// Limits that the relay applies to a connection and its token.
+message Limits {
+  // Mailboxes a single connection may join.
+  uint32 max_mailboxes = 1;
+  // Payload bytes of one datagram.
+  uint32 max_datagram_bytes = 2;
+  // Datagrams per second that the token may send.
+  uint32 rate_per_second = 3;
+  // Burst of the datagram rate.
+  uint32 rate_burst = 4;
+  // Traffic quota of the token per window, in bytes.
+  uint64 quota_bytes = 5;
+  // Length of the quota window.
+  uint64 quota_window_seconds = 6;
+}
+
+// Registration of a connection. It is the first frame of a connection.
+message Register {
+  // Access token, opaque bytes.
+  bytes token = 1;
+  // Mailbox ids to join, 16 bytes each.
+  repeated bytes mailbox_ids = 2;
+}
+
+// Answer to a registration. It is the second frame of a connection.
+message RegisterResult {
+  RelayStatus status = 1;
+  // Limits the relay applies, sent on success.
+  Limits limits = 2;
+}
+
+// One datagram between two members of a mailbox.
+message Datagram {
+  // Mailbox the datagram belongs to, 16 bytes.
+  bytes mailbox_id = 1;
+  // Opaque payload, which is ciphertext for the relay.
+  bytes payload = 2;
+}
+
+// Notification that the relay closes the connection.
+message Close {
+  RelayStatus status = 1;
+}
+
+// Relay frame. Control messages are length prefixed with a uvarint on a stream
+// and carry one frame per message, datagrams carry a bare frame.
+message Frame {
+  oneof body {
+    Register register = 1;
+    RegisterResult register_result = 2;
+    Datagram datagram = 3;
+    Close close = 4;
+  }
+}

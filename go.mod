@@ -10,6 +10,7 @@ tool (
 
 require (
 	connectrpc.com/connect v1.21.1
+	github.com/coder/websocket v1.8.15
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.61
 	github.com/quic-go/quic-go v0.65.0

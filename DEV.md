@@ -179,3 +179,47 @@ it stopped. The store is capped by the `blob.max_size` setting, 2 GiB on desktop
 mobile unless configured otherwise, and evicts the least recently used complete blobs; blobs a
 caller pinned and partial transfers are never evicted. The round trip of a 1.2 GiB blob is checked
 by `just test-blob-large`, which also asserts that the heap stays bounded.
+
+The relay in `cmd/unison-relay` and `internal/relay` moves opaque datagrams between the members of
+a mailbox. A client registers with an access token and up to eight mailbox ids of 16 bytes, the
+relay forwards every datagram to the other members of its mailbox and forgets the mailbox when its
+last member leaves. Nothing is written to disk, so the mailbox id is all the relay learns about a
+pair of devices, and the payload is the ciphertext of the inner QUIC connection.
+
+The main transport is QUIC over UDP with RFC 9221 datagrams and ALPN `unison-relay/1`. The fallback
+is WebSocket over TLS on TCP for networks that block UDP: one frame per binary message, path
+`/relay`, subprotocol `unison-relay/1`. Both speak the messages from `proto/unison/relay/v1`. A
+connection starts with a `Register` frame that carries the token and the mailbox ids and gets a
+`RegisterResult` with the limits that apply; on QUIC this exchange runs on the first bidirectional
+stream with a uvarint length prefix, on WebSocket on the first two binary messages. After that every
+datagram is a `Frame` with a `Datagram` body and no length prefix.
+
+Tokens come from `UNISON_RELAY_TOKENS` or from `UNISON_RELAY_TOKENS_FILE`, one per line, and are kept
+as SHA-256 hashes, so a running server never holds them in clear form. Every token has a datagram
+rate and a traffic quota per window, 200 datagrams per second with a burst of 400 and 1 GiB per
+24 hours by default. A client above the rate loses datagrams, a client that runs out of quota is
+closed with a status in the answer and in the application error code.
+
+A datagram stays within a single QUIC packet, so its payload is capped at 1024 bytes by default. The
+inner QUIC connection has to keep its own packets within that, which means a packet size below the
+1200 bytes of a usual QUIC initial packet.
+
+The server needs a TLS certificate and key, listens on `-quic-addr` and `-ws-addr` and serves health
+and metrics on `-http-addr` over plain HTTP for a sidecar scrape. `GET /healthz` and `GET /readyz`
+report the process, `GET /metrics` renders the Prometheus text format with transport and drop reason
+labels only: no mailbox ids, tokens or addresses. Logs are JSON on stderr and never carry payloads,
+tokens or mailbox ids. Run it locally with:
+
+```sh
+UNISON_RELAY_TOKENS=secret go run ./cmd/unison-relay \
+    -tls-cert cert.pem -tls-key key.pem \
+    -quic-addr :8443 -ws-addr :8443 -http-addr :8080
+```
+
+Every flag reads an environment variable as well: `UNISON_RELAY_QUIC_ADDR`, `UNISON_RELAY_WS_ADDR`,
+`UNISON_RELAY_HTTP_ADDR`, `UNISON_RELAY_TLS_CERT`, `UNISON_RELAY_TLS_KEY`, `UNISON_RELAY_TOKENS`,
+`UNISON_RELAY_TOKENS_FILE`, `UNISON_RELAY_LOG_LEVEL`, `UNISON_RELAY_MAX_MAILBOXES`,
+`UNISON_RELAY_MAX_DATAGRAM_BYTES`, `UNISON_RELAY_RATE`, `UNISON_RELAY_RATE_BURST`,
+`UNISON_RELAY_QUOTA_BYTES`, `UNISON_RELAY_QUOTA_WINDOW`, `UNISON_RELAY_MAX_CONNECTIONS`,
+`UNISON_RELAY_MAX_MAILBOXES_TOTAL`, `UNISON_RELAY_PING_INTERVAL` and
+`UNISON_RELAY_REGISTER_TIMEOUT`.
