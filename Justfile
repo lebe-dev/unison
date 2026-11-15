@@ -92,6 +92,10 @@ proto:
 proto-android:
     buf generate --template buf.gen.android.yaml --path proto/unison/local --path proto/unison/mobile proto
 
+# Generate the TypeScript client of the local API for the desktop app.
+desktop-proto:
+    buf generate --template buf.gen.desktop.yaml --path proto/unison/local proto
+
 # Lint the protobuf definitions.
 proto-lint:
     buf lint

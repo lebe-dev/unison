@@ -2,6 +2,21 @@
 # yarn lockfile v1
 
 
+"@bufbuild/protobuf@^2.17.0":
+  version "2.17.0"
+  resolved "https://registry.yarnpkg.com/@bufbuild/protobuf/-/protobuf-2.17.0.tgz#231e87fc12d859bf95166890e9cebd64ac362810"
+  integrity sha512-hcPkSz6D7MiTU/5VBBhK+kxaYDoOdQ6yJRFJ3kS8Nydp+VZXfg1vrpABKPNod8bXMufsVCmiUJVIKFzCzta4uw==
+
+"@connectrpc/connect-web@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@connectrpc/connect-web/-/connect-web-2.3.0.tgz#d1f6fd46a45468756fdc26f66bf011c7d858e15a"
+  integrity sha512-JPXOiWaVsj+ZwaXOQjwvhc0ORnkl0a1w36Qyl3j1WTuak6/VYyuWGl1Aq8I60gQfQRjsjLLFGr64tO0sjwstcg==
+
+"@connectrpc/connect@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@connectrpc/connect/-/connect-2.3.0.tgz#fe142f8754d0ad8c74a5be14f59a98a17b67b4fe"
+  integrity sha512-rjAn8L9KbAZrkwiB8m1qzDsLs74hkYmwwM2iSWuxTPVOTRm/EZw31smKbQqPU50AXqJC5eKKpEnA6Uf/swQOgQ==
+
 "@emnapi/core@2.0.0-beta.2":
   version "2.0.0-beta.2"
   resolved "https://registry.yarnpkg.com/@emnapi/core/-/core-2.0.0-beta.2.tgz#ff0e7979b1c52afc59df7ebc792adc821f8f74d7"
@@ -179,7 +194,7 @@
     obug "^2.1.0"
     vitefu "^1.1.2"
 
-"@tauri-apps/api@^2.12.4":
+"@tauri-apps/api@^2.12.0", "@tauri-apps/api@^2.12.4":
   version "2.12.4"
   resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.12.4.tgz#2bab72b87696ae8dcfb4f4db2119e46a87aeabe0"
   integrity sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg==
@@ -255,6 +270,13 @@
     "@tauri-apps/cli-win32-arm64-msvc" "2.12.4"
     "@tauri-apps/cli-win32-ia32-msvc" "2.12.4"
     "@tauri-apps/cli-win32-x64-msvc" "2.12.4"
+
+"@tauri-apps/plugin-notification@^2.4.0":
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-notification/-/plugin-notification-2.8.1.tgz#7c90843110982e4e0b8d8417d168f85c44356d12"
+  integrity sha512-B+OCJv17XCFQxAhe2+fn2bHqQ1fz/hGnYHeT++yv8+q0daOH5o1ghX7MmxWgoGFp7POaNn4UMONclHeZn65mJA==
+  dependencies:
+    "@tauri-apps/api" "^2.12.0"
 
 "@tybys/wasm-util@^0.10.3":
   version "0.10.4"
