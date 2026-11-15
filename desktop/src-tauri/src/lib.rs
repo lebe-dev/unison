@@ -82,6 +82,7 @@ async fn set_login_item(
     // The daemon of the app holds the lock and the endpoint, so it steps aside
     // before the login item starts its own.
     if enabled
+        && cfg!(target_os = "macos")
         && daemon::stop_started()
         && let Some(path) = &endpoint
     {
