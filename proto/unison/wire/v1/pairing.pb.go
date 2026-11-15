@@ -21,19 +21,24 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Sent by the scanning device to the pairing listener.
+// Sent by the device that starts a pairing exchange to the pairing listener.
 type PairRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// One time token from the QR code, 16 bytes.
+	// One time token from the QR code, 16 bytes. Empty in the SAS flow.
 	Token []byte `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	// Ed25519 identity public key, 32 bytes.
 	Ed25519Pub []byte `protobuf:"bytes,2,opt,name=ed25519_pub,json=ed25519Pub,proto3" json:"ed25519_pub,omitempty"`
 	// ML-DSA-65 identity public key.
-	MldsaPub      []byte   `protobuf:"bytes,3,opt,name=mldsa_pub,json=mldsaPub,proto3" json:"mldsa_pub,omitempty"`
-	DeviceName    string   `protobuf:"bytes,4,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
-	Platform      Platform `protobuf:"varint,5,opt,name=platform,proto3,enum=unison.wire.v1.Platform" json:"platform,omitempty"`
-	Ed25519Sig    []byte   `protobuf:"bytes,6,opt,name=ed25519_sig,json=ed25519Sig,proto3" json:"ed25519_sig,omitempty"`
-	MldsaSig      []byte   `protobuf:"bytes,7,opt,name=mldsa_sig,json=mldsaSig,proto3" json:"mldsa_sig,omitempty"`
+	MldsaPub   []byte   `protobuf:"bytes,3,opt,name=mldsa_pub,json=mldsaPub,proto3" json:"mldsa_pub,omitempty"`
+	DeviceName string   `protobuf:"bytes,4,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
+	Platform   Platform `protobuf:"varint,5,opt,name=platform,proto3,enum=unison.wire.v1.Platform" json:"platform,omitempty"`
+	// Signatures of the request. The QR flow signs with the token, the SAS flow
+	// authenticates the exchange with the short authentication string.
+	Ed25519Sig []byte `protobuf:"bytes,6,opt,name=ed25519_sig,json=ed25519Sig,proto3" json:"ed25519_sig,omitempty"`
+	MldsaSig   []byte `protobuf:"bytes,7,opt,name=mldsa_sig,json=mldsaSig,proto3" json:"mldsa_sig,omitempty"`
+	// Role the initiating device proposes for the pair. The other side confirms
+	// it, both devices store the same role.
+	Role          Role `protobuf:"varint,8,opt,name=role,proto3,enum=unison.wire.v1.Role" json:"role,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -117,7 +122,142 @@ func (x *PairRequest) GetMldsaSig() []byte {
 	return nil
 }
 
-// Sent by the device that shows the QR code.
+func (x *PairRequest) GetRole() Role {
+	if x != nil {
+		return x.Role
+	}
+	return Role_ROLE_UNSPECIFIED
+}
+
+// Sent by the device that accepted a pairing connection, in reply to
+// PairRequest. It is authenticated by the SAS, not by a signature.
+type PairResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Ed25519 identity public key, 32 bytes.
+	Ed25519Pub []byte `protobuf:"bytes,1,opt,name=ed25519_pub,json=ed25519Pub,proto3" json:"ed25519_pub,omitempty"`
+	// ML-DSA-65 identity public key.
+	MldsaPub   []byte   `protobuf:"bytes,2,opt,name=mldsa_pub,json=mldsaPub,proto3" json:"mldsa_pub,omitempty"`
+	DeviceName string   `protobuf:"bytes,3,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
+	Platform   Platform `protobuf:"varint,4,opt,name=platform,proto3,enum=unison.wire.v1.Platform" json:"platform,omitempty"`
+	// Role the accepting device will store for the initiator.
+	Role          Role `protobuf:"varint,5,opt,name=role,proto3,enum=unison.wire.v1.Role" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PairResponse) Reset() {
+	*x = PairResponse{}
+	mi := &file_unison_wire_v1_pairing_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PairResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PairResponse) ProtoMessage() {}
+
+func (x *PairResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_pairing_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PairResponse.ProtoReflect.Descriptor instead.
+func (*PairResponse) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_pairing_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *PairResponse) GetEd25519Pub() []byte {
+	if x != nil {
+		return x.Ed25519Pub
+	}
+	return nil
+}
+
+func (x *PairResponse) GetMldsaPub() []byte {
+	if x != nil {
+		return x.MldsaPub
+	}
+	return nil
+}
+
+func (x *PairResponse) GetDeviceName() string {
+	if x != nil {
+		return x.DeviceName
+	}
+	return ""
+}
+
+func (x *PairResponse) GetPlatform() Platform {
+	if x != nil {
+		return x.Platform
+	}
+	return Platform_PLATFORM_UNSPECIFIED
+}
+
+func (x *PairResponse) GetRole() Role {
+	if x != nil {
+		return x.Role
+	}
+	return Role_ROLE_UNSPECIFIED
+}
+
+// Sent by both devices in the SAS flow once their user compared the short
+// authentication string. No secret leaves a device before both sides accepted.
+type PairDecision struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PairDecision) Reset() {
+	*x = PairDecision{}
+	mi := &file_unison_wire_v1_pairing_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PairDecision) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PairDecision) ProtoMessage() {}
+
+func (x *PairDecision) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_pairing_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PairDecision.ProtoReflect.Descriptor instead.
+func (*PairDecision) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_pairing_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *PairDecision) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+// Sent by the device that accepted a pairing connection after both devices
+// confirmed. It carries the group data of the pair.
 type PairAccept struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Ed25519 identity public key, 32 bytes.
@@ -131,13 +271,20 @@ type PairAccept struct {
 	Introductions []*Introduction `protobuf:"bytes,5,rep,name=introductions,proto3" json:"introductions,omitempty"`
 	Ed25519Sig    []byte          `protobuf:"bytes,6,opt,name=ed25519_sig,json=ed25519Sig,proto3" json:"ed25519_sig,omitempty"`
 	MldsaSig      []byte          `protobuf:"bytes,7,opt,name=mldsa_sig,json=mldsaSig,proto3" json:"mldsa_sig,omitempty"`
+	// Key of the Personal group of the accepting device, 32 bytes. Set for the
+	// Personal role only.
+	DiscoveryKey []byte `protobuf:"bytes,8,opt,name=discovery_key,json=discoveryKey,proto3" json:"discovery_key,omitempty"`
+	// Relay rendezvous key of the pair, 32 bytes, derived from the session
+	// exporter by both devices.
+	RendezvousKey []byte   `protobuf:"bytes,9,opt,name=rendezvous_key,json=rendezvousKey,proto3" json:"rendezvous_key,omitempty"`
+	Platform      Platform `protobuf:"varint,10,opt,name=platform,proto3,enum=unison.wire.v1.Platform" json:"platform,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PairAccept) Reset() {
 	*x = PairAccept{}
-	mi := &file_unison_wire_v1_pairing_proto_msgTypes[1]
+	mi := &file_unison_wire_v1_pairing_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +296,7 @@ func (x *PairAccept) String() string {
 func (*PairAccept) ProtoMessage() {}
 
 func (x *PairAccept) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_pairing_proto_msgTypes[1]
+	mi := &file_unison_wire_v1_pairing_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +309,7 @@ func (x *PairAccept) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PairAccept.ProtoReflect.Descriptor instead.
 func (*PairAccept) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_pairing_proto_rawDescGZIP(), []int{1}
+	return file_unison_wire_v1_pairing_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PairAccept) GetEd25519Pub() []byte {
@@ -214,11 +361,32 @@ func (x *PairAccept) GetMldsaSig() []byte {
 	return nil
 }
 
+func (x *PairAccept) GetDiscoveryKey() []byte {
+	if x != nil {
+		return x.DiscoveryKey
+	}
+	return nil
+}
+
+func (x *PairAccept) GetRendezvousKey() []byte {
+	if x != nil {
+		return x.RendezvousKey
+	}
+	return nil
+}
+
+func (x *PairAccept) GetPlatform() Platform {
+	if x != nil {
+		return x.Platform
+	}
+	return Platform_PLATFORM_UNSPECIFIED
+}
+
 var File_unison_wire_v1_pairing_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_pairing_proto_rawDesc = "" +
 	"\n" +
-	"\x1cunison/wire/v1/pairing.proto\x12\x0eunison.wire.v1\x1a\x1aunison/wire/v1/types.proto\x1a\x1aunison/wire/v1/trust.proto\"\xf6\x01\n" +
+	"\x1cunison/wire/v1/pairing.proto\x12\x0eunison.wire.v1\x1a\x1aunison/wire/v1/types.proto\x1a\x1aunison/wire/v1/trust.proto\"\xa0\x02\n" +
 	"\vPairRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\fR\x05token\x12\x1f\n" +
 	"\ved25519_pub\x18\x02 \x01(\fR\n" +
@@ -229,7 +397,18 @@ const file_unison_wire_v1_pairing_proto_rawDesc = "" +
 	"\bplatform\x18\x05 \x01(\x0e2\x18.unison.wire.v1.PlatformR\bplatform\x12\x1f\n" +
 	"\ved25519_sig\x18\x06 \x01(\fR\n" +
 	"ed25519Sig\x12\x1b\n" +
-	"\tmldsa_sig\x18\a \x01(\fR\bmldsaSig\"\x97\x02\n" +
+	"\tmldsa_sig\x18\a \x01(\fR\bmldsaSig\x12(\n" +
+	"\x04role\x18\b \x01(\x0e2\x14.unison.wire.v1.RoleR\x04role\"\xcd\x01\n" +
+	"\fPairResponse\x12\x1f\n" +
+	"\ved25519_pub\x18\x01 \x01(\fR\n" +
+	"ed25519Pub\x12\x1b\n" +
+	"\tmldsa_pub\x18\x02 \x01(\fR\bmldsaPub\x12\x1f\n" +
+	"\vdevice_name\x18\x03 \x01(\tR\n" +
+	"deviceName\x124\n" +
+	"\bplatform\x18\x04 \x01(\x0e2\x18.unison.wire.v1.PlatformR\bplatform\x12(\n" +
+	"\x04role\x18\x05 \x01(\x0e2\x14.unison.wire.v1.RoleR\x04role\"*\n" +
+	"\fPairDecision\x12\x1a\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted\"\x99\x03\n" +
 	"\n" +
 	"PairAccept\x12\x1f\n" +
 	"\ved25519_pub\x18\x01 \x01(\fR\n" +
@@ -241,7 +420,11 @@ const file_unison_wire_v1_pairing_proto_rawDesc = "" +
 	"\rintroductions\x18\x05 \x03(\v2\x1c.unison.wire.v1.IntroductionR\rintroductions\x12\x1f\n" +
 	"\ved25519_sig\x18\x06 \x01(\fR\n" +
 	"ed25519Sig\x12\x1b\n" +
-	"\tmldsa_sig\x18\a \x01(\fR\bmldsaSigB8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
+	"\tmldsa_sig\x18\a \x01(\fR\bmldsaSig\x12#\n" +
+	"\rdiscovery_key\x18\b \x01(\fR\fdiscoveryKey\x12%\n" +
+	"\x0erendezvous_key\x18\t \x01(\fR\rrendezvousKey\x124\n" +
+	"\bplatform\x18\n" +
+	" \x01(\x0e2\x18.unison.wire.v1.PlatformR\bplatformB8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
 
 var (
 	file_unison_wire_v1_pairing_proto_rawDescOnce sync.Once
@@ -255,23 +438,29 @@ func file_unison_wire_v1_pairing_proto_rawDescGZIP() []byte {
 	return file_unison_wire_v1_pairing_proto_rawDescData
 }
 
-var file_unison_wire_v1_pairing_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_unison_wire_v1_pairing_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_unison_wire_v1_pairing_proto_goTypes = []any{
 	(*PairRequest)(nil),  // 0: unison.wire.v1.PairRequest
-	(*PairAccept)(nil),   // 1: unison.wire.v1.PairAccept
-	(Platform)(0),        // 2: unison.wire.v1.Platform
-	(Role)(0),            // 3: unison.wire.v1.Role
-	(*Introduction)(nil), // 4: unison.wire.v1.Introduction
+	(*PairResponse)(nil), // 1: unison.wire.v1.PairResponse
+	(*PairDecision)(nil), // 2: unison.wire.v1.PairDecision
+	(*PairAccept)(nil),   // 3: unison.wire.v1.PairAccept
+	(Platform)(0),        // 4: unison.wire.v1.Platform
+	(Role)(0),            // 5: unison.wire.v1.Role
+	(*Introduction)(nil), // 6: unison.wire.v1.Introduction
 }
 var file_unison_wire_v1_pairing_proto_depIdxs = []int32{
-	2, // 0: unison.wire.v1.PairRequest.platform:type_name -> unison.wire.v1.Platform
-	3, // 1: unison.wire.v1.PairAccept.role:type_name -> unison.wire.v1.Role
-	4, // 2: unison.wire.v1.PairAccept.introductions:type_name -> unison.wire.v1.Introduction
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 0: unison.wire.v1.PairRequest.platform:type_name -> unison.wire.v1.Platform
+	5, // 1: unison.wire.v1.PairRequest.role:type_name -> unison.wire.v1.Role
+	4, // 2: unison.wire.v1.PairResponse.platform:type_name -> unison.wire.v1.Platform
+	5, // 3: unison.wire.v1.PairResponse.role:type_name -> unison.wire.v1.Role
+	5, // 4: unison.wire.v1.PairAccept.role:type_name -> unison.wire.v1.Role
+	6, // 5: unison.wire.v1.PairAccept.introductions:type_name -> unison.wire.v1.Introduction
+	4, // 6: unison.wire.v1.PairAccept.platform:type_name -> unison.wire.v1.Platform
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_unison_wire_v1_pairing_proto_init() }
@@ -287,7 +476,7 @@ func file_unison_wire_v1_pairing_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_wire_v1_pairing_proto_rawDesc), len(file_unison_wire_v1_pairing_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
