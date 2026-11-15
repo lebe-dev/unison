@@ -53,6 +53,8 @@ var (
 	ErrPairingOpen = errors.New("node: pairing window is already open")
 	// ErrPairingClosed reports a pairing action without an open window.
 	ErrPairingClosed = errors.New("node: pairing window is closed")
+	// ErrPeerOffline reports a call that needs a session with a peer.
+	ErrPeerOffline = errors.New("node: peer is offline")
 )
 
 // ListenPacketFunc binds the packet connection of one socket. port is the port
@@ -243,7 +245,7 @@ func New(cfg Config) (*Node, error) {
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
 	}
-	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory, n.installGossip}
+	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory, n.installGossip, n.installPolicy}
 	return n, nil
 }
 
@@ -520,7 +522,7 @@ func (n *Node) open(ctx context.Context) error {
 		Store:     db,
 		Origin:    id.DeviceID(),
 		Announcer: n,
-		Planner:   policyPlanner{decider: decider},
+		Planner:   policyPlanner{decider: decider, self: n.selfRequireConfirmation},
 		History:   hist,
 		Payloads:  blobPayloads{blobs: n.blobs},
 		Fetch:     clip.FetchFunc(n.fetchPayload),

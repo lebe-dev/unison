@@ -167,6 +167,92 @@ func TestDevicesRenameResolution(t *testing.T) {
 	}
 }
 
+// TestDevicesConfirmSelf checks the confirmation flag of the local device.
+func TestDevicesConfirmSelf(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 320, api.Options{})
+	device.start(t)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", "self", "on")
+	if code != exitOK {
+		t.Fatalf("devices confirm exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "confirmation for self is on") {
+		t.Errorf("the command does not report the flag:\n%s", stdout)
+	}
+	require, err := device.Trust().SelfRequireConfirmation(t.Context())
+	if err != nil {
+		t.Fatalf("read the flag: %v", err)
+	}
+	if !require {
+		t.Fatal("the confirmation flag is off")
+	}
+
+	if code, _, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", "self", "off"); code != exitOK {
+		t.Fatalf("devices confirm off exited with %d, stderr %q", code, stderr)
+	}
+	require, err = device.Trust().SelfRequireConfirmation(t.Context())
+	if err != nil {
+		t.Fatalf("read the flag: %v", err)
+	}
+	if require {
+		t.Fatal("the confirmation flag is on")
+	}
+}
+
+// TestDevicesConfirmPeer checks the flag of a paired device.
+func TestDevicesConfirmPeer(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 330, api.Options{})
+	other := newDevice(t, network, bus, 340, api.Options{})
+	device.start(t)
+	other.start(t)
+	device.pair(t, other)
+	other.pair(t, device)
+	waitOnline(t, device, other)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", other.name, "on")
+	if code != exitOK {
+		t.Fatalf("devices confirm exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, fingerprintOf(other.DeviceID().String())) {
+		t.Errorf("the command does not report the device:\n%s", stdout)
+	}
+	deadline := time.Now().Add(testTimeout)
+	for time.Now().Before(deadline) {
+		require, err := other.Trust().SelfRequireConfirmation(t.Context())
+		if err != nil {
+			t.Fatalf("read the flag: %v", err)
+		}
+		if require {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("the paired device did not receive the flag")
+}
+
+// TestDevicesConfirmUsage checks the arguments of the command.
+func TestDevicesConfirmUsage(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 350, api.Options{})
+	device.start(t)
+
+	for _, args := range [][]string{
+		{"devices", "confirm"},
+		{"devices", "confirm", "self"},
+		{"devices", "confirm", "self", "maybe"},
+	} {
+		code, _, stderr := runCommand(t, "", append([]string{"--endpoint", device.endpoint}, args...)...)
+		if code != exitFailure {
+			t.Fatalf("%v exited with %d", args, code)
+		}
+		if stderr == "" {
+			t.Errorf("%v reported no error", args)
+		}
+	}
+}
+
 // TestDevicesRenameUnknown checks a reference that no device matches.
 func TestDevicesRenameUnknown(t *testing.T) {
 	network, bus := newNetwork(t)

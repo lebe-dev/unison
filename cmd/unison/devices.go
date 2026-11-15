@@ -29,6 +29,8 @@ func (a *app) devices(ctx context.Context, args []string) error {
 		return a.devicesList(ctx, rest)
 	case "rename":
 		return a.devicesRename(ctx, rest)
+	case "confirm":
+		return a.devicesConfirm(ctx, rest)
 	default:
 		return a.usageError("unknown devices command %q", command)
 	}
@@ -98,6 +100,60 @@ func (a *app) devicesRename(ctx context.Context, args []string) error {
 		return a.writeJSON(device)
 	}
 	a.info("renamed %s to %q", fingerprintOf(device.GetDeviceId()), name)
+	return nil
+}
+
+// devicesConfirm sets the confirmation flag of this device or of a paired
+// device. A paired device changes its own flag, so the request travels there.
+func (a *app) devicesConfirm(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("devices confirm")
+	if err := parseFlags(flags, args); err != nil {
+		return err
+	}
+	if flags.NArg() != 2 {
+		return a.usageError("devices confirm needs a device and on or off")
+	}
+	reference := flags.Arg(0)
+	state := strings.ToLower(flags.Arg(1))
+
+	var require bool
+	switch state {
+	case "on":
+		require = true
+	case "off":
+		require = false
+	default:
+		return a.usageError("confirmation is on or off, not %q", state)
+	}
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	request := &localv1.SetDeviceConfirmationRequest{Require: require}
+	label := "self"
+	if reference != "self" {
+		devices, err := a.devicesOf(ctx, client)
+		if err != nil {
+			return err
+		}
+		device, err := resolveDevice(devices, reference)
+		if err != nil {
+			return err
+		}
+		request.DeviceId = device.GetDeviceId()
+		label = fingerprintOf(device.GetDeviceId())
+	} else {
+		request.Self = true
+	}
+
+	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(request)); err != nil {
+		return fmt.Errorf("set the confirmation flag: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(&localv1.SetDeviceConfirmationResponse{})
+	}
+	a.info("confirmation for %s is %s", label, state)
 	return nil
 }
 

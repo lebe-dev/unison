@@ -101,17 +101,36 @@ func (s *Service) FetchHistoryItem(ctx context.Context, req *connect.Request[loc
 
 // CopyHistoryItem writes one item back to the local clipboard.
 func (s *Service) CopyHistoryItem(ctx context.Context, req *connect.Request[localv1.CopyHistoryItemRequest]) (*connect.Response[localv1.CopyHistoryItemResponse], error) {
-	if err := s.requireRunning(); err != nil {
-		return nil, errorOf(err)
-	}
-	id, err := historyID(req.Msg.GetId())
-	if err != nil {
-		return nil, errorOf(err)
-	}
-	if err := s.node.History().Copy(ctx, id); err != nil {
+	if err := s.applyHistoryItem(ctx, req.Msg.GetId()); err != nil {
 		return nil, errorOf(err)
 	}
 	return connect.NewResponse(&localv1.CopyHistoryItemResponse{}), nil
+}
+
+// ApplyHistoryItem writes one item to the local clipboard. It is how a user
+// applies an item that waits for confirmation.
+func (s *Service) ApplyHistoryItem(ctx context.Context, req *connect.Request[localv1.ApplyHistoryItemRequest]) (*connect.Response[localv1.ApplyHistoryItemResponse], error) {
+	if err := s.applyHistoryItem(ctx, req.Msg.GetId()); err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.ApplyHistoryItemResponse{}), nil
+}
+
+// applyHistoryItem writes a recorded item to the clipboard through the
+// pipeline, which keeps the write from coming back as a new item.
+func (s *Service) applyHistoryItem(ctx context.Context, reference string) error {
+	if err := s.requireRunning(); err != nil {
+		return err
+	}
+	id, err := historyID(reference)
+	if err != nil {
+		return err
+	}
+	item, err := s.node.History().Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.node.Clip().ApplyHistory(ctx, item.ClipItem)
 }
 
 // historyID parses the item id of a request.

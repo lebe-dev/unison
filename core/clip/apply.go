@@ -110,7 +110,34 @@ func (p *Pipeline) applyItem(ctx context.Context, from model.DeviceID, item mode
 	if err != nil {
 		return err
 	}
+	return p.writeItem(ctx, from, item, content)
+}
 
+// ApplyHistory writes a recorded item to the local clipboard. The user asked
+// for the item, so the policy and the history are not involved. A payload that
+// is missing locally is downloaded first.
+func (p *Pipeline) ApplyHistory(ctx context.Context, item model.ClipItem) error {
+	if err := validateItem(item); err != nil {
+		return err
+	}
+	missing, err := p.missingPayloads(ctx, item)
+	if err != nil {
+		return err
+	}
+	if len(missing) > 0 {
+		if err := p.fetchPayloads(ctx, missing); err != nil {
+			return fmt.Errorf("clip: fetch the payload of the item: %w", err)
+		}
+	}
+	content, err := p.clipboardContent(ctx, item)
+	if err != nil {
+		return err
+	}
+	return p.writeItem(ctx, item.Origin, item, content)
+}
+
+// writeItem writes the content of an item to the clipboard.
+func (p *Pipeline) writeItem(ctx context.Context, from model.DeviceID, item model.ClipItem, content ports.Content) error {
 	// The hashes are registered before the write so a watcher that reports the
 	// change from inside Write already sees it as own content.
 	p.echo.register(content)

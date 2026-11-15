@@ -13128,7 +13128,7 @@ java.lang.String defaultValue) {
 
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13137,7 +13137,7 @@ java.lang.String defaultValue) {
     java.lang.String getDeviceId();
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13151,6 +13151,16 @@ java.lang.String defaultValue) {
      * @return The require.
      */
     boolean getRequire();
+
+    /**
+     * <pre>
+     * Change the confirmation flag of this device instead of a paired one.
+     * </pre>
+     *
+     * <code>bool self = 3 [json_name = "self"];</code>
+     * @return The self.
+     */
+    boolean getSelf();
   }
   /**
    * Protobuf type {@code unison.local.v1.SetDeviceConfirmationRequest}
@@ -13167,7 +13177,7 @@ java.lang.String defaultValue) {
     private java.lang.String deviceId_;
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13179,7 +13189,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13192,7 +13202,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13206,7 +13216,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13217,7 +13227,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. Empty when self is set.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13254,6 +13264,44 @@ java.lang.String defaultValue) {
     private void clearRequire() {
 
       require_ = false;
+    }
+
+    public static final int SELF_FIELD_NUMBER = 3;
+    private boolean self_;
+    /**
+     * <pre>
+     * Change the confirmation flag of this device instead of a paired one.
+     * </pre>
+     *
+     * <code>bool self = 3 [json_name = "self"];</code>
+     * @return The self.
+     */
+    @java.lang.Override
+    public boolean getSelf() {
+      return self_;
+    }
+    /**
+     * <pre>
+     * Change the confirmation flag of this device instead of a paired one.
+     * </pre>
+     *
+     * <code>bool self = 3 [json_name = "self"];</code>
+     * @param value The self to set.
+     */
+    private void setSelf(boolean value) {
+      
+      self_ = value;
+    }
+    /**
+     * <pre>
+     * Change the confirmation flag of this device instead of a paired one.
+     * </pre>
+     *
+     * <code>bool self = 3 [json_name = "self"];</code>
+     */
+    private void clearSelf() {
+
+      self_ = false;
     }
 
     public static unison.local.v1.Local.SetDeviceConfirmationRequest parseFrom(
@@ -13355,7 +13403,7 @@ java.lang.String defaultValue) {
 
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. Empty when self is set.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13367,7 +13415,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. Empty when self is set.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13380,7 +13428,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. Empty when self is set.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13395,7 +13443,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. Empty when self is set.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13408,7 +13456,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. Empty when self is set.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -13450,6 +13498,46 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Change the confirmation flag of this device instead of a paired one.
+       * </pre>
+       *
+       * <code>bool self = 3 [json_name = "self"];</code>
+       * @return The self.
+       */
+      @java.lang.Override
+      public boolean getSelf() {
+        return instance.getSelf();
+      }
+      /**
+       * <pre>
+       * Change the confirmation flag of this device instead of a paired one.
+       * </pre>
+       *
+       * <code>bool self = 3 [json_name = "self"];</code>
+       * @param value The self to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSelf(boolean value) {
+        copyOnWrite();
+        instance.setSelf(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Change the confirmation flag of this device instead of a paired one.
+       * </pre>
+       *
+       * <code>bool self = 3 [json_name = "self"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSelf() {
+        copyOnWrite();
+        instance.clearSelf();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.SetDeviceConfirmationRequest)
     }
     @java.lang.Override
@@ -13468,10 +13556,11 @@ java.lang.String defaultValue) {
             java.lang.Object[] objects = new java.lang.Object[] {
               "deviceId_",
               "require_",
+              "self_",
             };
             java.lang.String info =
-                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
-                "";
+                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0003\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -22603,6 +22692,531 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<CopyHistoryItemResponse> PARSER;
 
     public static com.google.protobuf.Parser<CopyHistoryItemResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ApplyHistoryItemRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ApplyHistoryItemRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ApplyHistoryItemRequest}
+   */
+  public  static final class ApplyHistoryItemRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ApplyHistoryItemRequest, ApplyHistoryItemRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ApplyHistoryItemRequest)
+      ApplyHistoryItemRequestOrBuilder {
+    private ApplyHistoryItemRequest() {
+      id_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ApplyHistoryItemRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ApplyHistoryItemRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ApplyHistoryItemRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ApplyHistoryItemRequest)
+        unison.local.v1.Local.ApplyHistoryItemRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ApplyHistoryItemRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ApplyHistoryItemRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ApplyHistoryItemRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ApplyHistoryItemRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ApplyHistoryItemRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ApplyHistoryItemRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ApplyHistoryItemRequest)
+    private static final unison.local.v1.Local.ApplyHistoryItemRequest DEFAULT_INSTANCE;
+    static {
+      ApplyHistoryItemRequest defaultInstance = new ApplyHistoryItemRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ApplyHistoryItemRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ApplyHistoryItemRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ApplyHistoryItemRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ApplyHistoryItemResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ApplyHistoryItemResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ApplyHistoryItemResponse}
+   */
+  public  static final class ApplyHistoryItemResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ApplyHistoryItemResponse, ApplyHistoryItemResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ApplyHistoryItemResponse)
+      ApplyHistoryItemResponseOrBuilder {
+    private ApplyHistoryItemResponse() {
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ApplyHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ApplyHistoryItemResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ApplyHistoryItemResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ApplyHistoryItemResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ApplyHistoryItemResponse)
+        unison.local.v1.Local.ApplyHistoryItemResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ApplyHistoryItemResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ApplyHistoryItemResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ApplyHistoryItemResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ApplyHistoryItemResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ApplyHistoryItemResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ApplyHistoryItemResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ApplyHistoryItemResponse)
+    private static final unison.local.v1.Local.ApplyHistoryItemResponse DEFAULT_INSTANCE;
+    static {
+      ApplyHistoryItemResponse defaultInstance = new ApplyHistoryItemResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ApplyHistoryItemResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ApplyHistoryItemResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ApplyHistoryItemResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ApplyHistoryItemResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }

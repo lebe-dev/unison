@@ -116,6 +116,8 @@ service UnisonService {
   rpc FetchHistoryItem(FetchHistoryItemRequest) returns (FetchHistoryItemResponse);
   // Copy an item back to the local clipboard.
   rpc CopyHistoryItem(CopyHistoryItemRequest) returns (CopyHistoryItemResponse);
+  // Apply an item that waits for confirmation to the local clipboard.
+  rpc ApplyHistoryItem(ApplyHistoryItemRequest) returns (ApplyHistoryItemResponse);
 
   // Pause of the clipboard synchronization.
   rpc GetPause(GetPauseRequest) returns (GetPauseResponse);
@@ -304,9 +306,11 @@ message RevokeDeviceRequest {
 message RevokeDeviceResponse {}
 
 message SetDeviceConfirmationRequest {
-  // Device ID in lowercase hex.
+  // Device ID in lowercase hex. Empty when self is set.
   string device_id = 1;
   bool require = 2;
+  // Change the confirmation flag of this device instead of a paired one.
+  bool self = 3;
 }
 
 message SetDeviceConfirmationResponse {}
@@ -428,6 +432,13 @@ message CopyHistoryItemRequest {
 }
 
 message CopyHistoryItemResponse {}
+
+message ApplyHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message ApplyHistoryItemResponse {}
 
 message GetPauseRequest {}
 

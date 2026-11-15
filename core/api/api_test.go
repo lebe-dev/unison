@@ -210,5 +210,5 @@ func TestDevicesNotImplemented(t *testing.T) {
 	requireCode(t, err, connect.CodeUnimplemented)
 
 	_, err = client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{DeviceId: id}))
-	requireCode(t, err, connect.CodeUnimplemented)
+	requireCode(t, err, connect.CodeNotFound)
 }

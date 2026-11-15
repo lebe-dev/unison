@@ -88,13 +88,21 @@ func (n *Node) clipHandler(sess *session.Session) session.Handler {
 // policyPlanner turns the clipboard policy into the outcome of the pipeline.
 type policyPlanner struct {
 	decider *policy.Decider
+	// self reports whether the local device holds incoming items for
+	// confirmation.
+	self func(ctx context.Context) bool
 }
 
-// Plan returns the outcome for an item announced by a peer.
+// Plan returns the outcome for an item announced by a peer. An item the policy
+// applies automatically waits for the user while the confirmation flag of the
+// local device is on.
 func (p policyPlanner) Plan(ctx context.Context, from model.DeviceID, item model.ClipItem) (clip.Outcome, error) {
 	result, err := p.decider.DecideItem(ctx, from, item, model.SourceClipboard)
 	if err != nil {
 		return clip.Outcome{}, err
+	}
+	if p.self != nil && result.Action == policy.ActionAutoApply && p.self(ctx) {
+		return clip.Outcome{Action: clip.ActionConfirm}, nil
 	}
 	return clip.Outcome{Action: actionOf(result.Action), Eager: result.Eager}, nil
 }
