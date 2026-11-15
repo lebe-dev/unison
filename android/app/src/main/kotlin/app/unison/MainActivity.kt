@@ -41,6 +41,11 @@ class MainActivity : ComponentActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { finishOnboarding() }
 
+    private val localNetworkPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            requestNotificationOrFinish()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -104,6 +109,14 @@ class MainActivity : ComponentActivity() {
 
     /** Starts the core from the first run screen. */
     private fun enable() {
+        if (needsLocalNetworkPermission()) {
+            localNetworkPermission.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            return
+        }
+        requestNotificationOrFinish()
+    }
+
+    private fun requestNotificationOrFinish() {
         if (needsNotificationPermission()) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             return
@@ -121,6 +134,12 @@ class MainActivity : ComponentActivity() {
     private fun needsNotificationPermission(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+
+    /** Local network access is a runtime permission from Android 17 on. */
+    private fun needsLocalNetworkPermission(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK) !=
             PackageManager.PERMISSION_GRANTED
 
     /** Reloads the status and the clipboard offer. */
