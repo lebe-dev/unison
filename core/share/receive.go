@@ -25,7 +25,8 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 
 	files, err := filesOf(msg.GetFiles())
 	if err != nil {
-		return err
+		s.log.Warn("refused a malformed offer", "peer", peer, "error", err)
+		return s.send(ctx, sess, decisionMessage(id, false))
 	}
 	s.expirePending(ctx)
 

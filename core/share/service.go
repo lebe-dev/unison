@@ -416,14 +416,22 @@ func (s *Service) Accept(ctx context.Context, id string) error {
 		s.mu.Unlock()
 		return ErrNotPending
 	}
-	if err := s.checkOffer(ctx, rec.transfer.Files); err != nil {
-		s.mu.Unlock()
+	files := append([]File(nil), rec.transfer.Files...)
+	sess := rec.session
+	s.mu.Unlock()
+
+	if sess == nil {
+		return ErrPeerOffline
+	}
+	if err := s.checkOffer(ctx, files); err != nil {
 		return err
 	}
-	sess := rec.session
-	if sess == nil {
+
+	s.mu.Lock()
+	rec = s.records[id]
+	if rec == nil || rec.transfer.State != StatePending {
 		s.mu.Unlock()
-		return ErrPeerOffline
+		return ErrNotPending
 	}
 	rec.transfer.State = StateTransferring
 	snapshot := rec.transfer.clone()
