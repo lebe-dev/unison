@@ -1,0 +1,274 @@
+package discovery
+
+import (
+	"maps"
+	"net"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/miekg/dns"
+
+	"github.com/lebe-dev/unison/core/ports"
+)
+
+const (
+	// candidateBuffer is the number of candidates buffered per browser.
+	candidateBuffer = 16
+	// maxHosts bounds the address cache of a browser.
+	maxHosts = 64
+	// maxHostQueries bounds the extra address queries of one round.
+	maxHostQueries = 8
+)
+
+// Candidate is a discovered service instance.
+type Candidate struct {
+	// Addr is the host and port of the instance.
+	Addr string
+	// TXT is the instance metadata.
+	TXT map[string]string
+	// Matched reports whether the instance tag was produced by the group key.
+	Matched bool
+}
+
+// browser collects the instances of one service from mDNS responses.
+type browser struct {
+	service ports.Service
+	typ     string
+	ch      chan Candidate
+	poke    chan struct{}
+	match   func(txt map[string]string) bool
+	isOwn   func(name string) bool
+
+	mu     sync.Mutex
+	closed bool
+	cache  browserCache
+}
+
+// handle merges the records of p and emits new candidates.
+func (b *browser) handle(p packet, now time.Time) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return
+	}
+
+	b.cache.update(p.msg, ifaceName(p.iface), now)
+	for _, c := range b.cache.candidates(b.typ, now, b.isOwn, b.match) {
+		select {
+		case b.ch <- c:
+		default:
+		}
+	}
+}
+
+// close closes the candidate channel. Later calls are ignored.
+func (b *browser) close() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return
+	}
+	b.closed = true
+	close(b.ch)
+}
+
+// unresolvedHosts returns the hosts of known instances without addresses.
+func (b *browser) unresolvedHosts(now time.Time, limit int) []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	var hosts []string
+	for _, inst := range b.cache.instances {
+		if inst.host == "" || len(hosts) == limit {
+			continue
+		}
+		if h, ok := b.cache.hosts[inst.host]; ok && h.valid(now) {
+			continue
+		}
+		hosts = append(hosts, inst.host)
+	}
+	return hosts
+}
+
+// instance is one advertised service instance seen on the network.
+type instance struct {
+	port int
+	host string
+	txt  map[string]string
+	seen time.Time
+	ttl  time.Duration
+}
+
+// host is the address set of one announced host name, per interface.
+type host struct {
+	ips  map[string][]net.IP
+	seen time.Time
+	ttl  time.Duration
+}
+
+func (h *host) valid(now time.Time) bool {
+	return len(h.ips) > 0 && !expired(now, h.seen, h.ttl)
+}
+
+// browserCache keeps the records a browser has seen.
+type browserCache struct {
+	instances map[string]*instance
+	hosts     map[string]*host
+	emitted   map[string]string
+}
+
+// update merges the records of msg into the cache.
+func (b *browserCache) update(msg *dns.Msg, ifaceName string, now time.Time) {
+	if b.instances == nil {
+		b.instances = make(map[string]*instance)
+		b.hosts = make(map[string]*host)
+		b.emitted = make(map[string]string)
+	}
+
+	sections := make([]dns.RR, 0, len(msg.Answer)+len(msg.Ns)+len(msg.Extra))
+	sections = append(sections, msg.Answer...)
+	sections = append(sections, msg.Ns...)
+	sections = append(sections, msg.Extra...)
+
+	for _, rr := range sections {
+		switch rr := rr.(type) {
+		case *dns.PTR:
+			b.instance(rr.Ptr, now, rr.Hdr.Ttl)
+		case *dns.SRV:
+			inst := b.instance(rr.Hdr.Name, now, rr.Hdr.Ttl)
+			inst.port = int(rr.Port)
+			inst.host = strings.ToLower(rr.Target)
+		case *dns.TXT:
+			b.instance(rr.Hdr.Name, now, rr.Hdr.Ttl).txt = parseTXT(rr.Txt)
+		case *dns.A:
+			if h := b.host(rr.Hdr.Name, now, rr.Hdr.Ttl); h != nil {
+				h.ips[ifaceName] = appendIP(h.ips[ifaceName], rr.A)
+			}
+		case *dns.AAAA:
+			if h := b.host(rr.Hdr.Name, now, rr.Hdr.Ttl); h != nil {
+				h.ips[ifaceName] = appendIP(h.ips[ifaceName], rr.AAAA)
+			}
+		}
+	}
+}
+
+func (b *browserCache) instance(name string, now time.Time, ttl uint32) *instance {
+	inst, ok := b.instances[name]
+	if !ok {
+		inst = &instance{}
+		b.instances[name] = inst
+	}
+	inst.seen = now
+	inst.ttl = time.Duration(ttl) * time.Second
+	return inst
+}
+
+// host returns the address entry of name. It returns nil when the cache is
+// full.
+func (b *browserCache) host(name string, now time.Time, ttl uint32) *host {
+	h, ok := b.hosts[name]
+	if !ok {
+		if len(b.hosts) >= maxHosts {
+			return nil
+		}
+		h = &host{ips: make(map[string][]net.IP)}
+		b.hosts[name] = h
+	}
+	h.seen = now
+	h.ttl = time.Duration(ttl) * time.Second
+	return h
+}
+
+// candidates returns the addresses of the known instances that were not
+// emitted with their current tag.
+func (b *browserCache) candidates(typ string, now time.Time, isOwn func(string) bool, match func(map[string]string) bool) []Candidate {
+	var out []Candidate
+	for name, inst := range b.instances {
+		if !strings.HasSuffix(strings.ToLower(name), strings.ToLower(typ)) {
+			continue
+		}
+		if expired(now, inst.seen, inst.ttl) {
+			delete(b.instances, name)
+			continue
+		}
+		if inst.port == 0 || inst.host == "" {
+			continue
+		}
+		if isOwn != nil && isOwn(name) {
+			continue
+		}
+		if v, ok := inst.txt[txtVersionKey]; ok && v != txtVersion {
+			continue
+		}
+
+		h, ok := b.hosts[inst.host]
+		if !ok || !h.valid(now) {
+			continue
+		}
+		for ifaceName, ips := range h.ips {
+			for _, ip := range ips {
+				addr := address(ip, ifaceName, inst.port)
+				if addr == "" {
+					continue
+				}
+				key := name + "\x00" + addr
+				tag := inst.txt[txtTagKey]
+				if prev, ok := b.emitted[key]; ok && prev == tag {
+					continue
+				}
+				b.emitted[key] = tag
+				out = append(out, Candidate{
+					Addr:    addr,
+					TXT:     maps.Clone(inst.txt),
+					Matched: match(inst.txt),
+				})
+			}
+		}
+	}
+
+	for name, h := range b.hosts {
+		if !h.valid(now) {
+			delete(b.hosts, name)
+		}
+	}
+	return out
+}
+
+// address formats a candidate address. Link local IPv6 addresses carry the
+// zone of the interface they were seen on.
+func address(ip net.IP, ifaceName string, port int) string {
+	if ip == nil || ip.IsUnspecified() || ip.IsMulticast() {
+		return ""
+	}
+	host := ip.String()
+	if ip.To4() == nil && ip.IsLinkLocalUnicast() && ifaceName != "" {
+		host += "%" + ifaceName
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
+}
+
+func appendIP(ips []net.IP, ip net.IP) []net.IP {
+	for _, known := range ips {
+		if known.Equal(ip) {
+			return ips
+		}
+	}
+	return append(ips, ip)
+}
+
+// expired reports whether a record seen at seen and valid for ttl is stale.
+func expired(now, seen time.Time, ttl time.Duration) bool {
+	if ttl <= 0 {
+		return true
+	}
+	return now.Sub(seen) > ttl
+}
+
+func ifaceName(iface *net.Interface) string {
+	if iface == nil {
+		return ""
+	}
+	return iface.Name
+}

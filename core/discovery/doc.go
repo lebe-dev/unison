@@ -1,2 +1,3 @@
-// Package discovery finds peers on the local network and defines the discovery port.
+// Package discovery advertises and browses nodes on the local network with
+// mDNS/DNS-SD.
 package discovery
