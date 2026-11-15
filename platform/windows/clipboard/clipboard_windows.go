@@ -21,8 +21,17 @@ import (
 
 // Clipboard formats and the names they are registered with.
 const (
+	// cfDIB is CF_DIB, a device independent bitmap without a file header.
+	cfDIB = 8
 	// cfUnicodeText is CF_UNICODETEXT.
 	cfUnicodeText = 13
+	// cfHDrop is CF_HDROP, the list of dropped files.
+	cfHDrop = 15
+	// cfDIBV5 is CF_DIBV5, the bitmap version that can carry transparency.
+	cfDIBV5 = 17
+
+	// formatPNG is the registered "PNG" format, a PNG stream.
+	formatPNG = "PNG"
 	// formatHTML is the registered "HTML Format" carrying CF_HTML.
 	formatHTML = "HTML Format"
 	// formatExclude excludes the content from the clipboard history and cloud.
@@ -102,6 +111,7 @@ var windowSequence atomic.Uint32
 
 // formatIDs are the clipboard formats the adapter registers.
 type formatIDs struct {
+	png     uint32
 	html    uint32
 	origin  uint32
 	exclude uint32
@@ -112,6 +122,7 @@ type formatIDs struct {
 // registeredFormats returns the identifiers of the adapter formats.
 var registeredFormats = sync.OnceValue(func() formatIDs {
 	return formatIDs{
+		png:     registerFormat(formatPNG),
 		html:    registerFormat(formatHTML),
 		origin:  registerFormat(MarkerFormat),
 		exclude: registerFormat(formatExclude),
@@ -163,23 +174,26 @@ func (c *Clipboard) watch(ctx context.Context, listener *listener, out chan<- po
 	}
 }
 
-// Write replaces the clipboard content with the given text representations and
-// marks it as written by this application.
+// Write replaces the clipboard content with the given representations and marks
+// it as written by this application.
 func (c *Clipboard) Write(ctx context.Context, content ports.Content) error {
+	return c.write(ctx, content, false)
+}
+
+// WriteExcluded replaces the clipboard content and keeps Windows clipboard
+// history and cloud sync from copying it.
+func (c *Clipboard) WriteExcluded(ctx context.Context, content ports.Content) error {
+	return c.write(ctx, content, true)
+}
+
+// write publishes content, optionally marked as private to this machine.
+func (c *Clipboard) write(ctx context.Context, content ports.Content, excluded bool) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	text, err := textOf(content)
+	prepared, err := prepare(content)
 	if err != nil {
 		return err
-	}
-	var htmlPayload []byte
-	if text.hasHTML {
-		payload, err := buildCFHTML(text.html)
-		if err != nil {
-			return err
-		}
-		htmlPayload = payload
 	}
 
 	// The clipboard belongs to the thread that opened it.
@@ -193,20 +207,90 @@ func (c *Clipboard) Write(ctx context.Context, content ports.Content) error {
 		return fmt.Errorf("clipboard: write: %w", err)
 	}
 	ids := registeredFormats()
-	if text.hasPlain {
-		if err := putClipboardData(cfUnicodeText, encodeText(text.plain)); err != nil {
+	if prepared.plain != nil {
+		if err := putClipboardData(cfUnicodeText, prepared.plain); err != nil {
 			return fmt.Errorf("clipboard: write text: %w", err)
 		}
 	}
-	if text.hasHTML {
-		if err := putClipboardData(ids.html, htmlPayload); err != nil {
+	if prepared.html != nil {
+		if err := putClipboardData(ids.html, prepared.html); err != nil {
 			return fmt.Errorf("clipboard: write html: %w", err)
+		}
+	}
+	if prepared.png != nil {
+		if err := putClipboardData(ids.png, prepared.png); err != nil {
+			return fmt.Errorf("clipboard: write png: %w", err)
+		}
+	}
+	if prepared.dib != nil {
+		if err := putClipboardData(cfDIB, prepared.dib); err != nil {
+			return fmt.Errorf("clipboard: write bitmap: %w", err)
+		}
+	}
+	if prepared.dropFiles != nil {
+		if err := putClipboardData(cfHDrop, prepared.dropFiles); err != nil {
+			return fmt.Errorf("clipboard: write files: %w", err)
+		}
+	}
+	if excluded {
+		zero := binary.LittleEndian.AppendUint32(nil, 0)
+		for _, format := range []uint32{ids.history, ids.cloud} {
+			if err := putClipboardData(format, zero); err != nil {
+				return fmt.Errorf("clipboard: write history marker: %w", err)
+			}
 		}
 	}
 	if err := putClipboardData(ids.origin, []byte(originPayload)); err != nil {
 		return fmt.Errorf("clipboard: write marker: %w", err)
 	}
 	return nil
+}
+
+// clipboardPayload is content prepared for the clipboard.
+type clipboardPayload struct {
+	plain     []byte
+	html      []byte
+	png       []byte
+	dib       []byte
+	dropFiles []byte
+}
+
+// prepare converts content into the memory blocks the clipboard takes.
+func prepare(content ports.Content) (clipboardPayload, error) {
+	parts, err := payloadOf(content)
+	if err != nil {
+		return clipboardPayload{}, err
+	}
+	prepared := clipboardPayload{}
+	if parts.text.hasPlain {
+		prepared.plain = encodeText(parts.text.plain)
+	}
+	if parts.text.hasHTML {
+		prepared.html, err = buildCFHTML(parts.text.html)
+		if err != nil {
+			return clipboardPayload{}, err
+		}
+	}
+	if len(parts.files) > 0 {
+		prepared.dropFiles, err = encodeDropFiles(parts.files)
+		if err != nil {
+			return clipboardPayload{}, err
+		}
+	}
+	if parts.png == nil {
+		return prepared, nil
+	}
+	decoded, err := decodePNG(parts.png)
+	if err != nil {
+		return clipboardPayload{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
+	}
+	prepared.png = parts.png
+	// Applications without PNG support read the bitmap. An image above the
+	// bitmap limits stays available as PNG only.
+	if dib, err := encodeDIB(decoded); err == nil {
+		prepared.dib = dib
+	}
+	return prepared, nil
 }
 
 // snapshot reads the current clipboard content. It reports false when the
@@ -217,36 +301,115 @@ func (c *Clipboard) snapshot() (ports.Snapshot, bool) {
 	if err := openClipboard(c.openTimeout); err != nil {
 		return ports.Snapshot{}, false
 	}
-	defer closeClipboard()
-	return readSnapshot()
+	// The clipboard is copied and released before the data is converted, so
+	// other applications can use it again.
+	raw := readSnapshot()
+	closeClipboard()
+	return raw.content()
 }
 
-// readSnapshot reads the open clipboard.
-func readSnapshot() (ports.Snapshot, bool) {
+// rawSnapshot is the clipboard data copied by one read.
+type rawSnapshot struct {
+	ownedByUs bool
+	sensitive bool
+	text      []byte
+	html      []byte
+	image     []byte
+	bitmap    bool
+	files     []byte
+}
+
+// readSnapshot copies the data of the open clipboard.
+func readSnapshot() rawSnapshot {
 	present := clipboardFormatSet()
 	ids := registeredFormats()
-	ownedByUs := hasFormat(present, ids.origin)
+	raw := rawSnapshot{ownedByUs: hasFormat(present, ids.origin)}
 	if isSensitive(present, ids) {
-		return ports.Snapshot{Sensitive: true, OwnedByUs: ownedByUs}, true
+		raw.sensitive = true
+		return raw
 	}
-	representations := make([]ports.Representation, 0, 2)
-	if payload, ok := clipboardData(cfUnicodeText); ok {
-		if text := decodeText(payload); len(text) > 0 {
-			representations = append(representations, ports.Representation{MIME: MIMETextPlain, Data: text})
-		}
+	raw.text, _ = clipboardData(cfUnicodeText)
+	raw.html, _ = clipboardData(ids.html)
+	raw.image, raw.bitmap = imageData(present, ids)
+	raw.files, _ = clipboardData(cfHDrop)
+	return raw
+}
+
+// content turns the copied clipboard data into a snapshot. It reports false
+// when the data carries nothing the adapter reads.
+func (r rawSnapshot) content() (ports.Snapshot, bool) {
+	if r.sensitive {
+		return ports.Snapshot{Sensitive: true, OwnedByUs: r.ownedByUs}, true
 	}
-	if payload, ok := clipboardData(ids.html); ok {
-		if html := fragmentOf(payload); len(html) > 0 {
-			representations = append(representations, ports.Representation{MIME: MIMETextHTML, Data: html})
-		}
+	representations := make([]ports.Representation, 0, 4)
+	if text := decodeText(r.text); len(text) > 0 {
+		representations = append(representations, ports.Representation{MIME: MIMETextPlain, Data: text})
+	}
+	if html := fragmentOf(r.html); len(html) > 0 {
+		representations = append(representations, ports.Representation{MIME: MIMETextHTML, Data: html})
+	}
+	if png, ok := r.imagePNG(); ok {
+		representations = append(representations, ports.Representation{MIME: MIMEImagePNG, Data: png})
+	}
+	for _, path := range r.filePaths() {
+		representations = append(representations, ports.Representation{MIME: MIMEUnisonFile, FilePath: path})
 	}
 	if len(representations) == 0 {
 		return ports.Snapshot{}, false
 	}
 	return ports.Snapshot{
 		Content:   ports.Content{Representations: representations},
-		OwnedByUs: ownedByUs,
+		OwnedByUs: r.ownedByUs,
 	}, true
+}
+
+// imagePNG returns the PNG form of the clipboard image.
+func (r rawSnapshot) imagePNG() ([]byte, bool) {
+	if len(r.image) == 0 {
+		return nil, false
+	}
+	if r.bitmap {
+		png, err := dibToPNG(r.image)
+		if err != nil {
+			return nil, false
+		}
+		return png, true
+	}
+	if err := checkPNG(r.image); err != nil {
+		return nil, false
+	}
+	return r.image, true
+}
+
+// filePaths returns the dropped file paths.
+func (r rawSnapshot) filePaths() []string {
+	if len(r.files) == 0 {
+		return nil
+	}
+	paths, err := decodeDropFiles(r.files)
+	if err != nil {
+		return nil
+	}
+	return paths
+}
+
+// imageData copies the clipboard image: the native PNG when present, otherwise
+// the richest bitmap.
+func imageData(present map[uint32]struct{}, ids formatIDs) (data []byte, bitmap bool) {
+	if hasFormat(present, ids.png) {
+		if payload, ok := clipboardData(ids.png); ok {
+			return payload, false
+		}
+	}
+	for _, format := range []uint32{cfDIBV5, cfDIB} {
+		if !hasFormat(present, format) {
+			continue
+		}
+		if payload, ok := clipboardData(format); ok {
+			return payload, true
+		}
+	}
+	return nil, false
 }
 
 // isSensitive reports content the system excluded from the clipboard history or

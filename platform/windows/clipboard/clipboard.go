@@ -1,16 +1,21 @@
 // Package clipboard implements the Win32 clipboard as a ports.Clipboard.
 //
 // The watcher listens for clipboard changes on a message-only window instead of
-// polling the change counter. Content tagged with one of the exclusion formats
-// is reported as sensitive and its payload is never read. Content written by
-// Write carries MarkerFormat, which lets the watcher and other clipboard
-// consumers tell own writes apart.
+// polling the change counter. It reads text, HTML, PNG and device independent
+// bitmaps, and dropped files. Content tagged with one of the exclusion formats
+// is reported as sensitive and its payload is never read.
+//
+// Write publishes text, an image as PNG plus a bitmap for applications without
+// PNG support, and files as a dropped file list. Content written by Write
+// carries MarkerFormat, which lets the watcher and other clipboard consumers
+// tell own writes apart.
 //
 // The clipboard is reachable only on Windows. Elsewhere the operations return
 // ErrUnsupported.
 package clipboard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -29,6 +34,11 @@ const MarkerFormat = "Unison.Origin"
 const (
 	MIMETextPlain = "text/plain"
 	MIMETextHTML  = "text/html"
+	// MIMEImagePNG is the image type of a snapshot and the only image type the
+	// clipboard writes.
+	MIMEImagePNG = "image/png"
+	// MIMEUnisonFile marks a representation that carries a file path.
+	MIMEUnisonFile = "application/x-unison-file"
 )
 
 var (
@@ -38,6 +48,14 @@ var (
 	// ErrUnsupportedContent reports content the clipboard cannot write.
 	ErrUnsupportedContent = errors.New("clipboard: unsupported content")
 )
+
+// HistoryExcluder is a clipboard that can keep written content out of the
+// system clipboard history and cloud sync.
+type HistoryExcluder interface {
+	// WriteExcluded replaces the clipboard content and marks it as private to
+	// this machine.
+	WriteExcluded(ctx context.Context, content ports.Content) error
+}
 
 // Options configures a Clipboard.
 type Options struct {
@@ -51,7 +69,10 @@ type Clipboard struct {
 	openTimeout time.Duration
 }
 
-var _ ports.Clipboard = (*Clipboard)(nil)
+var (
+	_ ports.Clipboard = (*Clipboard)(nil)
+	_ HistoryExcluder = (*Clipboard)(nil)
+)
 
 // New returns a Clipboard that retries a busy clipboard for up to the
 // configured timeout.
@@ -74,21 +95,33 @@ type textPayload struct {
 	hasHTML  bool
 }
 
-// textOf splits content into the text payloads the clipboard writes.
-func textOf(content ports.Content) (textPayload, error) {
-	var payload textPayload
+// payload is the content the clipboard writes.
+type payload struct {
+	text  textPayload
+	png   []byte
+	files []string
+}
+
+// payloadOf splits content into the parts the clipboard writes. A
+// representation with a file path is a file, whatever its type.
+func payloadOf(content ports.Content) (payload, error) {
+	var result payload
 	for _, representation := range content.Representations {
-		switch representation.MIME {
-		case MIMETextPlain:
-			payload.plain, payload.hasPlain = representation.Data, true
-		case MIMETextHTML:
-			payload.html, payload.hasHTML = representation.Data, true
+		switch {
+		case representation.FilePath != "":
+			result.files = append(result.files, representation.FilePath)
+		case representation.MIME == MIMETextPlain:
+			result.text.plain, result.text.hasPlain = representation.Data, true
+		case representation.MIME == MIMETextHTML:
+			result.text.html, result.text.hasHTML = representation.Data, true
+		case representation.MIME == MIMEImagePNG:
+			result.png = representation.Data
 		default:
-			return textPayload{}, fmt.Errorf("%w: mime %q", ErrUnsupportedContent, representation.MIME)
+			return payload{}, fmt.Errorf("%w: mime %q", ErrUnsupportedContent, representation.MIME)
 		}
 	}
-	if !payload.hasPlain && !payload.hasHTML {
-		return textPayload{}, ErrUnsupportedContent
+	if !result.text.hasPlain && !result.text.hasHTML && result.png == nil && len(result.files) == 0 {
+		return payload{}, ErrUnsupportedContent
 	}
-	return payload, nil
+	return result, nil
 }
