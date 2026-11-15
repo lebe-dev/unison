@@ -5,5 +5,16 @@
 !docs/**/*.md
 
 /unison
+/bin/
 
 tasks/
+
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+
+android/.gradle/
+android/**/build/
+android/local.properties
+android/core/*.aar
