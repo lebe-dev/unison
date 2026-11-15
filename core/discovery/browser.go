@@ -138,25 +138,25 @@ func (b *browserCache) update(msg *dns.Msg, typ, ifaceName string, now time.Time
 			if !strings.EqualFold(rr.Hdr.Name, typ) {
 				continue
 			}
-			b.instance(rr.Ptr, now, rr.Hdr.Ttl)
+			b.instance(strings.ToLower(rr.Ptr), now, rr.Hdr.Ttl)
 		case *dns.SRV:
 			if !strings.HasSuffix(strings.ToLower(rr.Hdr.Name), strings.ToLower(typ)) {
 				continue
 			}
-			inst := b.instance(rr.Hdr.Name, now, rr.Hdr.Ttl)
+			inst := b.instance(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl)
 			inst.port = int(rr.Port)
 			inst.host = strings.ToLower(rr.Target)
 		case *dns.TXT:
 			if !strings.HasSuffix(strings.ToLower(rr.Hdr.Name), strings.ToLower(typ)) {
 				continue
 			}
-			b.instance(rr.Hdr.Name, now, rr.Hdr.Ttl).txt = parseTXT(rr.Txt)
+			b.instance(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl).txt = parseTXT(rr.Txt)
 		case *dns.A:
-			if h := b.host(rr.Hdr.Name, now, rr.Hdr.Ttl); h != nil {
+			if h := b.host(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl); h != nil {
 				h.ips[ifaceName] = appendIP(h.ips[ifaceName], rr.A)
 			}
 		case *dns.AAAA:
-			if h := b.host(rr.Hdr.Name, now, rr.Hdr.Ttl); h != nil {
+			if h := b.host(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl); h != nil {
 				h.ips[ifaceName] = appendIP(h.ips[ifaceName], rr.AAAA)
 			}
 		}
