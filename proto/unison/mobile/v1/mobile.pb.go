@@ -7,6 +7,7 @@
 package mobilev1
 
 import (
+	v1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -25,22 +26,46 @@ const (
 type EventType int32
 
 const (
-	EventType_EVENT_TYPE_UNSPECIFIED     EventType = 0
-	EventType_EVENT_TYPE_CLIP_RECEIVED   EventType = 1
-	EventType_EVENT_TYPE_NETWORK_CHANGED EventType = 2
+	EventType_EVENT_TYPE_UNSPECIFIED       EventType = 0
+	EventType_EVENT_TYPE_CLIP_RECEIVED     EventType = 1
+	EventType_EVENT_TYPE_NETWORK_CHANGED   EventType = 2
+	EventType_EVENT_TYPE_PEER_ONLINE       EventType = 3
+	EventType_EVENT_TYPE_PEER_OFFLINE      EventType = 4
+	EventType_EVENT_TYPE_PEER_INCOMPATIBLE EventType = 5
+	EventType_EVENT_TYPE_PAIRING_CANDIDATE EventType = 6
+	EventType_EVENT_TYPE_PAIRING_REQUEST   EventType = 7
+	EventType_EVENT_TYPE_PAIRING_PAIRED    EventType = 8
+	EventType_EVENT_TYPE_PAIRING_FAILED    EventType = 9
+	EventType_EVENT_TYPE_PAIRING_CLOSED    EventType = 10
 )
 
 // Enum value maps for EventType.
 var (
 	EventType_name = map[int32]string{
-		0: "EVENT_TYPE_UNSPECIFIED",
-		1: "EVENT_TYPE_CLIP_RECEIVED",
-		2: "EVENT_TYPE_NETWORK_CHANGED",
+		0:  "EVENT_TYPE_UNSPECIFIED",
+		1:  "EVENT_TYPE_CLIP_RECEIVED",
+		2:  "EVENT_TYPE_NETWORK_CHANGED",
+		3:  "EVENT_TYPE_PEER_ONLINE",
+		4:  "EVENT_TYPE_PEER_OFFLINE",
+		5:  "EVENT_TYPE_PEER_INCOMPATIBLE",
+		6:  "EVENT_TYPE_PAIRING_CANDIDATE",
+		7:  "EVENT_TYPE_PAIRING_REQUEST",
+		8:  "EVENT_TYPE_PAIRING_PAIRED",
+		9:  "EVENT_TYPE_PAIRING_FAILED",
+		10: "EVENT_TYPE_PAIRING_CLOSED",
 	}
 	EventType_value = map[string]int32{
-		"EVENT_TYPE_UNSPECIFIED":     0,
-		"EVENT_TYPE_CLIP_RECEIVED":   1,
-		"EVENT_TYPE_NETWORK_CHANGED": 2,
+		"EVENT_TYPE_UNSPECIFIED":       0,
+		"EVENT_TYPE_CLIP_RECEIVED":     1,
+		"EVENT_TYPE_NETWORK_CHANGED":   2,
+		"EVENT_TYPE_PEER_ONLINE":       3,
+		"EVENT_TYPE_PEER_OFFLINE":      4,
+		"EVENT_TYPE_PEER_INCOMPATIBLE": 5,
+		"EVENT_TYPE_PAIRING_CANDIDATE": 6,
+		"EVENT_TYPE_PAIRING_REQUEST":   7,
+		"EVENT_TYPE_PAIRING_PAIRED":    8,
+		"EVENT_TYPE_PAIRING_FAILED":    9,
+		"EVENT_TYPE_PAIRING_CLOSED":    10,
 	}
 )
 
@@ -76,9 +101,13 @@ type Event struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Type  EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=unison.mobile.v1.EventType" json:"type,omitempty"`
 	// Event time, unix milliseconds.
-	TsUnixMs      int64         `protobuf:"varint,2,opt,name=ts_unix_ms,json=tsUnixMs,proto3" json:"ts_unix_ms,omitempty"`
-	Clip          *ClipPayload  `protobuf:"bytes,3,opt,name=clip,proto3" json:"clip,omitempty"`
-	Network       *NetworkState `protobuf:"bytes,4,opt,name=network,proto3" json:"network,omitempty"`
+	TsUnixMs int64 `protobuf:"varint,2,opt,name=ts_unix_ms,json=tsUnixMs,proto3" json:"ts_unix_ms,omitempty"`
+	// Clipboard payload, set when a text item is available for a preview.
+	Clip *ClipPayload `protobuf:"bytes,3,opt,name=clip,proto3" json:"clip,omitempty"`
+	// Network conditions, set on a network change.
+	Network *NetworkState `protobuf:"bytes,4,opt,name=network,proto3" json:"network,omitempty"`
+	// The full event in the local API form.
+	Event         *v1.Event `protobuf:"bytes,5,opt,name=event,proto3" json:"event,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -141,8 +170,15 @@ func (x *Event) GetNetwork() *NetworkState {
 	return nil
 }
 
-// Payload to write into the Android clipboard.
-type ClipPayload struct {
+func (x *Event) GetEvent() *v1.Event {
+	if x != nil {
+		return x.Event
+	}
+	return nil
+}
+
+// One representation of clipboard content.
+type ClipPart struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	MimeType string                 `protobuf:"bytes,1,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
 	Data     []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -152,9 +188,73 @@ type ClipPayload struct {
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *ClipPart) Reset() {
+	*x = ClipPart{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClipPart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClipPart) ProtoMessage() {}
+
+func (x *ClipPart) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClipPart.ProtoReflect.Descriptor instead.
+func (*ClipPart) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ClipPart) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+func (x *ClipPart) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *ClipPart) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+// Payload to write into the Android clipboard.
+type ClipPayload struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	MimeType string                 `protobuf:"bytes,1,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	Data     []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	// File name, set for file payloads.
+	FileName string `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	// Every representation at once. When set, the fields above are ignored.
+	Parts         []*ClipPart `protobuf:"bytes,4,rep,name=parts,proto3" json:"parts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
 func (x *ClipPayload) Reset() {
 	*x = ClipPayload{}
-	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[1]
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -166,7 +266,7 @@ func (x *ClipPayload) String() string {
 func (*ClipPayload) ProtoMessage() {}
 
 func (x *ClipPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[1]
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -179,7 +279,7 @@ func (x *ClipPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClipPayload.ProtoReflect.Descriptor instead.
 func (*ClipPayload) Descriptor() ([]byte, []int) {
-	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{1}
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ClipPayload) GetMimeType() string {
@@ -203,6 +303,13 @@ func (x *ClipPayload) GetFileName() string {
 	return ""
 }
 
+func (x *ClipPayload) GetParts() []*ClipPart {
+	if x != nil {
+		return x.Parts
+	}
+	return nil
+}
+
 // Network conditions reported by the host.
 type NetworkState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -217,7 +324,7 @@ type NetworkState struct {
 
 func (x *NetworkState) Reset() {
 	*x = NetworkState{}
-	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[2]
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -229,7 +336,7 @@ func (x *NetworkState) String() string {
 func (*NetworkState) ProtoMessage() {}
 
 func (x *NetworkState) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[2]
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -242,7 +349,7 @@ func (x *NetworkState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NetworkState.ProtoReflect.Descriptor instead.
 func (*NetworkState) Descriptor() ([]byte, []int) {
-	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{2}
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *NetworkState) GetOnline() bool {
@@ -280,32 +387,456 @@ func (x *NetworkState) GetDataSaver() bool {
 	return false
 }
 
+// Configuration of the core.
+type Config struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Directory of the database and other node data.
+	DataDir    string `protobuf:"bytes,1,opt,name=data_dir,json=dataDir,proto3" json:"data_dir,omitempty"`
+	DeviceName string `protobuf:"bytes,2,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
+	// Blob store limit in bytes. The package default is used when zero.
+	BlobLimitBytes int64 `protobuf:"varint,3,opt,name=blob_limit_bytes,json=blobLimitBytes,proto3" json:"blob_limit_bytes,omitempty"`
+	// Log at debug level.
+	DebugLog      bool `protobuf:"varint,4,opt,name=debug_log,json=debugLog,proto3" json:"debug_log,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Config) Reset() {
+	*x = Config{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Config) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Config) ProtoMessage() {}
+
+func (x *Config) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Config.ProtoReflect.Descriptor instead.
+func (*Config) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *Config) GetDataDir() string {
+	if x != nil {
+		return x.DataDir
+	}
+	return ""
+}
+
+func (x *Config) GetDeviceName() string {
+	if x != nil {
+		return x.DeviceName
+	}
+	return ""
+}
+
+func (x *Config) GetBlobLimitBytes() int64 {
+	if x != nil {
+		return x.BlobLimitBytes
+	}
+	return 0
+}
+
+func (x *Config) GetDebugLog() bool {
+	if x != nil {
+		return x.DebugLog
+	}
+	return false
+}
+
+// A call of the local API.
+type CallRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// RPC name, for example "GetStatus".
+	Method string `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	// Serialized request of the RPC.
+	Payload       []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CallRequest) Reset() {
+	*x = CallRequest{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CallRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CallRequest) ProtoMessage() {}
+
+func (x *CallRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CallRequest.ProtoReflect.Descriptor instead.
+func (*CallRequest) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CallRequest) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *CallRequest) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+// Result of a local API call.
+type CallResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Serialized response of the RPC.
+	Payload []byte `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+	// Connect code of a failure, zero on success.
+	Code int32 `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
+	// Failure in plain English.
+	Message       string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CallResponse) Reset() {
+	*x = CallResponse{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CallResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CallResponse) ProtoMessage() {}
+
+func (x *CallResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CallResponse.ProtoReflect.Descriptor instead.
+func (*CallResponse) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CallResponse) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *CallResponse) GetCode() int32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *CallResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+// Metadata of a file submitted by the host.
+type FilePayload struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	MimeType string                 `protobuf:"bytes,1,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	FileName string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	// Size in bytes. The size of the descriptor is used when zero.
+	Size          int64 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FilePayload) Reset() {
+	*x = FilePayload{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FilePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FilePayload) ProtoMessage() {}
+
+func (x *FilePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FilePayload.ProtoReflect.Descriptor instead.
+func (*FilePayload) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *FilePayload) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+func (x *FilePayload) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *FilePayload) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+// A service instance to announce or withdraw on the local network.
+type Announcement struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Service name: "main" or "pairing".
+	Service string `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+	// Withdraw the announcement instead of publishing it.
+	Withdraw bool `protobuf:"varint,2,opt,name=withdraw,proto3" json:"withdraw,omitempty"`
+	// Instance name of the service.
+	Instance      string            `protobuf:"bytes,3,opt,name=instance,proto3" json:"instance,omitempty"`
+	Port          int32             `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
+	Txt           map[string]string `protobuf:"bytes,5,rep,name=txt,proto3" json:"txt,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Announcement) Reset() {
+	*x = Announcement{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Announcement) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Announcement) ProtoMessage() {}
+
+func (x *Announcement) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Announcement.ProtoReflect.Descriptor instead.
+func (*Announcement) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Announcement) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *Announcement) GetWithdraw() bool {
+	if x != nil {
+		return x.Withdraw
+	}
+	return false
+}
+
+func (x *Announcement) GetInstance() string {
+	if x != nil {
+		return x.Instance
+	}
+	return ""
+}
+
+func (x *Announcement) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *Announcement) GetTxt() map[string]string {
+	if x != nil {
+		return x.Txt
+	}
+	return nil
+}
+
+// Service metadata of a discovered candidate.
+type CandidateTxt struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Records       map[string]string      `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CandidateTxt) Reset() {
+	*x = CandidateTxt{}
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CandidateTxt) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CandidateTxt) ProtoMessage() {}
+
+func (x *CandidateTxt) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_mobile_v1_mobile_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CandidateTxt.ProtoReflect.Descriptor instead.
+func (*CandidateTxt) Descriptor() ([]byte, []int) {
+	return file_unison_mobile_v1_mobile_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CandidateTxt) GetRecords() map[string]string {
+	if x != nil {
+		return x.Records
+	}
+	return nil
+}
+
 var File_unison_mobile_v1_mobile_proto protoreflect.FileDescriptor
 
 const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\n" +
-	"\x1dunison/mobile/v1/mobile.proto\x12\x10unison.mobile.v1\"\xc3\x01\n" +
+	"\x1dunison/mobile/v1/mobile.proto\x12\x10unison.mobile.v1\x1a\x1bunison/local/v1/local.proto\"\xf1\x01\n" +
 	"\x05Event\x12/\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1b.unison.mobile.v1.EventTypeR\x04type\x12\x1c\n" +
 	"\n" +
 	"ts_unix_ms\x18\x02 \x01(\x03R\btsUnixMs\x121\n" +
 	"\x04clip\x18\x03 \x01(\v2\x1d.unison.mobile.v1.ClipPayloadR\x04clip\x128\n" +
-	"\anetwork\x18\x04 \x01(\v2\x1e.unison.mobile.v1.NetworkStateR\anetwork\"[\n" +
+	"\anetwork\x18\x04 \x01(\v2\x1e.unison.mobile.v1.NetworkStateR\anetwork\x12,\n" +
+	"\x05event\x18\x05 \x01(\v2\x16.unison.local.v1.EventR\x05event\"X\n" +
+	"\bClipPart\x12\x1b\n" +
+	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\"\x8d\x01\n" +
 	"\vClipPayload\x12\x1b\n" +
 	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x1b\n" +
-	"\tfile_name\x18\x03 \x01(\tR\bfileName\"\x8b\x01\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x120\n" +
+	"\x05parts\x18\x04 \x03(\v2\x1a.unison.mobile.v1.ClipPartR\x05parts\"\x8b\x01\n" +
 	"\fNetworkState\x12\x16\n" +
 	"\x06online\x18\x01 \x01(\bR\x06online\x12\x18\n" +
 	"\ametered\x18\x02 \x01(\bR\ametered\x12\x18\n" +
 	"\aroaming\x18\x03 \x01(\bR\aroaming\x12\x10\n" +
 	"\x03vpn\x18\x04 \x01(\bR\x03vpn\x12\x1d\n" +
 	"\n" +
-	"data_saver\x18\x05 \x01(\bR\tdataSaver*e\n" +
+	"data_saver\x18\x05 \x01(\bR\tdataSaver\"\x8b\x01\n" +
+	"\x06Config\x12\x19\n" +
+	"\bdata_dir\x18\x01 \x01(\tR\adataDir\x12\x1f\n" +
+	"\vdevice_name\x18\x02 \x01(\tR\n" +
+	"deviceName\x12(\n" +
+	"\x10blob_limit_bytes\x18\x03 \x01(\x03R\x0eblobLimitBytes\x12\x1b\n" +
+	"\tdebug_log\x18\x04 \x01(\bR\bdebugLog\"?\n" +
+	"\vCallRequest\x12\x16\n" +
+	"\x06method\x18\x01 \x01(\tR\x06method\x12\x18\n" +
+	"\apayload\x18\x02 \x01(\fR\apayload\"V\n" +
+	"\fCallResponse\x12\x18\n" +
+	"\apayload\x18\x01 \x01(\fR\apayload\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"[\n" +
+	"\vFilePayload\x12\x1b\n" +
+	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x1b\n" +
+	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x12\n" +
+	"\x04size\x18\x03 \x01(\x03R\x04size\"\xe7\x01\n" +
+	"\fAnnouncement\x12\x18\n" +
+	"\aservice\x18\x01 \x01(\tR\aservice\x12\x1a\n" +
+	"\bwithdraw\x18\x02 \x01(\bR\bwithdraw\x12\x1a\n" +
+	"\binstance\x18\x03 \x01(\tR\binstance\x12\x12\n" +
+	"\x04port\x18\x04 \x01(\x05R\x04port\x129\n" +
+	"\x03txt\x18\x05 \x03(\v2'.unison.mobile.v1.Announcement.TxtEntryR\x03txt\x1a6\n" +
+	"\bTxtEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x91\x01\n" +
+	"\fCandidateTxt\x12E\n" +
+	"\arecords\x18\x01 \x03(\v2+.unison.mobile.v1.CandidateTxt.RecordsEntryR\arecords\x1a:\n" +
+	"\fRecordsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xdf\x02\n" +
 	"\tEventType\x12\x1a\n" +
 	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18EVENT_TYPE_CLIP_RECEIVED\x10\x01\x12\x1e\n" +
-	"\x1aEVENT_TYPE_NETWORK_CHANGED\x10\x02B<Z:github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1b\x06proto3"
+	"\x1aEVENT_TYPE_NETWORK_CHANGED\x10\x02\x12\x1a\n" +
+	"\x16EVENT_TYPE_PEER_ONLINE\x10\x03\x12\x1b\n" +
+	"\x17EVENT_TYPE_PEER_OFFLINE\x10\x04\x12 \n" +
+	"\x1cEVENT_TYPE_PEER_INCOMPATIBLE\x10\x05\x12 \n" +
+	"\x1cEVENT_TYPE_PAIRING_CANDIDATE\x10\x06\x12\x1e\n" +
+	"\x1aEVENT_TYPE_PAIRING_REQUEST\x10\a\x12\x1d\n" +
+	"\x19EVENT_TYPE_PAIRING_PAIRED\x10\b\x12\x1d\n" +
+	"\x19EVENT_TYPE_PAIRING_FAILED\x10\t\x12\x1d\n" +
+	"\x19EVENT_TYPE_PAIRING_CLOSED\x10\n" +
+	"B<Z:github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1b\x06proto3"
 
 var (
 	file_unison_mobile_v1_mobile_proto_rawDescOnce sync.Once
@@ -320,22 +851,36 @@ func file_unison_mobile_v1_mobile_proto_rawDescGZIP() []byte {
 }
 
 var file_unison_mobile_v1_mobile_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_unison_mobile_v1_mobile_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_unison_mobile_v1_mobile_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_unison_mobile_v1_mobile_proto_goTypes = []any{
 	(EventType)(0),       // 0: unison.mobile.v1.EventType
 	(*Event)(nil),        // 1: unison.mobile.v1.Event
-	(*ClipPayload)(nil),  // 2: unison.mobile.v1.ClipPayload
-	(*NetworkState)(nil), // 3: unison.mobile.v1.NetworkState
+	(*ClipPart)(nil),     // 2: unison.mobile.v1.ClipPart
+	(*ClipPayload)(nil),  // 3: unison.mobile.v1.ClipPayload
+	(*NetworkState)(nil), // 4: unison.mobile.v1.NetworkState
+	(*Config)(nil),       // 5: unison.mobile.v1.Config
+	(*CallRequest)(nil),  // 6: unison.mobile.v1.CallRequest
+	(*CallResponse)(nil), // 7: unison.mobile.v1.CallResponse
+	(*FilePayload)(nil),  // 8: unison.mobile.v1.FilePayload
+	(*Announcement)(nil), // 9: unison.mobile.v1.Announcement
+	(*CandidateTxt)(nil), // 10: unison.mobile.v1.CandidateTxt
+	nil,                  // 11: unison.mobile.v1.Announcement.TxtEntry
+	nil,                  // 12: unison.mobile.v1.CandidateTxt.RecordsEntry
+	(*v1.Event)(nil),     // 13: unison.local.v1.Event
 }
 var file_unison_mobile_v1_mobile_proto_depIdxs = []int32{
-	0, // 0: unison.mobile.v1.Event.type:type_name -> unison.mobile.v1.EventType
-	2, // 1: unison.mobile.v1.Event.clip:type_name -> unison.mobile.v1.ClipPayload
-	3, // 2: unison.mobile.v1.Event.network:type_name -> unison.mobile.v1.NetworkState
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: unison.mobile.v1.Event.type:type_name -> unison.mobile.v1.EventType
+	3,  // 1: unison.mobile.v1.Event.clip:type_name -> unison.mobile.v1.ClipPayload
+	4,  // 2: unison.mobile.v1.Event.network:type_name -> unison.mobile.v1.NetworkState
+	13, // 3: unison.mobile.v1.Event.event:type_name -> unison.local.v1.Event
+	2,  // 4: unison.mobile.v1.ClipPayload.parts:type_name -> unison.mobile.v1.ClipPart
+	11, // 5: unison.mobile.v1.Announcement.txt:type_name -> unison.mobile.v1.Announcement.TxtEntry
+	12, // 6: unison.mobile.v1.CandidateTxt.records:type_name -> unison.mobile.v1.CandidateTxt.RecordsEntry
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_unison_mobile_v1_mobile_proto_init() }
@@ -349,7 +894,7 @@ func file_unison_mobile_v1_mobile_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_mobile_v1_mobile_proto_rawDesc), len(file_unison_mobile_v1_mobile_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
