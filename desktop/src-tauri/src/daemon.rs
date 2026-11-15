@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use crate::proxy;
@@ -16,6 +17,13 @@ const BINARY_ENV: &str = "UNISON_DAEMON_BIN";
 const PROBE_TIMEOUT: Duration = Duration::from_millis(500);
 const START_TIMEOUT: Duration = Duration::from_secs(10);
 const START_INTERVAL: Duration = Duration::from_millis(200);
+/// LOGIN_WAIT is how long the app waits for the login item to start the daemon
+/// before it starts the daemon of the bundle itself.
+const LOGIN_WAIT: Duration = Duration::from_secs(3);
+
+/// STARTED is the daemon the app started itself, which steps aside when the
+/// login item takes over.
+static STARTED: Mutex<Option<u32>> = Mutex::new(None);
 
 /// resolve_endpoint returns the endpoint of the local API.
 pub fn resolve_endpoint() -> Result<String, String> {
@@ -28,16 +36,47 @@ pub fn resolve_endpoint() -> Result<String, String> {
     platform_endpoint()
 }
 
-/// ensure_running starts the daemon when it does not answer on the endpoint.
+/// ensure_running starts the daemon when it does not answer on the endpoint. A
+/// login item that the system manages owns the daemon, so the app only waits
+/// for it.
 pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
     if probe(endpoint).await {
         return Ok(());
     }
 
-    let binary = daemon_binary().ok_or_else(|| "the daemon is not running".to_string())?;
-    start(&binary)?;
+    match crate::agent::status() {
+        crate::agent::LoginItemStatus::Enabled => {
+            if wait_for(endpoint, LOGIN_WAIT).await.is_ok() {
+                return Ok(());
+            }
+            // A login item that the system cannot start must not leave the app
+            // without a daemon.
+            match daemon_binary() {
+                Some(binary) => {
+                    start(&binary)?;
+                    wait_for(endpoint, START_TIMEOUT).await
+                }
+                None => Err(format!(
+                    "the login item does not start the daemon on {endpoint}"
+                )),
+            }
+        }
+        crate::agent::LoginItemStatus::RequiresApproval => {
+            Err("the login item waits for approval in System Settings".to_string())
+        }
+        _ => match daemon_binary() {
+            Some(binary) => {
+                start(&binary)?;
+                wait_for(endpoint, START_TIMEOUT).await
+            }
+            None => Err(format!("the daemon is not running on {endpoint}")),
+        },
+    }
+}
 
-    let deadline = Instant::now() + START_TIMEOUT;
+/// wait_for waits for the daemon to answer on the endpoint.
+async fn wait_for(endpoint: &str, limit: Duration) -> Result<(), String> {
+    let deadline = Instant::now() + limit;
     while Instant::now() < deadline {
         tokio::time::sleep(START_INTERVAL).await;
         if probe(endpoint).await {
@@ -45,6 +84,18 @@ pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
         }
     }
     Err(format!("the daemon did not answer on {endpoint}"))
+}
+
+/// wait_stopped waits until nothing answers on the endpoint any more, which is
+/// how the app notices that the system stopped the login item.
+pub async fn wait_stopped(endpoint: &str, limit: Duration) {
+    let deadline = Instant::now() + limit;
+    while Instant::now() < deadline {
+        if !probe(endpoint).await {
+            return;
+        }
+        tokio::time::sleep(START_INTERVAL).await;
+    }
 }
 
 /// probe reports whether a process answers on the endpoint.
@@ -55,17 +106,34 @@ async fn probe(endpoint: &str) -> bool {
     )
 }
 
-/// daemon_binary returns the daemon to start. Packaged builds start the daemon
-/// from the login item of the user, so only development builds spawn it.
+/// daemon_binary returns the daemon to start. A packaged app runs the daemon
+/// from the login item, and from next to the app binary when the login item is
+/// turned off. Development builds start the daemon from `bin/`.
 fn daemon_binary() -> Option<PathBuf> {
     if let Some(path) = std::env::var_os(BINARY_ENV) {
         return Some(PathBuf::from(path));
     }
-    if !cfg!(debug_assertions) {
-        return None;
-    }
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../bin/unisond");
+    let path = if cfg!(debug_assertions) {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../bin/unisond")
+    } else {
+        let exe = std::env::current_exe().ok()?;
+        exe.parent()?.join("unisond")
+    };
     path.is_file().then_some(path)
+}
+
+/// stop_started stops the daemon the app started, so the login item can run its
+/// own. It reports whether that daemon was running.
+pub fn stop_started() -> bool {
+    let pid = STARTED.lock().ok().and_then(|mut slot| slot.take());
+    let Some(pid) = pid else {
+        return false;
+    };
+    // SIGTERM closes the store and the endpoint of the daemon.
+    let _ = Command::new("/bin/kill")
+        .args(["-TERM", &pid.to_string()])
+        .status();
+    true
 }
 
 /// start runs the daemon next to the app. The daemon outlives the app, so the
@@ -77,8 +145,17 @@ fn start(binary: &PathBuf) -> Result<(), String> {
         .stderr(Stdio::null())
         .spawn()
         .map_err(|err| format!("cannot start the daemon {}: {err}", binary.display()))?;
+    let pid = child.id();
+    if let Ok(mut slot) = STARTED.lock() {
+        *slot = Some(pid);
+    }
     std::thread::spawn(move || {
         let _ = child.wait();
+        if let Ok(mut slot) = STARTED.lock()
+            && *slot == Some(pid)
+        {
+            *slot = None;
+        }
     });
     Ok(())
 }
