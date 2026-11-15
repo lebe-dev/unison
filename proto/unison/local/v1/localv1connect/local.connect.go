@@ -73,6 +73,21 @@ const (
 	UnisonServiceGetClipProcedure = "/unison.local.v1.UnisonService/GetClip"
 	// UnisonServiceSetClipProcedure is the fully-qualified name of the UnisonService's SetClip RPC.
 	UnisonServiceSetClipProcedure = "/unison.local.v1.UnisonService/SetClip"
+	// UnisonServiceListHistoryProcedure is the fully-qualified name of the UnisonService's ListHistory
+	// RPC.
+	UnisonServiceListHistoryProcedure = "/unison.local.v1.UnisonService/ListHistory"
+	// UnisonServiceGetHistoryItemProcedure is the fully-qualified name of the UnisonService's
+	// GetHistoryItem RPC.
+	UnisonServiceGetHistoryItemProcedure = "/unison.local.v1.UnisonService/GetHistoryItem"
+	// UnisonServiceDeleteHistoryItemProcedure is the fully-qualified name of the UnisonService's
+	// DeleteHistoryItem RPC.
+	UnisonServiceDeleteHistoryItemProcedure = "/unison.local.v1.UnisonService/DeleteHistoryItem"
+	// UnisonServiceFetchHistoryItemProcedure is the fully-qualified name of the UnisonService's
+	// FetchHistoryItem RPC.
+	UnisonServiceFetchHistoryItemProcedure = "/unison.local.v1.UnisonService/FetchHistoryItem"
+	// UnisonServiceCopyHistoryItemProcedure is the fully-qualified name of the UnisonService's
+	// CopyHistoryItem RPC.
+	UnisonServiceCopyHistoryItemProcedure = "/unison.local.v1.UnisonService/CopyHistoryItem"
 	// UnisonServiceGetPauseProcedure is the fully-qualified name of the UnisonService's GetPause RPC.
 	UnisonServiceGetPauseProcedure = "/unison.local.v1.UnisonService/GetPause"
 	// UnisonServiceSetPauseProcedure is the fully-qualified name of the UnisonService's SetPause RPC.
@@ -109,6 +124,14 @@ type UnisonServiceClient interface {
 	GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error)
 	// Copy local text to the clipboard and announce it to the peers.
 	SetClip(context.Context, *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error)
+	// History of clip items.
+	ListHistory(context.Context, *connect.Request[v1.ListHistoryRequest]) (*connect.Response[v1.ListHistoryResponse], error)
+	GetHistoryItem(context.Context, *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error)
+	DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error)
+	// Download the payloads of an item. They are written to path when it is set.
+	FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error)
+	// Copy an item back to the local clipboard.
+	CopyHistoryItem(context.Context, *connect.Request[v1.CopyHistoryItemRequest]) (*connect.Response[v1.CopyHistoryItemResponse], error)
 	// Pause of the clipboard synchronization.
 	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
 	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
@@ -218,6 +241,36 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("SetClip")),
 			connect.WithClientOptions(opts...),
 		),
+		listHistory: connect.NewClient[v1.ListHistoryRequest, v1.ListHistoryResponse](
+			httpClient,
+			baseURL+UnisonServiceListHistoryProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ListHistory")),
+			connect.WithClientOptions(opts...),
+		),
+		getHistoryItem: connect.NewClient[v1.GetHistoryItemRequest, v1.GetHistoryItemResponse](
+			httpClient,
+			baseURL+UnisonServiceGetHistoryItemProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetHistoryItem")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteHistoryItem: connect.NewClient[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse](
+			httpClient,
+			baseURL+UnisonServiceDeleteHistoryItemProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("DeleteHistoryItem")),
+			connect.WithClientOptions(opts...),
+		),
+		fetchHistoryItem: connect.NewClient[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse](
+			httpClient,
+			baseURL+UnisonServiceFetchHistoryItemProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("FetchHistoryItem")),
+			connect.WithClientOptions(opts...),
+		),
+		copyHistoryItem: connect.NewClient[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse](
+			httpClient,
+			baseURL+UnisonServiceCopyHistoryItemProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("CopyHistoryItem")),
+			connect.WithClientOptions(opts...),
+		),
 		getPause: connect.NewClient[v1.GetPauseRequest, v1.GetPauseResponse](
 			httpClient,
 			baseURL+UnisonServiceGetPauseProcedure,
@@ -262,6 +315,11 @@ type unisonServiceClient struct {
 	rejectSas             *connect.Client[v1.RejectSasRequest, v1.RejectSasResponse]
 	getClip               *connect.Client[v1.GetClipRequest, v1.GetClipResponse]
 	setClip               *connect.Client[v1.SetClipRequest, v1.SetClipResponse]
+	listHistory           *connect.Client[v1.ListHistoryRequest, v1.ListHistoryResponse]
+	getHistoryItem        *connect.Client[v1.GetHistoryItemRequest, v1.GetHistoryItemResponse]
+	deleteHistoryItem     *connect.Client[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse]
+	fetchHistoryItem      *connect.Client[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse]
+	copyHistoryItem       *connect.Client[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse]
 	getPause              *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
 	setPause              *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
 	getSettings           *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
@@ -343,6 +401,31 @@ func (c *unisonServiceClient) SetClip(ctx context.Context, req *connect.Request[
 	return c.setClip.CallUnary(ctx, req)
 }
 
+// ListHistory calls unison.local.v1.UnisonService.ListHistory.
+func (c *unisonServiceClient) ListHistory(ctx context.Context, req *connect.Request[v1.ListHistoryRequest]) (*connect.Response[v1.ListHistoryResponse], error) {
+	return c.listHistory.CallUnary(ctx, req)
+}
+
+// GetHistoryItem calls unison.local.v1.UnisonService.GetHistoryItem.
+func (c *unisonServiceClient) GetHistoryItem(ctx context.Context, req *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error) {
+	return c.getHistoryItem.CallUnary(ctx, req)
+}
+
+// DeleteHistoryItem calls unison.local.v1.UnisonService.DeleteHistoryItem.
+func (c *unisonServiceClient) DeleteHistoryItem(ctx context.Context, req *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error) {
+	return c.deleteHistoryItem.CallUnary(ctx, req)
+}
+
+// FetchHistoryItem calls unison.local.v1.UnisonService.FetchHistoryItem.
+func (c *unisonServiceClient) FetchHistoryItem(ctx context.Context, req *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error) {
+	return c.fetchHistoryItem.CallUnary(ctx, req)
+}
+
+// CopyHistoryItem calls unison.local.v1.UnisonService.CopyHistoryItem.
+func (c *unisonServiceClient) CopyHistoryItem(ctx context.Context, req *connect.Request[v1.CopyHistoryItemRequest]) (*connect.Response[v1.CopyHistoryItemResponse], error) {
+	return c.copyHistoryItem.CallUnary(ctx, req)
+}
+
 // GetPause calls unison.local.v1.UnisonService.GetPause.
 func (c *unisonServiceClient) GetPause(ctx context.Context, req *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {
 	return c.getPause.CallUnary(ctx, req)
@@ -387,6 +470,14 @@ type UnisonServiceHandler interface {
 	GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error)
 	// Copy local text to the clipboard and announce it to the peers.
 	SetClip(context.Context, *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error)
+	// History of clip items.
+	ListHistory(context.Context, *connect.Request[v1.ListHistoryRequest]) (*connect.Response[v1.ListHistoryResponse], error)
+	GetHistoryItem(context.Context, *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error)
+	DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error)
+	// Download the payloads of an item. They are written to path when it is set.
+	FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error)
+	// Copy an item back to the local clipboard.
+	CopyHistoryItem(context.Context, *connect.Request[v1.CopyHistoryItemRequest]) (*connect.Response[v1.CopyHistoryItemResponse], error)
 	// Pause of the clipboard synchronization.
 	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
 	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
@@ -492,6 +583,36 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("SetClip")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceListHistoryHandler := connect.NewUnaryHandler(
+		UnisonServiceListHistoryProcedure,
+		svc.ListHistory,
+		connect.WithSchema(unisonServiceMethods.ByName("ListHistory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceGetHistoryItemHandler := connect.NewUnaryHandler(
+		UnisonServiceGetHistoryItemProcedure,
+		svc.GetHistoryItem,
+		connect.WithSchema(unisonServiceMethods.ByName("GetHistoryItem")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceDeleteHistoryItemHandler := connect.NewUnaryHandler(
+		UnisonServiceDeleteHistoryItemProcedure,
+		svc.DeleteHistoryItem,
+		connect.WithSchema(unisonServiceMethods.ByName("DeleteHistoryItem")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceFetchHistoryItemHandler := connect.NewUnaryHandler(
+		UnisonServiceFetchHistoryItemProcedure,
+		svc.FetchHistoryItem,
+		connect.WithSchema(unisonServiceMethods.ByName("FetchHistoryItem")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceCopyHistoryItemHandler := connect.NewUnaryHandler(
+		UnisonServiceCopyHistoryItemProcedure,
+		svc.CopyHistoryItem,
+		connect.WithSchema(unisonServiceMethods.ByName("CopyHistoryItem")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceGetPauseHandler := connect.NewUnaryHandler(
 		UnisonServiceGetPauseProcedure,
 		svc.GetPause,
@@ -548,6 +669,16 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceGetClipHandler.ServeHTTP(w, r)
 		case UnisonServiceSetClipProcedure:
 			unisonServiceSetClipHandler.ServeHTTP(w, r)
+		case UnisonServiceListHistoryProcedure:
+			unisonServiceListHistoryHandler.ServeHTTP(w, r)
+		case UnisonServiceGetHistoryItemProcedure:
+			unisonServiceGetHistoryItemHandler.ServeHTTP(w, r)
+		case UnisonServiceDeleteHistoryItemProcedure:
+			unisonServiceDeleteHistoryItemHandler.ServeHTTP(w, r)
+		case UnisonServiceFetchHistoryItemProcedure:
+			unisonServiceFetchHistoryItemHandler.ServeHTTP(w, r)
+		case UnisonServiceCopyHistoryItemProcedure:
+			unisonServiceCopyHistoryItemHandler.ServeHTTP(w, r)
 		case UnisonServiceGetPauseProcedure:
 			unisonServiceGetPauseHandler.ServeHTTP(w, r)
 		case UnisonServiceSetPauseProcedure:
@@ -623,6 +754,26 @@ func (UnimplementedUnisonServiceHandler) GetClip(context.Context, *connect.Reque
 
 func (UnimplementedUnisonServiceHandler) SetClip(context.Context, *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetClip is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ListHistory(context.Context, *connect.Request[v1.ListHistoryRequest]) (*connect.Response[v1.ListHistoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ListHistory is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetHistoryItem(context.Context, *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetHistoryItem is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.DeleteHistoryItem is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.FetchHistoryItem is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) CopyHistoryItem(context.Context, *connect.Request[v1.CopyHistoryItemRequest]) (*connect.Response[v1.CopyHistoryItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.CopyHistoryItem is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {

@@ -83,6 +83,20 @@ func kindToProto(k model.Kind) localv1.Kind {
 	}
 }
 
+// kindFromProto converts a local API kind to its domain form.
+func kindFromProto(k localv1.Kind) model.Kind {
+	switch k {
+	case localv1.Kind_KIND_TEXT:
+		return model.KindText
+	case localv1.Kind_KIND_IMAGE:
+		return model.KindImage
+	case localv1.Kind_KIND_FILES:
+		return model.KindFiles
+	default:
+		return model.KindUnspecified
+	}
+}
+
 // sourceToProto converts a capture source to its local API form.
 func sourceToProto(s model.Source) localv1.Source {
 	switch s {

@@ -104,6 +104,15 @@ service UnisonService {
   // Copy local text to the clipboard and announce it to the peers.
   rpc SetClip(SetClipRequest) returns (SetClipResponse);
 
+  // History of clip items.
+  rpc ListHistory(ListHistoryRequest) returns (ListHistoryResponse);
+  rpc GetHistoryItem(GetHistoryItemRequest) returns (GetHistoryItemResponse);
+  rpc DeleteHistoryItem(DeleteHistoryItemRequest) returns (DeleteHistoryItemResponse);
+  // Download the payloads of an item. They are written to path when it is set.
+  rpc FetchHistoryItem(FetchHistoryItemRequest) returns (FetchHistoryItemResponse);
+  // Copy an item back to the local clipboard.
+  rpc CopyHistoryItem(CopyHistoryItemRequest) returns (CopyHistoryItemResponse);
+
   // Pause of the clipboard synchronization.
   rpc GetPause(GetPauseRequest) returns (GetPauseResponse);
   rpc SetPause(SetPauseRequest) returns (SetPauseResponse);
@@ -358,6 +367,63 @@ message SetClipResponse {
   // Item created for the text.
   ClipItem item = 1;
 }
+
+// A history entry with the state of its payloads.
+message HistoryItem {
+  ClipItem item = 1;
+  // Every payload of the item is stored on this device.
+  bool complete = 2;
+}
+
+message ListHistoryRequest {
+  // Only items of this kind. KIND_UNSPECIFIED lists every kind.
+  Kind kind = 1;
+  // Only items captured by this device, lowercase hex. Empty lists every
+  // device.
+  string device_id = 2;
+  // Maximum number of items. Zero uses the default, the server caps it.
+  uint32 limit = 3;
+}
+
+message ListHistoryResponse {
+  repeated HistoryItem items = 1;
+}
+
+message GetHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message GetHistoryItemResponse {
+  HistoryItem item = 1;
+}
+
+message DeleteHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message DeleteHistoryItemResponse {}
+
+message FetchHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+  // Where the payloads are written. Empty downloads them only.
+  string path = 2;
+}
+
+message FetchHistoryItemResponse {
+  HistoryItem item = 1;
+  // Paths of the written payloads.
+  repeated string files = 2;
+}
+
+message CopyHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message CopyHistoryItemResponse {}
 
 message GetPauseRequest {}
 
