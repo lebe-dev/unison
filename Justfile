@@ -51,6 +51,20 @@ proto-lint:
 # Check the code before committing.
 check: lint proto-lint test
 
+# Run the desktop app with hot reload.
+desktop-dev:
+    cd desktop && yarn tauri dev
+
+# Build the desktop app bundle for the host platform.
+desktop-build:
+    cd desktop && yarn tauri build
+
+# Lint the desktop app: frontend checks, rustfmt and clippy.
+desktop-lint:
+    cd desktop && yarn lint
+    cd desktop/src-tauri && cargo fmt --check
+    cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
+
 # Remove build artifacts.
 clean:
     rm -rf bin
