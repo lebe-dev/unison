@@ -363,8 +363,7 @@ The Info.plist of the bundle declares `NSLocalNetworkUsageDescription` and `NSBo
 with `_unison._udp` and `_unison-pair._udp`, because the daemon of the bundle does the discovery.
 The bundle is signed with the hardened runtime and the entitlements in
 `desktop/src-tauri/entitlements.plist`: network client for the paired devices and the local API,
-network server for the QUIC listener of the daemon. The daemon is signed under the identifier
-`app.unison.unisond`, so its Keychain access survives an update of the app.
+network server for the QUIC listener of the daemon.
 
 Signing and notarization take the Apple Developer credentials from the environment and never
 store them:
@@ -386,8 +385,9 @@ rejects it and notarization is skipped.
 The login item needs an Apple-issued signature as well. An ad-hoc build can register it, but the
 system then stores a code requirement without a hash and launchd refuses to start the job with
 exit code 78, so the daemon neither runs at login nor after the registration. Sign with a
-Developer ID certificate to check the login item, and expect a `not-found` status from
-`SMAppService` before the first registration of a build that was never launched from its bundle.
+Developer ID certificate to check the login item. `SMAppService` reports `not-found` for a bundle
+the system has never seen, `not-registered` after a registration was removed and `enabled` for a
+registered item.
 
 The daemon is signed under `app.unison.unisond`, and the Keychain items it stores belong to that
 identity. A change of the signing identity makes macOS ask for access to the existing items, and
