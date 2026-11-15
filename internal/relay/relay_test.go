@@ -138,6 +138,9 @@ func TestMetricsEndpoint(t *testing.T) {
 	if strings.Contains(body, hex.EncodeToString(box[:])) {
 		t.Error("metrics carry a mailbox id")
 	}
+	if strings.Contains(body, "127.0.0.1") {
+		t.Error("metrics carry an address")
+	}
 
 	for _, path := range []string{"/healthz", "/readyz"} {
 		if code := status(t, "http://"+server.Addrs().HTTP+path); code != http.StatusOK {
