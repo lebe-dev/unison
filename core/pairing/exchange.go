@@ -29,6 +29,8 @@ const (
 	keySize = 32
 	// maxNameLength bounds the display name of a device in bytes.
 	maxNameLength = 128
+	// maxIntroductions bounds the introductions of one pairing exchange.
+	maxIntroductions = 64
 	// closeTimeout bounds the wait for the peer to close the stream.
 	closeTimeout = 5 * time.Second
 )
@@ -362,6 +364,10 @@ func (w *Window) sendAccept(ctx context.Context, stream *quic.Stream, peer peerI
 	if err := w.recordPeer(ctx, peer, discoveryKey, rendezvous); err != nil {
 		return err
 	}
+	introductions, err := w.introductions(ctx, peer)
+	if err != nil {
+		return err
+	}
 
 	local := w.opts.Identity.Public()
 	message := &wirev1.PairAccept{
@@ -370,6 +376,7 @@ func (w *Window) sendAccept(ctx context.Context, stream *quic.Stream, peer peerI
 		DeviceName:    w.opts.Name,
 		Role:          protoconv.RoleToProto(peer.role),
 		Platform:      protoconv.PlatformToProto(w.opts.Platform),
+		Introductions: introductions,
 		DiscoveryKey:  discoveryKey,
 		RendezvousKey: rendezvous,
 	}
@@ -377,6 +384,53 @@ func (w *Window) sendAccept(ctx context.Context, stream *quic.Stream, peer peerI
 		return fmt.Errorf("pairing: send accept: %w", err)
 	}
 	return nil
+}
+
+// introductions signs the introductions of the known Personal peers for the
+// device that started the exchange and records the introduction of that device,
+// so the rest of the group learns about it over gossip. A Friends pair exchanges
+// no introductions.
+func (w *Window) introductions(ctx context.Context, peer peerInfo) ([]*wirev1.Introduction, error) {
+	if peer.role != model.RolePersonal {
+		return nil, nil
+	}
+	now := w.clock.Now()
+
+	local, err := trust.NewIntroduction(w.opts.Identity, trust.IntroductionInfo{
+		Subject:  peer.public,
+		Name:     peer.name,
+		Platform: peer.platform,
+	}, now)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := w.opts.Trust.AddIntroduction(ctx, local); err != nil {
+		return nil, fmt.Errorf("pairing: record introduction: %w", err)
+	}
+
+	known, err := w.opts.Trust.List(ctx, trust.ListFilter{Role: model.RolePersonal})
+	if err != nil {
+		return nil, fmt.Errorf("pairing: list peers: %w", err)
+	}
+	introductions := make([]*wirev1.Introduction, 0, min(len(known), maxIntroductions))
+	for _, stored := range known {
+		if stored.DeviceID() == peer.id {
+			continue
+		}
+		intro, err := trust.NewIntroduction(w.opts.Identity, trust.IntroductionInfo{
+			Subject:  stored.Public,
+			Name:     stored.Name,
+			Platform: stored.Platform,
+		}, now)
+		if err != nil {
+			return nil, err
+		}
+		introductions = append(introductions, intro.Proto())
+		if len(introductions) == maxIntroductions {
+			break
+		}
+	}
+	return introductions, nil
 }
 
 // acceptResponse reads the group data of the accepting device and stores the
@@ -389,7 +443,49 @@ func (w *Window) acceptResponse(ctx context.Context, reader *frameReader, peer p
 	if err := checkAccept(peer, message); err != nil {
 		return err
 	}
-	return w.recordPeer(ctx, peer, message.DiscoveryKey, rendezvousKey(peer.ekm))
+	if err := w.recordPeer(ctx, peer, message.DiscoveryKey, rendezvousKey(peer.ekm)); err != nil {
+		return err
+	}
+	w.applyIntroductions(ctx, peer, message.Introductions)
+	return nil
+}
+
+// applyIntroductions stores the introductions of the accepting device. Only
+// records signed by the device of the exchange are accepted; the others are
+// dropped, because nothing vouches for them yet.
+func (w *Window) applyIntroductions(ctx context.Context, peer peerInfo, records []*wirev1.Introduction) {
+	if peer.role != model.RolePersonal || len(records) > maxIntroductions {
+		if len(records) > 0 && w.log != nil {
+			w.log.Info("pairing: introductions dropped", "peer", peer.id, "count", len(records))
+		}
+		return
+	}
+	for _, record := range records {
+		intro, err := trust.IntroductionFromProto(record)
+		if err != nil {
+			w.logIntroductionRefused(peer, err)
+			continue
+		}
+		if intro.Issuer != peer.id {
+			w.logIntroductionRefused(peer, fmt.Errorf("%w: introduction by %s", ErrInvalidPeer, intro.Issuer))
+			continue
+		}
+		if intro.DeviceID() == peer.id || intro.DeviceID() == w.opts.Identity.DeviceID() {
+			w.logIntroductionRefused(peer, fmt.Errorf("%w: introduction of a device of the exchange", ErrInvalidPeer))
+			continue
+		}
+		if _, err := w.opts.Trust.ApplyIntroduction(ctx, intro); err != nil {
+			w.logIntroductionRefused(peer, err)
+		}
+	}
+}
+
+// logIntroductionRefused reports an introduction that was not applied.
+func (w *Window) logIntroductionRefused(peer peerInfo, err error) {
+	if w.log == nil {
+		return
+	}
+	w.log.Info("pairing: introduction refused", "peer", peer.id, "error", err)
 }
 
 // checkAccept verifies that the accepting device repeats the identity it

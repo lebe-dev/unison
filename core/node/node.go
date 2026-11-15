@@ -12,6 +12,7 @@ import (
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/blob/transfer"
 	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/gossip"
 	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/identity"
 	"github.com/lebe-dev/unison/core/model"
@@ -167,6 +168,8 @@ type Node struct {
 	blobService *transfer.Service
 	fetcher     *transfer.Fetcher
 
+	gossip *gossip.Service
+
 	listener *transport.Listener
 	dialer   *transport.Dialer
 
@@ -240,7 +243,7 @@ func New(cfg Config) (*Node, error) {
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
 	}
-	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory}
+	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory, n.installGossip}
 	return n, nil
 }
 
@@ -465,6 +468,18 @@ func (n *Node) open(ctx context.Context) error {
 		return err
 	}
 	n.trust = trustStore
+
+	gossipService, err := gossip.New(n.ctx, gossip.Config{
+		Store:                 trustStore,
+		Local:                 id.DeviceID(),
+		Logger:                n.log,
+		OnPeersChanged:        n.gossipPeersChanged,
+		OnDiscoveryKeyChanged: n.gossipGroupChanged,
+	})
+	if err != nil {
+		return err
+	}
+	n.gossip = gossipService
 
 	port, err := transport.MainPort(ctx, db.Settings())
 	if err != nil {
@@ -693,6 +708,35 @@ func (n *Node) installClip(_ context.Context, sess *session.Session) error {
 	return sess.Handle(session.KindClipAnnounce, n.clipHandler(sess))
 }
 
+// installGossip registers the trust handlers on a new session.
+func (n *Node) installGossip(_ context.Context, sess *session.Session) error {
+	if n.gossip == nil {
+		return errors.New("node: gossip is not ready")
+	}
+	return n.gossip.Register(sess)
+}
+
+// gossipPeersChanged connects to the devices an introduction added.
+func (n *Node) gossipPeersChanged(ctx context.Context) {
+	for _, peer := range n.pairedPeers(ctx) {
+		n.startLink(peer).retry()
+	}
+	n.probeCandidates(n.ctx)
+}
+
+// gossipGroupChanged announces the device again after the discovery key of the
+// group changed.
+func (n *Node) gossipGroupChanged(context.Context) {
+	n.mu.Lock()
+	running := n.state == stateRunning && n.ctx != nil
+	ctx := n.ctx
+	n.mu.Unlock()
+	if !running {
+		return
+	}
+	n.advertise(ctx)
+}
+
 // stop ends the node once.
 func (n *Node) stop(ctx context.Context) error {
 	n.stopOnce.Do(func() {
@@ -716,6 +760,9 @@ func (n *Node) shutdown(ctx context.Context, cancel context.CancelFunc) error {
 	}
 	if err := n.ClosePairing(); err != nil {
 		n.log.Warn("closing the pairing window failed", "error", err)
+	}
+	if n.gossip != nil {
+		n.gossip.Close()
 	}
 	n.closeSessions()
 

@@ -38,6 +38,10 @@ const (
 	KindRevocation
 	// KindSetPeerPolicy changes the clipboard policy of a device.
 	KindSetPeerPolicy
+	// KindGossipDigest reports the trust state of a device.
+	KindGossipDigest
+	// KindGossipRecords carries the trust data a peer lacks.
+	KindGossipRecords
 )
 
 // String returns the name of the kind.
@@ -67,6 +71,10 @@ func (k Kind) String() string {
 		return "revocation"
 	case KindSetPeerPolicy:
 		return "set-peer-policy"
+	case KindGossipDigest:
+		return "gossip-digest"
+	case KindGossipRecords:
+		return "gossip-records"
 	default:
 		return "unknown"
 	}
@@ -103,6 +111,10 @@ func kindOf(msg *wirev1.ControlMessage) (Kind, error) {
 		return KindRevocation, nil
 	case *wirev1.ControlMessage_SetPeerPolicy:
 		return KindSetPeerPolicy, nil
+	case *wirev1.ControlMessage_GossipDigest:
+		return KindGossipDigest, nil
+	case *wirev1.ControlMessage_GossipRecords:
+		return KindGossipRecords, nil
 	default:
 		return KindUnknown, fmt.Errorf("%w: payload %T", ErrUnknownKind, msg.GetBody())
 	}
@@ -132,6 +144,8 @@ func actionOf(kind Kind) (trust.Action, error) {
 		return trust.ActionRevoke, nil
 	case KindSetPeerPolicy:
 		return trust.ActionSetRemotePolicy, nil
+	case KindGossipDigest, KindGossipRecords:
+		return trust.ActionIntroduce, nil
 	default:
 		return trust.ActionNone, fmt.Errorf("%w: kind %s", ErrUnknownKind, kind)
 	}

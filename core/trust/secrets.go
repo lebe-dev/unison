@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/store"
@@ -58,7 +59,10 @@ func (s *Store) EnsureDiscoveryKey(ctx context.Context) ([]byte, error) {
 		if _, err := rand.Read(key); err != nil {
 			return fmt.Errorf("trust: generate discovery key: %w", err)
 		}
-		return writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, key)
+		if err := writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, key); err != nil {
+			return err
+		}
+		return store.NewSettings(tx, s.db.Sealer()).SetInt(ctx, discoveryVersionKey, unixMilli(time.Now()))
 	})
 	if err != nil {
 		return nil, err
@@ -67,10 +71,14 @@ func (s *Store) EnsureDiscoveryKey(ctx context.Context) ([]byte, error) {
 }
 
 // SetDiscoveryKey stores the key shared by the Personal group, for example the
-// one received from another Personal device at pairing.
+// one received from another Personal device at pairing. The change is marked
+// with the current time, so the key travels to the group over gossip.
 func (s *Store) SetDiscoveryKey(ctx context.Context, key []byte) error {
 	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
-		return writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, key)
+		if err := writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, key); err != nil {
+			return err
+		}
+		return store.NewSettings(tx, s.db.Sealer()).SetInt(ctx, discoveryVersionKey, unixMilli(time.Now()))
 	})
 }
 
