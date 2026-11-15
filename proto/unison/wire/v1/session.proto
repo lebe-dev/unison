@@ -26,6 +26,9 @@ message StreamHeader {
   uint32 chunks = 4;
   // File being transferred.
   FileMeta file = 5;
+  // Payload type of the stream, chosen by the handler packages, for example
+  // "blob.request". It selects the handler that serves the stream.
+  string payload_type = 6;
 }
 
 // Session handshake, first message on the control stream.
