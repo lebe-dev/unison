@@ -125,6 +125,14 @@ desktop-dev:
 desktop-build:
     cd desktop && yarn tauri build
 
+# Build the macOS bundle with the daemon, then sign and notarize it.
+package-macos *args:
+    packaging/macos/package.sh {{args}}
+
+# Check the layout, the property lists and the signature of the packaged macOS bundle.
+verify-macos *args:
+    packaging/macos/verify.sh {{args}}
+
 # Run the component tests of the desktop app.
 desktop-test:
     cd desktop && yarn test

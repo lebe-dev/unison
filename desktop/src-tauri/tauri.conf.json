@@ -37,7 +37,12 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "entitlements": "entitlements.plist",
+      "infoPlist": "Info.plist",
+      "files": {
+        "Library/LaunchAgents/app.unison.unisond.plist": "../../packaging/macos/app.unison.unisond.plist"
+      }
     }
   }
 }

@@ -3,6 +3,7 @@
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { shortDeviceID } from "../format";
+  import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
   import type { PauseChoice } from "../tray";
 
   const pauses: { choice: PauseChoice; label: string }[] = [
@@ -14,15 +15,51 @@
 
   let name = $state("");
   let requireConfirmation = $state(false);
+  let login = $state<LoginItem | null>(null);
+  let loginLoaded = $state(false);
   let loaded = $state(false);
   let busy = $state(false);
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
+
+  const loginEnabled = $derived(
+    login?.status === "enabled" || login?.status === "requires_approval",
+  );
+
+  const loginHint = $derived.by(() => {
+    switch (login?.status) {
+      case "enabled":
+        return "The background service starts when you log in.";
+      case "requires_approval":
+        return "Allow Unison in System Settings > General > Login Items.";
+      case "not_registered":
+        return "The background service starts only while the app asks for it.";
+      case "not_found":
+        return "The system does not know the background service of this build.";
+      default:
+        return "Automatic startup is available in the packaged app.";
+    }
+  });
 
   $effect(() => {
     if (daemon.connected && !loaded) {
       void load();
     }
   });
+
+  $effect(() => {
+    if (!loginLoaded) {
+      loginLoaded = true;
+      void loadLogin();
+    }
+  });
+
+  async function loadLogin(): Promise<void> {
+    try {
+      login = await loginItemStatus();
+    } catch {
+      login = null;
+    }
+  }
 
   async function load(): Promise<void> {
     busy = true;
@@ -83,17 +120,47 @@
       notice = { kind: "error", text: daemon.error };
     }
   }
+
+  async function setLogin(enabled: boolean): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      login = await setLoginItem(enabled);
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, "The login item could not be changed.") };
+    } finally {
+      busy = false;
+    }
+  }
 </script>
 
 {#if !daemon.connected}
-  <section class="state">
-    {#if daemon.loading}
-      <p class="muted">Connecting to the daemon...</p>
-    {:else}
-      <p class="notice error">The daemon is not running, so the settings are unavailable.</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
-    {/if}
-  </section>
+  <div class="settings">
+    <section class="state">
+      {#if daemon.loading}
+        <p class="muted">Connecting to the daemon...</p>
+      {:else}
+        <p class="notice error">The daemon is not running, so the settings are unavailable.</p>
+        <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+      {/if}
+    </section>
+
+    <section class="panel">
+      <h3>Startup</h3>
+      <label class="toggle">
+        <input
+          type="checkbox"
+          checked={loginEnabled}
+          disabled={busy || login === null || login.status === "unsupported"}
+          onchange={(event) => void setLogin(event.currentTarget.checked)}
+        />
+        <span>
+          Start Unison at login
+          <small>{loginHint}</small>
+        </span>
+      </label>
+    </section>
+  </div>
 {:else}
   <div class="settings">
     {#if notice}
@@ -160,10 +227,15 @@
     <section class="panel">
       <h3>Startup</h3>
       <label class="toggle">
-        <input type="checkbox" disabled />
+        <input
+          type="checkbox"
+          checked={loginEnabled}
+          disabled={busy || login === null || login.status === "unsupported"}
+          onchange={(event) => void setLogin(event.currentTarget.checked)}
+        />
         <span>
           Start Unison at login
-          <small>The system login item is added by the installer.</small>
+          <small>{loginHint}</small>
         </span>
       </label>
     </section>
