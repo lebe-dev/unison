@@ -65,6 +65,18 @@ desktop-lint:
     cd desktop/src-tauri && cargo fmt --check
     cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
 
+# Build the Android debug APK.
+android-build:
+    ./android/gradlew -p android assembleDebug
+
+# Run the Android unit tests.
+android-test:
+    ./android/gradlew -p android testDebugUnitTest
+
+# Run the Android lint checks.
+android-lint:
+    ./android/gradlew -p android lintDebug
+
 # Remove build artifacts.
 clean:
     rm -rf bin
