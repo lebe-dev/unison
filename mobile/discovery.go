@@ -27,6 +27,8 @@ const (
 	candidateBuffer = 64
 	// maxAddrLength bounds one candidate address.
 	maxAddrLength = 255
+	// maxTXTBytes bounds the service metadata of one candidate.
+	maxTXTBytes = 8 << 10
 	// txtVersion is the TXT key of the protocol version.
 	txtVersion = "v"
 	// txtTag is the TXT key of the discovery tag.
@@ -233,6 +235,10 @@ func (d *discoveryBridge) Add(service string, addr string, rawTXT []byte) {
 	}
 	if addr == "" || len(addr) > maxAddrLength {
 		d.log.Debug("ignored a candidate with an invalid address")
+		return
+	}
+	if len(rawTXT) > maxTXTBytes {
+		d.log.Debug("ignored a candidate with oversized metadata")
 		return
 	}
 

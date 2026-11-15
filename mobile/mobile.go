@@ -106,6 +106,9 @@ func Call(req []byte) (out []byte, err error) {
 	defer recoverErr(&err)
 
 	request := &mobilev1.CallRequest{}
+	if len(req) > maxCallBytes {
+		return nil, errors.New("mobile: call request is too large")
+	}
 	if len(req) > 0 {
 		if err := proto.Unmarshal(req, request); err != nil {
 			return nil, fmt.Errorf("mobile: decode call: %w", err)

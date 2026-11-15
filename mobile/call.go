@@ -20,6 +20,9 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 	}
 	method := methodName(req.GetMethod())
 	payload := req.GetPayload()
+	if len(payload) > maxCallBytes {
+		return failureOf(connect.CodeResourceExhausted, "mobile: request is too large")
+	}
 
 	switch method {
 	case "GetStatus":
@@ -238,6 +241,9 @@ func encodeResponse(msg proto.Message) *mobilev1.CallResponse {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return failureOf(connect.CodeInternal, "mobile: encode response: "+err.Error())
+	}
+	if len(data) > maxCallBytes {
+		return failureOf(connect.CodeResourceExhausted, "mobile: response is too large")
 	}
 	return &mobilev1.CallResponse{Payload: data}
 }

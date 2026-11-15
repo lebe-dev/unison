@@ -20,6 +20,14 @@ const (
 	stopTimeout  = 10 * time.Second
 )
 
+// Size limits of the facade.
+const (
+	// maxCallBytes bounds one call request and one call response.
+	maxCallBytes = 1 << 20
+	// maxNameBytes bounds the device name.
+	maxNameBytes = 128
+)
+
 // defaultDeviceName is used when the host does not configure a name.
 const defaultDeviceName = "Android device"
 
@@ -50,6 +58,9 @@ func parseConfig(data []byte) (config, error) {
 	name := msg.GetDeviceName()
 	if name == "" {
 		name = defaultDeviceName
+	}
+	if len(name) > maxNameBytes {
+		return config{}, errors.New("mobile: device name is too long")
 	}
 	return config{
 		dataDir:   msg.GetDataDir(),

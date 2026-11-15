@@ -14,6 +14,9 @@ import (
 // keyDir is the directory of the wrapped secrets inside the data directory.
 const keyDir = "keys"
 
+// maxSecretBytes bounds one secret.
+const maxSecretBytes = 4096
+
 // keystore stores the wrapped secrets in files. The wrapping itself is done by
 // the platform keystore.
 type keystore struct {
@@ -37,6 +40,9 @@ func newKeystore(dir string, platform Platform) (*keystore, error) {
 func (k *keystore) path(name string) (string, error) {
 	if name == "" {
 		return "", errors.New("mobile: empty secret name")
+	}
+	if len(name) > 256 {
+		return "", errors.New("mobile: secret name is too long")
 	}
 	return filepath.Join(k.dir, hex.EncodeToString([]byte(name))+".key"), nil
 }
@@ -73,6 +79,9 @@ func (k *keystore) Store(ctx context.Context, name string, secret []byte) error 
 	path, err := k.path(name)
 	if err != nil {
 		return err
+	}
+	if len(secret) > maxSecretBytes {
+		return errors.New("mobile: secret is too large")
 	}
 	wrapped := wrapSecret(k.platform, secret)
 	if wrapped == nil {
