@@ -1,10 +1,12 @@
 // Package clipboard implements the macOS pasteboard as a ports.Clipboard.
 //
 // The pasteboard has no change notification, so the watcher polls the change
-// counter. Content tagged with one of the confidentiality or transience marker
-// types is reported as sensitive and its payload is never read. Content written
-// by Write carries MarkerType, which lets the watcher and other clipboard
-// consumers tell own writes apart.
+// counter. Text, images and files are captured: an image is read as PNG, a TIFF
+// image is converted to PNG, and a copied file travels as its path, so a large
+// file is never read here. Content tagged with one of the confidentiality or
+// transience marker types is reported as sensitive and its payload is never
+// read. Content written by Write carries MarkerType, which lets the watcher and
+// other clipboard consumers tell own writes apart.
 //
 // The pasteboard is reachable only in a cgo build on macOS. Everywhere else the
 // operations return ErrUnsupported.
@@ -28,6 +30,11 @@ const (
 const (
 	MIMETextPlain = "text/plain"
 	MIMETextHTML  = "text/html"
+	// MIMEImagePNG is the image type of a snapshot and the only image type the
+	// clipboard writes.
+	MIMEImagePNG = "image/png"
+	// MIMEUnisonFile marks a representation that carries a file path.
+	MIMEUnisonFile = "application/x-unison-file"
 )
 
 var (
