@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -105,6 +106,12 @@ type FetchRequest struct {
 	// TransferID ties the blob to a share. It is empty for a blob of the
 	// history.
 	TransferID string
+	// PayloadType selects the request stream handler that serves the blob.
+	// PayloadRequest is used when empty.
+	PayloadType string
+	// Trusted skips the availability query: every peer is taken as a source.
+	// It is set for a blob a peer has just offered.
+	Trusted bool
 	// Progress is called after every stored chunk, one call at a time. It runs
 	// on the fetch goroutines and must not fetch the same blob.
 	Progress func(Progress)
@@ -168,8 +175,16 @@ func (f *Fetcher) Fetch(ctx context.Context, request FetchRequest) (Result, erro
 		return Result{Info: info}, nil
 	}
 
-	fl := &fetchState{fetcher: f, request: request, sources: f.query(ctx, request.Hash, peers)}
+	fl := &fetchState{fetcher: f, request: request, sources: f.query(ctx, request, peers)}
 	return fl.run(ctx)
+}
+
+// payloadType returns the payload type of the request streams of the fetch.
+func (fl *fetchState) payloadType() string {
+	if fl.request.PayloadType == "" {
+		return PayloadRequest
+	}
+	return fl.request.PayloadType
 }
 
 // read decodes one frame of the stream.
@@ -186,18 +201,43 @@ func (f *Fetcher) write(ctx context.Context, stream *session.Request, msg proto.
 	return stream.Write(ctx, msg)
 }
 
+// end reads the last frame of a request stream. The peer closes the stream after
+// its answer, and a stream releases its slot of the connection only when both
+// directions are closed, so a fetch with many ranges stops when one is left
+// open.
+func (f *Fetcher) end(ctx context.Context, stream *session.Request) error {
+	err := f.read(ctx, stream, &wirev1.BlobReply{})
+	switch {
+	case err == nil:
+		return fmt.Errorf("%w: frame after the answer", ErrReply)
+	case errors.Is(err, io.EOF):
+		return nil
+	default:
+		return err
+	}
+}
+
 // query asks the peers whether they store the blob and returns the ones that
-// answered yes.
-func (f *Fetcher) query(ctx context.Context, hash [32]byte, peers []Peer) *sources {
+// answered yes. A trusted request skips the question: the peer has just offered
+// the blob.
+func (f *Fetcher) query(ctx context.Context, request FetchRequest, peers []Peer) *sources {
+	srcs := newSources()
+	if request.Trusted {
+		for _, peer := range peers {
+			srcs.add(source{peer: peer, id: peer.DeviceID()})
+		}
+		return srcs
+	}
+
 	have := make([]bool, len(peers))
 	var wg sync.WaitGroup
 	for i, peer := range peers {
 		wg.Add(1)
 		go func(i int, peer Peer) {
 			defer wg.Done()
-			ok, err := f.have(ctx, peer, hash)
+			ok, err := f.have(ctx, peer, request.Hash)
 			if err != nil {
-				f.log.Debug("blob query failed", "peer", peer.DeviceID(), "hash", hashHex(hash), "error", err)
+				f.log.Debug("blob query failed", "peer", peer.DeviceID(), "hash", hashHex(request.Hash), "error", err)
 				return
 			}
 			have[i] = ok
@@ -205,7 +245,6 @@ func (f *Fetcher) query(ctx context.Context, hash [32]byte, peers []Peer) *sourc
 	}
 	wg.Wait()
 
-	srcs := newSources()
 	for i, ok := range have {
 		if ok {
 			srcs.add(source{peer: peers[i], id: peers[i].DeviceID()})
@@ -427,11 +466,12 @@ func (fl *fetchState) start(ctx context.Context) error {
 
 // treeRequest asks one source for the hash tree of the blob.
 func (fl *fetchState) treeRequest(ctx context.Context, src source) (*wirev1.BlobTree, error) {
-	stream, err := src.peer.OpenRequest(ctx, requestHeader(fl.request.TransferID))
+	stream, err := src.peer.OpenRequest(ctx, requestHeader(fl.request.TransferID, fl.payloadType()))
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = stream.Close() }()
+	defer stream.CancelRead()
 
 	msg := &wirev1.BlobRequest{Hash: fl.request.Hash[:], TreeOnly: true}
 	if err := fl.fetcher.write(ctx, stream, msg); err != nil {
@@ -447,6 +487,9 @@ func (fl *fetchState) treeRequest(ctx context.Context, src source) (*wirev1.Blob
 	tree := reply.GetTree()
 	if tree == nil {
 		return nil, fmt.Errorf("%w: tree expected", ErrReply)
+	}
+	if err := fl.fetcher.end(ctx, stream); err != nil {
+		return nil, err
 	}
 	return tree, nil
 }
@@ -528,11 +571,12 @@ func (fl *fetchState) fetchRange(ctx context.Context, src source, chunks []int) 
 	}
 	from, to := chunks[0], chunks[len(chunks)-1]
 
-	stream, err := src.peer.OpenRequest(ctx, requestHeader(fl.request.TransferID))
+	stream, err := src.peer.OpenRequest(ctx, requestHeader(fl.request.TransferID, fl.payloadType()))
 	if err != nil {
 		return err
 	}
 	defer func() { _ = stream.Close() }()
+	defer stream.CancelRead()
 
 	fl.countRange()
 	msg := &wirev1.BlobRequest{Hash: fl.request.Hash[:], FromChunk: uint32(from), ToChunk: uint32(to)}
@@ -573,7 +617,7 @@ func (fl *fetchState) fetchRange(ctx context.Context, src source, chunks []int) 
 		}
 		fl.report(src, index)
 	}
-	return nil
+	return fl.fetcher.end(ctx, stream)
 }
 
 // checkTree compares the tree of an answer with the one the fetch commits to.

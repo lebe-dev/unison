@@ -205,6 +205,56 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "SendFiles":
+		call, err := requestOf[localv1.SendFilesRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.SendFiles(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "ListTransfers":
+		call, err := requestOf[localv1.ListTransfersRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ListTransfers(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "CancelTransfer":
+		call, err := requestOf[localv1.CancelTransferRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.CancelTransfer(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "AcceptTransfer":
+		call, err := requestOf[localv1.AcceptTransferRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.AcceptTransfer(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "RejectTransfer":
+		call, err := requestOf[localv1.RejectTransferRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.RejectTransfer(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "WatchEvents":
 		return failureOf(connect.CodeUnimplemented, "mobile: events are delivered through Platform.OnEvent")
 	case "":

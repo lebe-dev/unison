@@ -17,6 +17,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/share"
 	mobilev1 "github.com/lebe-dev/unison/proto/unison/mobile/v1"
 )
 
@@ -58,6 +59,7 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 		Logger:       log,
 		Limits:       cfg.limits,
 		BlobLimit:    cfg.blobLimit,
+		ShareSink:    blobSink{platform: platform, log: log},
 		ListenPacket: cfg.listen,
 	})
 	if err != nil {
@@ -152,8 +154,8 @@ func (c *core) submitClip(ctx context.Context, payload *mobilev1.ClipPayload) er
 	return err
 }
 
-// submitFile copies the descriptor into the blob store. The descriptor is
-// closed.
+// submitFile copies the descriptor into the blob store and offers it to the
+// peers. The descriptor is closed.
 func (c *core) submitFile(ctx context.Context, meta *mobilev1.FilePayload, fd int) error {
 	if fd < 0 {
 		return errors.New("mobile: file descriptor is required")
@@ -205,10 +207,51 @@ func (c *core) submitFile(ctx context.Context, meta *mobilev1.FilePayload, fd in
 	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("mobile: rewind temporary file: %w", err)
 	}
-	if _, err := c.node.Blobs().Put(ctx, tmp, written); err != nil {
+	info, err := c.node.Blobs().Put(ctx, tmp, written)
+	if err != nil {
 		return err
 	}
-	return nil
+	return c.shareFile(ctx, meta, info.Hash, written)
+}
+
+// shareFile offers a stored file to the devices of the payload.
+func (c *core) shareFile(ctx context.Context, meta *mobilev1.FilePayload, hash [32]byte, size int64) error {
+	devices, err := shareDevices(meta.GetDeviceIds())
+	if err != nil {
+		return err
+	}
+	targets := devices
+	if len(targets) == 0 {
+		targets = c.node.Share().Peers()
+	}
+	if len(targets) == 0 {
+		return share.ErrNoPeers
+	}
+
+	name := meta.GetFileName()
+	if name == "" {
+		name = "file"
+	}
+	_, err = c.node.Share().Send(ctx, []share.File{{
+		Name: name,
+		Size: size,
+		Hash: hash,
+		MIME: meta.GetMimeType(),
+	}}, targets)
+	return err
+}
+
+// shareDevices parses the device IDs of a share request.
+func shareDevices(values []string) ([]model.DeviceID, error) {
+	devices := make([]model.DeviceID, 0, len(values))
+	for _, value := range values {
+		device, err := model.ParseDeviceID(value)
+		if err != nil || device.IsZero() {
+			return nil, errors.New("mobile: invalid device id")
+		}
+		devices = append(devices, device)
+	}
+	return devices, nil
 }
 
 // localClip copies content copied on this device into the node pipeline.
@@ -221,4 +264,50 @@ var _ api.LocalClip = localClip{}
 // Submit records content and announces it to the peers.
 func (l localClip) Submit(ctx context.Context, content ports.Content) (model.ClipItem, error) {
 	return l.pipeline.Submit(ctx, content)
+}
+
+// blobSink writes the files a peer shares into the sink of the platform.
+type blobSink struct {
+	platform Platform
+	log      *slog.Logger
+}
+
+var _ share.Sink = blobSink{}
+
+// Write hands one file to the platform and copies the payload into it. It
+// returns the file name, which is what the platform shows to the user.
+func (b blobSink) Write(_ context.Context, file share.File, src io.Reader) (path string, err error) {
+	defer func() {
+		if recover() != nil {
+			path, err = "", errors.New("mobile: the platform sink panicked")
+		}
+	}()
+
+	meta, err := proto.Marshal(&mobilev1.FilePayload{
+		MimeType: file.MIME,
+		FileName: file.Name,
+		Size:     file.Size,
+	})
+	if err != nil {
+		return "", fmt.Errorf("mobile: encode the file metadata: %w", err)
+	}
+	fd := b.platform.OpenBlobSink(meta)
+	if fd < 0 {
+		return "", errors.New("mobile: the platform did not open a sink")
+	}
+	sink := os.NewFile(uintptr(fd), "sink")
+	if sink == nil {
+		return "", errors.New("mobile: invalid sink descriptor")
+	}
+	defer func() { _ = sink.Close() }()
+
+	written, err := io.Copy(sink, src)
+	if err != nil {
+		return "", fmt.Errorf("mobile: write the file: %w", err)
+	}
+	if written != file.Size {
+		return "", fmt.Errorf("mobile: wrote %d bytes of %d", written, file.Size)
+	}
+	b.log.Info("saved a shared file", "name", file.Name, "size", file.Size)
+	return file.Name, nil
 }

@@ -62,5 +62,7 @@ message ControlMessage {
     SetPeerPolicy set_peer_policy = 12;
     GossipDigest gossip_digest = 13;
     GossipRecords gossip_records = 14;
+    ShareCancel share_cancel = 15;
+    ShareResult share_result = 16;
   }
 }

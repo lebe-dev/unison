@@ -58,6 +58,12 @@ func (r *Request) Close() error {
 	return r.stream.Close()
 }
 
+// CancelRead stops reading the answers of the peer. A stream releases its slot
+// of the connection only when both directions are closed.
+func (r *Request) CancelRead() {
+	r.stream.CancelRead(quic.StreamErrorCode(0))
+}
+
 // Transfer is an incoming unidirectional stream that carries one transfer.
 type Transfer struct {
 	stream *quic.ReceiveStream
@@ -162,13 +168,12 @@ func (s *Session) OpenTransfer(ctx context.Context, header *wirev1.StreamHeader)
 }
 
 // HandleRequest registers fn for incoming request streams whose header payload
-// type is payloadType. The session checks action before fn runs.
+// type is payloadType. The session checks action before fn runs; an action of
+// ActionNone leaves the decision to fn, which then has to authorize the stream
+// itself.
 func (s *Session) HandleRequest(payloadType string, action trust.Action, fn RequestHandler) error {
 	if err := validatePayloadType(payloadType); err != nil {
 		return err
-	}
-	if action == trust.ActionNone {
-		return fmt.Errorf("%w: request type %s needs an action", ErrHandler, payloadType)
 	}
 	if fn == nil {
 		return fmt.Errorf("%w: nil request handler", ErrHandler)
@@ -187,13 +192,12 @@ func (s *Session) HandleRequest(payloadType string, action trust.Action, fn Requ
 }
 
 // HandleTransfer registers fn for incoming transfer streams whose header
-// payload type is payloadType. The session checks action before fn runs.
+// payload type is payloadType. The session checks action before fn runs; an
+// action of ActionNone leaves the decision to fn, which then has to authorize
+// the stream itself.
 func (s *Session) HandleTransfer(payloadType string, action trust.Action, fn TransferHandler) error {
 	if err := validatePayloadType(payloadType); err != nil {
 		return err
-	}
-	if action == trust.ActionNone {
-		return fmt.Errorf("%w: transfer type %s needs an action", ErrHandler, payloadType)
 	}
 	if fn == nil {
 		return fmt.Errorf("%w: nil transfer handler", ErrHandler)
@@ -263,7 +267,13 @@ func (s *Session) acceptTransfers() {
 // serveRequest checks an incoming request stream and runs its handler.
 func (s *Session) serveRequest(stream *quic.Stream) {
 	defer s.requestLoad.Add(-1)
-	defer func() { _ = stream.Close() }()
+	// Both directions have to end for the stream to release its slot of the
+	// connection: the handler is done with the request, so the rest of the read
+	// side is dropped.
+	defer func() {
+		stream.CancelRead(quic.StreamErrorCode(0))
+		_ = stream.Close()
+	}()
 
 	frames := newFrameReader(stream)
 	header, err := s.readHeader(stream, frames)

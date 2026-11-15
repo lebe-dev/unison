@@ -84,14 +84,15 @@ func newNode(t *testing.T, network *vnet.Network, bus *fake.Bus, base int) *test
 	clipboard := fake.NewClipboard()
 	clock := fake.NewClock(time.Now())
 	created, err := node.New(node.Config{
-		DataDir:   t.TempDir(),
-		Name:      name,
-		Platform:  model.PlatformMacOS,
-		Keystore:  fake.NewKeystore(),
-		Clipboard: clipboard,
-		Discovery: bus.Discovery(),
-		Clock:     clock,
-		Logger:    testLogger(),
+		DataDir:        t.TempDir(),
+		Name:           name,
+		Platform:       model.PlatformMacOS,
+		Keystore:       fake.NewKeystore(),
+		Clipboard:      clipboard,
+		Discovery:      bus.Discovery(),
+		Clock:          clock,
+		Logger:         testLogger(),
+		ShareDownloads: filepath.Join(t.TempDir(), "Downloads"),
 		Limits: node.Limits{
 			DialTimeout:       3 * time.Second,
 			ReconnectDelay:    50 * time.Millisecond,

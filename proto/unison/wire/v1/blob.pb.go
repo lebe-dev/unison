@@ -645,6 +645,113 @@ func (x *ShareDecision) GetAccepted() bool {
 	return false
 }
 
+// Cancellation of a share transfer. Either side may send it.
+type ShareCancel struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TransferId    string                 `protobuf:"bytes,1,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShareCancel) Reset() {
+	*x = ShareCancel{}
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShareCancel) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShareCancel) ProtoMessage() {}
+
+func (x *ShareCancel) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShareCancel.ProtoReflect.Descriptor instead.
+func (*ShareCancel) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ShareCancel) GetTransferId() string {
+	if x != nil {
+		return x.TransferId
+	}
+	return ""
+}
+
+// Final outcome of a share transfer, sent by the receiver.
+type ShareResult struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	TransferId string                 `protobuf:"bytes,1,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
+	Ok         bool                   `protobuf:"varint,2,opt,name=ok,proto3" json:"ok,omitempty"`
+	// Failure in plain English. It never carries file content.
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShareResult) Reset() {
+	*x = ShareResult{}
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShareResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShareResult) ProtoMessage() {}
+
+func (x *ShareResult) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShareResult.ProtoReflect.Descriptor instead.
+func (*ShareResult) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ShareResult) GetTransferId() string {
+	if x != nil {
+		return x.TransferId
+	}
+	return ""
+}
+
+func (x *ShareResult) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *ShareResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_unison_wire_v1_blob_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_blob_proto_rawDesc = "" +
@@ -687,7 +794,15 @@ const file_unison_wire_v1_blob_proto_rawDesc = "" +
 	"\rShareDecision\x12\x1f\n" +
 	"\vtransfer_id\x18\x01 \x01(\tR\n" +
 	"transferId\x12\x1a\n" +
-	"\baccepted\x18\x02 \x01(\bR\baccepted*w\n" +
+	"\baccepted\x18\x02 \x01(\bR\baccepted\".\n" +
+	"\vShareCancel\x12\x1f\n" +
+	"\vtransfer_id\x18\x01 \x01(\tR\n" +
+	"transferId\"T\n" +
+	"\vShareResult\x12\x1f\n" +
+	"\vtransfer_id\x18\x01 \x01(\tR\n" +
+	"transferId\x12\x0e\n" +
+	"\x02ok\x18\x02 \x01(\bR\x02ok\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error*w\n" +
 	"\n" +
 	"BlobStatus\x12\x1b\n" +
 	"\x17BLOB_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
@@ -708,7 +823,7 @@ func file_unison_wire_v1_blob_proto_rawDescGZIP() []byte {
 }
 
 var file_unison_wire_v1_blob_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_unison_wire_v1_blob_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_unison_wire_v1_blob_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_unison_wire_v1_blob_proto_goTypes = []any{
 	(BlobStatus)(0),       // 0: unison.wire.v1.BlobStatus
 	(*HaveBlob)(nil),      // 1: unison.wire.v1.HaveBlob
@@ -720,14 +835,16 @@ var file_unison_wire_v1_blob_proto_goTypes = []any{
 	(*BlobChunk)(nil),     // 7: unison.wire.v1.BlobChunk
 	(*ShareOffer)(nil),    // 8: unison.wire.v1.ShareOffer
 	(*ShareDecision)(nil), // 9: unison.wire.v1.ShareDecision
-	(*FileMeta)(nil),      // 10: unison.wire.v1.FileMeta
+	(*ShareCancel)(nil),   // 10: unison.wire.v1.ShareCancel
+	(*ShareResult)(nil),   // 11: unison.wire.v1.ShareResult
+	(*FileMeta)(nil),      // 12: unison.wire.v1.FileMeta
 }
 var file_unison_wire_v1_blob_proto_depIdxs = []int32{
 	4,  // 0: unison.wire.v1.BlobReply.tree:type_name -> unison.wire.v1.BlobTree
 	7,  // 1: unison.wire.v1.BlobReply.chunk:type_name -> unison.wire.v1.BlobChunk
 	6,  // 2: unison.wire.v1.BlobReply.error:type_name -> unison.wire.v1.BlobError
 	0,  // 3: unison.wire.v1.BlobError.status:type_name -> unison.wire.v1.BlobStatus
-	10, // 4: unison.wire.v1.ShareOffer.files:type_name -> unison.wire.v1.FileMeta
+	12, // 4: unison.wire.v1.ShareOffer.files:type_name -> unison.wire.v1.FileMeta
 	5,  // [5:5] is the sub-list for method output_type
 	5,  // [5:5] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
@@ -752,7 +869,7 @@ func file_unison_wire_v1_blob_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_wire_v1_blob_proto_rawDesc), len(file_unison_wire_v1_blob_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

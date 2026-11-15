@@ -66,6 +66,7 @@ type testDevice struct {
 	clipboard *fake.Clipboard
 	clock     *fake.Clock
 	endpoint  string
+	downloads string
 }
 
 // newDevice creates a device on the virtual network and serves its local API.
@@ -76,15 +77,17 @@ func newDevice(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, opt
 	name := "device-" + strconv.Itoa(base)
 	clipboard := fake.NewClipboard()
 	clock := fake.NewClock(time.Now())
+	downloads := t.TempDir()
 	created, err := node.New(node.Config{
-		DataDir:   t.TempDir(),
-		Name:      name,
-		Platform:  model.PlatformMacOS,
-		Keystore:  fake.NewKeystore(),
-		Clipboard: clipboard,
-		Discovery: bus.Discovery(),
-		Clock:     clock,
-		Logger:    testLogger(),
+		DataDir:        t.TempDir(),
+		Name:           name,
+		Platform:       model.PlatformMacOS,
+		Keystore:       fake.NewKeystore(),
+		Clipboard:      clipboard,
+		Discovery:      bus.Discovery(),
+		Clock:          clock,
+		Logger:         testLogger(),
+		ShareDownloads: downloads,
 		Limits: node.Limits{
 			DialTimeout:       3 * time.Second,
 			ReconnectDelay:    50 * time.Millisecond,
@@ -102,7 +105,7 @@ func newDevice(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, opt
 	if opts.DeviceName == "" {
 		opts.DeviceName = name
 	}
-	device := &testDevice{Node: created, name: name, clipboard: clipboard, clock: clock}
+	device := &testDevice{Node: created, name: name, clipboard: clipboard, clock: clock, downloads: downloads}
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 		defer cancel()

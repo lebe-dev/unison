@@ -7,6 +7,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/pairing"
+	"github.com/lebe-dev/unison/core/share"
 )
 
 // EventKind classifies a node event.
@@ -42,6 +43,8 @@ const (
 	EventPairingFailed
 	// EventPairingClosed reports a closed pairing window.
 	EventPairingClosed
+	// EventTransfer reports a change of a file transfer.
+	EventTransfer
 )
 
 // String returns the name of the event kind.
@@ -69,6 +72,8 @@ func (k EventKind) String() string {
 		return "pairing-failed"
 	case EventPairingClosed:
 		return "pairing-closed"
+	case EventTransfer:
+		return "transfer"
 	default:
 		return "unknown"
 	}
@@ -102,6 +107,8 @@ type Event struct {
 	// Version is the protocol version of the peer, set on
 	// EventPeerIncompatible.
 	Version uint32
+	// Transfer is the file transfer, set on EventTransfer.
+	Transfer share.Transfer
 	// Err reports a failure.
 	Err error
 	// At is when the event happened.

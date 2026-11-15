@@ -96,6 +96,9 @@ message FilePayload {
   string file_name = 2;
   // Size in bytes. The size of the descriptor is used when zero.
   int64 size = 3;
+  // Receivers, device IDs in lowercase hex. Every online paired device is used
+  // when empty.
+  repeated string device_ids = 4;
 }
 
 // A service instance to announce or withdraw on the local network.

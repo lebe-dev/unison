@@ -117,8 +117,11 @@ func chunkLen(size int64, index int) int {
 }
 
 // requestHeader returns the header of an outgoing blob request stream.
-func requestHeader(transferID string) *wirev1.StreamHeader {
-	return &wirev1.StreamHeader{PayloadType: PayloadRequest, TransferId: transferID}
+func requestHeader(transferID, payloadType string) *wirev1.StreamHeader {
+	if payloadType == "" {
+		payloadType = PayloadRequest
+	}
+	return &wirev1.StreamHeader{PayloadType: payloadType, TransferId: transferID}
 }
 
 // treeReply returns the frame that carries the hash tree of a blob.

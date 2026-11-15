@@ -171,7 +171,10 @@ handler, which also states the capability its streams need.
 Handlers are registered before the session is opened, because the peer may send messages right after
 its Hello. The limits are constants of that package: one MiB per control message and per stream
 frame, 16 request and 32 transfer streams in flight, a ten second Hello and stream header timeout,
-five clip announcements per second with a burst of ten.
+five clip announcements per second with a burst of ten. A stream releases its slot of the connection
+only when both of its directions are closed, so the session drops the rest of the read side of a
+request stream once its handler is done; a fetch that keeps its streams open stalls as soon as it
+reaches the limit of the connection.
 
 `core/node` assembles the core into a running device and is the only package that composes the
 domains. `node.New(node.Config{...})` takes the data directory, the device name and platform, the
@@ -204,8 +207,8 @@ later download, and an item that needs confirmation waits for the user. Download
 
 `Subscribe` returns a `*node.Subscriber` with an event queue of its own: a subscriber
 that falls behind misses events instead of holding up the core. The events are `peer-online`,
-`peer-offline`, `clipboard`, `clip-download`, `clip-apply`, `peer-incompatible` and the pairing
-events `pairing-candidate`, `pairing-request`, `pairing-paired`, `pairing-failed` and
+`peer-offline`, `clipboard`, `clip-download`, `clip-apply`, `peer-incompatible`, `transfer` and the
+pairing events `pairing-candidate`, `pairing-request`, `pairing-paired`, `pairing-failed` and
 `pairing-closed`. The node also owns the
 pairing window (`OpenPairing`, `PairingCandidates`, `StartPairing`, `ConfirmPairing`,
 `RejectPairing`, `ExtendPairing`, `ClosePairing`) and translates the window events. `AddSessionHook`
@@ -238,15 +241,36 @@ writes them to a path, and `Copy` puts an item back on the local clipboard. The 
 the log as `ListHistory`, `GetHistoryItem`, `DeleteHistoryItem`, `FetchHistoryItem` and
 `CopyHistoryItem`; the CLI prints it with `unison history` and `unison clip get --from`.
 
+`core/share` sends files the user picked. The sender stores the files in the blob store and offers
+them with `ShareOffer{transfer_id, files}`, and the receiver answers with `ShareDecision`. The
+trust matrix decides what happens to an offer: a Personal peer is accepted at once, a Friends peer
+is kept as a pending request until the user accepts or rejects it, and a peer the matrix refuses
+gets a rejection. Nothing of an undecided offer is stored: the payloads are downloaded only after
+the decision.
+
+A transfer downloads its files by pulling them over the blob protocol with the payload type
+`share.request` and the transfer ID of the offer, so an interrupted transfer continues from the
+chunks that are already stored and every chunk is verified against the hash tree before it is
+written. The sender serves those requests only while it tracks the transfer as offered, accepted
+or transferring, which is what the `transfer.ShareAuthorizer` of the share service checks. The
+received file is written to the downloads directory, which is the `share.downloads_dir` setting or
+`~/Downloads/Unison` by default, under a safe name with a counter when the name is taken; a
+platform that keeps files elsewhere passes a `Sink`, which is how Android hands them to
+`OpenBlobSink`. `ShareCancel` stops a transfer from either side, `ShareResult` reports the outcome
+of the receiver back to the sender, and the service resumes a transfer when the session with its
+peer comes back. The limits are 32 files per transfer, the size limit of the blob store per file,
+16 offers that wait for a decision, ten minutes for an offer to wait and 64 transfers kept in
+memory.
+
 `core/api` serves the local API over a node: the `UnisonService` of `proto/unison/local/v1` with
-the status, device, pairing, clipboard, pause and settings calls. The service takes the node, the
-daemon version and the device name the node runs with, and an optional `LocalClip`, which is how
-`SetClip` reaches the clipboard pipeline: without it the call reports that it is not implemented,
-and the daemon passes the pipeline of the node. `Handler` returns the connect handler with the
-request and response size limits. The errors of the core are mapped to connect codes: a missing
-peer is `not_found`, a closed pairing window or a stopped node `failed_precondition`, invalid input
-`invalid_argument` and a refused device `permission_denied`. The calls that manage paired devices
-are part of the contract but report `unimplemented`.
+the status, device, pairing, clipboard, transfer, pause and settings calls. The service takes the
+node, the daemon version and the device name the node runs with, and an optional `LocalClip`, which
+is how `SetClip` reaches the clipboard pipeline: without it the call reports that it is not
+implemented, and the daemon passes the pipeline of the node. `Handler` returns the connect handler
+with the request and response size limits. The errors of the core are mapped to connect codes: a
+missing peer is `not_found`, a closed pairing window or a stopped node `failed_precondition`,
+invalid input `invalid_argument` and a refused device `permission_denied`. The calls that manage
+paired devices are part of the contract but report `unimplemented`.
 
 `core/api/localconn` serves that API on the endpoint of the daemon: the unix socket
 `~/Library/Application Support/Unison/unisond.sock` on macOS and the named pipe
@@ -297,8 +321,8 @@ driven without the desktop app. `status` shows the daemon, the network and the p
 lists the paired devices and `devices rename` changes a name, `pair` opens a pairing window, offers
 the devices that are open for pairing and shows the short authentication code the user has to
 compare, `clip get` prints the last clipboard item, `clip set` copies standard input to the
-clipboard, and `pause` pauses or resumes the clipboard synchronization for a duration or until it
-is turned off.
+clipboard, `send` offers a file or standard input to the devices of `--to`, and `pause` pauses or
+resumes the clipboard synchronization for a duration or until it is turned off.
 
 A device is addressed by a unique prefix of its fingerprint, a prefix of its device ID or its name.
 Output is plain text by default and JSON with `--json`, which prints the answer in the JSON form of

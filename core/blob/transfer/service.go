@@ -28,6 +28,26 @@ type ServiceOptions struct {
 	FrameTimeout time.Duration
 	// Logger receives transfer events. Nothing is logged when nil.
 	Logger *slog.Logger
+	// Served reports every chunk the service sends. It runs on the stream
+	// goroutine and must not block.
+	Served func(Served)
+}
+
+// Served describes one chunk a service sent to a peer.
+type Served struct {
+	// Peer is the device that asked for the chunk.
+	Peer model.DeviceID
+	// TransferID is the share the request belongs to, empty for a blob of the
+	// history.
+	TransferID string
+	// Hash is the BLAKE3 hash of the blob.
+	Hash [32]byte
+	// Index is the chunk that was sent.
+	Index int
+	// Chunks is the number of chunks of the blob.
+	Chunks int
+	// Bytes is the size of the chunk.
+	Bytes int64
 }
 
 // Service serves blobs to peers.
@@ -36,6 +56,7 @@ type Service struct {
 	share   ShareAuthorizer
 	timeout time.Duration
 	log     *slog.Logger
+	served  func(Served)
 }
 
 // NewService prepares a blob service.
@@ -48,6 +69,7 @@ func NewService(opts ServiceOptions) (*Service, error) {
 		share:   opts.Share,
 		timeout: opts.FrameTimeout,
 		log:     opts.Logger,
+		served:  opts.Served,
 	}
 	if s.timeout <= 0 {
 		s.timeout = DefaultFrameTimeout
@@ -167,6 +189,14 @@ func (s *Service) HandleRequest(ctx context.Context, peer model.DeviceID, stream
 		if err := s.write(ctx, stream, chunkReply(i, data, sum[:])); err != nil {
 			return err
 		}
+		s.count(Served{
+			Peer:       peer,
+			TransferID: req.transfer,
+			Hash:       req.hash,
+			Index:      i,
+			Chunks:     info.Chunks,
+			Bytes:      int64(len(data)),
+		})
 	}
 
 	s.log.Info("served blob", "peer", peer, "hash", hashHex(req.hash),
@@ -209,6 +239,14 @@ func (s *Service) write(ctx context.Context, stream *session.Request, msg proto.
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 	return stream.Write(ctx, msg)
+}
+
+// count reports one served chunk.
+func (s *Service) count(served Served) {
+	if s.served == nil {
+		return
+	}
+	s.served(served)
 }
 
 // hashHex returns the hexadecimal form of a hash used in logs.

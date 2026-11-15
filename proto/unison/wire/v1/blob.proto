@@ -90,3 +90,16 @@ message ShareDecision {
   string transfer_id = 1;
   bool accepted = 2;
 }
+
+// Cancellation of a share transfer. Either side may send it.
+message ShareCancel {
+  string transfer_id = 1;
+}
+
+// Final outcome of a share transfer, sent by the receiver.
+message ShareResult {
+  string transfer_id = 1;
+  bool ok = 2;
+  // Failure in plain English. It never carries file content.
+  string error = 3;
+}

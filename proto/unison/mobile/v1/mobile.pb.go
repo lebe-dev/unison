@@ -584,7 +584,10 @@ type FilePayload struct {
 	MimeType string                 `protobuf:"bytes,1,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
 	FileName string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
 	// Size in bytes. The size of the descriptor is used when zero.
-	Size          int64 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	Size int64 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	// Receivers, device IDs in lowercase hex. Every online paired device is used
+	// when empty.
+	DeviceIds     []string `protobuf:"bytes,4,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -638,6 +641,13 @@ func (x *FilePayload) GetSize() int64 {
 		return x.Size
 	}
 	return 0
+}
+
+func (x *FilePayload) GetDeviceIds() []string {
+	if x != nil {
+		return x.DeviceIds
+	}
+	return nil
 }
 
 // A service instance to announce or withdraw on the local network.
@@ -805,11 +815,13 @@ const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\fCallResponse\x12\x18\n" +
 	"\apayload\x18\x01 \x01(\fR\apayload\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"[\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"z\n" +
 	"\vFilePayload\x12\x1b\n" +
 	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x1b\n" +
 	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x12\n" +
-	"\x04size\x18\x03 \x01(\x03R\x04size\"\xe7\x01\n" +
+	"\x04size\x18\x03 \x01(\x03R\x04size\x12\x1d\n" +
+	"\n" +
+	"device_ids\x18\x04 \x03(\tR\tdeviceIds\"\xe7\x01\n" +
 	"\fAnnouncement\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x1a\n" +
 	"\bwithdraw\x18\x02 \x01(\bR\bwithdraw\x12\x1a\n" +

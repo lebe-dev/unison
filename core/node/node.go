@@ -19,6 +19,7 @@ import (
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/session"
+	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/store"
 	"github.com/lebe-dev/unison/core/transport"
 	"github.com/lebe-dev/unison/core/trust"
@@ -127,6 +128,12 @@ type Config struct {
 	// BlobLimit is the size limit of the blob store in bytes. The package
 	// default is used when zero and the stored setting overrides it.
 	BlobLimit int64
+	// ShareSink receives the files a peer shares. The downloads directory is
+	// used when nil.
+	ShareSink share.Sink
+	// ShareDownloads is the directory of received shared files. The stored
+	// setting and then the user downloads directory are used when empty.
+	ShareDownloads string
 	// ListenPacket binds the packet connections. A UDP socket is bound when
 	// nil.
 	ListenPacket ListenPacketFunc
@@ -169,6 +176,8 @@ type Node struct {
 
 	blobService *transfer.Service
 	fetcher     *transfer.Fetcher
+
+	share *share.Service
 
 	gossip *gossip.Service
 
@@ -245,7 +254,10 @@ func New(cfg Config) (*Node, error) {
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
 	}
-	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory, n.installGossip, n.installPolicy, n.installRevocation}
+	n.hooks = []SessionHook{
+		n.installClip, n.installTransfer, n.installHistory, n.installGossip,
+		n.installPolicy, n.installRevocation, n.installShare,
+	}
 	return n, nil
 }
 
@@ -502,6 +514,9 @@ func (n *Node) open(ctx context.Context) error {
 	n.dialer = dialer
 
 	if err := n.openBlobs(db); err != nil {
+		return err
+	}
+	if err := n.openShare(db); err != nil {
 		return err
 	}
 	decider, err := n.openPolicy(ctx, db)
@@ -767,6 +782,9 @@ func (n *Node) shutdown(ctx context.Context, cancel context.CancelFunc) error {
 	}
 	if n.gossip != nil {
 		n.gossip.Close()
+	}
+	if n.share != nil {
+		n.share.Close()
 	}
 	n.closeSessions()
 

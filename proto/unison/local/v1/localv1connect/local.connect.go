@@ -91,6 +91,20 @@ const (
 	// UnisonServiceApplyHistoryItemProcedure is the fully-qualified name of the UnisonService's
 	// ApplyHistoryItem RPC.
 	UnisonServiceApplyHistoryItemProcedure = "/unison.local.v1.UnisonService/ApplyHistoryItem"
+	// UnisonServiceSendFilesProcedure is the fully-qualified name of the UnisonService's SendFiles RPC.
+	UnisonServiceSendFilesProcedure = "/unison.local.v1.UnisonService/SendFiles"
+	// UnisonServiceListTransfersProcedure is the fully-qualified name of the UnisonService's
+	// ListTransfers RPC.
+	UnisonServiceListTransfersProcedure = "/unison.local.v1.UnisonService/ListTransfers"
+	// UnisonServiceCancelTransferProcedure is the fully-qualified name of the UnisonService's
+	// CancelTransfer RPC.
+	UnisonServiceCancelTransferProcedure = "/unison.local.v1.UnisonService/CancelTransfer"
+	// UnisonServiceAcceptTransferProcedure is the fully-qualified name of the UnisonService's
+	// AcceptTransfer RPC.
+	UnisonServiceAcceptTransferProcedure = "/unison.local.v1.UnisonService/AcceptTransfer"
+	// UnisonServiceRejectTransferProcedure is the fully-qualified name of the UnisonService's
+	// RejectTransfer RPC.
+	UnisonServiceRejectTransferProcedure = "/unison.local.v1.UnisonService/RejectTransfer"
 	// UnisonServiceGetPauseProcedure is the fully-qualified name of the UnisonService's GetPause RPC.
 	UnisonServiceGetPauseProcedure = "/unison.local.v1.UnisonService/GetPause"
 	// UnisonServiceSetPauseProcedure is the fully-qualified name of the UnisonService's SetPause RPC.
@@ -137,6 +151,14 @@ type UnisonServiceClient interface {
 	CopyHistoryItem(context.Context, *connect.Request[v1.CopyHistoryItemRequest]) (*connect.Response[v1.CopyHistoryItemResponse], error)
 	// Apply an item that waits for confirmation to the local clipboard.
 	ApplyHistoryItem(context.Context, *connect.Request[v1.ApplyHistoryItemRequest]) (*connect.Response[v1.ApplyHistoryItemResponse], error)
+	// File transfers with the paired devices.
+	SendFiles(context.Context, *connect.Request[v1.SendFilesRequest]) (*connect.Response[v1.SendFilesResponse], error)
+	ListTransfers(context.Context, *connect.Request[v1.ListTransfersRequest]) (*connect.Response[v1.ListTransfersResponse], error)
+	CancelTransfer(context.Context, *connect.Request[v1.CancelTransferRequest]) (*connect.Response[v1.CancelTransferResponse], error)
+	// Accept an incoming offer that waits for a decision.
+	AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error)
+	// Reject an incoming offer that waits for a decision.
+	RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error)
 	// Pause of the clipboard synchronization.
 	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
 	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
@@ -282,6 +304,36 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("ApplyHistoryItem")),
 			connect.WithClientOptions(opts...),
 		),
+		sendFiles: connect.NewClient[v1.SendFilesRequest, v1.SendFilesResponse](
+			httpClient,
+			baseURL+UnisonServiceSendFilesProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SendFiles")),
+			connect.WithClientOptions(opts...),
+		),
+		listTransfers: connect.NewClient[v1.ListTransfersRequest, v1.ListTransfersResponse](
+			httpClient,
+			baseURL+UnisonServiceListTransfersProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ListTransfers")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelTransfer: connect.NewClient[v1.CancelTransferRequest, v1.CancelTransferResponse](
+			httpClient,
+			baseURL+UnisonServiceCancelTransferProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("CancelTransfer")),
+			connect.WithClientOptions(opts...),
+		),
+		acceptTransfer: connect.NewClient[v1.AcceptTransferRequest, v1.AcceptTransferResponse](
+			httpClient,
+			baseURL+UnisonServiceAcceptTransferProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("AcceptTransfer")),
+			connect.WithClientOptions(opts...),
+		),
+		rejectTransfer: connect.NewClient[v1.RejectTransferRequest, v1.RejectTransferResponse](
+			httpClient,
+			baseURL+UnisonServiceRejectTransferProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RejectTransfer")),
+			connect.WithClientOptions(opts...),
+		),
 		getPause: connect.NewClient[v1.GetPauseRequest, v1.GetPauseResponse](
 			httpClient,
 			baseURL+UnisonServiceGetPauseProcedure,
@@ -332,6 +384,11 @@ type unisonServiceClient struct {
 	fetchHistoryItem      *connect.Client[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse]
 	copyHistoryItem       *connect.Client[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse]
 	applyHistoryItem      *connect.Client[v1.ApplyHistoryItemRequest, v1.ApplyHistoryItemResponse]
+	sendFiles             *connect.Client[v1.SendFilesRequest, v1.SendFilesResponse]
+	listTransfers         *connect.Client[v1.ListTransfersRequest, v1.ListTransfersResponse]
+	cancelTransfer        *connect.Client[v1.CancelTransferRequest, v1.CancelTransferResponse]
+	acceptTransfer        *connect.Client[v1.AcceptTransferRequest, v1.AcceptTransferResponse]
+	rejectTransfer        *connect.Client[v1.RejectTransferRequest, v1.RejectTransferResponse]
 	getPause              *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
 	setPause              *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
 	getSettings           *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
@@ -443,6 +500,31 @@ func (c *unisonServiceClient) ApplyHistoryItem(ctx context.Context, req *connect
 	return c.applyHistoryItem.CallUnary(ctx, req)
 }
 
+// SendFiles calls unison.local.v1.UnisonService.SendFiles.
+func (c *unisonServiceClient) SendFiles(ctx context.Context, req *connect.Request[v1.SendFilesRequest]) (*connect.Response[v1.SendFilesResponse], error) {
+	return c.sendFiles.CallUnary(ctx, req)
+}
+
+// ListTransfers calls unison.local.v1.UnisonService.ListTransfers.
+func (c *unisonServiceClient) ListTransfers(ctx context.Context, req *connect.Request[v1.ListTransfersRequest]) (*connect.Response[v1.ListTransfersResponse], error) {
+	return c.listTransfers.CallUnary(ctx, req)
+}
+
+// CancelTransfer calls unison.local.v1.UnisonService.CancelTransfer.
+func (c *unisonServiceClient) CancelTransfer(ctx context.Context, req *connect.Request[v1.CancelTransferRequest]) (*connect.Response[v1.CancelTransferResponse], error) {
+	return c.cancelTransfer.CallUnary(ctx, req)
+}
+
+// AcceptTransfer calls unison.local.v1.UnisonService.AcceptTransfer.
+func (c *unisonServiceClient) AcceptTransfer(ctx context.Context, req *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error) {
+	return c.acceptTransfer.CallUnary(ctx, req)
+}
+
+// RejectTransfer calls unison.local.v1.UnisonService.RejectTransfer.
+func (c *unisonServiceClient) RejectTransfer(ctx context.Context, req *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error) {
+	return c.rejectTransfer.CallUnary(ctx, req)
+}
+
 // GetPause calls unison.local.v1.UnisonService.GetPause.
 func (c *unisonServiceClient) GetPause(ctx context.Context, req *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {
 	return c.getPause.CallUnary(ctx, req)
@@ -497,6 +579,14 @@ type UnisonServiceHandler interface {
 	CopyHistoryItem(context.Context, *connect.Request[v1.CopyHistoryItemRequest]) (*connect.Response[v1.CopyHistoryItemResponse], error)
 	// Apply an item that waits for confirmation to the local clipboard.
 	ApplyHistoryItem(context.Context, *connect.Request[v1.ApplyHistoryItemRequest]) (*connect.Response[v1.ApplyHistoryItemResponse], error)
+	// File transfers with the paired devices.
+	SendFiles(context.Context, *connect.Request[v1.SendFilesRequest]) (*connect.Response[v1.SendFilesResponse], error)
+	ListTransfers(context.Context, *connect.Request[v1.ListTransfersRequest]) (*connect.Response[v1.ListTransfersResponse], error)
+	CancelTransfer(context.Context, *connect.Request[v1.CancelTransferRequest]) (*connect.Response[v1.CancelTransferResponse], error)
+	// Accept an incoming offer that waits for a decision.
+	AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error)
+	// Reject an incoming offer that waits for a decision.
+	RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error)
 	// Pause of the clipboard synchronization.
 	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
 	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
@@ -638,6 +728,36 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("ApplyHistoryItem")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceSendFilesHandler := connect.NewUnaryHandler(
+		UnisonServiceSendFilesProcedure,
+		svc.SendFiles,
+		connect.WithSchema(unisonServiceMethods.ByName("SendFiles")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceListTransfersHandler := connect.NewUnaryHandler(
+		UnisonServiceListTransfersProcedure,
+		svc.ListTransfers,
+		connect.WithSchema(unisonServiceMethods.ByName("ListTransfers")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceCancelTransferHandler := connect.NewUnaryHandler(
+		UnisonServiceCancelTransferProcedure,
+		svc.CancelTransfer,
+		connect.WithSchema(unisonServiceMethods.ByName("CancelTransfer")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceAcceptTransferHandler := connect.NewUnaryHandler(
+		UnisonServiceAcceptTransferProcedure,
+		svc.AcceptTransfer,
+		connect.WithSchema(unisonServiceMethods.ByName("AcceptTransfer")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRejectTransferHandler := connect.NewUnaryHandler(
+		UnisonServiceRejectTransferProcedure,
+		svc.RejectTransfer,
+		connect.WithSchema(unisonServiceMethods.ByName("RejectTransfer")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceGetPauseHandler := connect.NewUnaryHandler(
 		UnisonServiceGetPauseProcedure,
 		svc.GetPause,
@@ -706,6 +826,16 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceCopyHistoryItemHandler.ServeHTTP(w, r)
 		case UnisonServiceApplyHistoryItemProcedure:
 			unisonServiceApplyHistoryItemHandler.ServeHTTP(w, r)
+		case UnisonServiceSendFilesProcedure:
+			unisonServiceSendFilesHandler.ServeHTTP(w, r)
+		case UnisonServiceListTransfersProcedure:
+			unisonServiceListTransfersHandler.ServeHTTP(w, r)
+		case UnisonServiceCancelTransferProcedure:
+			unisonServiceCancelTransferHandler.ServeHTTP(w, r)
+		case UnisonServiceAcceptTransferProcedure:
+			unisonServiceAcceptTransferHandler.ServeHTTP(w, r)
+		case UnisonServiceRejectTransferProcedure:
+			unisonServiceRejectTransferHandler.ServeHTTP(w, r)
 		case UnisonServiceGetPauseProcedure:
 			unisonServiceGetPauseHandler.ServeHTTP(w, r)
 		case UnisonServiceSetPauseProcedure:
@@ -805,6 +935,26 @@ func (UnimplementedUnisonServiceHandler) CopyHistoryItem(context.Context, *conne
 
 func (UnimplementedUnisonServiceHandler) ApplyHistoryItem(context.Context, *connect.Request[v1.ApplyHistoryItemRequest]) (*connect.Response[v1.ApplyHistoryItemResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ApplyHistoryItem is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SendFiles(context.Context, *connect.Request[v1.SendFilesRequest]) (*connect.Response[v1.SendFilesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SendFiles is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ListTransfers(context.Context, *connect.Request[v1.ListTransfersRequest]) (*connect.Response[v1.ListTransfersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ListTransfers is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) CancelTransfer(context.Context, *connect.Request[v1.CancelTransferRequest]) (*connect.Response[v1.CancelTransferResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.CancelTransfer is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.AcceptTransfer is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RejectTransfer is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {
