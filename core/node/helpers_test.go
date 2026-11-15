@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"sync"
@@ -122,13 +123,14 @@ func newTestNodeAt(t *testing.T, network *vnet.Network, bus *fake.Bus, base int,
 	clipboard := fake.NewClipboard()
 	sockets := newSocketFactory(network, base)
 	created, err := New(Config{
-		DataDir:   dir,
-		Name:      fmt.Sprintf("device-%d", base),
-		Platform:  model.PlatformMacOS,
-		Keystore:  keys,
-		Clipboard: clipboard,
-		Discovery: bus.Discovery(),
-		Logger:    testLogger(base),
+		DataDir:        dir,
+		Name:           fmt.Sprintf("device-%d", base),
+		Platform:       model.PlatformMacOS,
+		Keystore:       keys,
+		Clipboard:      clipboard,
+		Discovery:      bus.Discovery(),
+		Logger:         testLogger(base),
+		ShareDownloads: filepath.Join(dir, "Downloads"),
 		Limits: Limits{
 			DialTimeout:       3 * time.Second,
 			ReconnectDelay:    50 * time.Millisecond,
