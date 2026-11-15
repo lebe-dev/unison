@@ -61,7 +61,7 @@ func TestBrowserCandidates(t *testing.T) {
 		map[string]string{"v": "1", "tag": "r2ffkbe3kxzai"},
 		net.ParseIP("192.0.2.10"), net.ParseIP("fe80::1"))
 
-	cache.update(msg, "en0", now)
+	cache.update(msg, "_unison._udp.local.", "en0", now)
 	got := cache.candidates("_unison._udp.local.", now, nil, matchAll)
 	if len(got) != 2 {
 		t.Fatalf("got %d candidates, want 2: %v", len(got), got)
@@ -90,13 +90,13 @@ func TestBrowserTagChange(t *testing.T) {
 	ip := net.ParseIP("192.0.2.10")
 
 	cache.update(response(typ,
-		map[string]string{"v": "1", "tag": "r2ffkbe3kxzai"}, ip), "en0", now)
+		map[string]string{"v": "1", "tag": "r2ffkbe3kxzai"}, ip), typ, "en0", now)
 	if got := cache.candidates(typ, now, nil, matchAll); len(got) != 1 {
 		t.Fatalf("got %d candidates, want 1", len(got))
 	}
 
 	cache.update(response(typ,
-		map[string]string{"v": "1", "tag": "lm6xtpxkblwgm"}, ip), "en0", now)
+		map[string]string{"v": "1", "tag": "lm6xtpxkblwgm"}, ip), typ, "en0", now)
 	got := cache.candidates(typ, now, nil, matchAll)
 	if len(got) != 1 || got[0].TXT["tag"] != "lm6xtpxkblwgm" {
 		t.Fatalf("tag change produced %v, want one candidate with the new tag", got)
@@ -110,7 +110,7 @@ func TestBrowserFilters(t *testing.T) {
 
 	cache := &browserCache{}
 	cache.update(response(typ,
-		map[string]string{"v": "1", "tag": "r2ffkbe3kxzai"}, ip), "en0", now)
+		map[string]string{"v": "1", "tag": "r2ffkbe3kxzai"}, ip), typ, "en0", now)
 
 	if got := cache.candidates(typ, now, func(string) bool { return true }, matchAll); len(got) != 0 {
 		t.Fatalf("own instance produced %d candidates", len(got))
@@ -121,7 +121,7 @@ func TestBrowserFilters(t *testing.T) {
 
 	other := &browserCache{}
 	other.update(response(typ,
-		map[string]string{"v": "2"}, ip), "en0", now)
+		map[string]string{"v": "2"}, ip), typ, "en0", now)
 	if got := other.candidates(typ, now, nil, matchAll); len(got) != 0 {
 		t.Fatalf("instance with another version produced %d candidates", len(got))
 	}
@@ -132,7 +132,7 @@ func TestBrowserExpiry(t *testing.T) {
 	typ := "_unison._udp.local."
 	cache := &browserCache{}
 	cache.update(response(typ,
-		map[string]string{"v": "1"}, net.ParseIP("192.0.2.10")), "en0", now)
+		map[string]string{"v": "1"}, net.ParseIP("192.0.2.10")), typ, "en0", now)
 
 	later := now.Add(3 * time.Minute)
 	if got := cache.candidates(typ, later, nil, matchAll); len(got) != 0 {
@@ -145,9 +145,9 @@ func TestBrowserExpiry(t *testing.T) {
 
 func TestBrowserOtherService(t *testing.T) {
 	now := epochTime(1000)
+	pairing := "_unison-pair._udp.local."
 	cache := &browserCache{}
-	cache.update(response("_unison-pair._udp.local.",
-		map[string]string{"v": "1"}, net.ParseIP("192.0.2.10")), "en0", now)
+	cache.update(response(pairing, map[string]string{"v": "1"}, net.ParseIP("192.0.2.10")), pairing, "en0", now)
 
 	if got := cache.candidates("_unison._udp.local.", now, nil, matchAll); len(got) != 0 {
 		t.Fatalf("pairing instance produced %d main candidates", len(got))

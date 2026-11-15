@@ -54,7 +54,7 @@ func (b *browser) handle(p packet, now time.Time) {
 		return
 	}
 
-	b.cache.update(p.msg, ifaceName(p.iface), now)
+	b.cache.update(p.msg, b.typ, ifaceName(p.iface), now)
 	for _, c := range b.cache.candidates(b.typ, now, b.isOwn, b.match) {
 		select {
 		case b.ch <- c:
@@ -119,8 +119,8 @@ type browserCache struct {
 	emitted   map[string]string
 }
 
-// update merges the records of msg into the cache.
-func (b *browserCache) update(msg *dns.Msg, ifaceName string, now time.Time) {
+// update merges the records of msg for service typ into the cache.
+func (b *browserCache) update(msg *dns.Msg, typ, ifaceName string, now time.Time) {
 	if b.instances == nil {
 		b.instances = make(map[string]*instance)
 		b.hosts = make(map[string]*host)
@@ -135,12 +135,21 @@ func (b *browserCache) update(msg *dns.Msg, ifaceName string, now time.Time) {
 	for _, rr := range sections {
 		switch rr := rr.(type) {
 		case *dns.PTR:
+			if !strings.EqualFold(rr.Hdr.Name, typ) {
+				continue
+			}
 			b.instance(rr.Ptr, now, rr.Hdr.Ttl)
 		case *dns.SRV:
+			if !strings.HasSuffix(strings.ToLower(rr.Hdr.Name), strings.ToLower(typ)) {
+				continue
+			}
 			inst := b.instance(rr.Hdr.Name, now, rr.Hdr.Ttl)
 			inst.port = int(rr.Port)
 			inst.host = strings.ToLower(rr.Target)
 		case *dns.TXT:
+			if !strings.HasSuffix(strings.ToLower(rr.Hdr.Name), strings.ToLower(typ)) {
+				continue
+			}
 			b.instance(rr.Hdr.Name, now, rr.Hdr.Ttl).txt = parseTXT(rr.Txt)
 		case *dns.A:
 			if h := b.host(rr.Hdr.Name, now, rr.Hdr.Ttl); h != nil {
