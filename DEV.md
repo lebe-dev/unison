@@ -334,6 +334,24 @@ under `service.operating_mode`; the startup device name is stored under `device.
 manifest also declares `ACCESS_LOCAL_NETWORK`, which apps targeting API 37 need to reach the
 local network.
 
+Incoming clipboard items reach the system clipboard from `UnisonService`: the core hands a
+`ClipPayload` to the platform callback, which writes plain text with `ClipData.newPlainText` and
+text with HTML with `ClipData.newHtmlText`. Writing is allowed in the background, reading is not,
+so a local clipboard is read only by a focused app. `SendClipboardActivity` is such an app: the
+`SendClipboardTile` quick settings tile and the send action of the persistent notification open it
+as a transparent window, it reads the clipboard when the window gains focus, submits the content
+with `Mobile.submitClip` and finishes. A clip that carries
+`ClipDescription.EXTRA_IS_SENSITIVE` is never read or sent, and a clip without text is reported as
+unsupported. The app screen offers the clipboard on focus when its hash differs from
+`clipboard.last_hash` of the `unison.settings` preferences; the hash of the last content this
+device sent or received is kept there, so content that just arrived is not offered back to its
+origin.
+
+`PauseClipboardTile` opens a dialog with a pause for 5 minutes, for 1 hour or until turned off,
+and turns the pause off again. The pause lives in the core and covers both directions of the
+synchronization. The manifest declares a `FileProvider` under the `app.unison.files` authority
+with a cache directory for clipboard files, which image and file payloads will use.
+
 Identity seeds and the store key are wrapped by an AES-GCM master key that lives in the Android
 Keystore under the `unison.master` alias, so a process restart keeps the same device ID. The
 wrapped blobs are files in the app files directory and the master key never leaves the keystore.
