@@ -189,10 +189,19 @@ device again and retries every peer that is offline. The main listener port is s
 transport in `transport.main_port`, so the address cached by the other devices survives a restart.
 
 The clipboard pipeline announces every captured item to the online Personal peers and applies what
-they announce. `Subscribe` returns a `*node.Subscriber` with an event queue of its own: a subscriber
+they announce. Text, images and files are captured: images are normalized to PNG and the original
+format travels as a second representation while it stays below twice the PNG size. Payloads above
+64 KiB go to the blob store, so the announcement of a large item carries only hashes; files are
+hashed on a background queue and announced once the hash is ready. An incoming item follows the
+policy: an applied item is written to the clipboard, a metadata item stays in the history for a
+later download, and an item that needs confirmation waits for the user. Downloaded files go to
+`~/Downloads/Unison` and reach the clipboard as paths.
+
+`Subscribe` returns a `*node.Subscriber` with an event queue of its own: a subscriber
 that falls behind misses events instead of holding up the core. The events are `peer-online`,
-`peer-offline`, `clipboard`, `peer-incompatible` and the pairing events `pairing-candidate`,
-`pairing-request`, `pairing-paired`, `pairing-failed` and `pairing-closed`. The node also owns the
+`peer-offline`, `clipboard`, `clip-download`, `clip-apply`, `peer-incompatible` and the pairing
+events `pairing-candidate`, `pairing-request`, `pairing-paired`, `pairing-failed` and
+`pairing-closed`. The node also owns the
 pairing window (`OpenPairing`, `PairingCandidates`, `StartPairing`, `ConfirmPairing`,
 `RejectPairing`, `ExtendPairing`, `ClosePairing`) and translates the window events. `AddSessionHook`
 registers handlers on every new session, which is how the clipboard and the blob transfer attach to
