@@ -10,6 +10,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/store"
 	"github.com/lebe-dev/unison/core/trust"
@@ -85,7 +86,9 @@ func bootstrap(ctx context.Context, dataDir string, keystore ports.Keystore, log
 // written by the node looks newer than the known schema.
 func bootstrapMigrations() ([]store.Migration, error) {
 	var migrations []store.Migration
-	for _, source := range []func() ([]store.Migration, error){trust.Migrations, clip.Migrations, blob.Migrations} {
+	for _, source := range []func() ([]store.Migration, error){
+		trust.Migrations, clip.Migrations, blob.Migrations, history.Migrations,
+	} {
 		found, err := source()
 		if err != nil {
 			return nil, err

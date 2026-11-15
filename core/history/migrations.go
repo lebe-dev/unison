@@ -6,8 +6,10 @@ import (
 	"github.com/lebe-dev/unison/core/store"
 )
 
-// migrationsBase is the version block owned by the history domain.
-const migrationsBase = 300
+// migrationsBase is the version block owned by the history domain. It sits
+// above the blocks that were in use before this domain, so a database written
+// by an older build still receives these migrations.
+const migrationsBase = 500
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
