@@ -69,6 +69,16 @@ proto:
 proto-lint:
     buf lint
 
+relay_image := "unison-relay:" + version
+
+# Build the relay container image.
+relay-image:
+    docker build --build-arg VERSION={{version}} -t {{relay_image}} -f deploy/relay/Dockerfile .
+
+# Run the relay container from deploy/relay/docker-compose.yml.
+relay-run:
+    RELAY_IMAGE={{relay_image}} RELAY_VERSION={{version}} docker compose -f deploy/relay/docker-compose.yml up --build
+
 # Check the code before committing.
 check: lint proto-lint test
 
