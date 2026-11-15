@@ -1,0 +1,191 @@
+import { ConnectError } from "@connectrpc/connect";
+import type { UnlistenFn } from "@tauri-apps/api/event";
+import { client } from "./api/client";
+import {
+  EventKind,
+  PauseMode,
+  type Device,
+  type Event as DaemonEvent,
+  type GetStatusResponse,
+} from "./api/gen/unison/local/v1/local_pb";
+import { onTrayAction, syncTray, type PauseChoice } from "./tray";
+
+/** Times of the shell. */
+const STATUS_INTERVAL = 5_000;
+const RETRY_DELAY = 3_000;
+const ACTIVITY_LIMIT = 5;
+const FIVE_MINUTES = 5 * 60_000;
+const ONE_HOUR = 60 * 60_000;
+
+/**
+ * DaemonStore keeps the state of the daemon for the shell. The status is
+ * polled, because a pause changed by the tray or by a terminal does not
+ * produce an event.
+ */
+class DaemonStore {
+  /** Last status of the daemon, absent when it does not answer. */
+  status = $state<GetStatusResponse | null>(null);
+  /** Reason of the last failure, absent when the daemon answers. */
+  error = $state<string | null>(null);
+  /** Most recent daemon events, newest first. */
+  activity = $state<DaemonEvent[]>([]);
+
+  #running = false;
+  #statusTimer: ReturnType<typeof setInterval> | null = null;
+  #unlisten: UnlistenFn | null = null;
+
+  get connected(): boolean {
+    return this.status?.running ?? false;
+  }
+
+  get devices(): Device[] {
+    return this.status?.devices ?? [];
+  }
+
+  get onlinePeers(): number {
+    return this.devices.filter((device) => device.online).length;
+  }
+
+  get paused(): boolean {
+    return this.status?.pause?.paused ?? false;
+  }
+
+  get pauseText(): string {
+    if (!this.connected) {
+      return "Daemon offline";
+    }
+    const pause = this.status?.pause;
+    if (!pause?.paused) {
+      return "Clipboard active";
+    }
+    if (pause.indefinite) {
+      return "Clipboard paused";
+    }
+    const until = new Date(Number(pause.untilUnixMs)).toLocaleTimeString();
+    return `Clipboard paused until ${until}`;
+  }
+
+  /** start loads the status and follows the events of the daemon. */
+  async start(): Promise<void> {
+    if (this.#running) {
+      return;
+    }
+    this.#running = true;
+    this.#unlisten = await onTrayAction((action) => {
+      if (action.action === "pause") {
+        void this.setPause(action.mode);
+      }
+    });
+    await this.refresh();
+    this.#statusTimer = setInterval(() => void this.refresh(), STATUS_INTERVAL);
+    void this.#watch();
+  }
+
+  /** stop releases the subscriptions of the shell. */
+  stop(): void {
+    this.#running = false;
+    if (this.#statusTimer) {
+      clearInterval(this.#statusTimer);
+      this.#statusTimer = null;
+    }
+    void this.#unlisten?.();
+    this.#unlisten = null;
+  }
+
+  /** refresh reloads the status of the daemon. */
+  async refresh(): Promise<void> {
+    try {
+      this.status = await client.getStatus({});
+      this.error = null;
+    } catch (error) {
+      this.status = null;
+      this.error = messageOf(error);
+    }
+    this.#syncTray();
+  }
+
+  /** setPause applies a pause choice and reloads the status. */
+  async setPause(choice: PauseChoice): Promise<void> {
+    try {
+      switch (choice) {
+        case "five_minutes":
+          await client.setPause({ mode: PauseMode.UNTIL, untilUnixMs: until(FIVE_MINUTES) });
+          break;
+        case "one_hour":
+          await client.setPause({ mode: PauseMode.UNTIL, untilUnixMs: until(ONE_HOUR) });
+          break;
+        case "indefinite":
+          await client.setPause({ mode: PauseMode.INDEFINITE });
+          break;
+        case "off":
+          await client.setPause({ mode: PauseMode.OFF });
+          break;
+      }
+    } catch (error) {
+      this.error = messageOf(error);
+    }
+    await this.refresh();
+  }
+
+  #syncTray(): void {
+    const state = {
+      connected: this.connected,
+      onlinePeers: this.onlinePeers,
+      paused: this.paused,
+    };
+    void syncTray(state).catch((error: unknown) => {
+      console.warn("cannot update the tray", error);
+    });
+  }
+
+  async #watch(): Promise<void> {
+    while (this.#running) {
+      try {
+        for await (const response of client.watchEvents({})) {
+          const event = response.event;
+          if (!event) {
+            continue;
+          }
+          this.#record(event);
+          if (event.kind === EventKind.PEER_ONLINE || event.kind === EventKind.PEER_OFFLINE) {
+            void this.refresh();
+          }
+        }
+      } catch (error) {
+        if (!this.#running) {
+          return;
+        }
+        this.error = messageOf(error);
+      }
+      if (!this.#running) {
+        return;
+      }
+      await sleep(RETRY_DELAY);
+    }
+  }
+
+  #record(event: DaemonEvent): void {
+    this.activity = [event, ...this.activity].slice(0, ACTIVITY_LIMIT);
+  }
+}
+
+function until(offsetMs: number): bigint {
+  return BigInt(Date.now() + offsetMs);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function messageOf(error: unknown): string {
+  if (error instanceof ConnectError) {
+    return error.rawMessage;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+/** daemon is the state of the shell. */
+export const daemon = new DaemonStore();

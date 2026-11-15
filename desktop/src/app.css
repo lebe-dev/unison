@@ -1,7 +1,13 @@
 :root {
   --background: #f6f7fb;
+  --surface: #ffffff;
   --foreground: #1b1f2a;
   --muted: #667085;
+  --border: #e4e7ec;
+  --accent: #2f6fed;
+  --accent-soft: #e8efff;
+  --danger: #b42318;
+  --online: #12b76a;
 
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 15px;
@@ -15,38 +21,179 @@ body {
   margin: 0;
 }
 
-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
   height: 100vh;
-  box-sizing: border-box;
-  padding: 2rem;
 }
 
-h1 {
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem 1rem;
+  border-right: 1px solid var(--border);
+  background-color: var(--surface);
+}
+
+.sidebar h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
-p {
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar nav button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  text-align: left;
+  color: var(--foreground);
+  background: transparent;
+  cursor: pointer;
+}
+
+.sidebar nav button:hover {
+  background-color: var(--background);
+}
+
+.sidebar nav button.active {
+  color: var(--accent);
+  background-color: var(--accent-soft);
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--muted);
+}
+
+.dot.online {
+  background-color: var(--online);
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+}
+
+main header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+main header h2 {
   margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-.status {
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   color: var(--muted);
+  font-size: 0.8125rem;
 }
 
-.hint {
-  color: var(--muted);
+.summary .paused {
+  color: var(--danger);
+}
+
+.error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--danger);
+  background-color: var(--surface);
+}
+
+.screen {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--surface);
+}
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity h3 {
+  margin: 0;
   font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.activity ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity li {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  background-color: var(--surface);
+  font-size: 0.8125rem;
+}
+
+.activity .device {
+  color: var(--muted);
+}
+
+.activity time {
+  color: var(--muted);
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1b1f2a;
+    --background: #14171f;
+    --surface: #1b1f2a;
     --foreground: #f6f7fb;
     --muted: #98a2b3;
+    --border: #2a3040;
+    --accent: #8ab0ff;
+    --accent-soft: #232c40;
+    --danger: #f97066;
   }
 }
