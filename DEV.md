@@ -66,6 +66,7 @@ sdkmanager "ndk;28.2.13676358"
 ```sh
 just build                # host binaries into bin/
 just test                 # unit tests
+just test-keychain        # Keychain integration tests against the login Keychain
 just lint                 # linters and format check
 just fmt                  # format the Go sources
 just tidy                 # update go.mod and go.sum
@@ -82,6 +83,13 @@ just clean                # remove bin/
 ```
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
+
+The macOS Keychain keystore in `platform/darwin/keystore` uses cgo: it links Security.framework
+and needs a host build to reach the Keychain. Without cgo, for example in a cross-compiled
+binary, its operations return `keystore.ErrUnsupported` and building still works. The Keychain
+integration tests use a separate service and are hidden behind the `keychaintest` build tag, so
+`just test` never touches the Keychain. Run them with `just test-keychain`; they create items
+under a random `app.unison.test.*` service and delete the items they created.
 
 The protobuf code generators are pinned as tools in `go.mod`, so `just proto` needs only `buf` and
 `go` installed. Generated Go code is committed and builds do not require `buf`.

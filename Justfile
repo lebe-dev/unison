@@ -28,6 +28,10 @@ build-unisond-all:
 test:
     go test ./...
 
+# Run the Keychain integration tests against the real login Keychain.
+test-keychain:
+    CGO_ENABLED=1 go test -tags keychaintest ./platform/darwin/keystore/
+
 # Run the linters and format checks.
 lint:
     golangci-lint run
