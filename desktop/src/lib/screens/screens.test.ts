@@ -3,7 +3,9 @@ import { render, screen } from "@testing-library/svelte";
 import { daemon } from "../daemon.svelte";
 import AddDevice from "./AddDevice.svelte";
 import Devices from "./Devices.svelte";
+import History from "./History.svelte";
 import Settings from "./Settings.svelte";
+import Transfers from "./Transfers.svelte";
 
 describe("screens without a daemon", () => {
   afterEach(() => {
@@ -25,6 +27,18 @@ describe("screens without a daemon", () => {
 
   it("shows the starting state of the settings screen", () => {
     render(Settings);
+
+    expect(screen.getByText("Connecting to the daemon...")).toBeTruthy();
+  });
+
+  it("shows the starting state of the history screen", () => {
+    render(History);
+
+    expect(screen.getByText("Connecting to the daemon...")).toBeTruthy();
+  });
+
+  it("shows the starting state of the transfers screen", () => {
+    render(Transfers);
 
     expect(screen.getByText("Connecting to the daemon...")).toBeTruthy();
   });

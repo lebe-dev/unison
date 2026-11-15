@@ -1,6 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { Path, Platform, Role } from "./api/gen/unison/local/v1/local_pb";
-import { formatTime, pathLabel, platformLabel, roleLabel, shortDeviceID } from "./format";
+import { create } from "@bufbuild/protobuf";
+import {
+  ClipItemSchema,
+  Kind,
+  Path,
+  Platform,
+  Role,
+  TransferDirection,
+  TransferSchema,
+  TransferState,
+} from "./api/gen/unison/local/v1/local_pb";
+import {
+  formatBytes,
+  formatTime,
+  historyTitle,
+  imagePreview,
+  itemSize,
+  kindLabel,
+  pathLabel,
+  platformLabel,
+  progressPercent,
+  roleLabel,
+  shortDeviceID,
+  textSnippet,
+  transferDirectionLabel,
+  transferStateLabel,
+} from "./format";
 
 describe("roleLabel", () => {
   it("names the roles", () => {
@@ -41,3 +66,121 @@ describe("formatTime", () => {
     expect(formatTime(0n)).toBe("");
   });
 });
+
+describe("formatBytes", () => {
+  it("uses the next unit from a kibibyte", () => {
+    expect(formatBytes(0)).toBe("0 B");
+    expect(formatBytes(1023)).toBe("1023 B");
+    expect(formatBytes(1024)).toBe("1.0 KB");
+    expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe("2.0 GB");
+    expect(formatBytes(-1)).toBe("");
+  });
+});
+
+describe("kindLabel", () => {
+  it("names the clip kinds", () => {
+    expect(kindLabel(Kind.TEXT)).toBe("Text");
+    expect(kindLabel(Kind.IMAGE)).toBe("Image");
+    expect(kindLabel(Kind.FILES)).toBe("Files");
+    expect(kindLabel(Kind.UNSPECIFIED)).toBe("Item");
+  });
+});
+
+describe("textSnippet", () => {
+  it("keeps the inline text on one line and cuts it", () => {
+    const item = textItem("hello\nworld");
+
+    expect(textSnippet(item)).toBe("hello world");
+    expect(textSnippet(item, 7)).toBe("hello...");
+  });
+});
+
+describe("historyTitle", () => {
+  it("describes a text item by its snippet", () => {
+    expect(historyTitle(textItem("a note"))).toBe("a note");
+  });
+
+  it("describes an image by its size", () => {
+    const item = create(ClipItemSchema, {
+      kind: Kind.IMAGE,
+      representations: [
+        { mimeType: "image/png", size: 2048n, inlineBytes: new Uint8Array([1]) },
+      ],
+    });
+
+    expect(historyTitle(item)).toBe("Image - 2.0 KB");
+    expect(itemSize(item)).toBe(2048);
+  });
+
+  it("describes files by their names", () => {
+    const item = create(ClipItemSchema, {
+      kind: Kind.FILES,
+      representations: [
+        { mimeType: "application/x-unison-file", fileName: "report.pdf", size: 10n },
+        { mimeType: "application/x-unison-file", fileName: "photo.jpg", size: 20n },
+      ],
+    });
+
+    expect(historyTitle(item)).toBe("report.pdf and 1 more");
+  });
+});
+
+describe("imagePreview", () => {
+  it("returns an URL only for an inline image", () => {
+    const inline = create(ClipItemSchema, {
+      kind: Kind.IMAGE,
+      representations: [
+        { mimeType: "image/png", size: 3n, inlineBytes: new Uint8Array([1, 2, 3]) },
+      ],
+    });
+    const stored = create(ClipItemSchema, {
+      kind: Kind.IMAGE,
+      representations: [{ mimeType: "image/png", size: 3n, blake3: "ab" }],
+    });
+
+    expect(imagePreview(inline)).toMatch(/^data:image\/png;base64,/);
+    expect(imagePreview(stored)).toBeNull();
+    expect(imagePreview(textItem("text"))).toBeNull();
+  });
+});
+
+describe("progressPercent", () => {
+  it("shares the transferred bytes with the size", () => {
+    expect(progressPercent(transfer({ bytes: 50n, totalBytes: 200n }))).toBe(25);
+    expect(progressPercent(transfer({ bytes: 0n, totalBytes: 0n }))).toBe(0);
+    expect(progressPercent(transfer({ bytes: 300n, totalBytes: 200n }))).toBe(100);
+  });
+});
+
+describe("transfer labels", () => {
+  it("names the states and the directions", () => {
+    expect(transferStateLabel(TransferState.PENDING)).toBe("Waiting for an answer");
+    expect(transferStateLabel(TransferState.TRANSFERRING)).toBe("Transferring");
+    expect(transferStateLabel(TransferState.DONE)).toBe("Done");
+    expect(transferDirectionLabel(TransferDirection.INCOMING)).toBe("Received");
+    expect(transferDirectionLabel(TransferDirection.OUTGOING)).toBe("Sent");
+  });
+});
+
+function textItem(text: string) {
+  return create(ClipItemSchema, {
+    kind: Kind.TEXT,
+    representations: [
+      {
+        mimeType: "text/plain",
+        size: BigInt(text.length),
+        inlineBytes: new TextEncoder().encode(text),
+      },
+    ],
+  });
+}
+
+function transfer(fields: { bytes: bigint; totalBytes: bigint }) {
+  return create(TransferSchema, {
+    id: "t1",
+    direction: TransferDirection.INCOMING,
+    state: TransferState.TRANSFERRING,
+    bytes: fields.bytes,
+    totalBytes: fields.totalBytes,
+  });
+}
