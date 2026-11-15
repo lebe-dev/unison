@@ -212,7 +212,8 @@ func (s *Service) Close() {
 
 // Register installs the share handlers on a session. The handlers serve the
 // offers of the peer, receive its decisions and serve the blobs it asks for.
-// The session has to be registered before it opens.
+// The session has to be registered before it opens. The service also follows
+// the session events, which is how it learns that a peer is back.
 func (s *Service) Register(sess *session.Session) error {
 	peer := sess.DeviceID()
 	if err := sess.Handle(session.KindShareOffer, func(ctx context.Context, msg *wirev1.ControlMessage) error {
