@@ -505,11 +505,14 @@ func (n *Node) open(ctx context.Context) error {
 		Store:     db,
 		Origin:    id.DeviceID(),
 		Announcer: n,
-		Policy:    decider,
+		Planner:   policyPlanner{decider: decider},
 		History:   hist,
+		Payloads:  blobPayloads{blobs: n.blobs},
+		Fetch:     clip.FetchFunc(n.fetchPayload),
+		Events:    n,
 		Clock:     n.clock,
 		Logger:    n.log,
-		TextTTL:   ttls.Text,
+		TTLs:      clip.TTLs{Text: ttls.Text, Image: ttls.Image, Files: ttls.Files},
 	})
 	if err != nil {
 		return err

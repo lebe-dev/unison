@@ -63,6 +63,10 @@ enum EventKind {
   EVENT_KIND_PAIRING_FAILED = 8;
   // The pairing window closed.
   EVENT_KIND_PAIRING_CLOSED = 9;
+  // A clipboard item is kept in the history until the user downloads it.
+  EVENT_KIND_CLIP_DOWNLOAD = 10;
+  // A clipboard item waits for the user to apply it.
+  EVENT_KIND_CLIP_APPLY = 11;
 }
 
 // Pause mode requested by the client.

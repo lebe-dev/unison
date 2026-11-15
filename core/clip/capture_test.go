@@ -98,7 +98,7 @@ func TestDebounceMergesTextRepresentations(t *testing.T) {
 	f.expectNoItem()
 }
 
-func TestOversizedContentIsSkipped(t *testing.T) {
+func TestOversizedContentWithoutStoreIsSkipped(t *testing.T) {
 	f := newFixture(t)
 
 	f.emit(textSnapshot(strings.Repeat("a", MaxInlineText+1), ""))

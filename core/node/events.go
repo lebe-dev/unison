@@ -21,6 +21,12 @@ const (
 	// EventClipboard reports a clipboard item that this device captured or one
 	// that a peer announced and the pipeline applied.
 	EventClipboard
+	// EventClipDownload reports a clipboard item a peer announced that is kept
+	// in the history until the user downloads it.
+	EventClipDownload
+	// EventClipApply reports a clipboard item a peer announced that waits for
+	// the user to apply it.
+	EventClipApply
 	// EventPeerIncompatible reports a peer that speaks another protocol
 	// version and has to be updated.
 	EventPeerIncompatible
@@ -47,6 +53,10 @@ func (k EventKind) String() string {
 		return "peer-offline"
 	case EventClipboard:
 		return "clipboard"
+	case EventClipDownload:
+		return "clip-download"
+	case EventClipApply:
+		return "clip-apply"
 	case EventPeerIncompatible:
 		return "peer-incompatible"
 	case EventPairingCandidate:

@@ -2,7 +2,7 @@ package clip
 
 import (
 	"fmt"
-	"slices"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
@@ -21,24 +21,52 @@ func newID() (model.ClipID, error) {
 	return model.ClipID(id), nil
 }
 
-// textRepresentations extracts the text payload of clipboard content, plain
-// text first. Representations that are missing, empty, not text or not valid
-// UTF-8 are left out.
-func (p *Pipeline) textRepresentations(content ports.Content) []model.Representation {
-	payload := make(map[string][]byte, 2)
+// classify returns the kind of content and the payloads of the winning kind.
+// Files take precedence over a single image, and an image over text: a
+// clipboard often carries several views of the same selection.
+func (p *Pipeline) classify(content ports.Content) (model.Kind, []payload, error) {
+	texts, images, files := splitContent(content)
+
+	switch {
+	case len(files) > 0:
+		payloads, err := p.filePayloads(files)
+		return model.KindFiles, payloads, err
+	case len(images) > 0:
+		return model.KindImage, p.imagePayloads(images), nil
+	default:
+		return model.KindText, p.textPayloads(texts), nil
+	}
+}
+
+// splitContent groups the representations of content by kind.
+func splitContent(content ports.Content) (texts, images, files []ports.Representation) {
 	for _, rep := range content.Representations {
-		if rep.MIME != MIMETextPlain && rep.MIME != MIMETextHTML {
+		switch {
+		case rep.FilePath != "":
+			files = append(files, rep)
+		case strings.HasPrefix(rep.MIME, "image/"):
+			images = append(images, rep)
+		case rep.MIME == MIMETextPlain || rep.MIME == MIMETextHTML:
+			texts = append(texts, rep)
+		}
+	}
+	return texts, images, files
+}
+
+// textPayloads returns the text payloads, plain text first. Payloads that are
+// empty or not valid UTF-8 are left out.
+func (p *Pipeline) textPayloads(reps []ports.Representation) []payload {
+	byMIME := make(map[string][]byte, len(reps))
+	for _, rep := range reps {
+		if len(rep.Data) == 0 {
 			continue
 		}
-		if len(rep.Data) == 0 || rep.FilePath != "" {
-			continue
-		}
-		payload[rep.MIME] = rep.Data
+		byMIME[rep.MIME] = rep.Data
 	}
 
-	reps := make([]model.Representation, 0, len(payload))
+	payloads := make([]payload, 0, len(byMIME))
 	for _, mime := range []string{MIMETextPlain, MIMETextHTML} {
-		data, ok := payload[mime]
+		data, ok := byMIME[mime]
 		if !ok {
 			continue
 		}
@@ -46,51 +74,19 @@ func (p *Pipeline) textRepresentations(content ports.Content) []model.Representa
 			p.log.Debug("skipped text representation that is not valid utf-8", "mime", mime, "size", len(data))
 			continue
 		}
-		reps = append(reps, model.Representation{
-			MIME:   mime,
-			Size:   uint64(len(data)),
-			Hash:   blake3.Sum256(data),
-			Inline: data,
-		})
+		payloads = append(payloads, payload{mime: mime, size: int64(len(data)), data: data})
 	}
-	return reps
+	return payloads
 }
 
-// inlineSize returns the payload size of reps in bytes.
-func inlineSize(reps []model.Representation) int {
-	var size int
-	for _, rep := range reps {
-		size += len(rep.Inline)
-	}
-	return size
-}
-
-// itemContent turns the inline text representations of item into clipboard
-// content. Items without inline text are rejected.
-func itemContent(item model.ClipItem) (ports.Content, error) {
-	if item.Kind != model.KindText {
-		return ports.Content{}, fmt.Errorf("%w: kind %s", ErrUnsupportedContent, item.Kind)
-	}
-
-	reps := make([]ports.Representation, 0, len(item.Representations))
-	var size int
-	for _, rep := range item.Representations {
-		if rep.MIME != MIMETextPlain && rep.MIME != MIMETextHTML {
-			continue
+// hasFiles reports whether content carries a file payload.
+func hasFiles(content ports.Content) bool {
+	for _, rep := range content.Representations {
+		if rep.FilePath != "" {
+			return true
 		}
-		if len(rep.Inline) == 0 {
-			return ports.Content{}, fmt.Errorf("%w: %s has no inline payload", ErrUnsupportedContent, rep.MIME)
-		}
-		size += len(rep.Inline)
-		reps = append(reps, ports.Representation{MIME: rep.MIME, Data: slices.Clone(rep.Inline)})
 	}
-	if len(reps) == 0 {
-		return ports.Content{}, fmt.Errorf("%w: no text representation", ErrUnsupportedContent)
-	}
-	if size > MaxInlineText {
-		return ports.Content{}, fmt.Errorf("%w: %d bytes above the inline limit", ErrUnsupportedContent, size)
-	}
-	return ports.Content{Representations: reps}, nil
+	return false
 }
 
 // mergeContent adds the representations of next to pending, replacing the ones
@@ -114,4 +110,9 @@ func hasMIME(reps []ports.Representation, mime string) bool {
 		}
 	}
 	return false
+}
+
+// hashOf returns the BLAKE3 hash of data.
+func hashOf(data []byte) [32]byte {
+	return blake3.Sum256(data)
 }

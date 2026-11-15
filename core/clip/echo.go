@@ -28,6 +28,7 @@ func newEchoGuard(clock ports.Clock, window time.Duration) *echoGuard {
 }
 
 // register remembers the payload hashes of content until the echo window ends.
+// Binary payloads and file paths are keyed the same way they are observed.
 func (g *echoGuard) register(content ports.Content) {
 	expiry := g.clock.Now().Add(g.window)
 
@@ -40,10 +41,9 @@ func (g *echoGuard) register(content ports.Content) {
 		}
 	}
 	for _, rep := range content.Representations {
-		if len(rep.Data) == 0 {
-			continue
+		if key, ok := payloadKey(rep); ok {
+			g.seen[key] = expiry
 		}
-		g.seen[blake3.Sum256(rep.Data)] = expiry
 	}
 }
 
@@ -55,18 +55,29 @@ func (g *echoGuard) match(content ports.Content) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	for _, rep := range content.Representations {
-		if len(rep.Data) == 0 {
+		key, ok := payloadKey(rep)
+		if !ok {
 			continue
 		}
-		hash := blake3.Sum256(rep.Data)
-		expiry, ok := g.seen[hash]
+		expiry, ok := g.seen[key]
 		if !ok {
 			continue
 		}
 		if now.Before(expiry) {
 			return true
 		}
-		delete(g.seen, hash)
+		delete(g.seen, key)
 	}
 	return false
+}
+
+// payloadKey returns the hash that identifies one payload.
+func payloadKey(rep ports.Representation) ([32]byte, bool) {
+	if len(rep.Data) > 0 {
+		return blake3.Sum256(rep.Data), true
+	}
+	if rep.FilePath != "" {
+		return blake3.Sum256([]byte(rep.FilePath)), true
+	}
+	return [32]byte{}, false
 }

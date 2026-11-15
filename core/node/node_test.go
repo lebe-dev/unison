@@ -274,9 +274,9 @@ func waitBlobPeers(t *testing.T, n *testNode, want int) []transfer.Peer {
 	return nil
 }
 
-// TestPolicySkipsIncomingText checks that the clipboard policy of the node
+// TestPolicyDecidesIncomingText checks that the clipboard policy of the node
 // decides about an announced item.
-func TestPolicySkipsIncomingText(t *testing.T) {
+func TestPolicyDecidesIncomingText(t *testing.T) {
 	network := vnet.NewNetwork()
 	t.Cleanup(func() { _ = network.Close() })
 	bus := fake.NewBus()
@@ -296,14 +296,29 @@ func TestPolicySkipsIncomingText(t *testing.T) {
 	waitSingleConnection(t, small, large)
 
 	config := a.Policy().Config()
+	config.Unmetered.Text.Action = policy.ActionMetadataOnly
+	a.Policy().SetConfig(config)
+
+	b.clipboard.Emit(textSnapshot("this item is kept"))
+	waitEvent(t, events, EventClipDownload, b.DeviceID())
+	waitHistoryText(t, a, "this item is kept")
+	if content, ok := a.clipboard.LastWrite(); ok {
+		t.Fatalf("a metadata item reached the clipboard: %v", content)
+	}
+
+	config = a.Policy().Config()
 	config.Unmetered.Text.Action = policy.ActionReject
 	a.Policy().SetConfig(config)
 
 	b.clipboard.Emit(textSnapshot("this item is refused"))
-	waitEvent(t, events, EventClipboard, b.DeviceID())
-
+	time.Sleep(time.Second)
 	if content, ok := a.clipboard.LastWrite(); ok {
 		t.Fatalf("the refused item reached the clipboard: %v", content)
+	}
+	for _, text := range historyTexts(t, a) {
+		if text == "this item is refused" {
+			t.Fatal("the refused item reached the history")
+		}
 	}
 }
 
