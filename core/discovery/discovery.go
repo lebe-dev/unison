@@ -26,6 +26,11 @@ const (
 	DefaultQueryInterval = 5 * time.Second
 	// announceRepeat is the delay before the second announcement.
 	announceRepeat = time.Second
+	// keyCacheTTL is how long the group key is cached.
+	keyCacheTTL = time.Minute
+	// keyRetryTTL is how long an absent group key is cached before it is read
+	// again.
+	keyRetryTTL = 5 * time.Second
 	// Reserved TXT keys and their values.
 	txtVersionKey = "v"
 	txtTagKey     = "tag"
@@ -92,8 +97,7 @@ type Discovery struct {
 	ifaceHash string
 	epoch     int64
 	key       []byte
-	keyEpoch  int64
-	keyLoaded bool
+	keyUntil  time.Time
 	stopped   bool
 }
 
@@ -419,16 +423,16 @@ func (d *Discovery) records(ctx context.Context, ad advert) recordSet {
 	}
 }
 
-// keyBytes returns the group key of the current epoch. The key is read once
-// per epoch and an absent key is remembered until the next one.
+// keyBytes returns the group key. The key is cached, an absent key for a
+// shorter time than a present one.
 func (d *Discovery) keyBytes(ctx context.Context) []byte {
 	if d.opts.Key == nil {
 		return nil
 	}
 
-	epoch := Epoch(d.clock.Now())
+	now := d.clock.Now()
 	d.mu.Lock()
-	if d.keyLoaded && d.keyEpoch == epoch {
+	if now.Before(d.keyUntil) {
 		key := d.key
 		d.mu.Unlock()
 		return key
@@ -438,13 +442,16 @@ func (d *Discovery) keyBytes(ctx context.Context) []byte {
 	key, err := d.opts.Key(ctx)
 	if err != nil {
 		debugf(d.log, "read discovery key: %v", err)
-		return nil
+		key = nil
 	}
 
 	d.mu.Lock()
 	d.key = key
-	d.keyEpoch = epoch
-	d.keyLoaded = true
+	if len(key) == 0 {
+		d.keyUntil = now.Add(keyRetryTTL)
+	} else {
+		d.keyUntil = now.Add(keyCacheTTL)
+	}
 	d.mu.Unlock()
 	return key
 }
