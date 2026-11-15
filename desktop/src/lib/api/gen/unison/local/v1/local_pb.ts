@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unison/local/v1/local.proto.
  */
 export const file_unison_local_v1_local: GenFile = /*@__PURE__*/
-  fileDesc("Cht1bmlzb24vbG9jYWwvdjEvbG9jYWwucHJvdG8SD3VuaXNvbi5sb2NhbC52MSKBAQoMTmV0d29ya1N0YXRlEg4KBm9ubGluZRgBIAEoCBIMCgR3aWZpGAIgASgIEhAKCGNlbGx1bGFyGAMgASgIEg8KB21ldGVyZWQYBCABKAgSDwoHcm9hbWluZxgFIAEoCBILCgN2cG4YBiABKAgSEgoKZGF0YV9zYXZlchgHIAEoCCKXAgoGRGV2aWNlEhEKCWRldmljZV9pZBgBIAEoCRIMCgRuYW1lGAIgASgJEiMKBHJvbGUYAyABKA4yFS51bmlzb24ubG9jYWwudjEuUm9sZRIrCghwbGF0Zm9ybRgEIAEoDjIZLnVuaXNvbi5sb2NhbC52MS5QbGF0Zm9ybRIOCgZvbmxpbmUYBSABKAgSIwoEcGF0aBgGIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5QYXRoEhwKFHJlcXVpcmVfY29uZmlybWF0aW9uGAcgASgIEg8KB3Jldm9rZWQYCCABKAgSGAoQYWRkZWRfYXRfdW5peF9tcxgJIAEoAxIcChRsYXN0X3NlZW5fYXRfdW5peF9tcxgKIAEoAyJCCgVQYXVzZRIOCgZwYXVzZWQYASABKAgSEgoKaW5kZWZpbml0ZRgCIAEoCBIVCg11bnRpbF91bml4X21zGAMgASgDIoEBCg5SZXByZXNlbnRhdGlvbhIRCgltaW1lX3R5cGUYASABKAkSDAoEc2l6ZRgCIAEoBBIOCgZibGFrZTMYAyABKAkSFAoMaW5saW5lX2J5dGVzGAQgASgMEhEKCWZpbGVfbmFtZRgFIAEoCRIVCg1tdGltZV91bml4X21zGAYgASgDIoQCCghDbGlwSXRlbRIKCgJpZBgBIAEoCRIOCgZvcmlnaW4YAiABKAkSCwoDc2VxGAMgASgEEhoKEmNyZWF0ZWRfYXRfdW5peF9tcxgEIAEoAxIaChJleHBpcmVzX2F0X3VuaXhfbXMYBSABKAMSIwoEa2luZBgGIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5LaW5kEjgKD3JlcHJlc2VudGF0aW9ucxgHIAMoCzIfLnVuaXNvbi5sb2NhbC52MS5SZXByZXNlbnRhdGlvbhInCgZzb3VyY2UYCCABKA4yFy51bmlzb24ubG9jYWwudjEuU291cmNlEg8KB2RlbGV0ZWQYCSABKAgiJAoDU2FzEg4KBmRpZ2l0cxgBIAEoCRINCgVlbW9qaRgCIAMoCSLvAgoFRXZlbnQSKAoEa2luZBgBIAEoDjIaLnVuaXNvbi5sb2NhbC52MS5FdmVudEtpbmQSEQoJZGV2aWNlX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSIwoEcm9sZRgEIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5Sb2xlEisKCHBsYXRmb3JtGAUgASgOMhkudW5pc29uLmxvY2FsLnYxLlBsYXRmb3JtEiMKBHBhdGgYBiABKA4yFS51bmlzb24ubG9jYWwudjEuUGF0aBINCgVsb2NhbBgHIAEoCBInCgRpdGVtGAggASgLMhkudW5pc29uLmxvY2FsLnYxLkNsaXBJdGVtEgwKBGFkZHIYCSABKAkSIQoDc2FzGAogASgLMhQudW5pc29uLmxvY2FsLnYxLlNhcxIYChBwcm90b2NvbF92ZXJzaW9uGAsgASgNEg0KBWVycm9yGAwgASgJEhIKCmF0X3VuaXhfbXMYDSABKAMiRwoNUGFpcmluZ1dpbmRvdxIMCgRvcGVuGAEgASgIEgwKBGFkZHIYAiABKAkSGgoSZXhwaXJlc19hdF91bml4X21zGAMgASgDIqEBChBQYWlyaW5nQ2FuZGlkYXRlEgwKBGFkZHIYASABKAkSNwoDdHh0GAIgAygLMioudW5pc29uLmxvY2FsLnYxLlBhaXJpbmdDYW5kaWRhdGUuVHh0RW50cnkSGgoSZmlyc3Rfc2Vlbl91bml4X21zGAMgASgDGioKCFR4dEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWgoIU2V0dGluZ3MSEwoLZGV2aWNlX25hbWUYASABKAkSHAoUcmVxdWlyZV9jb25maXJtYXRpb24YAiABKAgSGwoTYmxvYl9tYXhfc2l6ZV9ieXRlcxgDIAEoAyISChBHZXRTdGF0dXNSZXF1ZXN0It4BChFHZXRTdGF0dXNSZXNwb25zZRIPCgd2ZXJzaW9uGAEgASgJEhEKCWRldmljZV9pZBgCIAEoCRITCgtkZXZpY2VfbmFtZRgDIAEoCRIPCgdydW5uaW5nGAQgASgIEi4KB25ldHdvcmsYBSABKAsyHS51bmlzb24ubG9jYWwudjEuTmV0d29ya1N0YXRlEigKB2RldmljZXMYBiADKAsyFy51bmlzb24ubG9jYWwudjEuRGV2aWNlEiUKBXBhdXNlGAcgASgLMhYudW5pc29uLmxvY2FsLnYxLlBhdXNlIhQKEldhdGNoRXZlbnRzUmVxdWVzdCI8ChNXYXRjaEV2ZW50c1Jlc3BvbnNlEiUKBWV2ZW50GAEgASgLMhYudW5pc29uLmxvY2FsLnYxLkV2ZW50Ii0KEkxpc3REZXZpY2VzUmVxdWVzdBIXCg9pbmNsdWRlX3Jldm9rZWQYASABKAgiPwoTTGlzdERldmljZXNSZXNwb25zZRIoCgdkZXZpY2VzGAEgAygLMhcudW5pc29uLmxvY2FsLnYxLkRldmljZSI2ChNSZW5hbWVEZXZpY2VSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCRIMCgRuYW1lGAIgASgJIhYKFFJlbmFtZURldmljZVJlc3BvbnNlIigKE1Jldm9rZURldmljZVJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIhYKFFJldm9rZURldmljZVJlc3BvbnNlIlAKHFNldERldmljZUNvbmZpcm1hdGlvblJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEg8KB3JlcXVpcmUYAiABKAgSDAoEc2VsZhgDIAEoCCIfCh1TZXREZXZpY2VDb25maXJtYXRpb25SZXNwb25zZSI/ChhPcGVuUGFpcmluZ1dpbmRvd1JlcXVlc3QSIwoEcm9sZRgBIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5Sb2xlIksKGU9wZW5QYWlyaW5nV2luZG93UmVzcG9uc2USLgoGd2luZG93GAEgASgLMh4udW5pc29uLmxvY2FsLnYxLlBhaXJpbmdXaW5kb3ciHAoaRXh0ZW5kUGFpcmluZ1dpbmRvd1JlcXVlc3QiTQobRXh0ZW5kUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEi4KBndpbmRvdxgBIAEoCzIeLnVuaXNvbi5sb2NhbC52MS5QYWlyaW5nV2luZG93IhsKGUNsb3NlUGFpcmluZ1dpbmRvd1JlcXVlc3QiHAoaQ2xvc2VQYWlyaW5nV2luZG93UmVzcG9uc2UiHgocTGlzdFBhaXJpbmdDYW5kaWRhdGVzUmVxdWVzdCJWCh1MaXN0UGFpcmluZ0NhbmRpZGF0ZXNSZXNwb25zZRI1CgpjYW5kaWRhdGVzGAEgAygLMiEudW5pc29uLmxvY2FsLnYxLlBhaXJpbmdDYW5kaWRhdGUiHwoPU3RhcnRTYXNSZXF1ZXN0EgwKBGFkZHIYASABKAkiEgoQU3RhcnRTYXNSZXNwb25zZSImChFDb25maXJtU2FzUmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkiFAoSQ29uZmlybVNhc1Jlc3BvbnNlIiUKEFJlamVjdFNhc1JlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJIhMKEVJlamVjdFNhc1Jlc3BvbnNlIhAKDkdldENsaXBSZXF1ZXN0IjoKD0dldENsaXBSZXNwb25zZRInCgRpdGVtGAEgASgLMhkudW5pc29uLmxvY2FsLnYxLkNsaXBJdGVtIh4KDlNldENsaXBSZXF1ZXN0EgwKBHRleHQYASABKAkiOgoPU2V0Q2xpcFJlc3BvbnNlEicKBGl0ZW0YASABKAsyGS51bmlzb24ubG9jYWwudjEuQ2xpcEl0ZW0iSAoLSGlzdG9yeUl0ZW0SJwoEaXRlbRgBIAEoCzIZLnVuaXNvbi5sb2NhbC52MS5DbGlwSXRlbRIQCghjb21wbGV0ZRgCIAEoCCJbChJMaXN0SGlzdG9yeVJlcXVlc3QSIwoEa2luZBgBIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5LaW5kEhEKCWRldmljZV9pZBgCIAEoCRINCgVsaW1pdBgDIAEoDSJCChNMaXN0SGlzdG9yeVJlc3BvbnNlEisKBWl0ZW1zGAEgAygLMhwudW5pc29uLmxvY2FsLnYxLkhpc3RvcnlJdGVtIiMKFUdldEhpc3RvcnlJdGVtUmVxdWVzdBIKCgJpZBgBIAEoCSJEChZHZXRIaXN0b3J5SXRlbVJlc3BvbnNlEioKBGl0ZW0YASABKAsyHC51bmlzb24ubG9jYWwudjEuSGlzdG9yeUl0ZW0iJgoYRGVsZXRlSGlzdG9yeUl0ZW1SZXF1ZXN0EgoKAmlkGAEgASgJIhsKGURlbGV0ZUhpc3RvcnlJdGVtUmVzcG9uc2UiMwoXRmV0Y2hIaXN0b3J5SXRlbVJlcXVlc3QSCgoCaWQYASABKAkSDAoEcGF0aBgCIAEoCSJVChhGZXRjaEhpc3RvcnlJdGVtUmVzcG9uc2USKgoEaXRlbRgBIAEoCzIcLnVuaXNvbi5sb2NhbC52MS5IaXN0b3J5SXRlbRINCgVmaWxlcxgCIAMoCSIkChZDb3B5SGlzdG9yeUl0ZW1SZXF1ZXN0EgoKAmlkGAEgASgJIhkKF0NvcHlIaXN0b3J5SXRlbVJlc3BvbnNlIiUKF0FwcGx5SGlzdG9yeUl0ZW1SZXF1ZXN0EgoKAmlkGAEgASgJIhoKGEFwcGx5SGlzdG9yeUl0ZW1SZXNwb25zZSIRCg9HZXRQYXVzZVJlcXVlc3QiOQoQR2V0UGF1c2VSZXNwb25zZRIlCgVwYXVzZRgBIAEoCzIWLnVuaXNvbi5sb2NhbC52MS5QYXVzZSJSCg9TZXRQYXVzZVJlcXVlc3QSKAoEbW9kZRgBIAEoDjIaLnVuaXNvbi5sb2NhbC52MS5QYXVzZU1vZGUSFQoNdW50aWxfdW5peF9tcxgCIAEoAyI5ChBTZXRQYXVzZVJlc3BvbnNlEiUKBXBhdXNlGAEgASgLMhYudW5pc29uLmxvY2FsLnYxLlBhdXNlIhQKEkdldFNldHRpbmdzUmVxdWVzdCJCChNHZXRTZXR0aW5nc1Jlc3BvbnNlEisKCHNldHRpbmdzGAEgASgLMhkudW5pc29uLmxvY2FsLnYxLlNldHRpbmdzIrcBChVVcGRhdGVTZXR0aW5nc1JlcXVlc3QSGAoLZGV2aWNlX25hbWUYASABKAlIAIgBARIhChRyZXF1aXJlX2NvbmZpcm1hdGlvbhgCIAEoCEgBiAEBEiAKE2Jsb2JfbWF4X3NpemVfYnl0ZXMYAyABKANIAogBAUIOCgxfZGV2aWNlX25hbWVCFwoVX3JlcXVpcmVfY29uZmlybWF0aW9uQhYKFF9ibG9iX21heF9zaXplX2J5dGVzIkUKFlVwZGF0ZVNldHRpbmdzUmVzcG9uc2USKwoIc2V0dGluZ3MYASABKAsyGS51bmlzb24ubG9jYWwudjEuU2V0dGluZ3MqQQoEUm9sZRIUChBST0xFX1VOU1BFQ0lGSUVEEAASEQoNUk9MRV9QRVJTT05BTBABEhAKDFJPTEVfRlJJRU5EUxACKmQKCFBsYXRmb3JtEhgKFFBMQVRGT1JNX1VOU1BFQ0lGSUVEEAASEgoOUExBVEZPUk1fTUFDT1MQARIUChBQTEFURk9STV9XSU5ET1dTEAISFAoQUExBVEZPUk1fQU5EUk9JRBADKjoKBFBhdGgSFAoQUEFUSF9VTlNQRUNJRklFRBAAEgwKCFBBVEhfTEFOEAESDgoKUEFUSF9SRUxBWRACKksKBEtpbmQSFAoQS0lORF9VTlNQRUNJRklFRBAAEg0KCUtJTkRfVEVYVBABEg4KCktJTkRfSU1BR0UQAhIOCgpLSU5EX0ZJTEVTEAMqWAoGU291cmNlEhYKElNPVVJDRV9VTlNQRUNJRklFRBAAEhQKEFNPVVJDRV9DTElQQk9BUkQQARIQCgxTT1VSQ0VfU0hBUkUQAhIOCgpTT1VSQ0VfQ0xJEAMq9AIKCUV2ZW50S2luZBIaChZFVkVOVF9LSU5EX1VOU1BFQ0lGSUVEEAASGgoWRVZFTlRfS0lORF9QRUVSX09OTElORRABEhsKF0VWRU5UX0tJTkRfUEVFUl9PRkZMSU5FEAISGAoURVZFTlRfS0lORF9DTElQQk9BUkQQAxIgChxFVkVOVF9LSU5EX1BFRVJfSU5DT01QQVRJQkxFEAQSIAocRVZFTlRfS0lORF9QQUlSSU5HX0NBTkRJREFURRAFEh4KGkVWRU5UX0tJTkRfUEFJUklOR19SRVFVRVNUEAYSHQoZRVZFTlRfS0lORF9QQUlSSU5HX1BBSVJFRBAHEh0KGUVWRU5UX0tJTkRfUEFJUklOR19GQUlMRUQQCBIdChlFVkVOVF9LSU5EX1BBSVJJTkdfQ0xPU0VEEAkSHAoYRVZFTlRfS0lORF9DTElQX0RPV05MT0FEEAoSGQoVRVZFTlRfS0lORF9DTElQX0FQUExZEAsqbAoJUGF1c2VNb2RlEhoKFlBBVVNFX01PREVfVU5TUEVDSUZJRUQQABISCg5QQVVTRV9NT0RFX09GRhABEhkKFVBBVVNFX01PREVfSU5ERUZJTklURRACEhQKEFBBVVNFX01PREVfVU5USUwQAzLoEgoNVW5pc29uU2VydmljZRJSCglHZXRTdGF0dXMSIS51bmlzb24ubG9jYWwudjEuR2V0U3RhdHVzUmVxdWVzdBoiLnVuaXNvbi5sb2NhbC52MS5HZXRTdGF0dXNSZXNwb25zZRJaCgtXYXRjaEV2ZW50cxIjLnVuaXNvbi5sb2NhbC52MS5XYXRjaEV2ZW50c1JlcXVlc3QaJC51bmlzb24ubG9jYWwudjEuV2F0Y2hFdmVudHNSZXNwb25zZTABElgKC0xpc3REZXZpY2VzEiMudW5pc29uLmxvY2FsLnYxLkxpc3REZXZpY2VzUmVxdWVzdBokLnVuaXNvbi5sb2NhbC52MS5MaXN0RGV2aWNlc1Jlc3BvbnNlElsKDFJlbmFtZURldmljZRIkLnVuaXNvbi5sb2NhbC52MS5SZW5hbWVEZXZpY2VSZXF1ZXN0GiUudW5pc29uLmxvY2FsLnYxLlJlbmFtZURldmljZVJlc3BvbnNlElsKDFJldm9rZURldmljZRIkLnVuaXNvbi5sb2NhbC52MS5SZXZva2VEZXZpY2VSZXF1ZXN0GiUudW5pc29uLmxvY2FsLnYxLlJldm9rZURldmljZVJlc3BvbnNlEnYKFVNldERldmljZUNvbmZpcm1hdGlvbhItLnVuaXNvbi5sb2NhbC52MS5TZXREZXZpY2VDb25maXJtYXRpb25SZXF1ZXN0Gi4udW5pc29uLmxvY2FsLnYxLlNldERldmljZUNvbmZpcm1hdGlvblJlc3BvbnNlEmoKEU9wZW5QYWlyaW5nV2luZG93EikudW5pc29uLmxvY2FsLnYxLk9wZW5QYWlyaW5nV2luZG93UmVxdWVzdBoqLnVuaXNvbi5sb2NhbC52MS5PcGVuUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEnAKE0V4dGVuZFBhaXJpbmdXaW5kb3cSKy51bmlzb24ubG9jYWwudjEuRXh0ZW5kUGFpcmluZ1dpbmRvd1JlcXVlc3QaLC51bmlzb24ubG9jYWwudjEuRXh0ZW5kUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEm0KEkNsb3NlUGFpcmluZ1dpbmRvdxIqLnVuaXNvbi5sb2NhbC52MS5DbG9zZVBhaXJpbmdXaW5kb3dSZXF1ZXN0GisudW5pc29uLmxvY2FsLnYxLkNsb3NlUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEnYKFUxpc3RQYWlyaW5nQ2FuZGlkYXRlcxItLnVuaXNvbi5sb2NhbC52MS5MaXN0UGFpcmluZ0NhbmRpZGF0ZXNSZXF1ZXN0Gi4udW5pc29uLmxvY2FsLnYxLkxpc3RQYWlyaW5nQ2FuZGlkYXRlc1Jlc3BvbnNlEk8KCFN0YXJ0U2FzEiAudW5pc29uLmxvY2FsLnYxLlN0YXJ0U2FzUmVxdWVzdBohLnVuaXNvbi5sb2NhbC52MS5TdGFydFNhc1Jlc3BvbnNlElUKCkNvbmZpcm1TYXMSIi51bmlzb24ubG9jYWwudjEuQ29uZmlybVNhc1JlcXVlc3QaIy51bmlzb24ubG9jYWwudjEuQ29uZmlybVNhc1Jlc3BvbnNlElIKCVJlamVjdFNhcxIhLnVuaXNvbi5sb2NhbC52MS5SZWplY3RTYXNSZXF1ZXN0GiIudW5pc29uLmxvY2FsLnYxLlJlamVjdFNhc1Jlc3BvbnNlEkwKB0dldENsaXASHy51bmlzb24ubG9jYWwudjEuR2V0Q2xpcFJlcXVlc3QaIC51bmlzb24ubG9jYWwudjEuR2V0Q2xpcFJlc3BvbnNlEkwKB1NldENsaXASHy51bmlzb24ubG9jYWwudjEuU2V0Q2xpcFJlcXVlc3QaIC51bmlzb24ubG9jYWwudjEuU2V0Q2xpcFJlc3BvbnNlElgKC0xpc3RIaXN0b3J5EiMudW5pc29uLmxvY2FsLnYxLkxpc3RIaXN0b3J5UmVxdWVzdBokLnVuaXNvbi5sb2NhbC52MS5MaXN0SGlzdG9yeVJlc3BvbnNlEmEKDkdldEhpc3RvcnlJdGVtEiYudW5pc29uLmxvY2FsLnYxLkdldEhpc3RvcnlJdGVtUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5HZXRIaXN0b3J5SXRlbVJlc3BvbnNlEmoKEURlbGV0ZUhpc3RvcnlJdGVtEikudW5pc29uLmxvY2FsLnYxLkRlbGV0ZUhpc3RvcnlJdGVtUmVxdWVzdBoqLnVuaXNvbi5sb2NhbC52MS5EZWxldGVIaXN0b3J5SXRlbVJlc3BvbnNlEmcKEEZldGNoSGlzdG9yeUl0ZW0SKC51bmlzb24ubG9jYWwudjEuRmV0Y2hIaXN0b3J5SXRlbVJlcXVlc3QaKS51bmlzb24ubG9jYWwudjEuRmV0Y2hIaXN0b3J5SXRlbVJlc3BvbnNlEmQKD0NvcHlIaXN0b3J5SXRlbRInLnVuaXNvbi5sb2NhbC52MS5Db3B5SGlzdG9yeUl0ZW1SZXF1ZXN0GigudW5pc29uLmxvY2FsLnYxLkNvcHlIaXN0b3J5SXRlbVJlc3BvbnNlEmcKEEFwcGx5SGlzdG9yeUl0ZW0SKC51bmlzb24ubG9jYWwudjEuQXBwbHlIaXN0b3J5SXRlbVJlcXVlc3QaKS51bmlzb24ubG9jYWwudjEuQXBwbHlIaXN0b3J5SXRlbVJlc3BvbnNlEk8KCEdldFBhdXNlEiAudW5pc29uLmxvY2FsLnYxLkdldFBhdXNlUmVxdWVzdBohLnVuaXNvbi5sb2NhbC52MS5HZXRQYXVzZVJlc3BvbnNlEk8KCFNldFBhdXNlEiAudW5pc29uLmxvY2FsLnYxLlNldFBhdXNlUmVxdWVzdBohLnVuaXNvbi5sb2NhbC52MS5TZXRQYXVzZVJlc3BvbnNlElgKC0dldFNldHRpbmdzEiMudW5pc29uLmxvY2FsLnYxLkdldFNldHRpbmdzUmVxdWVzdBokLnVuaXNvbi5sb2NhbC52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlEmEKDlVwZGF0ZVNldHRpbmdzEiYudW5pc29uLmxvY2FsLnYxLlVwZGF0ZVNldHRpbmdzUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5VcGRhdGVTZXR0aW5nc1Jlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbGViZS1kZXYvdW5pc29uL3Byb3RvL3VuaXNvbi9sb2NhbC92MTtsb2NhbHYxYgZwcm90bzM");
+  fileDesc("Cht1bmlzb24vbG9jYWwvdjEvbG9jYWwucHJvdG8SD3VuaXNvbi5sb2NhbC52MSKBAQoMTmV0d29ya1N0YXRlEg4KBm9ubGluZRgBIAEoCBIMCgR3aWZpGAIgASgIEhAKCGNlbGx1bGFyGAMgASgIEg8KB21ldGVyZWQYBCABKAgSDwoHcm9hbWluZxgFIAEoCBILCgN2cG4YBiABKAgSEgoKZGF0YV9zYXZlchgHIAEoCCKXAgoGRGV2aWNlEhEKCWRldmljZV9pZBgBIAEoCRIMCgRuYW1lGAIgASgJEiMKBHJvbGUYAyABKA4yFS51bmlzb24ubG9jYWwudjEuUm9sZRIrCghwbGF0Zm9ybRgEIAEoDjIZLnVuaXNvbi5sb2NhbC52MS5QbGF0Zm9ybRIOCgZvbmxpbmUYBSABKAgSIwoEcGF0aBgGIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5QYXRoEhwKFHJlcXVpcmVfY29uZmlybWF0aW9uGAcgASgIEg8KB3Jldm9rZWQYCCABKAgSGAoQYWRkZWRfYXRfdW5peF9tcxgJIAEoAxIcChRsYXN0X3NlZW5fYXRfdW5peF9tcxgKIAEoAyJCCgVQYXVzZRIOCgZwYXVzZWQYASABKAgSEgoKaW5kZWZpbml0ZRgCIAEoCBIVCg11bnRpbF91bml4X21zGAMgASgDIoEBCg5SZXByZXNlbnRhdGlvbhIRCgltaW1lX3R5cGUYASABKAkSDAoEc2l6ZRgCIAEoBBIOCgZibGFrZTMYAyABKAkSFAoMaW5saW5lX2J5dGVzGAQgASgMEhEKCWZpbGVfbmFtZRgFIAEoCRIVCg1tdGltZV91bml4X21zGAYgASgDIoQCCghDbGlwSXRlbRIKCgJpZBgBIAEoCRIOCgZvcmlnaW4YAiABKAkSCwoDc2VxGAMgASgEEhoKEmNyZWF0ZWRfYXRfdW5peF9tcxgEIAEoAxIaChJleHBpcmVzX2F0X3VuaXhfbXMYBSABKAMSIwoEa2luZBgGIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5LaW5kEjgKD3JlcHJlc2VudGF0aW9ucxgHIAMoCzIfLnVuaXNvbi5sb2NhbC52MS5SZXByZXNlbnRhdGlvbhInCgZzb3VyY2UYCCABKA4yFy51bmlzb24ubG9jYWwudjEuU291cmNlEg8KB2RlbGV0ZWQYCSABKAgiJAoDU2FzEg4KBmRpZ2l0cxgBIAEoCRINCgVlbW9qaRgCIAMoCSKcAwoFRXZlbnQSKAoEa2luZBgBIAEoDjIaLnVuaXNvbi5sb2NhbC52MS5FdmVudEtpbmQSEQoJZGV2aWNlX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSIwoEcm9sZRgEIAEoDjIVLnVuaXNvbi5sb2NhbC52MS5Sb2xlEisKCHBsYXRmb3JtGAUgASgOMhkudW5pc29uLmxvY2FsLnYxLlBsYXRmb3JtEiMKBHBhdGgYBiABKA4yFS51bmlzb24ubG9jYWwudjEuUGF0aBINCgVsb2NhbBgHIAEoCBInCgRpdGVtGAggASgLMhkudW5pc29uLmxvY2FsLnYxLkNsaXBJdGVtEgwKBGFkZHIYCSABKAkSIQoDc2FzGAogASgLMhQudW5pc29uLmxvY2FsLnYxLlNhcxIYChBwcm90b2NvbF92ZXJzaW9uGAsgASgNEg0KBWVycm9yGAwgASgJEhIKCmF0X3VuaXhfbXMYDSABKAMSKwoIdHJhbnNmZXIYDiABKAsyGS51bmlzb24ubG9jYWwudjEuVHJhbnNmZXIiRwoNUGFpcmluZ1dpbmRvdxIMCgRvcGVuGAEgASgIEgwKBGFkZHIYAiABKAkSGgoSZXhwaXJlc19hdF91bml4X21zGAMgASgDIqEBChBQYWlyaW5nQ2FuZGlkYXRlEgwKBGFkZHIYASABKAkSNwoDdHh0GAIgAygLMioudW5pc29uLmxvY2FsLnYxLlBhaXJpbmdDYW5kaWRhdGUuVHh0RW50cnkSGgoSZmlyc3Rfc2Vlbl91bml4X21zGAMgASgDGioKCFR4dEVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEicQoIU2V0dGluZ3MSEwoLZGV2aWNlX25hbWUYASABKAkSHAoUcmVxdWlyZV9jb25maXJtYXRpb24YAiABKAgSGwoTYmxvYl9tYXhfc2l6ZV9ieXRlcxgDIAEoAxIVCg1kb3dubG9hZHNfZGlyGAQgASgJIhIKEEdldFN0YXR1c1JlcXVlc3Qi3gEKEUdldFN0YXR1c1Jlc3BvbnNlEg8KB3ZlcnNpb24YASABKAkSEQoJZGV2aWNlX2lkGAIgASgJEhMKC2RldmljZV9uYW1lGAMgASgJEg8KB3J1bm5pbmcYBCABKAgSLgoHbmV0d29yaxgFIAEoCzIdLnVuaXNvbi5sb2NhbC52MS5OZXR3b3JrU3RhdGUSKAoHZGV2aWNlcxgGIAMoCzIXLnVuaXNvbi5sb2NhbC52MS5EZXZpY2USJQoFcGF1c2UYByABKAsyFi51bmlzb24ubG9jYWwudjEuUGF1c2UiFAoSV2F0Y2hFdmVudHNSZXF1ZXN0IjwKE1dhdGNoRXZlbnRzUmVzcG9uc2USJQoFZXZlbnQYASABKAsyFi51bmlzb24ubG9jYWwudjEuRXZlbnQiLQoSTGlzdERldmljZXNSZXF1ZXN0EhcKD2luY2x1ZGVfcmV2b2tlZBgBIAEoCCI/ChNMaXN0RGV2aWNlc1Jlc3BvbnNlEigKB2RldmljZXMYASADKAsyFy51bmlzb24ubG9jYWwudjEuRGV2aWNlIjYKE1JlbmFtZURldmljZVJlcXVlc3QSEQoJZGV2aWNlX2lkGAEgASgJEgwKBG5hbWUYAiABKAkiFgoUUmVuYW1lRGV2aWNlUmVzcG9uc2UiKAoTUmV2b2tlRGV2aWNlUmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkiFgoUUmV2b2tlRGV2aWNlUmVzcG9uc2UiUAocU2V0RGV2aWNlQ29uZmlybWF0aW9uUmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkSDwoHcmVxdWlyZRgCIAEoCBIMCgRzZWxmGAMgASgIIh8KHVNldERldmljZUNvbmZpcm1hdGlvblJlc3BvbnNlIj8KGE9wZW5QYWlyaW5nV2luZG93UmVxdWVzdBIjCgRyb2xlGAEgASgOMhUudW5pc29uLmxvY2FsLnYxLlJvbGUiSwoZT3BlblBhaXJpbmdXaW5kb3dSZXNwb25zZRIuCgZ3aW5kb3cYASABKAsyHi51bmlzb24ubG9jYWwudjEuUGFpcmluZ1dpbmRvdyIcChpFeHRlbmRQYWlyaW5nV2luZG93UmVxdWVzdCJNChtFeHRlbmRQYWlyaW5nV2luZG93UmVzcG9uc2USLgoGd2luZG93GAEgASgLMh4udW5pc29uLmxvY2FsLnYxLlBhaXJpbmdXaW5kb3ciGwoZQ2xvc2VQYWlyaW5nV2luZG93UmVxdWVzdCIcChpDbG9zZVBhaXJpbmdXaW5kb3dSZXNwb25zZSIeChxMaXN0UGFpcmluZ0NhbmRpZGF0ZXNSZXF1ZXN0IlYKHUxpc3RQYWlyaW5nQ2FuZGlkYXRlc1Jlc3BvbnNlEjUKCmNhbmRpZGF0ZXMYASADKAsyIS51bmlzb24ubG9jYWwudjEuUGFpcmluZ0NhbmRpZGF0ZSIfCg9TdGFydFNhc1JlcXVlc3QSDAoEYWRkchgBIAEoCSISChBTdGFydFNhc1Jlc3BvbnNlIiYKEUNvbmZpcm1TYXNSZXF1ZXN0EhEKCWRldmljZV9pZBgBIAEoCSIUChJDb25maXJtU2FzUmVzcG9uc2UiJQoQUmVqZWN0U2FzUmVxdWVzdBIRCglkZXZpY2VfaWQYASABKAkiEwoRUmVqZWN0U2FzUmVzcG9uc2UiEAoOR2V0Q2xpcFJlcXVlc3QiOgoPR2V0Q2xpcFJlc3BvbnNlEicKBGl0ZW0YASABKAsyGS51bmlzb24ubG9jYWwudjEuQ2xpcEl0ZW0iHgoOU2V0Q2xpcFJlcXVlc3QSDAoEdGV4dBgBIAEoCSI6Cg9TZXRDbGlwUmVzcG9uc2USJwoEaXRlbRgBIAEoCzIZLnVuaXNvbi5sb2NhbC52MS5DbGlwSXRlbSJICgtIaXN0b3J5SXRlbRInCgRpdGVtGAEgASgLMhkudW5pc29uLmxvY2FsLnYxLkNsaXBJdGVtEhAKCGNvbXBsZXRlGAIgASgIIlsKEkxpc3RIaXN0b3J5UmVxdWVzdBIjCgRraW5kGAEgASgOMhUudW5pc29uLmxvY2FsLnYxLktpbmQSEQoJZGV2aWNlX2lkGAIgASgJEg0KBWxpbWl0GAMgASgNIkIKE0xpc3RIaXN0b3J5UmVzcG9uc2USKwoFaXRlbXMYASADKAsyHC51bmlzb24ubG9jYWwudjEuSGlzdG9yeUl0ZW0iIwoVR2V0SGlzdG9yeUl0ZW1SZXF1ZXN0EgoKAmlkGAEgASgJIkQKFkdldEhpc3RvcnlJdGVtUmVzcG9uc2USKgoEaXRlbRgBIAEoCzIcLnVuaXNvbi5sb2NhbC52MS5IaXN0b3J5SXRlbSImChhEZWxldGVIaXN0b3J5SXRlbVJlcXVlc3QSCgoCaWQYASABKAkiGwoZRGVsZXRlSGlzdG9yeUl0ZW1SZXNwb25zZSIzChdGZXRjaEhpc3RvcnlJdGVtUmVxdWVzdBIKCgJpZBgBIAEoCRIMCgRwYXRoGAIgASgJIlUKGEZldGNoSGlzdG9yeUl0ZW1SZXNwb25zZRIqCgRpdGVtGAEgASgLMhwudW5pc29uLmxvY2FsLnYxLkhpc3RvcnlJdGVtEg0KBWZpbGVzGAIgAygJIiQKFkNvcHlIaXN0b3J5SXRlbVJlcXVlc3QSCgoCaWQYASABKAkiGQoXQ29weUhpc3RvcnlJdGVtUmVzcG9uc2UiJQoXQXBwbHlIaXN0b3J5SXRlbVJlcXVlc3QSCgoCaWQYASABKAkiGgoYQXBwbHlIaXN0b3J5SXRlbVJlc3BvbnNlImQKDFRyYW5zZmVyRmlsZRIMCgRuYW1lGAEgASgJEgwKBHNpemUYAiABKAQSDgoGYmxha2UzGAMgASgJEhUKDW10aW1lX3VuaXhfbXMYBCABKAMSEQoJbWltZV90eXBlGAUgASgJIrACCghUcmFuc2ZlchIKCgJpZBgBIAEoCRI1CglkaXJlY3Rpb24YAiABKA4yIi51bmlzb24ubG9jYWwudjEuVHJhbnNmZXJEaXJlY3Rpb24SEQoJZGV2aWNlX2lkGAMgASgJEhMKC2RldmljZV9uYW1lGAQgASgJEi0KBXN0YXRlGAUgASgOMh4udW5pc29uLmxvY2FsLnYxLlRyYW5zZmVyU3RhdGUSLAoFZmlsZXMYBiADKAsyHS51bmlzb24ubG9jYWwudjEuVHJhbnNmZXJGaWxlEg0KBWJ5dGVzGAcgASgEEhMKC3RvdGFsX2J5dGVzGAggASgEEg0KBXBhdGhzGAkgAygJEg0KBWVycm9yGAogASgJEhoKEmNyZWF0ZWRfYXRfdW5peF9tcxgLIAEoAyI1ChBTZW5kRmlsZXNSZXF1ZXN0Eg0KBXBhdGhzGAEgAygJEhIKCmRldmljZV9pZHMYAiADKAkiQQoRU2VuZEZpbGVzUmVzcG9uc2USLAoJdHJhbnNmZXJzGAEgAygLMhkudW5pc29uLmxvY2FsLnYxLlRyYW5zZmVyIhYKFExpc3RUcmFuc2ZlcnNSZXF1ZXN0IkUKFUxpc3RUcmFuc2ZlcnNSZXNwb25zZRIsCgl0cmFuc2ZlcnMYASADKAsyGS51bmlzb24ubG9jYWwudjEuVHJhbnNmZXIiIwoVQ2FuY2VsVHJhbnNmZXJSZXF1ZXN0EgoKAmlkGAEgASgJIhgKFkNhbmNlbFRyYW5zZmVyUmVzcG9uc2UiIwoVQWNjZXB0VHJhbnNmZXJSZXF1ZXN0EgoKAmlkGAEgASgJIhgKFkFjY2VwdFRyYW5zZmVyUmVzcG9uc2UiIwoVUmVqZWN0VHJhbnNmZXJSZXF1ZXN0EgoKAmlkGAEgASgJIhgKFlJlamVjdFRyYW5zZmVyUmVzcG9uc2UiEQoPR2V0UGF1c2VSZXF1ZXN0IjkKEEdldFBhdXNlUmVzcG9uc2USJQoFcGF1c2UYASABKAsyFi51bmlzb24ubG9jYWwudjEuUGF1c2UiUgoPU2V0UGF1c2VSZXF1ZXN0EigKBG1vZGUYASABKA4yGi51bmlzb24ubG9jYWwudjEuUGF1c2VNb2RlEhUKDXVudGlsX3VuaXhfbXMYAiABKAMiOQoQU2V0UGF1c2VSZXNwb25zZRIlCgVwYXVzZRgBIAEoCzIWLnVuaXNvbi5sb2NhbC52MS5QYXVzZSIUChJHZXRTZXR0aW5nc1JlcXVlc3QiQgoTR2V0U2V0dGluZ3NSZXNwb25zZRIrCghzZXR0aW5ncxgBIAEoCzIZLnVuaXNvbi5sb2NhbC52MS5TZXR0aW5ncyLlAQoVVXBkYXRlU2V0dGluZ3NSZXF1ZXN0EhgKC2RldmljZV9uYW1lGAEgASgJSACIAQESIQoUcmVxdWlyZV9jb25maXJtYXRpb24YAiABKAhIAYgBARIgChNibG9iX21heF9zaXplX2J5dGVzGAMgASgDSAKIAQESGgoNZG93bmxvYWRzX2RpchgEIAEoCUgDiAEBQg4KDF9kZXZpY2VfbmFtZUIXChVfcmVxdWlyZV9jb25maXJtYXRpb25CFgoUX2Jsb2JfbWF4X3NpemVfYnl0ZXNCEAoOX2Rvd25sb2Fkc19kaXIiRQoWVXBkYXRlU2V0dGluZ3NSZXNwb25zZRIrCghzZXR0aW5ncxgBIAEoCzIZLnVuaXNvbi5sb2NhbC52MS5TZXR0aW5ncypBCgRSb2xlEhQKEFJPTEVfVU5TUEVDSUZJRUQQABIRCg1ST0xFX1BFUlNPTkFMEAESEAoMUk9MRV9GUklFTkRTEAIqZAoIUGxhdGZvcm0SGAoUUExBVEZPUk1fVU5TUEVDSUZJRUQQABISCg5QTEFURk9STV9NQUNPUxABEhQKEFBMQVRGT1JNX1dJTkRPV1MQAhIUChBQTEFURk9STV9BTkRST0lEEAMqOgoEUGF0aBIUChBQQVRIX1VOU1BFQ0lGSUVEEAASDAoIUEFUSF9MQU4QARIOCgpQQVRIX1JFTEFZEAIqSwoES2luZBIUChBLSU5EX1VOU1BFQ0lGSUVEEAASDQoJS0lORF9URVhUEAESDgoKS0lORF9JTUFHRRACEg4KCktJTkRfRklMRVMQAypYCgZTb3VyY2USFgoSU09VUkNFX1VOU1BFQ0lGSUVEEAASFAoQU09VUkNFX0NMSVBCT0FSRBABEhAKDFNPVVJDRV9TSEFSRRACEg4KClNPVVJDRV9DTEkQAyqNAwoJRXZlbnRLaW5kEhoKFkVWRU5UX0tJTkRfVU5TUEVDSUZJRUQQABIaChZFVkVOVF9LSU5EX1BFRVJfT05MSU5FEAESGwoXRVZFTlRfS0lORF9QRUVSX09GRkxJTkUQAhIYChRFVkVOVF9LSU5EX0NMSVBCT0FSRBADEiAKHEVWRU5UX0tJTkRfUEVFUl9JTkNPTVBBVElCTEUQBBIgChxFVkVOVF9LSU5EX1BBSVJJTkdfQ0FORElEQVRFEAUSHgoaRVZFTlRfS0lORF9QQUlSSU5HX1JFUVVFU1QQBhIdChlFVkVOVF9LSU5EX1BBSVJJTkdfUEFJUkVEEAcSHQoZRVZFTlRfS0lORF9QQUlSSU5HX0ZBSUxFRBAIEh0KGUVWRU5UX0tJTkRfUEFJUklOR19DTE9TRUQQCRIcChhFVkVOVF9LSU5EX0NMSVBfRE9XTkxPQUQQChIZChVFVkVOVF9LSU5EX0NMSVBfQVBQTFkQCxIXChNFVkVOVF9LSU5EX1RSQU5TRkVSEAwqbAoJUGF1c2VNb2RlEhoKFlBBVVNFX01PREVfVU5TUEVDSUZJRUQQABISCg5QQVVTRV9NT0RFX09GRhABEhkKFVBBVVNFX01PREVfSU5ERUZJTklURRACEhQKEFBBVVNFX01PREVfVU5USUwQAyp5ChFUcmFuc2ZlckRpcmVjdGlvbhIiCh5UUkFOU0ZFUl9ESVJFQ1RJT05fVU5TUEVDSUZJRUQQABIfChtUUkFOU0ZFUl9ESVJFQ1RJT05fT1VUR09JTkcQARIfChtUUkFOU0ZFUl9ESVJFQ1RJT05fSU5DT01JTkcQAir2AQoNVHJhbnNmZXJTdGF0ZRIeChpUUkFOU0ZFUl9TVEFURV9VTlNQRUNJRklFRBAAEhoKFlRSQU5TRkVSX1NUQVRFX1BFTkRJTkcQARIaChZUUkFOU0ZFUl9TVEFURV9PRkZFUkVEEAISHwobVFJBTlNGRVJfU1RBVEVfVFJBTlNGRVJSSU5HEAMSFwoTVFJBTlNGRVJfU1RBVEVfRE9ORRAEEhsKF1RSQU5TRkVSX1NUQVRFX0RFQ0xJTkVEEAUSGwoXVFJBTlNGRVJfU1RBVEVfQ0FOQ0VMRUQQBhIZChVUUkFOU0ZFUl9TVEFURV9GQUlMRUQQBzLFFgoNVW5pc29uU2VydmljZRJSCglHZXRTdGF0dXMSIS51bmlzb24ubG9jYWwudjEuR2V0U3RhdHVzUmVxdWVzdBoiLnVuaXNvbi5sb2NhbC52MS5HZXRTdGF0dXNSZXNwb25zZRJaCgtXYXRjaEV2ZW50cxIjLnVuaXNvbi5sb2NhbC52MS5XYXRjaEV2ZW50c1JlcXVlc3QaJC51bmlzb24ubG9jYWwudjEuV2F0Y2hFdmVudHNSZXNwb25zZTABElgKC0xpc3REZXZpY2VzEiMudW5pc29uLmxvY2FsLnYxLkxpc3REZXZpY2VzUmVxdWVzdBokLnVuaXNvbi5sb2NhbC52MS5MaXN0RGV2aWNlc1Jlc3BvbnNlElsKDFJlbmFtZURldmljZRIkLnVuaXNvbi5sb2NhbC52MS5SZW5hbWVEZXZpY2VSZXF1ZXN0GiUudW5pc29uLmxvY2FsLnYxLlJlbmFtZURldmljZVJlc3BvbnNlElsKDFJldm9rZURldmljZRIkLnVuaXNvbi5sb2NhbC52MS5SZXZva2VEZXZpY2VSZXF1ZXN0GiUudW5pc29uLmxvY2FsLnYxLlJldm9rZURldmljZVJlc3BvbnNlEnYKFVNldERldmljZUNvbmZpcm1hdGlvbhItLnVuaXNvbi5sb2NhbC52MS5TZXREZXZpY2VDb25maXJtYXRpb25SZXF1ZXN0Gi4udW5pc29uLmxvY2FsLnYxLlNldERldmljZUNvbmZpcm1hdGlvblJlc3BvbnNlEmoKEU9wZW5QYWlyaW5nV2luZG93EikudW5pc29uLmxvY2FsLnYxLk9wZW5QYWlyaW5nV2luZG93UmVxdWVzdBoqLnVuaXNvbi5sb2NhbC52MS5PcGVuUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEnAKE0V4dGVuZFBhaXJpbmdXaW5kb3cSKy51bmlzb24ubG9jYWwudjEuRXh0ZW5kUGFpcmluZ1dpbmRvd1JlcXVlc3QaLC51bmlzb24ubG9jYWwudjEuRXh0ZW5kUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEm0KEkNsb3NlUGFpcmluZ1dpbmRvdxIqLnVuaXNvbi5sb2NhbC52MS5DbG9zZVBhaXJpbmdXaW5kb3dSZXF1ZXN0GisudW5pc29uLmxvY2FsLnYxLkNsb3NlUGFpcmluZ1dpbmRvd1Jlc3BvbnNlEnYKFUxpc3RQYWlyaW5nQ2FuZGlkYXRlcxItLnVuaXNvbi5sb2NhbC52MS5MaXN0UGFpcmluZ0NhbmRpZGF0ZXNSZXF1ZXN0Gi4udW5pc29uLmxvY2FsLnYxLkxpc3RQYWlyaW5nQ2FuZGlkYXRlc1Jlc3BvbnNlEk8KCFN0YXJ0U2FzEiAudW5pc29uLmxvY2FsLnYxLlN0YXJ0U2FzUmVxdWVzdBohLnVuaXNvbi5sb2NhbC52MS5TdGFydFNhc1Jlc3BvbnNlElUKCkNvbmZpcm1TYXMSIi51bmlzb24ubG9jYWwudjEuQ29uZmlybVNhc1JlcXVlc3QaIy51bmlzb24ubG9jYWwudjEuQ29uZmlybVNhc1Jlc3BvbnNlElIKCVJlamVjdFNhcxIhLnVuaXNvbi5sb2NhbC52MS5SZWplY3RTYXNSZXF1ZXN0GiIudW5pc29uLmxvY2FsLnYxLlJlamVjdFNhc1Jlc3BvbnNlEkwKB0dldENsaXASHy51bmlzb24ubG9jYWwudjEuR2V0Q2xpcFJlcXVlc3QaIC51bmlzb24ubG9jYWwudjEuR2V0Q2xpcFJlc3BvbnNlEkwKB1NldENsaXASHy51bmlzb24ubG9jYWwudjEuU2V0Q2xpcFJlcXVlc3QaIC51bmlzb24ubG9jYWwudjEuU2V0Q2xpcFJlc3BvbnNlElgKC0xpc3RIaXN0b3J5EiMudW5pc29uLmxvY2FsLnYxLkxpc3RIaXN0b3J5UmVxdWVzdBokLnVuaXNvbi5sb2NhbC52MS5MaXN0SGlzdG9yeVJlc3BvbnNlEmEKDkdldEhpc3RvcnlJdGVtEiYudW5pc29uLmxvY2FsLnYxLkdldEhpc3RvcnlJdGVtUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5HZXRIaXN0b3J5SXRlbVJlc3BvbnNlEmoKEURlbGV0ZUhpc3RvcnlJdGVtEikudW5pc29uLmxvY2FsLnYxLkRlbGV0ZUhpc3RvcnlJdGVtUmVxdWVzdBoqLnVuaXNvbi5sb2NhbC52MS5EZWxldGVIaXN0b3J5SXRlbVJlc3BvbnNlEmcKEEZldGNoSGlzdG9yeUl0ZW0SKC51bmlzb24ubG9jYWwudjEuRmV0Y2hIaXN0b3J5SXRlbVJlcXVlc3QaKS51bmlzb24ubG9jYWwudjEuRmV0Y2hIaXN0b3J5SXRlbVJlc3BvbnNlEmQKD0NvcHlIaXN0b3J5SXRlbRInLnVuaXNvbi5sb2NhbC52MS5Db3B5SGlzdG9yeUl0ZW1SZXF1ZXN0GigudW5pc29uLmxvY2FsLnYxLkNvcHlIaXN0b3J5SXRlbVJlc3BvbnNlEmcKEEFwcGx5SGlzdG9yeUl0ZW0SKC51bmlzb24ubG9jYWwudjEuQXBwbHlIaXN0b3J5SXRlbVJlcXVlc3QaKS51bmlzb24ubG9jYWwudjEuQXBwbHlIaXN0b3J5SXRlbVJlc3BvbnNlElIKCVNlbmRGaWxlcxIhLnVuaXNvbi5sb2NhbC52MS5TZW5kRmlsZXNSZXF1ZXN0GiIudW5pc29uLmxvY2FsLnYxLlNlbmRGaWxlc1Jlc3BvbnNlEl4KDUxpc3RUcmFuc2ZlcnMSJS51bmlzb24ubG9jYWwudjEuTGlzdFRyYW5zZmVyc1JlcXVlc3QaJi51bmlzb24ubG9jYWwudjEuTGlzdFRyYW5zZmVyc1Jlc3BvbnNlEmEKDkNhbmNlbFRyYW5zZmVyEiYudW5pc29uLmxvY2FsLnYxLkNhbmNlbFRyYW5zZmVyUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5DYW5jZWxUcmFuc2ZlclJlc3BvbnNlEmEKDkFjY2VwdFRyYW5zZmVyEiYudW5pc29uLmxvY2FsLnYxLkFjY2VwdFRyYW5zZmVyUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5BY2NlcHRUcmFuc2ZlclJlc3BvbnNlEmEKDlJlamVjdFRyYW5zZmVyEiYudW5pc29uLmxvY2FsLnYxLlJlamVjdFRyYW5zZmVyUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5SZWplY3RUcmFuc2ZlclJlc3BvbnNlEk8KCEdldFBhdXNlEiAudW5pc29uLmxvY2FsLnYxLkdldFBhdXNlUmVxdWVzdBohLnVuaXNvbi5sb2NhbC52MS5HZXRQYXVzZVJlc3BvbnNlEk8KCFNldFBhdXNlEiAudW5pc29uLmxvY2FsLnYxLlNldFBhdXNlUmVxdWVzdBohLnVuaXNvbi5sb2NhbC52MS5TZXRQYXVzZVJlc3BvbnNlElgKC0dldFNldHRpbmdzEiMudW5pc29uLmxvY2FsLnYxLkdldFNldHRpbmdzUmVxdWVzdBokLnVuaXNvbi5sb2NhbC52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlEmEKDlVwZGF0ZVNldHRpbmdzEiYudW5pc29uLmxvY2FsLnYxLlVwZGF0ZVNldHRpbmdzUmVxdWVzdBonLnVuaXNvbi5sb2NhbC52MS5VcGRhdGVTZXR0aW5nc1Jlc3BvbnNlQjpaOGdpdGh1Yi5jb20vbGViZS1kZXYvdW5pc29uL3Byb3RvL3VuaXNvbi9sb2NhbC92MTtsb2NhbHYxYgZwcm90bzM");
 
 /**
  * Network conditions of the local device.
@@ -404,6 +404,13 @@ export type Event = Message<"unison.local.v1.Event"> & {
    * @generated from field: int64 at_unix_ms = 13;
    */
   atUnixMs: bigint;
+
+  /**
+   * File transfer, set on EVENT_KIND_TRANSFER.
+   *
+   * @generated from field: unison.local.v1.Transfer transfer = 14;
+   */
+  transfer?: Transfer | undefined;
 };
 
 /**
@@ -507,6 +514,13 @@ export type Settings = Message<"unison.local.v1.Settings"> & {
    * @generated from field: int64 blob_max_size_bytes = 3;
    */
   blobMaxSizeBytes: bigint;
+
+  /**
+   * Directory that receives shared files.
+   *
+   * @generated from field: string downloads_dir = 4;
+   */
+  downloadsDir: string;
 };
 
 /**
@@ -686,7 +700,7 @@ export const RenameDeviceResponseSchema: GenMessage<RenameDeviceResponse> = /*@_
  */
 export type RevokeDeviceRequest = Message<"unison.local.v1.RevokeDeviceRequest"> & {
   /**
-   * Device ID in lowercase hex.
+   * Device ID in lowercase hex. The ID of this device leaves the group.
    *
    * @generated from field: string device_id = 1;
    */
@@ -1301,6 +1315,301 @@ export const ApplyHistoryItemResponseSchema: GenMessage<ApplyHistoryItemResponse
   messageDesc(file_unison_local_v1_local, 52);
 
 /**
+ * One file of a transfer.
+ *
+ * @generated from message unison.local.v1.TransferFile
+ */
+export type TransferFile = Message<"unison.local.v1.TransferFile"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * File size in bytes.
+   *
+   * @generated from field: uint64 size = 2;
+   */
+  size: bigint;
+
+  /**
+   * BLAKE3 hash of the file in lowercase hex.
+   *
+   * @generated from field: string blake3 = 3;
+   */
+  blake3: string;
+
+  /**
+   * File modification time, unix milliseconds.
+   *
+   * @generated from field: int64 mtime_unix_ms = 4;
+   */
+  mtimeUnixMs: bigint;
+
+  /**
+   * @generated from field: string mime_type = 5;
+   */
+  mimeType: string;
+};
+
+/**
+ * Describes the message unison.local.v1.TransferFile.
+ * Use `create(TransferFileSchema)` to create a new message.
+ */
+export const TransferFileSchema: GenMessage<TransferFile> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 53);
+
+/**
+ * One file transfer with a paired device.
+ *
+ * @generated from message unison.local.v1.Transfer
+ */
+export type Transfer = Message<"unison.local.v1.Transfer"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: unison.local.v1.TransferDirection direction = 2;
+   */
+  direction: TransferDirection;
+
+  /**
+   * Device ID of the peer in lowercase hex.
+   *
+   * @generated from field: string device_id = 3;
+   */
+  deviceId: string;
+
+  /**
+   * @generated from field: string device_name = 4;
+   */
+  deviceName: string;
+
+  /**
+   * @generated from field: unison.local.v1.TransferState state = 5;
+   */
+  state: TransferState;
+
+  /**
+   * @generated from field: repeated unison.local.v1.TransferFile files = 6;
+   */
+  files: TransferFile[];
+
+  /**
+   * Bytes transferred so far.
+   *
+   * @generated from field: uint64 bytes = 7;
+   */
+  bytes: bigint;
+
+  /**
+   * Size of all files in bytes.
+   *
+   * @generated from field: uint64 total_bytes = 8;
+   */
+  totalBytes: bigint;
+
+  /**
+   * Paths of the saved files of a finished incoming transfer.
+   *
+   * @generated from field: repeated string paths = 9;
+   */
+  paths: string[];
+
+  /**
+   * Failure in plain English.
+   *
+   * @generated from field: string error = 10;
+   */
+  error: string;
+
+  /**
+   * Time the transfer started, unix milliseconds.
+   *
+   * @generated from field: int64 created_at_unix_ms = 11;
+   */
+  createdAtUnixMs: bigint;
+};
+
+/**
+ * Describes the message unison.local.v1.Transfer.
+ * Use `create(TransferSchema)` to create a new message.
+ */
+export const TransferSchema: GenMessage<Transfer> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 54);
+
+/**
+ * @generated from message unison.local.v1.SendFilesRequest
+ */
+export type SendFilesRequest = Message<"unison.local.v1.SendFilesRequest"> & {
+  /**
+   * Absolute paths of the files.
+   *
+   * @generated from field: repeated string paths = 1;
+   */
+  paths: string[];
+
+  /**
+   * Receivers, device IDs in lowercase hex. At least one.
+   *
+   * @generated from field: repeated string device_ids = 2;
+   */
+  deviceIds: string[];
+};
+
+/**
+ * Describes the message unison.local.v1.SendFilesRequest.
+ * Use `create(SendFilesRequestSchema)` to create a new message.
+ */
+export const SendFilesRequestSchema: GenMessage<SendFilesRequest> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 55);
+
+/**
+ * @generated from message unison.local.v1.SendFilesResponse
+ */
+export type SendFilesResponse = Message<"unison.local.v1.SendFilesResponse"> & {
+  /**
+   * @generated from field: repeated unison.local.v1.Transfer transfers = 1;
+   */
+  transfers: Transfer[];
+};
+
+/**
+ * Describes the message unison.local.v1.SendFilesResponse.
+ * Use `create(SendFilesResponseSchema)` to create a new message.
+ */
+export const SendFilesResponseSchema: GenMessage<SendFilesResponse> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 56);
+
+/**
+ * @generated from message unison.local.v1.ListTransfersRequest
+ */
+export type ListTransfersRequest = Message<"unison.local.v1.ListTransfersRequest"> & {
+};
+
+/**
+ * Describes the message unison.local.v1.ListTransfersRequest.
+ * Use `create(ListTransfersRequestSchema)` to create a new message.
+ */
+export const ListTransfersRequestSchema: GenMessage<ListTransfersRequest> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 57);
+
+/**
+ * @generated from message unison.local.v1.ListTransfersResponse
+ */
+export type ListTransfersResponse = Message<"unison.local.v1.ListTransfersResponse"> & {
+  /**
+   * @generated from field: repeated unison.local.v1.Transfer transfers = 1;
+   */
+  transfers: Transfer[];
+};
+
+/**
+ * Describes the message unison.local.v1.ListTransfersResponse.
+ * Use `create(ListTransfersResponseSchema)` to create a new message.
+ */
+export const ListTransfersResponseSchema: GenMessage<ListTransfersResponse> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 58);
+
+/**
+ * @generated from message unison.local.v1.CancelTransferRequest
+ */
+export type CancelTransferRequest = Message<"unison.local.v1.CancelTransferRequest"> & {
+  /**
+   * Transfer ID.
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message unison.local.v1.CancelTransferRequest.
+ * Use `create(CancelTransferRequestSchema)` to create a new message.
+ */
+export const CancelTransferRequestSchema: GenMessage<CancelTransferRequest> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 59);
+
+/**
+ * @generated from message unison.local.v1.CancelTransferResponse
+ */
+export type CancelTransferResponse = Message<"unison.local.v1.CancelTransferResponse"> & {
+};
+
+/**
+ * Describes the message unison.local.v1.CancelTransferResponse.
+ * Use `create(CancelTransferResponseSchema)` to create a new message.
+ */
+export const CancelTransferResponseSchema: GenMessage<CancelTransferResponse> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 60);
+
+/**
+ * @generated from message unison.local.v1.AcceptTransferRequest
+ */
+export type AcceptTransferRequest = Message<"unison.local.v1.AcceptTransferRequest"> & {
+  /**
+   * Transfer ID.
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message unison.local.v1.AcceptTransferRequest.
+ * Use `create(AcceptTransferRequestSchema)` to create a new message.
+ */
+export const AcceptTransferRequestSchema: GenMessage<AcceptTransferRequest> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 61);
+
+/**
+ * @generated from message unison.local.v1.AcceptTransferResponse
+ */
+export type AcceptTransferResponse = Message<"unison.local.v1.AcceptTransferResponse"> & {
+};
+
+/**
+ * Describes the message unison.local.v1.AcceptTransferResponse.
+ * Use `create(AcceptTransferResponseSchema)` to create a new message.
+ */
+export const AcceptTransferResponseSchema: GenMessage<AcceptTransferResponse> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 62);
+
+/**
+ * @generated from message unison.local.v1.RejectTransferRequest
+ */
+export type RejectTransferRequest = Message<"unison.local.v1.RejectTransferRequest"> & {
+  /**
+   * Transfer ID.
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message unison.local.v1.RejectTransferRequest.
+ * Use `create(RejectTransferRequestSchema)` to create a new message.
+ */
+export const RejectTransferRequestSchema: GenMessage<RejectTransferRequest> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 63);
+
+/**
+ * @generated from message unison.local.v1.RejectTransferResponse
+ */
+export type RejectTransferResponse = Message<"unison.local.v1.RejectTransferResponse"> & {
+};
+
+/**
+ * Describes the message unison.local.v1.RejectTransferResponse.
+ * Use `create(RejectTransferResponseSchema)` to create a new message.
+ */
+export const RejectTransferResponseSchema: GenMessage<RejectTransferResponse> = /*@__PURE__*/
+  messageDesc(file_unison_local_v1_local, 64);
+
+/**
  * @generated from message unison.local.v1.GetPauseRequest
  */
 export type GetPauseRequest = Message<"unison.local.v1.GetPauseRequest"> & {
@@ -1311,7 +1620,7 @@ export type GetPauseRequest = Message<"unison.local.v1.GetPauseRequest"> & {
  * Use `create(GetPauseRequestSchema)` to create a new message.
  */
 export const GetPauseRequestSchema: GenMessage<GetPauseRequest> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 53);
+  messageDesc(file_unison_local_v1_local, 65);
 
 /**
  * @generated from message unison.local.v1.GetPauseResponse
@@ -1328,7 +1637,7 @@ export type GetPauseResponse = Message<"unison.local.v1.GetPauseResponse"> & {
  * Use `create(GetPauseResponseSchema)` to create a new message.
  */
 export const GetPauseResponseSchema: GenMessage<GetPauseResponse> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 54);
+  messageDesc(file_unison_local_v1_local, 66);
 
 /**
  * @generated from message unison.local.v1.SetPauseRequest
@@ -1352,7 +1661,7 @@ export type SetPauseRequest = Message<"unison.local.v1.SetPauseRequest"> & {
  * Use `create(SetPauseRequestSchema)` to create a new message.
  */
 export const SetPauseRequestSchema: GenMessage<SetPauseRequest> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 55);
+  messageDesc(file_unison_local_v1_local, 67);
 
 /**
  * @generated from message unison.local.v1.SetPauseResponse
@@ -1369,7 +1678,7 @@ export type SetPauseResponse = Message<"unison.local.v1.SetPauseResponse"> & {
  * Use `create(SetPauseResponseSchema)` to create a new message.
  */
 export const SetPauseResponseSchema: GenMessage<SetPauseResponse> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 56);
+  messageDesc(file_unison_local_v1_local, 68);
 
 /**
  * @generated from message unison.local.v1.GetSettingsRequest
@@ -1382,7 +1691,7 @@ export type GetSettingsRequest = Message<"unison.local.v1.GetSettingsRequest"> &
  * Use `create(GetSettingsRequestSchema)` to create a new message.
  */
 export const GetSettingsRequestSchema: GenMessage<GetSettingsRequest> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 57);
+  messageDesc(file_unison_local_v1_local, 69);
 
 /**
  * @generated from message unison.local.v1.GetSettingsResponse
@@ -1399,7 +1708,7 @@ export type GetSettingsResponse = Message<"unison.local.v1.GetSettingsResponse">
  * Use `create(GetSettingsResponseSchema)` to create a new message.
  */
 export const GetSettingsResponseSchema: GenMessage<GetSettingsResponse> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 58);
+  messageDesc(file_unison_local_v1_local, 70);
 
 /**
  * @generated from message unison.local.v1.UpdateSettingsRequest
@@ -1419,6 +1728,11 @@ export type UpdateSettingsRequest = Message<"unison.local.v1.UpdateSettingsReque
    * @generated from field: optional int64 blob_max_size_bytes = 3;
    */
   blobMaxSizeBytes?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string downloads_dir = 4;
+   */
+  downloadsDir?: string | undefined;
 };
 
 /**
@@ -1426,7 +1740,7 @@ export type UpdateSettingsRequest = Message<"unison.local.v1.UpdateSettingsReque
  * Use `create(UpdateSettingsRequestSchema)` to create a new message.
  */
 export const UpdateSettingsRequestSchema: GenMessage<UpdateSettingsRequest> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 59);
+  messageDesc(file_unison_local_v1_local, 71);
 
 /**
  * @generated from message unison.local.v1.UpdateSettingsResponse
@@ -1443,7 +1757,7 @@ export type UpdateSettingsResponse = Message<"unison.local.v1.UpdateSettingsResp
  * Use `create(UpdateSettingsResponseSchema)` to create a new message.
  */
 export const UpdateSettingsResponseSchema: GenMessage<UpdateSettingsResponse> = /*@__PURE__*/
-  messageDesc(file_unison_local_v1_local, 60);
+  messageDesc(file_unison_local_v1_local, 72);
 
 /**
  * Role of a paired device.
@@ -1687,6 +2001,13 @@ export enum EventKind {
    * @generated from enum value: EVENT_KIND_CLIP_APPLY = 11;
    */
   CLIP_APPLY = 11,
+
+  /**
+   * A file transfer changed its state or made progress.
+   *
+   * @generated from enum value: EVENT_KIND_TRANSFER = 12;
+   */
+  TRANSFER = 12,
 }
 
 /**
@@ -1733,6 +2054,91 @@ export enum PauseMode {
  */
 export const PauseModeSchema: GenEnum<PauseMode> = /*@__PURE__*/
   enumDesc(file_unison_local_v1_local, 6);
+
+/**
+ * Direction of a file transfer.
+ *
+ * @generated from enum unison.local.v1.TransferDirection
+ */
+export enum TransferDirection {
+  /**
+   * @generated from enum value: TRANSFER_DIRECTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TRANSFER_DIRECTION_OUTGOING = 1;
+   */
+  OUTGOING = 1,
+
+  /**
+   * @generated from enum value: TRANSFER_DIRECTION_INCOMING = 2;
+   */
+  INCOMING = 2,
+}
+
+/**
+ * Describes the enum unison.local.v1.TransferDirection.
+ */
+export const TransferDirectionSchema: GenEnum<TransferDirection> = /*@__PURE__*/
+  enumDesc(file_unison_local_v1_local, 7);
+
+/**
+ * State of a file transfer.
+ *
+ * @generated from enum unison.local.v1.TransferState
+ */
+export enum TransferState {
+  /**
+   * @generated from enum value: TRANSFER_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * An incoming offer waits for AcceptTransfer or RejectTransfer.
+   *
+   * @generated from enum value: TRANSFER_STATE_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * An outgoing offer is sent and the peer has not answered yet.
+   *
+   * @generated from enum value: TRANSFER_STATE_OFFERED = 2;
+   */
+  OFFERED = 2,
+
+  /**
+   * @generated from enum value: TRANSFER_STATE_TRANSFERRING = 3;
+   */
+  TRANSFERRING = 3,
+
+  /**
+   * @generated from enum value: TRANSFER_STATE_DONE = 4;
+   */
+  DONE = 4,
+
+  /**
+   * @generated from enum value: TRANSFER_STATE_DECLINED = 5;
+   */
+  DECLINED = 5,
+
+  /**
+   * @generated from enum value: TRANSFER_STATE_CANCELED = 6;
+   */
+  CANCELED = 6,
+
+  /**
+   * @generated from enum value: TRANSFER_STATE_FAILED = 7;
+   */
+  FAILED = 7,
+}
+
+/**
+ * Describes the enum unison.local.v1.TransferState.
+ */
+export const TransferStateSchema: GenEnum<TransferState> = /*@__PURE__*/
+  enumDesc(file_unison_local_v1_local, 8);
 
 /**
  * Local API of the daemon, served over a unix socket or a named pipe.
@@ -1928,6 +2334,52 @@ export const UnisonService: GenService<{
     methodKind: "unary";
     input: typeof ApplyHistoryItemRequestSchema;
     output: typeof ApplyHistoryItemResponseSchema;
+  },
+  /**
+   * File transfers with the paired devices.
+   *
+   * @generated from rpc unison.local.v1.UnisonService.SendFiles
+   */
+  sendFiles: {
+    methodKind: "unary";
+    input: typeof SendFilesRequestSchema;
+    output: typeof SendFilesResponseSchema;
+  },
+  /**
+   * @generated from rpc unison.local.v1.UnisonService.ListTransfers
+   */
+  listTransfers: {
+    methodKind: "unary";
+    input: typeof ListTransfersRequestSchema;
+    output: typeof ListTransfersResponseSchema;
+  },
+  /**
+   * @generated from rpc unison.local.v1.UnisonService.CancelTransfer
+   */
+  cancelTransfer: {
+    methodKind: "unary";
+    input: typeof CancelTransferRequestSchema;
+    output: typeof CancelTransferResponseSchema;
+  },
+  /**
+   * Accept an incoming offer that waits for a decision.
+   *
+   * @generated from rpc unison.local.v1.UnisonService.AcceptTransfer
+   */
+  acceptTransfer: {
+    methodKind: "unary";
+    input: typeof AcceptTransferRequestSchema;
+    output: typeof AcceptTransferResponseSchema;
+  },
+  /**
+   * Reject an incoming offer that waits for a decision.
+   *
+   * @generated from rpc unison.local.v1.UnisonService.RejectTransfer
+   */
+  rejectTransfer: {
+    methodKind: "unary";
+    input: typeof RejectTransferRequestSchema;
+    output: typeof RejectTransferResponseSchema;
   },
   /**
    * Pause of the clipboard synchronization.
