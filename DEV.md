@@ -68,6 +68,7 @@ just build                # host binaries into bin/
 just test                 # unit tests
 just test-keychain        # Keychain integration tests against the login Keychain
 just test-pasteboard      # pasteboard integration tests against the real pasteboard
+just test-clipboard       # Win32 clipboard integration tests, run on Windows
 just lint                 # linters and format check
 just vet-windows          # vet and build everything for Windows from any host
 just fmt                  # format the Go sources
@@ -119,6 +120,19 @@ and the optional entropy value passed to the constructor is mixed into the prote
 package builds on every platform; elsewhere its operations return `keystore.ErrUnsupported`. Its
 tests call the real DPAPI, so they run only on Windows: `just vet-windows` checks the build and
 the platform independent parts from any host.
+
+The Windows clipboard in `platform/windows/clipboard` uses the Win32 API through
+`golang.org/x/sys/windows`, without cgo. A message-only window on a locked OS thread receives
+`WM_CLIPBOARDUPDATE` notifications through `AddClipboardFormatListener`, so the watcher does not
+poll. Reads cover `CF_UNICODETEXT` and `HTML Format`: the CF_HTML header carries the byte offsets
+of the document and of the fragment, and writes wrap the fragment into such a header again.
+Content with the `ExcludeClipboardContentFromMonitorProcessing` format, or with
+`CanIncludeInClipboardHistory` or `CanUploadToCloudClipboard` set to 0, is reported as sensitive
+and its payload is never read. Own writes carry the `Unison.Origin` marker. A clipboard that
+another application holds open is retried for up to a second before an operation gives up.
+Elsewhere the operations return `clipboard.ErrUnsupported`. The integration tests are hidden
+behind the `clipboardtest` build tag, because they change the clipboard: run them on Windows with
+`just test-clipboard`, they put back the plain text they found but not other formats.
 
 The protobuf code generators are pinned as tools in `go.mod`, so `just proto` needs only `buf` and
 `go` installed. Generated Go code is committed and builds do not require `buf`.

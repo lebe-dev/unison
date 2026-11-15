@@ -36,6 +36,10 @@ test-keychain:
 test-pasteboard:
     CGO_ENABLED=1 go test -tags pasteboardtest ./platform/darwin/clipboard/
 
+# Run the Win32 clipboard integration tests against the real clipboard (Windows).
+test-clipboard:
+    go test -tags clipboardtest ./platform/windows/clipboard/
+
 # Vet and build the Go sources for Windows from any host.
 vet-windows:
     GOOS=windows go vet ./...
