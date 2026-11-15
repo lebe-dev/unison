@@ -69,6 +69,7 @@ just test                 # unit tests
 just test-keychain        # Keychain integration tests against the login Keychain
 just test-pasteboard      # pasteboard integration tests against the real pasteboard
 just test-clipboard       # Win32 clipboard integration tests, run on Windows
+just test-blob-large      # large blob round trip, writes about 1.2 GiB
 just lint                 # linters and format check
 just vet-windows          # vet and build everything for Windows from any host
 just fmt                  # format the Go sources
@@ -167,3 +168,14 @@ app cannot be compiled without it.
 
 The version of all binaries comes from the `VERSION` file and is injected at build time, so
 `bin/unisond --version`, `just build` and the core version shown by the app always agree.
+
+The blob store in `core/blob` keeps files and images addressed by the BLAKE3 hash of the whole
+content. Content is split into one MiB chunks and the Bao tree of the content is stored next to
+them, so a chunk that arrives from a peer is verified against the hash before it is written. Every
+chunk is sealed with the data encryption key of the node and bound to the hash and the chunk index.
+A file starts with a fixed header, followed by the tree and the sealed chunks. A transfer that
+stops early keeps a chunk bitmap in the database, and `WriteChunk` with `Complete` resumes it where
+it stopped. The store is capped by the `blob.max_size` setting, 2 GiB on desktop and 500 MiB on
+mobile unless configured otherwise, and evicts the least recently used complete blobs; blobs a
+caller pinned and partial transfers are never evicted. The round trip of a 1.2 GiB blob is checked
+by `just test-blob-large`, which also asserts that the heap stays bounded.
