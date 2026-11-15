@@ -11,9 +11,11 @@ tool (
 require (
 	connectrpc.com/connect v1.21.1
 	google.golang.org/protobuf v1.36.12
+	lukechampine.com/blake3 v1.4.1
 )
 
 require (
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	golang.org/x/mobile v0.0.0-20261011034528-197770444867 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
