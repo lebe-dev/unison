@@ -45,6 +45,7 @@ type link struct {
 	sess     *session.Session
 	online   bool
 	upgrade  bool
+	stopped  bool
 	gen      uint64
 	dialing  bool
 	attempts int
@@ -120,6 +121,35 @@ func (l *link) close() {
 	}
 }
 
+// stop ends the session or the connection of the link and tells its loop to
+// quit. A stopped link is not reachable again.
+func (l *link) stop() {
+	l.mu.Lock()
+	l.stopped = true
+	sess := l.sess
+	conn := l.conn
+	l.sess = nil
+	l.conn = nil
+	l.online = false
+	l.mu.Unlock()
+
+	l.wake()
+	if sess != nil {
+		sess.Close()
+		return
+	}
+	if conn != nil {
+		_ = conn.Close()
+	}
+}
+
+// isStopped reports whether the link stopped.
+func (l *link) isStopped() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.stopped
+}
+
 // needsUpgrade reports whether the link should replace its connection with one
 // the local device initiates.
 func (l *link) needsUpgrade() bool {
@@ -134,7 +164,7 @@ func (l *link) needsUpgrade() bool {
 func (l *link) beginDial(upgrade bool) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.dialing {
+	if l.dialing || l.stopped {
 		return false
 	}
 	if upgrade {
@@ -450,7 +480,7 @@ func (n *Node) needsPeers() bool {
 // runLink keeps the link of one peer connected until the node stops.
 func (n *Node) runLink(ctx context.Context, l *link) {
 	for {
-		if ctx.Err() != nil {
+		if ctx.Err() != nil || l.isStopped() {
 			return
 		}
 		online, blocked := l.status()

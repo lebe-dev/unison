@@ -245,7 +245,7 @@ func New(cfg Config) (*Node, error) {
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
 	}
-	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory, n.installGossip, n.installPolicy}
+	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory, n.installGossip, n.installPolicy, n.installRevocation}
 	return n, nil
 }
 
@@ -477,6 +477,8 @@ func (n *Node) open(ctx context.Context) error {
 		Logger:                n.log,
 		OnPeersChanged:        n.gossipPeersChanged,
 		OnDiscoveryKeyChanged: n.gossipGroupChanged,
+		OnPeerRevoked:         n.handleRevokedPeer,
+		OnSelfRevoked:         n.handleSelfRevoked,
 	})
 	if err != nil {
 		return err
