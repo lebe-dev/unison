@@ -183,15 +183,18 @@ func (l *link) takeConnection(local model.DeviceID, conn *transport.Conn, incomi
 	return gen, wasOnline, nil
 }
 
-// drop clears the connection of the generation after a failed handshake.
-func (l *link) drop(gen uint64) {
+// drop clears the connection of the generation after a failed handshake and
+// reports whether the generation was still the current one.
+func (l *link) drop(gen uint64) bool {
 	l.mu.Lock()
-	if l.gen == gen {
-		l.conn = nil
-		l.sess = nil
-		l.online = false
+	defer l.mu.Unlock()
+	if l.gen != gen {
+		return false
 	}
-	l.mu.Unlock()
+	l.conn = nil
+	l.sess = nil
+	l.online = false
+	return true
 }
 
 // block marks a peer that cannot be reached until the next network change.
@@ -552,13 +555,15 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 
 	sess, err := n.openSession(ctx, conn)
 	if err != nil {
-		l.drop(gen)
+		current := l.drop(gen)
 		_ = conn.Close()
-		if wasOnline {
+		if current && wasOnline {
 			n.peerOffline(l, peer, err)
 		}
 		if errors.Is(err, session.ErrIncompatibleVersion) {
-			l.block()
+			if current {
+				l.block()
+			}
 			version := uint32(0)
 			if sess != nil {
 				version = sess.PeerHello().Version
