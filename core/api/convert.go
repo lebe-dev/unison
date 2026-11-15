@@ -190,6 +190,10 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_PEER_OFFLINE
 	case node.EventClipboard:
 		return localv1.EventKind_EVENT_KIND_CLIPBOARD
+	case node.EventClipDownload:
+		return localv1.EventKind_EVENT_KIND_CLIP_DOWNLOAD
+	case node.EventClipApply:
+		return localv1.EventKind_EVENT_KIND_CLIP_APPLY
 	case node.EventPeerIncompatible:
 		return localv1.EventKind_EVENT_KIND_PEER_INCOMPATIBLE
 	case node.EventPairingCandidate:
@@ -222,7 +226,8 @@ func eventToProto(event node.Event) *localv1.Event {
 		ProtocolVersion: event.Version,
 		AtUnixMs:        unixMilli(event.At),
 	}
-	if event.Kind == node.EventClipboard {
+	switch event.Kind {
+	case node.EventClipboard, node.EventClipDownload, node.EventClipApply:
 		out.Item = clipItemToProto(event.Item)
 	}
 	if event.Err != nil {

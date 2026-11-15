@@ -303,21 +303,27 @@ const (
 	EventKind_EVENT_KIND_PAIRING_FAILED EventKind = 8
 	// The pairing window closed.
 	EventKind_EVENT_KIND_PAIRING_CLOSED EventKind = 9
+	// A clipboard item is kept in the history until the user downloads it.
+	EventKind_EVENT_KIND_CLIP_DOWNLOAD EventKind = 10
+	// A clipboard item waits for the user to apply it.
+	EventKind_EVENT_KIND_CLIP_APPLY EventKind = 11
 )
 
 // Enum value maps for EventKind.
 var (
 	EventKind_name = map[int32]string{
-		0: "EVENT_KIND_UNSPECIFIED",
-		1: "EVENT_KIND_PEER_ONLINE",
-		2: "EVENT_KIND_PEER_OFFLINE",
-		3: "EVENT_KIND_CLIPBOARD",
-		4: "EVENT_KIND_PEER_INCOMPATIBLE",
-		5: "EVENT_KIND_PAIRING_CANDIDATE",
-		6: "EVENT_KIND_PAIRING_REQUEST",
-		7: "EVENT_KIND_PAIRING_PAIRED",
-		8: "EVENT_KIND_PAIRING_FAILED",
-		9: "EVENT_KIND_PAIRING_CLOSED",
+		0:  "EVENT_KIND_UNSPECIFIED",
+		1:  "EVENT_KIND_PEER_ONLINE",
+		2:  "EVENT_KIND_PEER_OFFLINE",
+		3:  "EVENT_KIND_CLIPBOARD",
+		4:  "EVENT_KIND_PEER_INCOMPATIBLE",
+		5:  "EVENT_KIND_PAIRING_CANDIDATE",
+		6:  "EVENT_KIND_PAIRING_REQUEST",
+		7:  "EVENT_KIND_PAIRING_PAIRED",
+		8:  "EVENT_KIND_PAIRING_FAILED",
+		9:  "EVENT_KIND_PAIRING_CLOSED",
+		10: "EVENT_KIND_CLIP_DOWNLOAD",
+		11: "EVENT_KIND_CLIP_APPLY",
 	}
 	EventKind_value = map[string]int32{
 		"EVENT_KIND_UNSPECIFIED":       0,
@@ -330,6 +336,8 @@ var (
 		"EVENT_KIND_PAIRING_PAIRED":    7,
 		"EVENT_KIND_PAIRING_FAILED":    8,
 		"EVENT_KIND_PAIRING_CLOSED":    9,
+		"EVENT_KIND_CLIP_DOWNLOAD":     10,
+		"EVENT_KIND_CLIP_APPLY":        11,
 	}
 )
 
@@ -3678,7 +3686,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x10SOURCE_CLIPBOARD\x10\x01\x12\x10\n" +
 	"\fSOURCE_SHARE\x10\x02\x12\x0e\n" +
 	"\n" +
-	"SOURCE_CLI\x10\x03*\xbb\x02\n" +
+	"SOURCE_CLI\x10\x03*\xf4\x02\n" +
 	"\tEventKind\x12\x1a\n" +
 	"\x16EVENT_KIND_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16EVENT_KIND_PEER_ONLINE\x10\x01\x12\x1b\n" +
@@ -3689,7 +3697,10 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x1aEVENT_KIND_PAIRING_REQUEST\x10\x06\x12\x1d\n" +
 	"\x19EVENT_KIND_PAIRING_PAIRED\x10\a\x12\x1d\n" +
 	"\x19EVENT_KIND_PAIRING_FAILED\x10\b\x12\x1d\n" +
-	"\x19EVENT_KIND_PAIRING_CLOSED\x10\t*l\n" +
+	"\x19EVENT_KIND_PAIRING_CLOSED\x10\t\x12\x1c\n" +
+	"\x18EVENT_KIND_CLIP_DOWNLOAD\x10\n" +
+	"\x12\x19\n" +
+	"\x15EVENT_KIND_CLIP_APPLY\x10\v*l\n" +
 	"\tPauseMode\x12\x1a\n" +
 	"\x16PAUSE_MODE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0ePAUSE_MODE_OFF\x10\x01\x12\x19\n" +
