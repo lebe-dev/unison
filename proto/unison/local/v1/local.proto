@@ -4,10 +4,247 @@ package unison.local.v1;
 
 option go_package = "github.com/lebe-dev/unison/proto/unison/local/v1;localv1";
 
+// Role of a paired device.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_PERSONAL = 1;
+  ROLE_FRIENDS = 2;
+}
+
+// Operating system of a device.
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_MACOS = 1;
+  PLATFORM_WINDOWS = 2;
+  PLATFORM_ANDROID = 3;
+}
+
+// Network path to a device.
+enum Path {
+  PATH_UNSPECIFIED = 0;
+  PATH_LAN = 1;
+  PATH_RELAY = 2;
+}
+
+// Content kind of a clip item.
+enum Kind {
+  KIND_UNSPECIFIED = 0;
+  KIND_TEXT = 1;
+  KIND_IMAGE = 2;
+  KIND_FILES = 3;
+}
+
+// Where a clip item was captured.
+enum Source {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_CLIPBOARD = 1;
+  SOURCE_SHARE = 2;
+  SOURCE_CLI = 3;
+}
+
+// Kind of a daemon event.
+enum EventKind {
+  EVENT_KIND_UNSPECIFIED = 0;
+  // A session with a paired device is open.
+  EVENT_KIND_PEER_ONLINE = 1;
+  // The session with a paired device ended.
+  EVENT_KIND_PEER_OFFLINE = 2;
+  // A clipboard item was captured or applied.
+  EVENT_KIND_CLIPBOARD = 3;
+  // A peer speaks another protocol version and has to be updated.
+  EVENT_KIND_PEER_INCOMPATIBLE = 4;
+  // A device that is open for pairing was discovered.
+  EVENT_KIND_PAIRING_CANDIDATE = 5;
+  // A device asked to pair. The SAS is ready and the user decides.
+  EVENT_KIND_PAIRING_REQUEST = 6;
+  // A pairing exchange completed.
+  EVENT_KIND_PAIRING_PAIRED = 7;
+  // A pairing exchange ended without a new device.
+  EVENT_KIND_PAIRING_FAILED = 8;
+  // The pairing window closed.
+  EVENT_KIND_PAIRING_CLOSED = 9;
+}
+
+// Pause mode requested by the client.
+enum PauseMode {
+  PAUSE_MODE_UNSPECIFIED = 0;
+  // Resume the clipboard synchronization.
+  PAUSE_MODE_OFF = 1;
+  // Pause until the client resumes it.
+  PAUSE_MODE_INDEFINITE = 2;
+  // Pause until until_unix_ms.
+  PAUSE_MODE_UNTIL = 3;
+}
+
 // Local API of the daemon, served over a unix socket or a named pipe.
 service UnisonService {
   // Version and runtime state of the daemon.
   rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  // Daemon events as they happen. The stream ends when the client disconnects
+  // or the daemon stops.
+  rpc WatchEvents(WatchEventsRequest) returns (stream WatchEventsResponse);
+
+  // Paired devices.
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc RenameDevice(RenameDeviceRequest) returns (RenameDeviceResponse);
+  rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
+  rpc SetDeviceConfirmation(SetDeviceConfirmationRequest) returns (SetDeviceConfirmationResponse);
+
+  // Pairing window and the short authentication string of an exchange.
+  rpc OpenPairingWindow(OpenPairingWindowRequest) returns (OpenPairingWindowResponse);
+  rpc ExtendPairingWindow(ExtendPairingWindowRequest) returns (ExtendPairingWindowResponse);
+  rpc ClosePairingWindow(ClosePairingWindowRequest) returns (ClosePairingWindowResponse);
+  rpc ListPairingCandidates(ListPairingCandidatesRequest) returns (ListPairingCandidatesResponse);
+  rpc StartSas(StartSasRequest) returns (StartSasResponse);
+  rpc ConfirmSas(ConfirmSasRequest) returns (ConfirmSasResponse);
+  rpc RejectSas(RejectSasRequest) returns (RejectSasResponse);
+
+  // Clipboard.
+  rpc GetClip(GetClipRequest) returns (GetClipResponse);
+  // Copy local text to the clipboard and announce it to the peers.
+  rpc SetClip(SetClipRequest) returns (SetClipResponse);
+
+  // Pause of the clipboard synchronization.
+  rpc GetPause(GetPauseRequest) returns (GetPauseResponse);
+  rpc SetPause(SetPauseRequest) returns (SetPauseResponse);
+
+  // Settings of the daemon.
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
+  rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
+}
+
+// Network conditions of the local device.
+message NetworkState {
+  bool online = 1;
+  bool wifi = 2;
+  bool cellular = 3;
+  bool metered = 4;
+  bool roaming = 5;
+  bool vpn = 6;
+  bool data_saver = 7;
+}
+
+// A paired device.
+message Device {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  string name = 2;
+  Role role = 3;
+  Platform platform = 4;
+  bool online = 5;
+  Path path = 6;
+  bool require_confirmation = 7;
+  bool revoked = 8;
+  // Time the device was added, unix milliseconds.
+  int64 added_at_unix_ms = 9;
+  // Time the device was last reachable, unix milliseconds.
+  int64 last_seen_at_unix_ms = 10;
+}
+
+// State of the clipboard pause.
+message Pause {
+  bool paused = 1;
+  // The pause has no deadline and lasts until it is turned off.
+  bool indefinite = 2;
+  // Deadline of a pause, unix milliseconds. Zero for an indefinite pause.
+  int64 until_unix_ms = 3;
+}
+
+// One representation of a clip item payload.
+message Representation {
+  string mime_type = 1;
+  // Payload size in bytes.
+  uint64 size = 2;
+  // BLAKE3 hash of the payload in lowercase hex, 32 bytes.
+  string blake3 = 3;
+  // Payload itself, set only for small payloads.
+  bytes inline_bytes = 4;
+  // File name, set for file representations.
+  string file_name = 5;
+  // File modification time, unix milliseconds.
+  int64 mtime_unix_ms = 6;
+}
+
+// A clipboard history entry.
+message ClipItem {
+  // UUID of the item.
+  string id = 1;
+  // Device ID of the origin device in lowercase hex.
+  string origin = 2;
+  // Monotonic per-origin counter.
+  uint64 seq = 3;
+  // Capture time, unix milliseconds.
+  int64 created_at_unix_ms = 4;
+  // Expiry time set by the origin device, unix milliseconds.
+  int64 expires_at_unix_ms = 5;
+  Kind kind = 6;
+  repeated Representation representations = 7;
+  Source source = 8;
+  // Tombstone of a manual deletion.
+  bool deleted = 9;
+}
+
+// Short authentication string of a pairing exchange.
+message Sas {
+  // Six decimal digits.
+  string digits = 1;
+  // Four emoji.
+  repeated string emoji = 2;
+}
+
+// An event of the daemon. The fields that apply depend on kind.
+message Event {
+  EventKind kind = 1;
+  // Device ID of the device the event is about, lowercase hex.
+  string device_id = 2;
+  string name = 3;
+  Role role = 4;
+  Platform platform = 5;
+  Path path = 6;
+  // The clipboard item was captured on this device instead of arriving from a
+  // peer.
+  bool local = 7;
+  // Clipboard item, set on EVENT_KIND_CLIPBOARD.
+  ClipItem item = 8;
+  // Address of a pairing candidate, set on EVENT_KIND_PAIRING_CANDIDATE.
+  string addr = 9;
+  // Set on the pairing events that show a SAS.
+  Sas sas = 10;
+  // Protocol version of the peer, set on EVENT_KIND_PEER_INCOMPATIBLE.
+  uint32 protocol_version = 11;
+  // Failure in plain English when the event reports one.
+  string error = 12;
+  // Time of the event, unix milliseconds.
+  int64 at_unix_ms = 13;
+}
+
+// State of the pairing window.
+message PairingWindow {
+  bool open = 1;
+  // Address the window listens on, host:port.
+  string addr = 2;
+  // Time the window closes, unix milliseconds.
+  int64 expires_at_unix_ms = 3;
+}
+
+// A device that is open for pairing.
+message PairingCandidate {
+  // Address to pass to StartSas, host:port.
+  string addr = 1;
+  // Service metadata of the candidate.
+  map<string, string> txt = 2;
+  // Time the candidate was discovered, unix milliseconds.
+  int64 first_seen_unix_ms = 3;
+}
+
+// Settings of the daemon.
+message Settings {
+  // Device name announced to peers. Applied at the next start.
+  string device_name = 1;
+  // The local device asks the peers to confirm the items that arrive from it.
+  bool require_confirmation = 2;
+  // Blob store limit in bytes.
+  int64 blob_max_size_bytes = 3;
 }
 
 message GetStatusRequest {}
@@ -18,4 +255,138 @@ message GetStatusResponse {
   string device_id = 2;
   string device_name = 3;
   bool running = 4;
+  NetworkState network = 5;
+  // Paired devices with their live connection state.
+  repeated Device devices = 6;
+  Pause pause = 7;
+}
+
+message WatchEventsRequest {}
+
+message WatchEventsResponse {
+  Event event = 1;
+}
+
+message ListDevicesRequest {
+  bool include_revoked = 1;
+}
+
+message ListDevicesResponse {
+  repeated Device devices = 1;
+}
+
+message RenameDeviceRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  string name = 2;
+}
+
+message RenameDeviceResponse {}
+
+message RevokeDeviceRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+}
+
+message RevokeDeviceResponse {}
+
+message SetDeviceConfirmationRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  bool require = 2;
+}
+
+message SetDeviceConfirmationResponse {}
+
+message OpenPairingWindowRequest {
+  Role role = 1;
+}
+
+message OpenPairingWindowResponse {
+  PairingWindow window = 1;
+}
+
+message ExtendPairingWindowRequest {}
+
+message ExtendPairingWindowResponse {
+  PairingWindow window = 1;
+}
+
+message ClosePairingWindowRequest {}
+
+message ClosePairingWindowResponse {}
+
+message ListPairingCandidatesRequest {}
+
+message ListPairingCandidatesResponse {
+  repeated PairingCandidate candidates = 1;
+}
+
+message StartSasRequest {
+  // Address of the candidate, host:port.
+  string addr = 1;
+}
+
+message StartSasResponse {}
+
+message ConfirmSasRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+}
+
+message ConfirmSasResponse {}
+
+message RejectSasRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+}
+
+message RejectSasResponse {}
+
+message GetClipRequest {}
+
+message GetClipResponse {
+  // Most recent item, absent when the history is empty.
+  ClipItem item = 1;
+}
+
+message SetClipRequest {
+  string text = 1;
+}
+
+message SetClipResponse {
+  // Item created for the text.
+  ClipItem item = 1;
+}
+
+message GetPauseRequest {}
+
+message GetPauseResponse {
+  Pause pause = 1;
+}
+
+message SetPauseRequest {
+  PauseMode mode = 1;
+  // Deadline of PAUSE_MODE_UNTIL, unix milliseconds.
+  int64 until_unix_ms = 2;
+}
+
+message SetPauseResponse {
+  Pause pause = 1;
+}
+
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  Settings settings = 1;
+}
+
+message UpdateSettingsRequest {
+  optional string device_name = 1;
+  optional bool require_confirmation = 2;
+  optional int64 blob_max_size_bytes = 3;
+}
+
+message UpdateSettingsResponse {
+  Settings settings = 1;
 }

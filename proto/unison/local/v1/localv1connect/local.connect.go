@@ -35,12 +35,86 @@ const (
 const (
 	// UnisonServiceGetStatusProcedure is the fully-qualified name of the UnisonService's GetStatus RPC.
 	UnisonServiceGetStatusProcedure = "/unison.local.v1.UnisonService/GetStatus"
+	// UnisonServiceWatchEventsProcedure is the fully-qualified name of the UnisonService's WatchEvents
+	// RPC.
+	UnisonServiceWatchEventsProcedure = "/unison.local.v1.UnisonService/WatchEvents"
+	// UnisonServiceListDevicesProcedure is the fully-qualified name of the UnisonService's ListDevices
+	// RPC.
+	UnisonServiceListDevicesProcedure = "/unison.local.v1.UnisonService/ListDevices"
+	// UnisonServiceRenameDeviceProcedure is the fully-qualified name of the UnisonService's
+	// RenameDevice RPC.
+	UnisonServiceRenameDeviceProcedure = "/unison.local.v1.UnisonService/RenameDevice"
+	// UnisonServiceRevokeDeviceProcedure is the fully-qualified name of the UnisonService's
+	// RevokeDevice RPC.
+	UnisonServiceRevokeDeviceProcedure = "/unison.local.v1.UnisonService/RevokeDevice"
+	// UnisonServiceSetDeviceConfirmationProcedure is the fully-qualified name of the UnisonService's
+	// SetDeviceConfirmation RPC.
+	UnisonServiceSetDeviceConfirmationProcedure = "/unison.local.v1.UnisonService/SetDeviceConfirmation"
+	// UnisonServiceOpenPairingWindowProcedure is the fully-qualified name of the UnisonService's
+	// OpenPairingWindow RPC.
+	UnisonServiceOpenPairingWindowProcedure = "/unison.local.v1.UnisonService/OpenPairingWindow"
+	// UnisonServiceExtendPairingWindowProcedure is the fully-qualified name of the UnisonService's
+	// ExtendPairingWindow RPC.
+	UnisonServiceExtendPairingWindowProcedure = "/unison.local.v1.UnisonService/ExtendPairingWindow"
+	// UnisonServiceClosePairingWindowProcedure is the fully-qualified name of the UnisonService's
+	// ClosePairingWindow RPC.
+	UnisonServiceClosePairingWindowProcedure = "/unison.local.v1.UnisonService/ClosePairingWindow"
+	// UnisonServiceListPairingCandidatesProcedure is the fully-qualified name of the UnisonService's
+	// ListPairingCandidates RPC.
+	UnisonServiceListPairingCandidatesProcedure = "/unison.local.v1.UnisonService/ListPairingCandidates"
+	// UnisonServiceStartSasProcedure is the fully-qualified name of the UnisonService's StartSas RPC.
+	UnisonServiceStartSasProcedure = "/unison.local.v1.UnisonService/StartSas"
+	// UnisonServiceConfirmSasProcedure is the fully-qualified name of the UnisonService's ConfirmSas
+	// RPC.
+	UnisonServiceConfirmSasProcedure = "/unison.local.v1.UnisonService/ConfirmSas"
+	// UnisonServiceRejectSasProcedure is the fully-qualified name of the UnisonService's RejectSas RPC.
+	UnisonServiceRejectSasProcedure = "/unison.local.v1.UnisonService/RejectSas"
+	// UnisonServiceGetClipProcedure is the fully-qualified name of the UnisonService's GetClip RPC.
+	UnisonServiceGetClipProcedure = "/unison.local.v1.UnisonService/GetClip"
+	// UnisonServiceSetClipProcedure is the fully-qualified name of the UnisonService's SetClip RPC.
+	UnisonServiceSetClipProcedure = "/unison.local.v1.UnisonService/SetClip"
+	// UnisonServiceGetPauseProcedure is the fully-qualified name of the UnisonService's GetPause RPC.
+	UnisonServiceGetPauseProcedure = "/unison.local.v1.UnisonService/GetPause"
+	// UnisonServiceSetPauseProcedure is the fully-qualified name of the UnisonService's SetPause RPC.
+	UnisonServiceSetPauseProcedure = "/unison.local.v1.UnisonService/SetPause"
+	// UnisonServiceGetSettingsProcedure is the fully-qualified name of the UnisonService's GetSettings
+	// RPC.
+	UnisonServiceGetSettingsProcedure = "/unison.local.v1.UnisonService/GetSettings"
+	// UnisonServiceUpdateSettingsProcedure is the fully-qualified name of the UnisonService's
+	// UpdateSettings RPC.
+	UnisonServiceUpdateSettingsProcedure = "/unison.local.v1.UnisonService/UpdateSettings"
 )
 
 // UnisonServiceClient is a client for the unison.local.v1.UnisonService service.
 type UnisonServiceClient interface {
 	// Version and runtime state of the daemon.
 	GetStatus(context.Context, *connect.Request[v1.GetStatusRequest]) (*connect.Response[v1.GetStatusResponse], error)
+	// Daemon events as they happen. The stream ends when the client disconnects
+	// or the daemon stops.
+	WatchEvents(context.Context, *connect.Request[v1.WatchEventsRequest]) (*connect.ServerStreamForClient[v1.WatchEventsResponse], error)
+	// Paired devices.
+	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
+	RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error)
+	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
+	SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error)
+	// Pairing window and the short authentication string of an exchange.
+	OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error)
+	ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error)
+	ClosePairingWindow(context.Context, *connect.Request[v1.ClosePairingWindowRequest]) (*connect.Response[v1.ClosePairingWindowResponse], error)
+	ListPairingCandidates(context.Context, *connect.Request[v1.ListPairingCandidatesRequest]) (*connect.Response[v1.ListPairingCandidatesResponse], error)
+	StartSas(context.Context, *connect.Request[v1.StartSasRequest]) (*connect.Response[v1.StartSasResponse], error)
+	ConfirmSas(context.Context, *connect.Request[v1.ConfirmSasRequest]) (*connect.Response[v1.ConfirmSasResponse], error)
+	RejectSas(context.Context, *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error)
+	// Clipboard.
+	GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error)
+	// Copy local text to the clipboard and announce it to the peers.
+	SetClip(context.Context, *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error)
+	// Pause of the clipboard synchronization.
+	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
+	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
+	// Settings of the daemon.
+	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
+	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
 }
 
 // NewUnisonServiceClient constructs a client for the unison.local.v1.UnisonService service. By
@@ -60,12 +134,138 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("GetStatus")),
 			connect.WithClientOptions(opts...),
 		),
+		watchEvents: connect.NewClient[v1.WatchEventsRequest, v1.WatchEventsResponse](
+			httpClient,
+			baseURL+UnisonServiceWatchEventsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("WatchEvents")),
+			connect.WithClientOptions(opts...),
+		),
+		listDevices: connect.NewClient[v1.ListDevicesRequest, v1.ListDevicesResponse](
+			httpClient,
+			baseURL+UnisonServiceListDevicesProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ListDevices")),
+			connect.WithClientOptions(opts...),
+		),
+		renameDevice: connect.NewClient[v1.RenameDeviceRequest, v1.RenameDeviceResponse](
+			httpClient,
+			baseURL+UnisonServiceRenameDeviceProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RenameDevice")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeDevice: connect.NewClient[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse](
+			httpClient,
+			baseURL+UnisonServiceRevokeDeviceProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RevokeDevice")),
+			connect.WithClientOptions(opts...),
+		),
+		setDeviceConfirmation: connect.NewClient[v1.SetDeviceConfirmationRequest, v1.SetDeviceConfirmationResponse](
+			httpClient,
+			baseURL+UnisonServiceSetDeviceConfirmationProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetDeviceConfirmation")),
+			connect.WithClientOptions(opts...),
+		),
+		openPairingWindow: connect.NewClient[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse](
+			httpClient,
+			baseURL+UnisonServiceOpenPairingWindowProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("OpenPairingWindow")),
+			connect.WithClientOptions(opts...),
+		),
+		extendPairingWindow: connect.NewClient[v1.ExtendPairingWindowRequest, v1.ExtendPairingWindowResponse](
+			httpClient,
+			baseURL+UnisonServiceExtendPairingWindowProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ExtendPairingWindow")),
+			connect.WithClientOptions(opts...),
+		),
+		closePairingWindow: connect.NewClient[v1.ClosePairingWindowRequest, v1.ClosePairingWindowResponse](
+			httpClient,
+			baseURL+UnisonServiceClosePairingWindowProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ClosePairingWindow")),
+			connect.WithClientOptions(opts...),
+		),
+		listPairingCandidates: connect.NewClient[v1.ListPairingCandidatesRequest, v1.ListPairingCandidatesResponse](
+			httpClient,
+			baseURL+UnisonServiceListPairingCandidatesProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ListPairingCandidates")),
+			connect.WithClientOptions(opts...),
+		),
+		startSas: connect.NewClient[v1.StartSasRequest, v1.StartSasResponse](
+			httpClient,
+			baseURL+UnisonServiceStartSasProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("StartSas")),
+			connect.WithClientOptions(opts...),
+		),
+		confirmSas: connect.NewClient[v1.ConfirmSasRequest, v1.ConfirmSasResponse](
+			httpClient,
+			baseURL+UnisonServiceConfirmSasProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ConfirmSas")),
+			connect.WithClientOptions(opts...),
+		),
+		rejectSas: connect.NewClient[v1.RejectSasRequest, v1.RejectSasResponse](
+			httpClient,
+			baseURL+UnisonServiceRejectSasProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RejectSas")),
+			connect.WithClientOptions(opts...),
+		),
+		getClip: connect.NewClient[v1.GetClipRequest, v1.GetClipResponse](
+			httpClient,
+			baseURL+UnisonServiceGetClipProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetClip")),
+			connect.WithClientOptions(opts...),
+		),
+		setClip: connect.NewClient[v1.SetClipRequest, v1.SetClipResponse](
+			httpClient,
+			baseURL+UnisonServiceSetClipProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetClip")),
+			connect.WithClientOptions(opts...),
+		),
+		getPause: connect.NewClient[v1.GetPauseRequest, v1.GetPauseResponse](
+			httpClient,
+			baseURL+UnisonServiceGetPauseProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetPause")),
+			connect.WithClientOptions(opts...),
+		),
+		setPause: connect.NewClient[v1.SetPauseRequest, v1.SetPauseResponse](
+			httpClient,
+			baseURL+UnisonServiceSetPauseProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetPause")),
+			connect.WithClientOptions(opts...),
+		),
+		getSettings: connect.NewClient[v1.GetSettingsRequest, v1.GetSettingsResponse](
+			httpClient,
+			baseURL+UnisonServiceGetSettingsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetSettings")),
+			connect.WithClientOptions(opts...),
+		),
+		updateSettings: connect.NewClient[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse](
+			httpClient,
+			baseURL+UnisonServiceUpdateSettingsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("UpdateSettings")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // unisonServiceClient implements UnisonServiceClient.
 type unisonServiceClient struct {
-	getStatus *connect.Client[v1.GetStatusRequest, v1.GetStatusResponse]
+	getStatus             *connect.Client[v1.GetStatusRequest, v1.GetStatusResponse]
+	watchEvents           *connect.Client[v1.WatchEventsRequest, v1.WatchEventsResponse]
+	listDevices           *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
+	renameDevice          *connect.Client[v1.RenameDeviceRequest, v1.RenameDeviceResponse]
+	revokeDevice          *connect.Client[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse]
+	setDeviceConfirmation *connect.Client[v1.SetDeviceConfirmationRequest, v1.SetDeviceConfirmationResponse]
+	openPairingWindow     *connect.Client[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse]
+	extendPairingWindow   *connect.Client[v1.ExtendPairingWindowRequest, v1.ExtendPairingWindowResponse]
+	closePairingWindow    *connect.Client[v1.ClosePairingWindowRequest, v1.ClosePairingWindowResponse]
+	listPairingCandidates *connect.Client[v1.ListPairingCandidatesRequest, v1.ListPairingCandidatesResponse]
+	startSas              *connect.Client[v1.StartSasRequest, v1.StartSasResponse]
+	confirmSas            *connect.Client[v1.ConfirmSasRequest, v1.ConfirmSasResponse]
+	rejectSas             *connect.Client[v1.RejectSasRequest, v1.RejectSasResponse]
+	getClip               *connect.Client[v1.GetClipRequest, v1.GetClipResponse]
+	setClip               *connect.Client[v1.SetClipRequest, v1.SetClipResponse]
+	getPause              *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
+	setPause              *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
+	getSettings           *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
+	updateSettings        *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
 }
 
 // GetStatus calls unison.local.v1.UnisonService.GetStatus.
@@ -73,10 +273,126 @@ func (c *unisonServiceClient) GetStatus(ctx context.Context, req *connect.Reques
 	return c.getStatus.CallUnary(ctx, req)
 }
 
+// WatchEvents calls unison.local.v1.UnisonService.WatchEvents.
+func (c *unisonServiceClient) WatchEvents(ctx context.Context, req *connect.Request[v1.WatchEventsRequest]) (*connect.ServerStreamForClient[v1.WatchEventsResponse], error) {
+	return c.watchEvents.CallServerStream(ctx, req)
+}
+
+// ListDevices calls unison.local.v1.UnisonService.ListDevices.
+func (c *unisonServiceClient) ListDevices(ctx context.Context, req *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error) {
+	return c.listDevices.CallUnary(ctx, req)
+}
+
+// RenameDevice calls unison.local.v1.UnisonService.RenameDevice.
+func (c *unisonServiceClient) RenameDevice(ctx context.Context, req *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error) {
+	return c.renameDevice.CallUnary(ctx, req)
+}
+
+// RevokeDevice calls unison.local.v1.UnisonService.RevokeDevice.
+func (c *unisonServiceClient) RevokeDevice(ctx context.Context, req *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error) {
+	return c.revokeDevice.CallUnary(ctx, req)
+}
+
+// SetDeviceConfirmation calls unison.local.v1.UnisonService.SetDeviceConfirmation.
+func (c *unisonServiceClient) SetDeviceConfirmation(ctx context.Context, req *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error) {
+	return c.setDeviceConfirmation.CallUnary(ctx, req)
+}
+
+// OpenPairingWindow calls unison.local.v1.UnisonService.OpenPairingWindow.
+func (c *unisonServiceClient) OpenPairingWindow(ctx context.Context, req *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error) {
+	return c.openPairingWindow.CallUnary(ctx, req)
+}
+
+// ExtendPairingWindow calls unison.local.v1.UnisonService.ExtendPairingWindow.
+func (c *unisonServiceClient) ExtendPairingWindow(ctx context.Context, req *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error) {
+	return c.extendPairingWindow.CallUnary(ctx, req)
+}
+
+// ClosePairingWindow calls unison.local.v1.UnisonService.ClosePairingWindow.
+func (c *unisonServiceClient) ClosePairingWindow(ctx context.Context, req *connect.Request[v1.ClosePairingWindowRequest]) (*connect.Response[v1.ClosePairingWindowResponse], error) {
+	return c.closePairingWindow.CallUnary(ctx, req)
+}
+
+// ListPairingCandidates calls unison.local.v1.UnisonService.ListPairingCandidates.
+func (c *unisonServiceClient) ListPairingCandidates(ctx context.Context, req *connect.Request[v1.ListPairingCandidatesRequest]) (*connect.Response[v1.ListPairingCandidatesResponse], error) {
+	return c.listPairingCandidates.CallUnary(ctx, req)
+}
+
+// StartSas calls unison.local.v1.UnisonService.StartSas.
+func (c *unisonServiceClient) StartSas(ctx context.Context, req *connect.Request[v1.StartSasRequest]) (*connect.Response[v1.StartSasResponse], error) {
+	return c.startSas.CallUnary(ctx, req)
+}
+
+// ConfirmSas calls unison.local.v1.UnisonService.ConfirmSas.
+func (c *unisonServiceClient) ConfirmSas(ctx context.Context, req *connect.Request[v1.ConfirmSasRequest]) (*connect.Response[v1.ConfirmSasResponse], error) {
+	return c.confirmSas.CallUnary(ctx, req)
+}
+
+// RejectSas calls unison.local.v1.UnisonService.RejectSas.
+func (c *unisonServiceClient) RejectSas(ctx context.Context, req *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error) {
+	return c.rejectSas.CallUnary(ctx, req)
+}
+
+// GetClip calls unison.local.v1.UnisonService.GetClip.
+func (c *unisonServiceClient) GetClip(ctx context.Context, req *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error) {
+	return c.getClip.CallUnary(ctx, req)
+}
+
+// SetClip calls unison.local.v1.UnisonService.SetClip.
+func (c *unisonServiceClient) SetClip(ctx context.Context, req *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error) {
+	return c.setClip.CallUnary(ctx, req)
+}
+
+// GetPause calls unison.local.v1.UnisonService.GetPause.
+func (c *unisonServiceClient) GetPause(ctx context.Context, req *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {
+	return c.getPause.CallUnary(ctx, req)
+}
+
+// SetPause calls unison.local.v1.UnisonService.SetPause.
+func (c *unisonServiceClient) SetPause(ctx context.Context, req *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error) {
+	return c.setPause.CallUnary(ctx, req)
+}
+
+// GetSettings calls unison.local.v1.UnisonService.GetSettings.
+func (c *unisonServiceClient) GetSettings(ctx context.Context, req *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error) {
+	return c.getSettings.CallUnary(ctx, req)
+}
+
+// UpdateSettings calls unison.local.v1.UnisonService.UpdateSettings.
+func (c *unisonServiceClient) UpdateSettings(ctx context.Context, req *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error) {
+	return c.updateSettings.CallUnary(ctx, req)
+}
+
 // UnisonServiceHandler is an implementation of the unison.local.v1.UnisonService service.
 type UnisonServiceHandler interface {
 	// Version and runtime state of the daemon.
 	GetStatus(context.Context, *connect.Request[v1.GetStatusRequest]) (*connect.Response[v1.GetStatusResponse], error)
+	// Daemon events as they happen. The stream ends when the client disconnects
+	// or the daemon stops.
+	WatchEvents(context.Context, *connect.Request[v1.WatchEventsRequest], *connect.ServerStream[v1.WatchEventsResponse]) error
+	// Paired devices.
+	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
+	RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error)
+	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
+	SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error)
+	// Pairing window and the short authentication string of an exchange.
+	OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error)
+	ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error)
+	ClosePairingWindow(context.Context, *connect.Request[v1.ClosePairingWindowRequest]) (*connect.Response[v1.ClosePairingWindowResponse], error)
+	ListPairingCandidates(context.Context, *connect.Request[v1.ListPairingCandidatesRequest]) (*connect.Response[v1.ListPairingCandidatesResponse], error)
+	StartSas(context.Context, *connect.Request[v1.StartSasRequest]) (*connect.Response[v1.StartSasResponse], error)
+	ConfirmSas(context.Context, *connect.Request[v1.ConfirmSasRequest]) (*connect.Response[v1.ConfirmSasResponse], error)
+	RejectSas(context.Context, *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error)
+	// Clipboard.
+	GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error)
+	// Copy local text to the clipboard and announce it to the peers.
+	SetClip(context.Context, *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error)
+	// Pause of the clipboard synchronization.
+	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
+	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
+	// Settings of the daemon.
+	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
+	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
 }
 
 // NewUnisonServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -92,10 +408,154 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("GetStatus")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceWatchEventsHandler := connect.NewServerStreamHandler(
+		UnisonServiceWatchEventsProcedure,
+		svc.WatchEvents,
+		connect.WithSchema(unisonServiceMethods.ByName("WatchEvents")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceListDevicesHandler := connect.NewUnaryHandler(
+		UnisonServiceListDevicesProcedure,
+		svc.ListDevices,
+		connect.WithSchema(unisonServiceMethods.ByName("ListDevices")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRenameDeviceHandler := connect.NewUnaryHandler(
+		UnisonServiceRenameDeviceProcedure,
+		svc.RenameDevice,
+		connect.WithSchema(unisonServiceMethods.ByName("RenameDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRevokeDeviceHandler := connect.NewUnaryHandler(
+		UnisonServiceRevokeDeviceProcedure,
+		svc.RevokeDevice,
+		connect.WithSchema(unisonServiceMethods.ByName("RevokeDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceSetDeviceConfirmationHandler := connect.NewUnaryHandler(
+		UnisonServiceSetDeviceConfirmationProcedure,
+		svc.SetDeviceConfirmation,
+		connect.WithSchema(unisonServiceMethods.ByName("SetDeviceConfirmation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceOpenPairingWindowHandler := connect.NewUnaryHandler(
+		UnisonServiceOpenPairingWindowProcedure,
+		svc.OpenPairingWindow,
+		connect.WithSchema(unisonServiceMethods.ByName("OpenPairingWindow")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceExtendPairingWindowHandler := connect.NewUnaryHandler(
+		UnisonServiceExtendPairingWindowProcedure,
+		svc.ExtendPairingWindow,
+		connect.WithSchema(unisonServiceMethods.ByName("ExtendPairingWindow")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceClosePairingWindowHandler := connect.NewUnaryHandler(
+		UnisonServiceClosePairingWindowProcedure,
+		svc.ClosePairingWindow,
+		connect.WithSchema(unisonServiceMethods.ByName("ClosePairingWindow")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceListPairingCandidatesHandler := connect.NewUnaryHandler(
+		UnisonServiceListPairingCandidatesProcedure,
+		svc.ListPairingCandidates,
+		connect.WithSchema(unisonServiceMethods.ByName("ListPairingCandidates")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceStartSasHandler := connect.NewUnaryHandler(
+		UnisonServiceStartSasProcedure,
+		svc.StartSas,
+		connect.WithSchema(unisonServiceMethods.ByName("StartSas")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceConfirmSasHandler := connect.NewUnaryHandler(
+		UnisonServiceConfirmSasProcedure,
+		svc.ConfirmSas,
+		connect.WithSchema(unisonServiceMethods.ByName("ConfirmSas")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRejectSasHandler := connect.NewUnaryHandler(
+		UnisonServiceRejectSasProcedure,
+		svc.RejectSas,
+		connect.WithSchema(unisonServiceMethods.ByName("RejectSas")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceGetClipHandler := connect.NewUnaryHandler(
+		UnisonServiceGetClipProcedure,
+		svc.GetClip,
+		connect.WithSchema(unisonServiceMethods.ByName("GetClip")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceSetClipHandler := connect.NewUnaryHandler(
+		UnisonServiceSetClipProcedure,
+		svc.SetClip,
+		connect.WithSchema(unisonServiceMethods.ByName("SetClip")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceGetPauseHandler := connect.NewUnaryHandler(
+		UnisonServiceGetPauseProcedure,
+		svc.GetPause,
+		connect.WithSchema(unisonServiceMethods.ByName("GetPause")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceSetPauseHandler := connect.NewUnaryHandler(
+		UnisonServiceSetPauseProcedure,
+		svc.SetPause,
+		connect.WithSchema(unisonServiceMethods.ByName("SetPause")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceGetSettingsHandler := connect.NewUnaryHandler(
+		UnisonServiceGetSettingsProcedure,
+		svc.GetSettings,
+		connect.WithSchema(unisonServiceMethods.ByName("GetSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceUpdateSettingsHandler := connect.NewUnaryHandler(
+		UnisonServiceUpdateSettingsProcedure,
+		svc.UpdateSettings,
+		connect.WithSchema(unisonServiceMethods.ByName("UpdateSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/unison.local.v1.UnisonService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UnisonServiceGetStatusProcedure:
 			unisonServiceGetStatusHandler.ServeHTTP(w, r)
+		case UnisonServiceWatchEventsProcedure:
+			unisonServiceWatchEventsHandler.ServeHTTP(w, r)
+		case UnisonServiceListDevicesProcedure:
+			unisonServiceListDevicesHandler.ServeHTTP(w, r)
+		case UnisonServiceRenameDeviceProcedure:
+			unisonServiceRenameDeviceHandler.ServeHTTP(w, r)
+		case UnisonServiceRevokeDeviceProcedure:
+			unisonServiceRevokeDeviceHandler.ServeHTTP(w, r)
+		case UnisonServiceSetDeviceConfirmationProcedure:
+			unisonServiceSetDeviceConfirmationHandler.ServeHTTP(w, r)
+		case UnisonServiceOpenPairingWindowProcedure:
+			unisonServiceOpenPairingWindowHandler.ServeHTTP(w, r)
+		case UnisonServiceExtendPairingWindowProcedure:
+			unisonServiceExtendPairingWindowHandler.ServeHTTP(w, r)
+		case UnisonServiceClosePairingWindowProcedure:
+			unisonServiceClosePairingWindowHandler.ServeHTTP(w, r)
+		case UnisonServiceListPairingCandidatesProcedure:
+			unisonServiceListPairingCandidatesHandler.ServeHTTP(w, r)
+		case UnisonServiceStartSasProcedure:
+			unisonServiceStartSasHandler.ServeHTTP(w, r)
+		case UnisonServiceConfirmSasProcedure:
+			unisonServiceConfirmSasHandler.ServeHTTP(w, r)
+		case UnisonServiceRejectSasProcedure:
+			unisonServiceRejectSasHandler.ServeHTTP(w, r)
+		case UnisonServiceGetClipProcedure:
+			unisonServiceGetClipHandler.ServeHTTP(w, r)
+		case UnisonServiceSetClipProcedure:
+			unisonServiceSetClipHandler.ServeHTTP(w, r)
+		case UnisonServiceGetPauseProcedure:
+			unisonServiceGetPauseHandler.ServeHTTP(w, r)
+		case UnisonServiceSetPauseProcedure:
+			unisonServiceSetPauseHandler.ServeHTTP(w, r)
+		case UnisonServiceGetSettingsProcedure:
+			unisonServiceGetSettingsHandler.ServeHTTP(w, r)
+		case UnisonServiceUpdateSettingsProcedure:
+			unisonServiceUpdateSettingsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -107,4 +567,76 @@ type UnimplementedUnisonServiceHandler struct{}
 
 func (UnimplementedUnisonServiceHandler) GetStatus(context.Context, *connect.Request[v1.GetStatusRequest]) (*connect.Response[v1.GetStatusResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetStatus is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) WatchEvents(context.Context, *connect.Request[v1.WatchEventsRequest], *connect.ServerStream[v1.WatchEventsResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.WatchEvents is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ListDevices is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RenameDevice is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RevokeDevice is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetDeviceConfirmation is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.OpenPairingWindow is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ExtendPairingWindow is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ClosePairingWindow(context.Context, *connect.Request[v1.ClosePairingWindowRequest]) (*connect.Response[v1.ClosePairingWindowResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ClosePairingWindow is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ListPairingCandidates(context.Context, *connect.Request[v1.ListPairingCandidatesRequest]) (*connect.Response[v1.ListPairingCandidatesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ListPairingCandidates is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) StartSas(context.Context, *connect.Request[v1.StartSasRequest]) (*connect.Response[v1.StartSasResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.StartSas is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ConfirmSas(context.Context, *connect.Request[v1.ConfirmSasRequest]) (*connect.Response[v1.ConfirmSasResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ConfirmSas is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RejectSas(context.Context, *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RejectSas is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetClip is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetClip(context.Context, *connect.Request[v1.SetClipRequest]) (*connect.Response[v1.SetClipResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetClip is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetPause is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetPause is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetSettings is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.UpdateSettings is not implemented"))
 }
