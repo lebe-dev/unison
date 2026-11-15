@@ -2,11 +2,13 @@
   import { onDestroy, onMount } from "svelte";
   import { daemon } from "./lib/daemon.svelte";
   import { eventKindLabel } from "./lib/events";
+  import { pairing } from "./lib/pairing.svelte";
   import AddDevice from "./lib/screens/AddDevice.svelte";
   import Devices from "./lib/screens/Devices.svelte";
   import History from "./lib/screens/History.svelte";
   import Settings from "./lib/screens/Settings.svelte";
   import Transfers from "./lib/screens/Transfers.svelte";
+  import { theme } from "./lib/theme.svelte";
 
   const sections = [
     { id: "devices", label: "Devices" },
@@ -22,15 +24,24 @@
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
 
   onMount(() => {
+    pairing.start();
     void daemon.start();
   });
 
   onDestroy(() => {
+    pairing.stop();
     daemon.stop();
   });
 
   function clock(value: bigint): string {
     return new Date(Number(value)).toLocaleTimeString();
+  }
+
+  function changeTheme(event: Event): void {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value === "system" || value === "light" || value === "dark") {
+      theme.set(value);
+    }
   }
 </script>
 
@@ -45,18 +56,33 @@
           onclick={() => (active = section.id)}
         >
           {section.label}
+          {#if section.id === "add" && pairing.request}
+            <span class="badge confirm" aria-label="Pairing request waiting">!</span>
+          {/if}
         </button>
       {/each}
     </nav>
-    <div class="connection">
-      <span class="dot" class:online={daemon.connected}></span>
-      <span>
-        {#if daemon.connected}
-          Daemon {daemon.status?.version ?? ""}
-        {:else}
-          Daemon offline
-        {/if}
-      </span>
+    <div class="sidebar-footer">
+      <label class="theme-picker">
+        Theme
+        <select aria-label="Theme" value={theme.mode} onchange={changeTheme}>
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <div class="connection">
+        <span class="dot" class:online={daemon.connected}></span>
+        <span>
+          {#if daemon.connected}
+            Daemon {daemon.status?.version ?? ""}
+          {:else if daemon.loading}
+            Connecting...
+          {:else}
+            Daemon offline
+          {/if}
+        </span>
+      </div>
     </div>
   </aside>
 
@@ -64,7 +90,7 @@
     <header>
       <h2>{current.label}</h2>
       <div class="summary">
-        <span>{daemon.status?.deviceName ?? "Unison"}</span>
+        <span>{daemon.deviceName}</span>
         <span>{daemon.onlinePeers} online</span>
         <span class:paused={daemon.paused}>{daemon.pauseText}</span>
       </div>
@@ -76,7 +102,7 @@
 
     <div class="screen">
       {#if active === "devices"}
-        <Devices />
+        <Devices onAdd={() => (active = "add")} />
       {:else if active === "add"}
         <AddDevice />
       {:else if active === "history"}
