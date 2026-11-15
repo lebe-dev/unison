@@ -1,0 +1,5 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/java:v36.2
+    out: android/app/src/main/java
+    opt: lite

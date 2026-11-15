@@ -1,0 +1,55 @@
+package app.unison.service
+
+import android.content.Context
+import android.os.Build
+import androidx.core.content.edit
+
+/** How long the core stays running. */
+enum class OperatingMode(val value: String) {
+    /** The core runs from boot until the user stops it. */
+    ALWAYS("always"),
+
+    /** The core runs while the device is on Wi-Fi. */
+    WIFI_ONLY("wifi_only"),
+
+    /** The core runs only while the app is in the foreground. */
+    APP_OPEN("app_open");
+
+    companion object {
+        val DEFAULT = ALWAYS
+
+        fun fromValue(value: String?): OperatingMode =
+            entries.firstOrNull { it.value == value } ?: DEFAULT
+    }
+}
+
+/** Settings the service needs before the core is up. */
+object UnisonSettings {
+    const val FILE = "unison.settings"
+
+    /** Stored [OperatingMode.value]. */
+    const val KEY_OPERATING_MODE = "service.operating_mode"
+
+    /** Device name passed to the core at start. */
+    const val KEY_DEVICE_NAME = "device.name"
+
+    fun operatingMode(context: Context): OperatingMode {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return OperatingMode.fromValue(prefs.getString(KEY_OPERATING_MODE, null))
+    }
+
+    fun setOperatingMode(context: Context, mode: OperatingMode) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putString(KEY_OPERATING_MODE, mode.value) }
+    }
+
+    fun deviceName(context: Context): String {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_DEVICE_NAME, null) ?: Build.MODEL
+    }
+
+    fun setDeviceName(context: Context, name: String) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putString(KEY_DEVICE_NAME, name) }
+    }
+}

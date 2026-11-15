@@ -1,0 +1,61 @@
+package app.unison.service
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import app.unison.R
+
+/** Notification channels of the app. */
+object NotificationChannels {
+    /** Progress of outgoing and incoming transfers. */
+    const val TRANSFERS = "transfers"
+
+    /** Requests from Friends that wait for a decision. */
+    const val REQUESTS = "requests"
+
+    /** Incoming clipboard items. */
+    const val CLIPBOARD = "clipboard"
+
+    /** The persistent notification of the service. */
+    const val SERVICE = "service"
+
+    fun create(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                SERVICE,
+                context.getString(R.string.channel_service),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply { setShowBadge(false) },
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                TRANSFERS,
+                context.getString(R.string.channel_transfers),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply { setShowBadge(false) },
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                REQUESTS,
+                context.getString(R.string.channel_requests),
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CLIPBOARD,
+                context.getString(R.string.channel_clipboard),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
+            },
+        )
+    }
+}
