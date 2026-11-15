@@ -27,9 +27,21 @@ func (s *Service) RenameDevice(context.Context, *connect.Request[localv1.RenameD
 	return nil, connect.NewError(connect.CodeUnimplemented, errDevicesUnavailable)
 }
 
-// RevokeDevice revokes a paired device.
-func (s *Service) RevokeDevice(context.Context, *connect.Request[localv1.RevokeDeviceRequest]) (*connect.Response[localv1.RevokeDeviceResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errDevicesUnavailable)
+// RevokeDevice revokes a paired device or, when the local device is named,
+// leaves the group. A revoked device is cut off from the devices of the group
+// and stays on the deny-list.
+func (s *Service) RevokeDevice(ctx context.Context, req *connect.Request[localv1.RevokeDeviceRequest]) (*connect.Response[localv1.RevokeDeviceResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	id, err := model.ParseDeviceID(req.Msg.GetDeviceId())
+	if err != nil {
+		return nil, errorOf(fmt.Errorf("%w: device id", trust.ErrInvalidPeer))
+	}
+	if err := s.node.RevokePeer(ctx, id); err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.RevokeDeviceResponse{}), nil
 }
 
 // SetDeviceConfirmation sets the confirmation flag of this device or of a
