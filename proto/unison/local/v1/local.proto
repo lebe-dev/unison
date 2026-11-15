@@ -299,7 +299,7 @@ message RenameDeviceRequest {
 message RenameDeviceResponse {}
 
 message RevokeDeviceRequest {
-  // Device ID in lowercase hex.
+  // Device ID in lowercase hex. The ID of this device leaves the group.
   string device_id = 1;
 }
 
