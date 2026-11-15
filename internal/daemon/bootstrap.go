@@ -99,10 +99,12 @@ func bootstrapMigrations() ([]store.Migration, error) {
 }
 
 // keyProvider resolves the discovery key of the device. The key lives in the
-// trust store, which the node opens, and it changes when the device pairs.
+// trust store, which the node opens, and it changes when the device pairs or a
+// revocation rotates it.
 type keyProvider struct {
-	mu sync.RWMutex
-	fn func(ctx context.Context) ([]byte, error)
+	mu   sync.RWMutex
+	fn   func(ctx context.Context) ([]byte, error)
+	list func(ctx context.Context) ([][]byte, error)
 }
 
 // get returns the discovery key, or nil while the device has none.
@@ -116,9 +118,27 @@ func (p *keyProvider) get(ctx context.Context) ([]byte, error) {
 	return fn(ctx)
 }
 
+// keys returns the keys that match the group tag.
+func (p *keyProvider) keys(ctx context.Context) ([][]byte, error) {
+	p.mu.RLock()
+	list := p.list
+	p.mu.RUnlock()
+	if list == nil {
+		return nil, nil
+	}
+	return list(ctx)
+}
+
 // use replaces the source of the discovery key.
 func (p *keyProvider) use(fn func(ctx context.Context) ([]byte, error)) {
 	p.mu.Lock()
 	p.fn = fn
+	p.mu.Unlock()
+}
+
+// useKeys replaces the source of the keys that match the group tag.
+func (p *keyProvider) useKeys(list func(ctx context.Context) ([][]byte, error)) {
+	p.mu.Lock()
+	p.list = list
 	p.mu.Unlock()
 }

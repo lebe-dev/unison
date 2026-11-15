@@ -57,6 +57,18 @@ func MatchTag(key []byte, tag string, t time.Time) bool {
 	return false
 }
 
+// MatchAnyTag reports whether tag was produced by any of keys. The group keeps
+// the previous key of a rotation for a transition period, so the tags of both
+// keys match.
+func MatchAnyTag(keys [][]byte, tag string, t time.Time) bool {
+	for _, key := range keys {
+		if MatchTag(key, tag, t) {
+			return true
+		}
+	}
+	return false
+}
+
 // tagForEpoch returns the tag of key for epoch. The epoch is encoded as a
 // big-endian integer.
 func tagForEpoch(key []byte, epoch int64) string {

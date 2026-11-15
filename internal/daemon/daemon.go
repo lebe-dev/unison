@@ -156,6 +156,7 @@ func Run(ctx context.Context, opts Options) error {
 		return fmt.Errorf("daemon: start the node: %w", err)
 	}
 	key.use(n.Trust().DiscoveryKey)
+	key.useKeys(n.Trust().DiscoveryKeys)
 
 	serveCtx, stopServing := context.WithCancel(context.Background())
 	defer stopServing()
@@ -203,7 +204,7 @@ func newNode(opts Options, name string, key *keyProvider, log *slog.Logger) (*no
 	disc := opts.Discovery
 	if disc == nil {
 		var err error
-		disc, err = discovery.New(discovery.Options{Key: key.get, Clock: opts.Clock, Logger: log})
+		disc, err = discovery.New(discovery.Options{Key: key.get, Keys: key.keys, Clock: opts.Clock, Logger: log})
 		if err != nil {
 			return nil, fmt.Errorf("daemon: start discovery: %w", err)
 		}
