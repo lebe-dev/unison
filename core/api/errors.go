@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/trust"
@@ -52,14 +53,22 @@ func codeOf(err error) connect.Code {
 		return connect.CodePermissionDenied
 	case errors.Is(err, pairing.ErrUnknownRequest),
 		errors.Is(err, trust.ErrPeerNotFound),
-		errors.Is(err, trust.ErrSecretNotFound):
+		errors.Is(err, trust.ErrSecretNotFound),
+		errors.Is(err, history.ErrNotFound):
 		return connect.CodeNotFound
 	case errors.Is(err, trust.ErrPeerExists):
 		return connect.CodeAlreadyExists
 	case errors.Is(err, pairing.ErrInvalidPeer),
 		errors.Is(err, trust.ErrInvalidPeer),
-		errors.Is(err, clip.ErrUnsupportedContent):
+		errors.Is(err, clip.ErrUnsupportedContent),
+		errors.Is(err, history.ErrInvalidItem):
 		return connect.CodeInvalidArgument
+	case errors.Is(err, history.ErrUnsupported):
+		return connect.CodeUnimplemented
+	case errors.Is(err, history.ErrUnavailable):
+		return connect.CodeFailedPrecondition
+	case errors.Is(err, history.ErrNoSource):
+		return connect.CodeUnavailable
 	default:
 		return connect.CodeInternal
 	}

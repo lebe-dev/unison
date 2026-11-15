@@ -592,6 +592,7 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 	if err := n.trust.TouchSeen(ctx, l.id, n.clock.Now()); err != nil {
 		n.log.Debug("recording the peer as seen failed", "peer", l.id, "error", err)
 	}
+	n.startHistorySync(sess)
 	if !wasOnline {
 		n.publish(Event{Kind: EventPeerOnline, Peer: l.id, Name: peer.Name, Role: peer.Role, Platform: peer.Platform, Path: model.PathLAN})
 		n.log.Info("peer online", "peer", l.id, "role", peer.Role)

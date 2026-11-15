@@ -12,6 +12,7 @@ import (
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/blob/transfer"
 	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/identity"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/policy"
@@ -161,6 +162,7 @@ type Node struct {
 	clip     *clip.Pipeline
 	policy   *policy.Decider
 	blobs    *blob.Store
+	history  *history.Store
 
 	blobService *transfer.Service
 	fetcher     *transfer.Fetcher
@@ -238,7 +240,7 @@ func New(cfg Config) (*Node, error) {
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
 	}
-	n.hooks = []SessionHook{n.installClip, n.installTransfer}
+	n.hooks = []SessionHook{n.installClip, n.installTransfer, n.installHistory}
 	return n, nil
 }
 
@@ -489,14 +491,25 @@ func (n *Node) open(ctx context.Context) error {
 	}
 	n.policy = decider
 
+	ttls, err := history.LoadTTLs(ctx, db.Settings())
+	if err != nil {
+		n.log.Warn("reading the history lifetimes failed, using the defaults", "error", err)
+	}
+	hist, err := n.openHistory(db, id.DeviceID())
+	if err != nil {
+		return err
+	}
+
 	pipeline, err := clip.New(clip.Options{
 		Clipboard: n.cfg.Clipboard,
 		Store:     db,
 		Origin:    id.DeviceID(),
 		Announcer: n,
 		Policy:    decider,
+		History:   hist,
 		Clock:     n.clock,
 		Logger:    n.log,
+		TextTTL:   ttls.Text,
 	})
 	if err != nil {
 		return err
@@ -519,11 +532,17 @@ func migrationSet() ([]store.Migration, error) {
 	if err != nil {
 		return nil, err
 	}
+	historyMigrations, err := history.Migrations()
+	if err != nil {
+		return nil, err
+	}
 
-	migrations := make([]store.Migration, 0, len(trustMigrations)+len(clipMigrations)+len(blobMigrations))
+	migrations := make([]store.Migration, 0,
+		len(trustMigrations)+len(clipMigrations)+len(blobMigrations)+len(historyMigrations))
 	migrations = append(migrations, trustMigrations...)
 	migrations = append(migrations, clipMigrations...)
-	return append(migrations, blobMigrations...), nil
+	migrations = append(migrations, blobMigrations...)
+	return append(migrations, historyMigrations...), nil
 }
 
 // listenListener binds the packet connection of the main listener.
@@ -560,6 +579,7 @@ func (n *Node) run() {
 	n.spawn(func() { n.acceptLoop(ctx) })
 	n.spawn(func() { n.browseLoop(ctx) })
 	n.spawn(func() { n.clipRun(ctx) })
+	n.spawn(func() { n.historyRun(ctx) })
 
 	n.advertise(ctx)
 	for _, peer := range n.pairedPeers(ctx) {

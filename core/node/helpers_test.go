@@ -41,6 +41,7 @@ type socketFactory struct {
 
 	mu    sync.Mutex
 	addrs []string
+	conns []*vnet.Conn
 }
 
 // newSocketFactory returns a factory that starts at base.
@@ -60,7 +61,26 @@ func (f *socketFactory) listenPacket(_ context.Context, _ int) (net.PacketConn, 
 		return nil, err
 	}
 	f.addrs = append(f.addrs, addr)
+	f.conns = append(f.conns, pc)
 	return pc, nil
+}
+
+// disconnect drops every datagram the node sends.
+func (f *socketFactory) disconnect() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, conn := range f.conns {
+		conn.Disconnect()
+	}
+}
+
+// reconnect ends the outage of disconnect.
+func (f *socketFactory) reconnect() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, conn := range f.conns {
+		conn.Reconnect()
+	}
 }
 
 // bound returns the address bound by the call with the given index.
@@ -91,13 +111,21 @@ type testNode struct {
 func newTestNode(t *testing.T, network *vnet.Network, bus *fake.Bus, base int) *testNode {
 	t.Helper()
 
+	return newTestNodeAt(t, network, bus, base, t.TempDir(), fake.NewKeystore())
+}
+
+// newTestNodeAt creates a node with a data directory and a keystore of its own,
+// so a device that restarts keeps its identity and its history.
+func newTestNodeAt(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, dir string, keys *fake.Keystore) *testNode {
+	t.Helper()
+
 	clipboard := fake.NewClipboard()
 	sockets := newSocketFactory(network, base)
 	created, err := New(Config{
-		DataDir:   t.TempDir(),
+		DataDir:   dir,
 		Name:      fmt.Sprintf("device-%d", base),
 		Platform:  model.PlatformMacOS,
-		Keystore:  fake.NewKeystore(),
+		Keystore:  keys,
 		Clipboard: clipboard,
 		Discovery: bus.Discovery(),
 		Logger:    testLogger(base),
@@ -286,7 +314,20 @@ func waitOnline(t *testing.T, n *testNode, peer model.DeviceID) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatalf("no session with %s within %v", peer, testTimeout)
+	t.Fatalf("no session with %s within %v (%s)", peer, testTimeout, n.linkState(peer))
+}
+
+// linkState describes the link of the peer for a failing test.
+func (n *testNode) linkState(peer model.DeviceID) string {
+	l := n.lookup(peer)
+	if l == nil {
+		return "no link"
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return fmt.Sprintf("gen %d, online %v, conn %v, session %v, blocked %v, dialing %v, upgrade %v, attempts %d, sockets %v",
+		l.gen, l.online, l.conn != nil, l.sess != nil, l.blocked, l.dialing, l.upgrade, l.attempts, n.sockets.boundAddrs())
 }
 
 // waitClipboard waits until the clipboard holds the plain text want.

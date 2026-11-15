@@ -11,6 +11,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/clip"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
+	"github.com/lebe-dev/unison/proto/unison/local/v1/localv1connect"
 )
 
 // clip runs the clipboard subcommands.
@@ -35,9 +36,11 @@ func (a *app) clip(ctx context.Context, args []string) error {
 }
 
 // clipGet prints the last clipboard item. The text is written as it is, without
-// a trailing newline.
+// a trailing newline. With --from the last item of one paired device is printed
+// instead.
 func (a *app) clipGet(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("clip get")
+	from := flags.String("from", "", "print the last item of this device")
 	if err := parseFlags(flags, args); err != nil {
 		return err
 	}
@@ -49,14 +52,16 @@ func (a *app) clipGet(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.GetClip(ctx, connect.NewRequest(&localv1.GetClipRequest{}))
+	item, err := a.clipItem(ctx, client, *from)
 	if err != nil {
-		return fmt.Errorf("read the clipboard: %w", err)
+		return err
 	}
 	if a.json {
-		return a.writeJSON(response.Msg)
+		if item == nil {
+			return a.writeJSON(&localv1.GetClipResponse{})
+		}
+		return a.writeJSON(&localv1.GetClipResponse{Item: item})
 	}
-	item := response.Msg.GetItem()
 	if item == nil {
 		return errors.New("the clipboard history is empty")
 	}
@@ -66,6 +71,37 @@ func (a *app) clipGet(ctx context.Context, args []string) error {
 	}
 	_, err = io.WriteString(a.stdout, text)
 	return err
+}
+
+// clipItem returns the last item of the clipboard or of one device.
+func (a *app) clipItem(ctx context.Context, client localv1connect.UnisonServiceClient, from string) (*localv1.ClipItem, error) {
+	if from == "" {
+		response, err := client.GetClip(ctx, connect.NewRequest(&localv1.GetClipRequest{}))
+		if err != nil {
+			return nil, fmt.Errorf("read the clipboard: %w", err)
+		}
+		return response.Msg.GetItem(), nil
+	}
+
+	devices, err := a.devicesOf(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	device, err := resolveDevice(devices, from)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.ListHistory(ctx, connect.NewRequest(&localv1.ListHistoryRequest{
+		DeviceId: device.GetDeviceId(),
+		Limit:    1,
+	}))
+	if err != nil {
+		return nil, fmt.Errorf("read the history of the device: %w", err)
+	}
+	if entries := response.Msg.GetItems(); len(entries) > 0 {
+		return entries[0].GetItem(), nil
+	}
+	return nil, nil
 }
 
 // clipSet copies the standard input to the clipboard and announces it to the
