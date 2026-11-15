@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package unison.mobile.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1";
+
+// Kind of an event delivered to the mobile host.
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_CLIP_RECEIVED = 1;
+  EVENT_TYPE_NETWORK_CHANGED = 2;
+}
+
+// Event delivered to the mobile host.
+message Event {
+  EventType type = 1;
+  // Event time, unix milliseconds.
+  int64 ts_unix_ms = 2;
+  ClipPayload clip = 3;
+  NetworkState network = 4;
+}
+
+// Payload to write into the Android clipboard.
+message ClipPayload {
+  string mime_type = 1;
+  bytes data = 2;
+  // File name, set for file payloads.
+  string file_name = 3;
+}
+
+// Network conditions reported by the host.
+message NetworkState {
+  bool online = 1;
+  bool metered = 2;
+  bool roaming = 3;
+  bool vpn = 4;
+  bool data_saver = 5;
+}

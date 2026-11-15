@@ -40,8 +40,16 @@ fmt:
 tidy:
     go mod tidy
 
+# Generate Go code from the protobuf definitions.
+proto:
+    buf generate
+
+# Lint the protobuf definitions.
+proto-lint:
+    buf lint
+
 # Check the code before committing.
-check: lint test
+check: lint proto-lint test
 
 # Remove build artifacts.
 clean:

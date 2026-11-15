@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/types.proto";
+import "unison/wire/v1/trust.proto";
+
+// Sent by the scanning device to the pairing listener.
+message PairRequest {
+  // One time token from the QR code, 16 bytes.
+  bytes token = 1;
+  // Ed25519 identity public key, 32 bytes.
+  bytes ed25519_pub = 2;
+  // ML-DSA-65 identity public key.
+  bytes mldsa_pub = 3;
+  string device_name = 4;
+  Platform platform = 5;
+  bytes ed25519_sig = 6;
+  bytes mldsa_sig = 7;
+}
+
+// Sent by the device that shows the QR code.
+message PairAccept {
+  // Ed25519 identity public key, 32 bytes.
+  bytes ed25519_pub = 1;
+  // ML-DSA-65 identity public key.
+  bytes mldsa_pub = 2;
+  string device_name = 3;
+  // Role assigned by the accepting device.
+  Role role = 4;
+  // Known personal peers of the accepting device.
+  repeated Introduction introductions = 5;
+  bytes ed25519_sig = 6;
+  bytes mldsa_sig = 7;
+}
