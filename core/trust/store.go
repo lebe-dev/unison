@@ -317,14 +317,7 @@ func (s *Store) writeProfile(ctx context.Context, tx *sql.Tx, peer Peer) error {
 
 // writeAddrs stores the sealed address cache of the peer.
 func (s *Store) writeAddrs(ctx context.Context, tx *sql.Tx, peer Peer) error {
-	sealed, err := sealPeerAddrs(s.db.Sealer(), peer)
-	if err != nil {
-		return err
-	}
-	if _, err := tx.ExecContext(ctx, "UPDATE peers SET addrs = ? WHERE device_id = ?", sealed, peer.Public.DeviceID.Bytes()); err != nil {
-		return fmt.Errorf("trust: write peer addresses: %w", err)
-	}
-	return nil
+	return writePeerAddrs(ctx, tx, s.db.Sealer(), peer)
 }
 
 // rowScanner is implemented by *sql.Row and *sql.Rows.

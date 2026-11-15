@@ -9,6 +9,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -242,6 +243,109 @@ func TestDevicesConfirmUsage(t *testing.T) {
 		{"devices", "confirm"},
 		{"devices", "confirm", "self"},
 		{"devices", "confirm", "self", "maybe"},
+	} {
+		code, _, stderr := runCommand(t, "", append([]string{"--endpoint", device.endpoint}, args...)...)
+		if code != exitFailure {
+			t.Fatalf("%v exited with %d", args, code)
+		}
+		if stderr == "" {
+			t.Errorf("%v reported no error", args)
+		}
+	}
+}
+
+// TestDevicesRevoke checks the revocation of a paired device.
+func TestDevicesRevoke(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 360, api.Options{})
+	other := newDevice(t, network, bus, 370, api.Options{})
+	device.start(t)
+	other.start(t)
+	device.pair(t, other)
+
+	code, stdout, stderr := runCommand(t, "y\n", "--endpoint", device.endpoint, "devices", "revoke", other.name)
+	if code != exitOK {
+		t.Fatalf("devices revoke exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, fingerprintOf(other.DeviceID().String())) {
+		t.Errorf("the command does not report the device:\n%s", stdout)
+	}
+	peer, err := device.Trust().Get(t.Context(), other.DeviceID())
+	if err != nil {
+		t.Fatalf("read the revoked device: %v", err)
+	}
+	if !peer.Revoked {
+		t.Fatal("the device is not revoked")
+	}
+
+	code, stdout, stderr = runCommand(t, "", "--endpoint", device.endpoint, "devices")
+	if code != exitOK {
+		t.Fatalf("devices exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "no paired devices") {
+		t.Errorf("the revoked device is still listed:\n%s", stdout)
+	}
+}
+
+// TestDevicesRevokeDeclined checks that a declined revocation changes nothing.
+func TestDevicesRevokeDeclined(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 380, api.Options{})
+	other := newDevice(t, network, bus, 390, api.Options{})
+	device.start(t)
+	other.start(t)
+	device.pair(t, other)
+
+	code, stdout, stderr := runCommand(t, "n\n", "--endpoint", device.endpoint, "devices", "revoke", other.name)
+	if code != exitOK {
+		t.Fatalf("devices revoke exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "nothing was revoked") {
+		t.Errorf("the command does not report the refusal:\n%s", stdout)
+	}
+	peer, err := device.Trust().Get(t.Context(), other.DeviceID())
+	if err != nil {
+		t.Fatalf("read the device: %v", err)
+	}
+	if peer.Revoked {
+		t.Fatal("the device was revoked")
+	}
+}
+
+// TestDevicesRevokeSelf checks that the local device leaves the group.
+func TestDevicesRevokeSelf(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 400, api.Options{})
+	other := newDevice(t, network, bus, 410, api.Options{})
+	device.start(t)
+	other.start(t)
+	device.pair(t, other)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "revoke", "--yes", "self")
+	if code != exitOK {
+		t.Fatalf("devices revoke exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "left the group") {
+		t.Errorf("the command does not report leaving the group:\n%s", stdout)
+	}
+	peers, err := device.Trust().List(t.Context(), trust.ListFilter{IncludeRevoked: true})
+	if err != nil {
+		t.Fatalf("list the devices: %v", err)
+	}
+	if len(peers) != 0 {
+		t.Fatalf("the device keeps %d devices of the group", len(peers))
+	}
+}
+
+// TestDevicesRevokeUsage checks the arguments of the command.
+func TestDevicesRevokeUsage(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 420, api.Options{})
+	device.start(t)
+
+	for _, args := range [][]string{
+		{"devices", "revoke"},
+		{"devices", "revoke", "one", "two"},
 	} {
 		code, _, stderr := runCommand(t, "", append([]string{"--endpoint", device.endpoint}, args...)...)
 		if code != exitFailure {

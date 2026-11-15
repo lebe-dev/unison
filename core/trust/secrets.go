@@ -19,6 +19,9 @@ const secretSize = 32
 const (
 	// discoveryKeyName holds the key shared by the Personal group.
 	discoveryKeyName = "personal/discovery_key"
+	// discoveryPrevKeyName holds the key the group used before the last
+	// rotation.
+	discoveryPrevKeyName = "personal/discovery_key_prev"
 	// rendezvousKeyPrefix addresses the relay rendezvous key of a peer.
 	rendezvousKeyPrefix = "rendezvous/"
 )
@@ -59,10 +62,11 @@ func (s *Store) EnsureDiscoveryKey(ctx context.Context) ([]byte, error) {
 		if _, err := rand.Read(key); err != nil {
 			return fmt.Errorf("trust: generate discovery key: %w", err)
 		}
-		if err := writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, key); err != nil {
+		at, err := nextDiscoveryTime(ctx, tx, s.db.Sealer())
+		if err != nil {
 			return err
 		}
-		return store.NewSettings(tx, s.db.Sealer()).SetInt(ctx, discoveryVersionKey, unixMilli(time.Now()))
+		return writeDiscoveryKey(ctx, tx, s.db.Sealer(), key, at)
 	})
 	if err != nil {
 		return nil, err
@@ -71,14 +75,15 @@ func (s *Store) EnsureDiscoveryKey(ctx context.Context) ([]byte, error) {
 }
 
 // SetDiscoveryKey stores the key shared by the Personal group, for example the
-// one received from another Personal device at pairing. The change is marked
-// with the current time, so the key travels to the group over gossip.
+// one received from another Personal device at pairing. The change is dated, so
+// the key travels to the group over gossip.
 func (s *Store) SetDiscoveryKey(ctx context.Context, key []byte) error {
 	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
-		if err := writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, key); err != nil {
+		at, err := nextDiscoveryTime(ctx, tx, s.db.Sealer())
+		if err != nil {
 			return err
 		}
-		return store.NewSettings(tx, s.db.Sealer()).SetInt(ctx, discoveryVersionKey, unixMilli(time.Now()))
+		return writeDiscoveryKey(ctx, tx, s.db.Sealer(), key, at)
 	})
 }
 

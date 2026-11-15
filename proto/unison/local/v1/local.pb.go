@@ -1690,7 +1690,7 @@ func (*RenameDeviceResponse) Descriptor() ([]byte, []int) {
 
 type RevokeDeviceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Device ID in lowercase hex.
+	// Device ID in lowercase hex. The ID of this device leaves the group.
 	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

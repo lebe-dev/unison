@@ -54,6 +54,8 @@ func codeOf(err error) connect.Code {
 	case errors.Is(err, pairing.ErrUnknownRequest),
 		errors.Is(err, trust.ErrPeerNotFound),
 		errors.Is(err, trust.ErrSecretNotFound),
+		errors.Is(err, trust.ErrRevocationNotFound),
+		errors.Is(err, trust.ErrIntroductionNotFound),
 		errors.Is(err, history.ErrNotFound):
 		return connect.CodeNotFound
 	case errors.Is(err, trust.ErrPeerExists):

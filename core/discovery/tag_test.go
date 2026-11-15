@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 	"time"
@@ -76,6 +77,30 @@ func TestTagEpochBoundaries(t *testing.T) {
 		if got := MatchTag(testKey, tag, c.at); got != c.want {
 			t.Errorf("MatchTag at %s = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+func TestMatchAnyTag(t *testing.T) {
+	now := epochTime(1000)
+	current := bytes.Repeat([]byte{7}, 32)
+	tag := Tag(current, now)
+	previous := bytes.Repeat([]byte{8}, 32)
+
+	keys := [][]byte{current, previous}
+	if !MatchAnyTag(keys, tag, now) {
+		t.Fatal("did not match the tag of the current key")
+	}
+	if !MatchAnyTag([][]byte{previous, current}, tag, now) {
+		t.Fatal("did not match the tag of the current key in any position")
+	}
+	if MatchAnyTag([][]byte{previous}, tag, now) {
+		t.Fatal("matched the tag with the wrong key")
+	}
+	if MatchAnyTag(nil, tag, now) {
+		t.Fatal("matched a tag without keys")
+	}
+	if MatchAnyTag([][]byte{{}}, tag, now) {
+		t.Fatal("matched a tag without a key value")
 	}
 }
 

@@ -44,6 +44,14 @@ type Store interface {
 	// ApplyIntroduction verifies and stores an introduction and adds the
 	// introduced device. It reports whether the device is new.
 	ApplyIntroduction(ctx context.Context, intro trust.Introduction) (bool, error)
+	// RevocationHeads returns the subject and the time of every stored
+	// revocation.
+	RevocationHeads(ctx context.Context) ([]trust.RevocationHead, error)
+	// RevocationBySubject returns the stored revocation of the subject.
+	RevocationBySubject(ctx context.Context, id model.DeviceID) (trust.Revocation, error)
+	// ApplyRevocation verifies a revocation and marks the subject revoked. It
+	// reports whether this record revoked the subject.
+	ApplyRevocation(ctx context.Context, local model.DeviceID, revocation trust.Revocation) (bool, error)
 	// GroupData returns the group data of the local device.
 	GroupData(ctx context.Context) (trust.GroupData, error)
 	// ApplyGroupData stores the newer parts of the group data and reports
@@ -66,6 +74,11 @@ type Config struct {
 	OnPeersChanged func(ctx context.Context)
 	// OnDiscoveryKeyChanged runs after the discovery key of the group changed.
 	OnDiscoveryKeyChanged func(ctx context.Context)
+	// OnPeerRevoked runs after a revocation cut a device off, so the caller can
+	// close the connection to it.
+	OnPeerRevoked func(ctx context.Context, id model.DeviceID)
+	// OnSelfRevoked runs after a valid revocation of the local device arrived.
+	OnSelfRevoked func(ctx context.Context)
 }
 
 // peer is the gossip state of one session.
@@ -247,6 +260,12 @@ func (s *Service) sendDigest(ctx context.Context, sess *session.Session, reply b
 	if err != nil {
 		return fmt.Errorf("gossip: read group data: %w", err)
 	}
+	message := &wirev1.GossipDigest{
+		Reply:             reply,
+		DiscoveryTsUnixMs: timeToMilli(group.DiscoveryAt),
+		RelayTsUnixMs:     timeToMilli(group.RelayAt),
+	}
+
 	heads, err := s.cfg.Store.IntroductionHeads(ctx)
 	if err != nil {
 		return fmt.Errorf("gossip: read introductions: %w", err)
@@ -255,14 +274,23 @@ func (s *Service) sendDigest(ctx context.Context, sess *session.Session, reply b
 		s.log.Warn("gossip: digest truncated", "peer", sess.DeviceID(), "heads", len(heads), "limit", MaxDigestHeads)
 		heads = heads[:MaxDigestHeads]
 	}
-
-	message := &wirev1.GossipDigest{
-		Reply:             reply,
-		DiscoveryTsUnixMs: timeToMilli(group.DiscoveryAt),
-		RelayTsUnixMs:     timeToMilli(group.RelayAt),
-	}
 	for _, head := range heads {
 		message.Introductions = append(message.Introductions, &wirev1.IntroductionHead{
+			Subject:  head.Subject.Bytes(),
+			TsUnixMs: timeToMilli(head.IssuedAt),
+		})
+	}
+
+	revocations, err := s.cfg.Store.RevocationHeads(ctx)
+	if err != nil {
+		return fmt.Errorf("gossip: read revocations: %w", err)
+	}
+	if len(revocations) > MaxDigestHeads {
+		s.log.Warn("gossip: digest truncated", "peer", sess.DeviceID(), "revocations", len(revocations), "limit", MaxDigestHeads)
+		revocations = revocations[:MaxDigestHeads]
+	}
+	for _, head := range revocations {
+		message.Revocations = append(message.Revocations, &wirev1.RevocationHead{
 			Subject:  head.Subject.Bytes(),
 			TsUnixMs: timeToMilli(head.IssuedAt),
 		})
@@ -306,6 +334,9 @@ func (s *Service) recordsHandler(sess *session.Session) session.Handler {
 		if len(records.GetIntroductions()) > MaxRecordsPerMessage {
 			return fmt.Errorf("%w: %d introductions in one message", ErrProtocol, len(records.GetIntroductions()))
 		}
+		if len(records.GetRevocations()) > MaxRecordsPerMessage {
+			return fmt.Errorf("%w: %d revocations in one message", ErrProtocol, len(records.GetRevocations()))
+		}
 
 		added := 0
 		for _, record := range records.GetIntroductions() {
@@ -329,6 +360,7 @@ func (s *Service) recordsHandler(sess *session.Session) session.Handler {
 			added++
 			s.log.Info("device introduced", "subject", intro.DeviceID(), "issuer", intro.Issuer)
 		}
+		s.applyRevocations(ctx, sess, records.GetRevocations())
 
 		changed := false
 		if group := records.GetGroup(); group != nil {
@@ -353,8 +385,36 @@ func (s *Service) recordsHandler(sess *session.Session) session.Handler {
 	}
 }
 
-// sendMissing sends the introductions and the group data the peer lacks.
-func (s *Service) sendMissing(ctx context.Context, sess *session.Session, digest *wirev1.GossipDigest, peerHeads map[model.DeviceID]int64) error {
+// applyRevocations verifies and applies the revocations of a records message.
+// One refused record does not stop the others.
+func (s *Service) applyRevocations(ctx context.Context, sess *session.Session, records []*wirev1.Revocation) {
+	for _, record := range records {
+		revocation, err := trust.RevocationFromProto(record)
+		if err != nil {
+			s.log.Debug("gossip: revocation refused", "peer", sess.DeviceID(), "error", err)
+			continue
+		}
+		revoked, err := s.cfg.Store.ApplyRevocation(ctx, s.cfg.Local, revocation)
+		switch {
+		case errors.Is(err, trust.ErrSelfRevocation):
+			s.log.Info("the local device was revoked", "issuer", revocation.Issuer)
+			if s.cfg.OnSelfRevoked != nil {
+				s.spawn(s.cfg.OnSelfRevoked)
+			}
+		case err != nil:
+			s.log.Debug("gossip: revocation refused", "peer", sess.DeviceID(), "subject", revocation.Subject, "error", err)
+		case revoked:
+			s.log.Info("device revoked", "subject", revocation.Subject, "issuer", revocation.Issuer)
+			if s.cfg.OnPeerRevoked != nil {
+				s.spawn(func(ctx context.Context) { s.cfg.OnPeerRevoked(ctx, revocation.Subject) })
+			}
+		}
+	}
+}
+
+// sendMissing sends the introductions, the revocations and the group data the
+// peer lacks.
+func (s *Service) sendMissing(ctx context.Context, sess *session.Session, digest *wirev1.GossipDigest, peer digestState) error {
 	group, err := s.cfg.Store.GroupData(ctx)
 	if err != nil {
 		return fmt.Errorf("gossip: read group data: %w", err)
@@ -363,10 +423,13 @@ func (s *Service) sendMissing(ctx context.Context, sess *session.Session, digest
 	if err != nil {
 		return fmt.Errorf("gossip: read introductions: %w", err)
 	}
+	revocations, err := s.cfg.Store.RevocationHeads(ctx)
+	if err != nil {
+		return fmt.Errorf("gossip: read revocations: %w", err)
+	}
 
-	batch := make([]*wirev1.Introduction, 0, MaxRecordsPerMessage)
-	batches := make([][]*wirev1.Introduction, 0, 1)
-	for _, id := range missingIntroductions(heads, peerHeads) {
+	messages := make([]*wirev1.GossipRecords, 0, 1)
+	for _, id := range missingIntroductions(heads, peer.introductions) {
 		intro, err := s.cfg.Store.IntroductionBySubject(ctx, id)
 		if errors.Is(err, trust.ErrIntroductionNotFound) {
 			continue
@@ -374,28 +437,32 @@ func (s *Service) sendMissing(ctx context.Context, sess *session.Session, digest
 		if err != nil {
 			return fmt.Errorf("gossip: read introduction: %w", err)
 		}
-		batch = append(batch, intro.Proto())
-		if len(batch) == MaxRecordsPerMessage {
-			batches = append(batches, batch)
-			batch = make([]*wirev1.Introduction, 0, MaxRecordsPerMessage)
-		}
+		message := recordsMessage(messages)
+		message.Introductions = append(message.Introductions, intro.Proto())
+		messages = appendIfNew(messages, message)
 	}
-	if len(batch) > 0 {
-		batches = append(batches, batch)
+	for _, id := range missingRevocations(revocations, peer.revocations) {
+		revocation, err := s.cfg.Store.RevocationBySubject(ctx, id)
+		if errors.Is(err, trust.ErrRevocationNotFound) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("gossip: read revocation: %w", err)
+		}
+		message := recordsMessage(messages)
+		message.Revocations = append(message.Revocations, revocation.Proto())
+		messages = appendIfNew(messages, message)
 	}
 
 	groupRecords := missingGroupData(group, digest)
-	if len(batches) == 0 && groupRecords == nil {
+	if groupRecords == nil && len(messages) == 0 {
 		return nil
 	}
-	if len(batches) == 0 {
-		batches = append(batches, nil)
+	if len(messages) == 0 {
+		messages = append(messages, &wirev1.GossipRecords{})
 	}
-	for i, records := range batches {
-		message := &wirev1.GossipRecords{Introductions: records}
-		if i == len(batches)-1 {
-			message.Group = groupRecords
-		}
+	messages[len(messages)-1].Group = groupRecords
+	for _, message := range messages {
 		if err := s.send(ctx, sess, &wirev1.ControlMessage{
 			Body: &wirev1.ControlMessage_GossipRecords{GossipRecords: message},
 		}); err != nil {
@@ -403,6 +470,26 @@ func (s *Service) sendMissing(ctx context.Context, sess *session.Session, digest
 		}
 	}
 	return nil
+}
+
+// recordsMessage returns the message to fill next: the last one while it has
+// room, a new one otherwise.
+func recordsMessage(messages []*wirev1.GossipRecords) *wirev1.GossipRecords {
+	if len(messages) > 0 {
+		last := messages[len(messages)-1]
+		if len(last.Introductions)+len(last.Revocations) < MaxRecordsPerMessage {
+			return last
+		}
+	}
+	return &wirev1.GossipRecords{}
+}
+
+// appendIfNew adds a message that recordsMessage created.
+func appendIfNew(messages []*wirev1.GossipRecords, message *wirev1.GossipRecords) []*wirev1.GossipRecords {
+	if len(messages) > 0 && messages[len(messages)-1] == message {
+		return messages
+	}
+	return append(messages, message)
 }
 
 // send writes one control message to the peer.
@@ -418,6 +505,22 @@ func (s *Service) send(ctx context.Context, sess *session.Session, msg *wirev1.C
 // missingIntroductions returns the subjects whose record is missing on the peer
 // or older than the local one.
 func missingIntroductions(heads []trust.IntroductionHead, peerHeads map[model.DeviceID]int64) []model.DeviceID {
+	missing := make([]model.DeviceID, 0, len(heads))
+	for _, head := range heads {
+		if ts, ok := peerHeads[head.Subject]; ok && ts >= timeToMilli(head.IssuedAt) {
+			continue
+		}
+		missing = append(missing, head.Subject)
+		if len(missing) == MaxRecordsPerDigest {
+			break
+		}
+	}
+	return slices.Clip(missing)
+}
+
+// missingRevocations returns the subjects whose revocation is missing on the
+// peer or older than the local one.
+func missingRevocations(heads []trust.RevocationHead, peerHeads map[model.DeviceID]int64) []model.DeviceID {
 	missing := make([]model.DeviceID, 0, len(heads))
 	for _, head := range heads {
 		if ts, ok := peerHeads[head.Subject]; ok && ts >= timeToMilli(head.IssuedAt) {
@@ -453,25 +556,50 @@ func missingGroupData(local trust.GroupData, digest *wirev1.GossipDigest) *wirev
 	return message
 }
 
-// parseDigest validates a digest and returns its introduction heads.
-func parseDigest(digest *wirev1.GossipDigest) (map[model.DeviceID]int64, error) {
+// digestState is the trust data a digest of a peer reports.
+type digestState struct {
+	introductions map[model.DeviceID]int64
+	revocations   map[model.DeviceID]int64
+}
+
+// parseDigest validates a digest and returns its heads.
+func parseDigest(digest *wirev1.GossipDigest) (digestState, error) {
 	if len(digest.GetIntroductions()) > MaxDigestHeads {
-		return nil, fmt.Errorf("%w: digest of %d heads", ErrProtocol, len(digest.GetIntroductions()))
+		return digestState{}, fmt.Errorf("%w: digest of %d heads", ErrProtocol, len(digest.GetIntroductions()))
 	}
-	heads := make(map[model.DeviceID]int64, len(digest.GetIntroductions()))
+	if len(digest.GetRevocations()) > MaxDigestHeads {
+		return digestState{}, fmt.Errorf("%w: digest of %d revocations", ErrProtocol, len(digest.GetRevocations()))
+	}
+
+	state := digestState{
+		introductions: make(map[model.DeviceID]int64, len(digest.GetIntroductions())),
+		revocations:   make(map[model.DeviceID]int64, len(digest.GetRevocations())),
+	}
 	for _, head := range digest.GetIntroductions() {
 		id, err := model.DeviceIDFromBytes(head.GetSubject())
 		if err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrProtocol, err)
+			return digestState{}, fmt.Errorf("%w: %w", ErrProtocol, err)
 		}
 		if head.GetTsUnixMs() <= 0 {
-			return nil, fmt.Errorf("%w: introduction of %s without a time", ErrProtocol, id)
+			return digestState{}, fmt.Errorf("%w: introduction of %s without a time", ErrProtocol, id)
 		}
-		if stored, ok := heads[id]; !ok || head.GetTsUnixMs() > stored {
-			heads[id] = head.GetTsUnixMs()
+		if stored, ok := state.introductions[id]; !ok || head.GetTsUnixMs() > stored {
+			state.introductions[id] = head.GetTsUnixMs()
 		}
 	}
-	return heads, nil
+	for _, head := range digest.GetRevocations() {
+		id, err := model.DeviceIDFromBytes(head.GetSubject())
+		if err != nil {
+			return digestState{}, fmt.Errorf("%w: %w", ErrProtocol, err)
+		}
+		if head.GetTsUnixMs() <= 0 {
+			return digestState{}, fmt.Errorf("%w: revocation of %s without a time", ErrProtocol, id)
+		}
+		if stored, ok := state.revocations[id]; !ok || head.GetTsUnixMs() > stored {
+			state.revocations[id] = head.GetTsUnixMs()
+		}
+	}
+	return state, nil
 }
 
 // groupFromProto validates the group data of a peer.

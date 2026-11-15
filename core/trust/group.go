@@ -3,6 +3,7 @@ package trust
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,11 +17,17 @@ import (
 
 // Settings keys of the group data versions and of the relay access.
 const (
-	discoveryVersionKey = "trust.group.discovery_ts"
-	relayURLKey         = "trust.group.relay_url"
-	relayTokenKey       = "trust.group.relay_token"
-	relayVersionKey     = "trust.group.relay_ts"
+	discoveryVersionKey   = "trust.group.discovery_ts"
+	discoveryPrevUntilKey = "trust.group.discovery_prev_until"
+	relayURLKey           = "trust.group.relay_url"
+	relayTokenKey         = "trust.group.relay_token"
+	relayVersionKey       = "trust.group.relay_ts"
 )
+
+// DiscoveryTransition is how long the previous discovery key still matches the
+// tags of the group after a rotation. The window lets devices that have not
+// received the new key yet stay discoverable.
+const DiscoveryTransition = time.Hour
 
 // Bounds of the relay settings.
 const (
@@ -135,10 +142,7 @@ func (s *Store) ApplyGroupData(ctx context.Context, data GroupData) (bool, error
 				return err
 			}
 			if unixMilli(data.DiscoveryAt) > stored {
-				if err := writeSecret(ctx, tx, s.db.Sealer(), discoveryKeyName, data.DiscoveryKey); err != nil {
-					return err
-				}
-				if err := settings.SetInt(ctx, discoveryVersionKey, unixMilli(data.DiscoveryAt)); err != nil {
+				if err := writeDiscoveryKey(ctx, tx, s.db.Sealer(), data.DiscoveryKey, data.DiscoveryAt); err != nil {
 					return err
 				}
 				changed = true
@@ -196,4 +200,170 @@ func DerivedRendezvousKey(a, b model.DeviceID) []byte {
 	_, _ = hash.Write(a.Bytes())
 	_, _ = hash.Write(b.Bytes())
 	return hash.Sum(nil)
+}
+
+// RotateDiscoveryKey replaces the discovery key of the group with a new random
+// one. The previous key keeps matching the tags for DiscoveryTransition, so the
+// devices that have not received the new key yet stay discoverable.
+func (s *Store) RotateDiscoveryKey(ctx context.Context) ([]byte, error) {
+	key := make([]byte, secretSize)
+	if _, err := rand.Read(key); err != nil {
+		return nil, fmt.Errorf("trust: generate discovery key: %w", err)
+	}
+
+	err := s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		at, err := nextDiscoveryTime(ctx, tx, s.db.Sealer())
+		if err != nil {
+			return err
+		}
+		return writeDiscoveryKey(ctx, tx, s.db.Sealer(), key, at)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
+// DiscoveryKeys returns the keys that still match the discovery tag of the
+// group: the current key and, for DiscoveryTransition after a rotation, the
+// previous one. The result is empty when the device has no key.
+func (s *Store) DiscoveryKeys(ctx context.Context) ([][]byte, error) {
+	keys := make([][]byte, 0, 2)
+	err := s.db.View(ctx, func(tx *sql.Tx) error {
+		sealer := s.db.Sealer()
+		current, err := readSecret(ctx, tx, sealer, discoveryKeyName)
+		switch {
+		case err == nil:
+			keys = append(keys, current)
+		case errors.Is(err, ErrSecretNotFound):
+			return nil
+		default:
+			return err
+		}
+
+		until, err := store.NewSettings(tx, sealer).GetInt(ctx, discoveryPrevUntilKey, 0)
+		if err != nil {
+			return err
+		}
+		if time.Now().UnixMilli() >= until {
+			return nil
+		}
+		previous, err := readSecret(ctx, tx, sealer, discoveryPrevKeyName)
+		switch {
+		case err == nil:
+			keys = append(keys, previous)
+		case errors.Is(err, ErrSecretNotFound):
+		default:
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
+}
+
+// LeaveGroup removes the Personal group from the device: the group peers, their
+// introductions, the group secrets and the relay access. Friends devices stay
+// paired.
+func (s *Store) LeaveGroup(ctx context.Context) error {
+	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		peers, err := personalPeerIDs(ctx, tx)
+		if err != nil {
+			return err
+		}
+		for _, id := range peers {
+			if err := dropRendezvousKey(ctx, tx, id); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM peers WHERE role = ?", int(model.RolePersonal)); err != nil {
+			return fmt.Errorf("trust: leave the group: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM introductions"); err != nil {
+			return fmt.Errorf("trust: leave the group: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM group_secrets WHERE name IN (?, ?)", discoveryKeyName, discoveryPrevKeyName); err != nil {
+			return fmt.Errorf("trust: leave the group: %w", err)
+		}
+
+		settings := store.NewSettings(tx, s.db.Sealer())
+		for _, key := range []string{discoveryVersionKey, discoveryPrevUntilKey, relayURLKey, relayTokenKey, relayVersionKey} {
+			if err := settings.Remove(ctx, key); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// personalPeerIDs returns the device IDs of the Personal peers.
+func personalPeerIDs(ctx context.Context, tx *sql.Tx) ([]model.DeviceID, error) {
+	rows, err := tx.QueryContext(ctx, "SELECT device_id FROM peers WHERE role = ?", int(model.RolePersonal))
+	if err != nil {
+		return nil, fmt.Errorf("trust: list personal peers: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	ids := make([]model.DeviceID, 0, 4)
+	for rows.Next() {
+		var raw []byte
+		if err := rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		id, err := model.DeviceIDFromBytes(raw)
+		if err != nil {
+			return nil, fmt.Errorf("trust: read peer: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("trust: list personal peers: %w", err)
+	}
+	return ids, nil
+}
+
+// writeDiscoveryKey stores the discovery key of the group at at and keeps the
+// current one acceptable for the transition period.
+func writeDiscoveryKey(ctx context.Context, tx *sql.Tx, sealer *store.Sealer, key []byte, at time.Time) error {
+	if len(key) != secretSize {
+		return fmt.Errorf("%w: discovery key is %d bytes", ErrInvalidSecret, len(key))
+	}
+	settings := store.NewSettings(tx, sealer)
+	current, err := readSecret(ctx, tx, sealer, discoveryKeyName)
+	switch {
+	case err == nil:
+		if bytes.Equal(current, key) {
+			break
+		}
+		if err := writeSecret(ctx, tx, sealer, discoveryPrevKeyName, current); err != nil {
+			return err
+		}
+		if err := settings.SetInt(ctx, discoveryPrevUntilKey, unixMilli(time.Now().Add(DiscoveryTransition))); err != nil {
+			return err
+		}
+	case errors.Is(err, ErrSecretNotFound):
+	default:
+		return err
+	}
+
+	if err := writeSecret(ctx, tx, sealer, discoveryKeyName, key); err != nil {
+		return err
+	}
+	return settings.SetInt(ctx, discoveryVersionKey, unixMilli(at))
+}
+
+// nextDiscoveryTime returns the change time of the next discovery key. It is
+// the current time, moved past the stored change so a rotation always wins.
+func nextDiscoveryTime(ctx context.Context, tx *sql.Tx, sealer *store.Sealer) (time.Time, error) {
+	stored, err := store.NewSettings(tx, sealer).GetInt(ctx, discoveryVersionKey, 0)
+	if err != nil {
+		return time.Time{}, err
+	}
+	now := time.Now().UnixMilli()
+	if now <= stored {
+		now = stored + 1
+	}
+	return time.UnixMilli(now), nil
 }

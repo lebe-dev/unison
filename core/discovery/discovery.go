@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"maps"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,6 +50,10 @@ type Options struct {
 	// Key returns the discovery key of the Personal group. Instances are
 	// advertised without a tag when it returns nil.
 	Key func(ctx context.Context) ([]byte, error)
+	// Keys returns the keys that match the group tag: the current one first
+	// and the previous one of a rotation while it still matches. Key is used
+	// when nil.
+	Keys func(ctx context.Context) ([][]byte, error)
 	// Clock is the time source. The system clock is used when nil.
 	Clock ports.Clock
 	// Logger receives discovery events. Nothing is logged when nil.
@@ -96,8 +101,8 @@ type Discovery struct {
 	tr        *transport
 	ifaceHash string
 	epoch     int64
-	key       []byte
-	keyUntil  time.Time
+	keys      [][]byte
+	keysUntil time.Time
 	stopped   bool
 }
 
@@ -423,40 +428,66 @@ func (d *Discovery) records(ctx context.Context, ad advert) recordSet {
 	}
 }
 
-// keyBytes returns the group key. The key is cached, an absent key for a
-// shorter time than a present one.
+// keyBytes returns the current group key, or nil when the device has none.
 func (d *Discovery) keyBytes(ctx context.Context) []byte {
-	if d.opts.Key == nil {
+	keys := d.keyList(ctx)
+	if len(keys) == 0 {
+		return nil
+	}
+	return keys[0]
+}
+
+// keyList returns the group keys of the device: the current one first and the
+// previous one of a rotation while it still matches. The keys are cached, an
+// absent key for a shorter time than a present one.
+func (d *Discovery) keyList(ctx context.Context) [][]byte {
+	if d.opts.Key == nil && d.opts.Keys == nil {
 		return nil
 	}
 
 	now := d.clock.Now()
 	d.mu.Lock()
-	if now.Before(d.keyUntil) {
-		key := d.key
+	if now.Before(d.keysUntil) {
+		keys := d.keys
 		d.mu.Unlock()
-		return key
+		return keys
 	}
 	d.mu.Unlock()
 
-	key, err := d.opts.Key(ctx)
+	keys, err := d.readKeys(ctx)
 	if err != nil {
 		debugf(d.log, "read discovery key: %v", err)
-		key = nil
+		keys = nil
 	}
 
 	d.mu.Lock()
-	d.key = key
-	if len(key) == 0 {
-		d.keyUntil = now.Add(keyRetryTTL)
+	d.keys = keys
+	if len(keys) == 0 {
+		d.keysUntil = now.Add(keyRetryTTL)
 	} else {
-		d.keyUntil = now.Add(keyCacheTTL)
+		d.keysUntil = now.Add(keyCacheTTL)
 	}
 	d.mu.Unlock()
-	return key
+	return keys
 }
 
-// matchTag reports whether the TXT records carry a tag of the group key.
+// readKeys asks the key sources of the option for the group keys.
+func (d *Discovery) readKeys(ctx context.Context) ([][]byte, error) {
+	if d.opts.Keys != nil {
+		keys, err := d.opts.Keys(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return slices.Clone(keys), nil
+	}
+	key, err := d.opts.Key(ctx)
+	if err != nil || len(key) == 0 {
+		return nil, err
+	}
+	return [][]byte{key}, nil
+}
+
+// matchTag reports whether the TXT records carry a tag of a group key.
 func (d *Discovery) matchTag(txt map[string]string) bool {
 	if len(txt) == 0 {
 		return false
@@ -465,7 +496,7 @@ func (d *Discovery) matchTag(txt map[string]string) bool {
 	if !ok {
 		return false
 	}
-	return MatchTag(d.keyBytes(context.Background()), tag, d.clock.Now())
+	return MatchAnyTag(d.keyList(context.Background()), tag, d.clock.Now())
 }
 
 // isOwn reports whether name is an instance advertised by this node.

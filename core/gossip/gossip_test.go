@@ -87,25 +87,58 @@ func TestMissingGroupData(t *testing.T) {
 	}
 }
 
+func TestMissingRevocations(t *testing.T) {
+	at := time.UnixMilli(1_760_000_000_000)
+	a, b, c := testDeviceID(1), testDeviceID(2), testDeviceID(3)
+	heads := []trust.RevocationHead{
+		{Subject: a, IssuedAt: at},
+		{Subject: b, IssuedAt: at},
+		{Subject: c, IssuedAt: at.Add(-time.Hour)},
+	}
+	peer := map[model.DeviceID]int64{
+		a: at.UnixMilli(),
+		b: at.Add(-time.Minute).UnixMilli(),
+	}
+
+	missing := missingRevocations(heads, peer)
+	if !slices.Equal(missing, []model.DeviceID{b, c}) {
+		t.Fatalf("missing revocations %v", missing)
+	}
+	if got := missingRevocations(heads, nil); len(got) != 3 {
+		t.Fatalf("a peer without revocations gets %d records", len(got))
+	}
+}
+
 func TestParseDigest(t *testing.T) {
 	at := time.UnixMilli(1_760_000_000_000)
 	a := testDeviceID(1)
 
-	heads, err := parseDigest(&wirev1.GossipDigest{Introductions: []*wirev1.IntroductionHead{
-		{Subject: a.Bytes(), TsUnixMs: at.UnixMilli()},
-		{Subject: a.Bytes(), TsUnixMs: at.Add(-time.Hour).UnixMilli()},
-	}})
+	heads, err := parseDigest(&wirev1.GossipDigest{
+		Introductions: []*wirev1.IntroductionHead{
+			{Subject: a.Bytes(), TsUnixMs: at.UnixMilli()},
+			{Subject: a.Bytes(), TsUnixMs: at.Add(-time.Hour).UnixMilli()},
+		},
+		Revocations: []*wirev1.RevocationHead{
+			{Subject: a.Bytes(), TsUnixMs: at.Add(-time.Minute).UnixMilli()},
+		},
+	})
 	if err != nil {
 		t.Fatalf("parse digest: %v", err)
 	}
-	if len(heads) != 1 || heads[a] != at.UnixMilli() {
-		t.Fatalf("parsed heads %v", heads)
+	if len(heads.introductions) != 1 || heads.introductions[a] != at.UnixMilli() {
+		t.Fatalf("parsed heads %v", heads.introductions)
+	}
+	if len(heads.revocations) != 1 || heads.revocations[a] != at.Add(-time.Minute).UnixMilli() {
+		t.Fatalf("parsed revocations %v", heads.revocations)
 	}
 
 	cases := map[string]*wirev1.GossipDigest{
-		"short subject": {Introductions: []*wirev1.IntroductionHead{{Subject: []byte{1}, TsUnixMs: at.UnixMilli()}}},
-		"no time":       {Introductions: []*wirev1.IntroductionHead{{Subject: a.Bytes()}}},
-		"too many":      {Introductions: make([]*wirev1.IntroductionHead, MaxDigestHeads+1)},
+		"short subject":        {Introductions: []*wirev1.IntroductionHead{{Subject: []byte{1}, TsUnixMs: at.UnixMilli()}}},
+		"no time":              {Introductions: []*wirev1.IntroductionHead{{Subject: a.Bytes()}}},
+		"too many":             {Introductions: make([]*wirev1.IntroductionHead, MaxDigestHeads+1)},
+		"short revoked":        {Revocations: []*wirev1.RevocationHead{{Subject: []byte{1}, TsUnixMs: at.UnixMilli()}}},
+		"revoked without time": {Revocations: []*wirev1.RevocationHead{{Subject: a.Bytes()}}},
+		"too many revocations": {Revocations: make([]*wirev1.RevocationHead, MaxDigestHeads+1)},
 	}
 	for name, digest := range cases {
 		t.Run(name, func(t *testing.T) {

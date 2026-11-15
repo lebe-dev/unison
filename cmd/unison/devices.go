@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -31,6 +32,8 @@ func (a *app) devices(ctx context.Context, args []string) error {
 		return a.devicesRename(ctx, rest)
 	case "confirm":
 		return a.devicesConfirm(ctx, rest)
+	case "revoke":
+		return a.devicesRevoke(ctx, rest)
 	default:
 		return a.usageError("unknown devices command %q", command)
 	}
@@ -155,6 +158,84 @@ func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 	}
 	a.info("confirmation for %s is %s", label, state)
 	return nil
+}
+
+// devicesRevoke revokes a paired device or, with self, leaves the group. Both
+// are irreversible and ask for a confirmation.
+func (a *app) devicesRevoke(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("devices revoke")
+	assumeYes := flags.Bool("yes", false, "revoke without asking for a confirmation")
+	if err := parseFlags(flags, args); err != nil {
+		return err
+	}
+	if flags.NArg() != 1 {
+		return a.usageError("devices revoke needs one device")
+	}
+	reference := flags.Arg(0)
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	request := &localv1.RevokeDeviceRequest{}
+	question := "revoke this device? This cannot be undone. [y/N]: "
+	self := reference == "self"
+	if self {
+		status, err := client.GetStatus(ctx, connect.NewRequest(&localv1.GetStatusRequest{}))
+		if err != nil {
+			return fmt.Errorf("read the local device: %w", err)
+		}
+		if !status.Msg.GetRunning() {
+			return errors.New("the daemon is not running")
+		}
+		request.DeviceId = status.Msg.GetDeviceId()
+		question = "leave the group and revoke this device? This cannot be undone. [y/N]: "
+	} else {
+		devices, err := a.devicesOf(ctx, client)
+		if err != nil {
+			return err
+		}
+		device, err := resolveDevice(devices, reference)
+		if err != nil {
+			return err
+		}
+		request.DeviceId = device.GetDeviceId()
+	}
+
+	if !*assumeYes {
+		ok, err := a.confirm(question)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			a.info("nothing was revoked")
+			return nil
+		}
+	}
+
+	if _, err := client.RevokeDevice(ctx, connect.NewRequest(request)); err != nil {
+		return fmt.Errorf("revoke the device: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(&localv1.RevokeDeviceResponse{})
+	}
+	if self {
+		a.info("left the group")
+		return nil
+	}
+	a.info("revoked %s", fingerprintOf(request.DeviceId))
+	return nil
+}
+
+// confirm asks a question on stderr and reads one line of the input.
+func (a *app) confirm(question string) (bool, error) {
+	_, _ = fmt.Fprint(a.stderr, question)
+	scanner := bufio.NewScanner(a.stdin)
+	if !scanner.Scan() {
+		return false, scanner.Err()
+	}
+	answer := strings.ToLower(strings.TrimSpace(scanner.Text()))
+	return answer == "y" || answer == "yes", nil
 }
 
 // devicesOf returns the paired devices. The local API does not serve the device

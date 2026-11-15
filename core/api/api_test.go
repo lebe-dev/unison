@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/core/transport/vnet"
+	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -207,8 +209,88 @@ func TestDevicesNotImplemented(t *testing.T) {
 	requireCode(t, err, connect.CodeUnimplemented)
 
 	_, err = client.RevokeDevice(ctx, connect.NewRequest(&localv1.RevokeDeviceRequest{DeviceId: id}))
-	requireCode(t, err, connect.CodeUnimplemented)
+	requireCode(t, err, connect.CodeNotFound)
 
 	_, err = client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{DeviceId: id}))
 	requireCode(t, err, connect.CodeNotFound)
+}
+
+// TestRevokeDevice checks that a revoked device disappears from the status and
+// that the call is idempotent.
+func TestRevokeDevice(t *testing.T) {
+	network := vnet.NewNetwork()
+	bus := fake.NewBus()
+	one := newNode(t, network, bus, 1000)
+	two := newNode(t, network, bus, 1100)
+	one.start(t)
+	two.start(t)
+	one.pair(t, two)
+	two.pair(t, one)
+
+	client := newClient(t, one.Node, api.Options{DeviceName: "one"})
+	ctx := callTimeout(t)
+	request := &localv1.RevokeDeviceRequest{DeviceId: two.DeviceID().String()}
+	if _, err := client.RevokeDevice(ctx, connect.NewRequest(request)); err != nil {
+		t.Fatalf("revoke the device: %v", err)
+	}
+
+	peer, err := one.Trust().Get(context.Background(), two.DeviceID())
+	if err != nil {
+		t.Fatalf("read the revoked device: %v", err)
+	}
+	if !peer.Revoked {
+		t.Fatal("the device is not revoked")
+	}
+
+	status, err := client.GetStatus(ctx, connect.NewRequest(&localv1.GetStatusRequest{}))
+	if err != nil {
+		t.Fatalf("get status: %v", err)
+	}
+	if len(status.Msg.GetDevices()) != 0 {
+		t.Fatalf("status reports %d devices, want none", len(status.Msg.GetDevices()))
+	}
+
+	if _, err := client.RevokeDevice(ctx, connect.NewRequest(request)); err != nil {
+		t.Fatalf("revoke the device twice: %v", err)
+	}
+}
+
+// TestRevokeDeviceSelf checks that revoking the local device leaves the group.
+func TestRevokeDeviceSelf(t *testing.T) {
+	network := vnet.NewNetwork()
+	bus := fake.NewBus()
+	one := newNode(t, network, bus, 1200)
+	two := newNode(t, network, bus, 1300)
+	one.start(t)
+	two.start(t)
+	one.pair(t, two)
+	two.pair(t, one)
+
+	client := newClient(t, one.Node, api.Options{DeviceName: "one"})
+	ctx := callTimeout(t)
+	request := &localv1.RevokeDeviceRequest{DeviceId: one.DeviceID().String()}
+	if _, err := client.RevokeDevice(ctx, connect.NewRequest(request)); err != nil {
+		t.Fatalf("revoke the local device: %v", err)
+	}
+
+	peers, err := one.Trust().List(context.Background(), trust.ListFilter{IncludeRevoked: true})
+	if err != nil {
+		t.Fatalf("list the peers: %v", err)
+	}
+	if len(peers) != 0 {
+		t.Fatalf("the device keeps %d peers of the group", len(peers))
+	}
+}
+
+// TestRevokeDeviceInvalid checks the request without a usable device ID.
+func TestRevokeDeviceInvalid(t *testing.T) {
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 1400)
+	n.start(t)
+	client := newClient(t, n.Node, api.Options{DeviceName: "one"})
+	ctx := callTimeout(t)
+
+	for _, id := range []string{"", "not-a-device"} {
+		_, err := client.RevokeDevice(ctx, connect.NewRequest(&localv1.RevokeDeviceRequest{DeviceId: id}))
+		requireCode(t, err, connect.CodeInvalidArgument)
+	}
 }
