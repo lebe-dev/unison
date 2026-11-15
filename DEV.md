@@ -32,7 +32,12 @@ Node.js and Rust for the Tauri frontend:
 ```sh
 brew install node
 rustup toolchain install stable
-cargo install tauri-cli --version "^2"
+```
+
+The Tauri CLI comes from the desktop package, install the frontend dependencies once:
+
+```sh
+cd desktop && yarn install
 ```
 
 Android builds need a JDK and the Android SDK:
@@ -61,6 +66,9 @@ just proto                # generate Go code from proto/ with buf
 just proto-lint           # lint the protobuf definitions
 just check                # lint, proto lint and tests, run before committing
 just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64
+just desktop-dev          # run the desktop app with hot reload
+just desktop-build        # build the desktop app bundle for the host platform
+just desktop-lint         # svelte-check, rustfmt and clippy for the desktop app
 just clean                # remove bin/
 ```
 
@@ -68,6 +76,9 @@ Binaries are built without cgo so every target can be cross-compiled from any ho
 
 The protobuf code generators are pinned as tools in `go.mod`, so `just proto` needs only `buf` and
 `go` installed. Generated Go code is committed and builds do not require `buf`.
+
+The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
+bundle in `desktop/src-tauri/target/release/bundle`.
 
 The version of all binaries comes from the `VERSION` file and is injected at build time, so
 `bin/unisond --version` and `just build` always agree.
