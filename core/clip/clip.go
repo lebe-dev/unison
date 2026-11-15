@@ -33,6 +33,9 @@ const (
 // ErrUnsupportedContent reports content the text pipeline cannot carry.
 var ErrUnsupportedContent = errors.New("clip: unsupported content")
 
+// ErrPaused reports a local submit while clipboard synchronization is paused.
+var ErrPaused = errors.New("clip: clipboard synchronization is paused")
+
 // Options configures a Pipeline.
 type Options struct {
 	// Clipboard is the local clipboard.
@@ -199,31 +202,58 @@ func (p *Pipeline) capture(ctx context.Context, content ports.Content) error {
 		p.log.Debug("dropped clipboard content while paused")
 		return nil
 	}
+	_, _, err = p.record(ctx, content)
+	return err
+}
 
+// Submit records content copied on this device and announces it to the peers.
+// It reports ErrPaused while the pipeline is paused and ErrUnsupportedContent
+// for content without text.
+func (p *Pipeline) Submit(ctx context.Context, content ports.Content) (model.ClipItem, error) {
+	paused, err := p.pausedAt(ctx)
+	if err != nil {
+		return model.ClipItem{}, err
+	}
+	if paused {
+		return model.ClipItem{}, ErrPaused
+	}
+	item, ok, err := p.record(ctx, content)
+	if err != nil {
+		return model.ClipItem{}, err
+	}
+	if !ok {
+		return model.ClipItem{}, ErrUnsupportedContent
+	}
+	return item, nil
+}
+
+// record turns content into an item, stores it and announces it. The item is
+// left out when the content has no text to carry.
+func (p *Pipeline) record(ctx context.Context, content ports.Content) (model.ClipItem, bool, error) {
 	reps := p.textRepresentations(content)
 	if len(reps) == 0 {
 		p.log.Debug("skipped clipboard content without text")
-		return nil
+		return model.ClipItem{}, false, nil
 	}
 	if size := inlineSize(reps); size > MaxInlineText {
 		p.log.Info("skipped clipboard content above the inline limit", "size", size, "limit", MaxInlineText)
-		return nil
+		return model.ClipItem{}, false, nil
 	}
 
 	item, err := p.newItem(ctx, reps)
 	if err != nil {
-		return err
+		return model.ClipItem{}, false, err
 	}
 	if err := p.history.Append(ctx, item); err != nil {
-		return fmt.Errorf("clip: record item: %w", err)
+		return model.ClipItem{}, false, fmt.Errorf("clip: record item: %w", err)
 	}
 	if p.announcer == nil {
-		return nil
+		return item, true, nil
 	}
 	if err := p.announcer.Announce(ctx, item); err != nil {
-		return fmt.Errorf("clip: announce item: %w", err)
+		return model.ClipItem{}, false, fmt.Errorf("clip: announce item: %w", err)
 	}
-	return nil
+	return item, true, nil
 }
 
 // newItem builds an item with the next sequence number of this device.
