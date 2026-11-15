@@ -1,0 +1,46 @@
+name: unison-relay
+
+services:
+  relay:
+    image: ${RELAY_IMAGE:-unison-relay:local}
+    build:
+      context: ../..
+      dockerfile: deploy/relay/Dockerfile
+      args:
+        VERSION: ${RELAY_VERSION:-dev}
+    container_name: unison-relay
+    restart: unless-stopped
+    ports:
+      # QUIC and the WebSocket fallback share one port, so UDP and TCP are
+      # published one by one.
+      - "${RELAY_PORT:-443}:443/udp"
+      - "${RELAY_PORT:-443}:443/tcp"
+      # Health and metrics are reachable from the host only.
+      - "127.0.0.1:${RELAY_HTTP_PORT:-8080}:8080/tcp"
+    environment:
+      UNISON_RELAY_LOG_LEVEL: ${RELAY_LOG_LEVEL:-info}
+      UNISON_RELAY_TLS_CERT: /etc/unison-relay/cert.pem
+      UNISON_RELAY_TLS_KEY: /etc/unison-relay/key.pem
+      UNISON_RELAY_TOKENS_FILE: /etc/unison-relay/tokens.txt
+      # UNISON_RELAY_TOKENS accepts tokens as a comma separated list, for example
+      # when no tokens file is mounted.
+      UNISON_RELAY_TOKENS: ${RELAY_TOKENS:-}
+    volumes:
+      # Read-only directory with cert.pem, key.pem and tokens.txt.
+      - ./secrets:/etc/unison-relay:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "/app/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
