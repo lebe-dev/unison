@@ -110,6 +110,8 @@ type record struct {
 	wake chan struct{}
 	// running reports a download goroutine that owns the transfer.
 	running bool
+	// attempts counts the failed downloads since the last session.
+	attempts int
 }
 
 // New creates the share service.
@@ -275,6 +277,7 @@ func (s *Service) attach(sess *session.Session) {
 			continue
 		}
 		rec.session = sess
+		rec.attempts = 0
 		switch {
 		case rec.waiting:
 			rec.waiting = false

@@ -197,13 +197,17 @@ func (s *Service) receive(ctx context.Context, id string, file File) bool {
 			return false
 		}
 		s.log.Debug("download interrupted", "transfer", id, "session-open", !closed(sess), "error", err)
-		// A session that is still up reports a failure of the file; a session
-		// that ended is an interruption the transfer survives.
-		if !closed(sess) {
-			s.fail(ctx, id, err)
-			return false
+		// A session that ended is an interruption the transfer survives. A
+		// session that is still up is retried a few times before the file is
+		// reported as failed.
+		if closed(sess) {
+			if !s.awaitPeer(ctx, id) {
+				return false
+			}
+			continue
 		}
-		if !s.awaitPeer(ctx, id) {
+		if !s.retry(id) {
+			s.fail(ctx, id, err)
 			return false
 		}
 	}
@@ -234,6 +238,21 @@ func (s *Service) awaitPeer(ctx context.Context, id string) bool {
 	case <-wake:
 		return true
 	}
+}
+
+// retry reports whether a file of the transfer may be downloaded again.
+func (s *Service) retry(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec := s.records[id]
+	if rec == nil || rec.transfer.State != StateTransferring {
+		return false
+	}
+	if rec.attempts >= maxAttempts {
+		return false
+	}
+	rec.attempts++
+	return true
 }
 
 // claimDownload takes the download of a transfer. Only the first caller gets

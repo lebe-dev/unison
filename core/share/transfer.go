@@ -30,6 +30,9 @@ const (
 	// shared files.
 	SettingDownloadsDir = "share.downloads_dir"
 
+	// maxAttempts bounds the downloads of one file that fail while the peer is
+	// still connected.
+	maxAttempts = 3
 	// progressEvery is the number of chunks between two progress events.
 	progressEvery = 16
 	// maxDownloadAttempts bounds the lookups of a free file name.
