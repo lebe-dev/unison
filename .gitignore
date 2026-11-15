@@ -3,6 +3,9 @@
 !README.md
 !DEV.md
 !docs/**/*.md
+!deploy/**/README.md
+
+deploy/relay/secrets/
 
 /unison
 /bin/
