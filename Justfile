@@ -65,8 +65,14 @@ desktop-lint:
     cd desktop/src-tauri && cargo fmt --check
     cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
 
+# Bind the Go core into an Android library that the app consumes.
+aar:
+    mkdir -p android/core
+    gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}}" -trimpath -o android/core/core.aar ./mobile
+    rm -f android/core/core-sources.jar
+
 # Build the Android debug APK.
-android-build:
+android-build: aar
     ./android/gradlew -p android assembleDebug
 
 # Run the Android unit tests.
