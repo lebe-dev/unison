@@ -257,6 +257,23 @@ the name stored through the local API is used when the flag is absent. `SIGINT` 
 the daemon: the local API closes, the node stops, and the endpoint disappears. `--version` prints
 the version from the `VERSION` file.
 
+`cmd/unison` is the command line client of the daemon and speaks that API, so the core can be
+driven without the desktop app. `status` shows the daemon, the network and the peers, `devices`
+lists the paired devices and `devices rename` changes a name, `pair` opens a pairing window, offers
+the devices that are open for pairing and shows the short authentication code the user has to
+compare, `clip get` prints the last clipboard item, `clip set` copies standard input to the
+clipboard, and `pause` pauses or resumes the clipboard synchronization for a duration or until it
+is turned off.
+
+A device is addressed by a unique prefix of its fingerprint, a prefix of its device ID or its name.
+Output is plain text by default and JSON with `--json`, which prints the answer in the JSON form of
+the local API messages; `pair` prints one event per line in that mode and keeps the questions on
+stderr, and the answer of `clip set` leaves out the payload it just read. The command exits with 0
+on success, 1 on a failure and 2 when it cannot reach the daemon. `--endpoint` selects the socket or
+the named pipe, and the common flags are read before the command name or right after it, but before
+the arguments of the command. The daemon does not serve the device management calls yet, so
+`devices rename` reports that the call is not implemented.
+
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
 
