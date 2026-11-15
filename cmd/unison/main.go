@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"connectrpc.com/connect"
@@ -110,6 +111,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.clip(ctx, rest)
 	case "history":
 		err = a.history(ctx, rest)
+	case "send":
+		err = a.send(ctx, rest)
 	case "pause":
 		err = a.pause(ctx, rest)
 	case "help":
@@ -154,6 +157,27 @@ func parseFlags(flags *flag.FlagSet, args []string) error {
 	return nil
 }
 
+// splitFlags moves the flags of a command line before its positional arguments,
+// so a command may take its arguments in any order. valued lists the flags that
+// take the next argument as their value.
+func splitFlags(args []string, valued map[string]bool) (flags, rest []string) {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "-" || arg == "--" || !strings.HasPrefix(arg, "-") {
+			rest = append(rest, arg)
+			continue
+		}
+		flags = append(flags, arg)
+		name := strings.TrimLeft(arg, "-")
+		if strings.Contains(name, "=") || !valued[name] || i+1 >= len(args) {
+			continue
+		}
+		i++
+		flags = append(flags, args[i])
+	}
+	return flags, rest
+}
+
 // newFlagSet returns the flag set of a command. The common flags may be given
 // after the command as well.
 func (a *app) newFlagSet(name string) *flag.FlagSet {
@@ -194,6 +218,8 @@ commands:
   history [ls]                list the clipboard history
   history fetch <id> [-o path]
                               download the payloads of a history item
+  send <path|-> --to <device>...
+                              offer a file or standard input to devices
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
 
 <id> is a unique prefix of the fingerprint or the id of a device, or its
