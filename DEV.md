@@ -68,6 +68,7 @@ just build                # host binaries into bin/
 just test                 # unit tests
 just test-keychain        # Keychain integration tests against the login Keychain
 just lint                 # linters and format check
+just vet-windows          # vet and build everything for Windows from any host
 just fmt                  # format the Go sources
 just tidy                 # update go.mod and go.sum
 just proto                # generate Go code from proto/ with buf
@@ -90,6 +91,15 @@ binary, its operations return `keystore.ErrUnsupported` and building still works
 integration tests use a separate service and are hidden behind the `keychaintest` build tag, so
 `just test` never touches the Keychain. Run them with `just test-keychain`; they create items
 under a random `app.unison.test.*` service and delete the items they created.
+
+The Windows keystore in `platform/windows/keystore` keeps every secret in its own file, protected
+with DPAPI for the current Windows user. The secret name maps to the file path with a `.bin`
+suffix, so `identity/ed25519-seed` becomes `identity/ed25519-seed.bin` below the keys directory,
+which the constructor takes. Files are replaced atomically through a temporary file and a rename,
+and the optional entropy value passed to the constructor is mixed into the protection. The
+package builds on every platform; elsewhere its operations return `keystore.ErrUnsupported`. Its
+tests call the real DPAPI, so they run only on Windows: `just vet-windows` checks the build and
+the platform independent parts from any host.
 
 The protobuf code generators are pinned as tools in `go.mod`, so `just proto` needs only `buf` and
 `go` installed. Generated Go code is committed and builds do not require `buf`.

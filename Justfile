@@ -32,6 +32,11 @@ test:
 test-keychain:
     CGO_ENABLED=1 go test -tags keychaintest ./platform/darwin/keystore/
 
+# Vet and build the Go sources for Windows from any host.
+vet-windows:
+    GOOS=windows go vet ./...
+    GOOS=windows go build ./...
+
 # Run the linters and format checks.
 lint:
     golangci-lint run
