@@ -67,6 +67,10 @@ test-clipboard:
 test-blob-large:
     go test -tags bloblarge -timeout 30m ./core/blob/
 
+# Run the large file transfer with an interruption and a resume.
+test-share-large:
+    go test -tags sharelarge -timeout 30m ./core/share/
+
 # Vet and build the Go sources for Windows from any host.
 vet-windows:
     GOOS=windows go vet ./...
