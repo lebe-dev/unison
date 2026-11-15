@@ -32,6 +32,10 @@ test:
 test-keychain:
     CGO_ENABLED=1 go test -tags keychaintest ./platform/darwin/keystore/
 
+# Run the pasteboard integration tests against the real pasteboard.
+test-pasteboard:
+    CGO_ENABLED=1 go test -tags pasteboardtest ./platform/darwin/clipboard/
+
 # Vet and build the Go sources for Windows from any host.
 vet-windows:
     GOOS=windows go vet ./...
