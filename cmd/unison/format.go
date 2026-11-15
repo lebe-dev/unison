@@ -64,7 +64,11 @@ func (a *app) writeTable(devices []*localv1.Device) error {
 			deviceState(device),
 		})
 	}
+	return a.writeRows(rows)
+}
 
+// writeRows writes rows as a table with the columns aligned.
+func (a *app) writeRows(rows [][]string) error {
 	widths := make([]int, len(rows[0]))
 	for _, row := range rows {
 		for i, cell := range row {

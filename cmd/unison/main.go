@@ -108,6 +108,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.pair(ctx, rest)
 	case "clip":
 		err = a.clip(ctx, rest)
+	case "history":
+		err = a.history(ctx, rest)
 	case "pause":
 		err = a.pause(ctx, rest)
 	case "help":
@@ -180,8 +182,12 @@ commands:
   devices rename <id> <name>  change the name of a paired device
   pair [--role personal|friends]
                               pair a device and compare the short code
-  clip get                    print the last clipboard item
+  clip get [--from <id>]       print the last clipboard item, optionally of one
+                              paired device
   clip set [-]                copy standard input to the clipboard
+  history [ls]                list the clipboard history
+  history fetch <id> [-o path]
+                              download the payloads of a history item
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
 
 <id> is a unique prefix of the fingerprint or the id of a device, or its
