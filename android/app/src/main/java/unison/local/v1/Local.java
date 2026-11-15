@@ -633,6 +633,22 @@ public final class Local {
      * <code>EVENT_KIND_PAIRING_CLOSED = 9;</code>
      */
     EVENT_KIND_PAIRING_CLOSED(9),
+    /**
+     * <pre>
+     * A clipboard item is kept in the history until the user downloads it.
+     * </pre>
+     *
+     * <code>EVENT_KIND_CLIP_DOWNLOAD = 10;</code>
+     */
+    EVENT_KIND_CLIP_DOWNLOAD(10),
+    /**
+     * <pre>
+     * A clipboard item waits for the user to apply it.
+     * </pre>
+     *
+     * <code>EVENT_KIND_CLIP_APPLY = 11;</code>
+     */
+    EVENT_KIND_CLIP_APPLY(11),
     UNRECOGNIZED(-1),
     ;
 
@@ -712,6 +728,22 @@ public final class Local {
      * <code>EVENT_KIND_PAIRING_CLOSED = 9;</code>
      */
     public static final int EVENT_KIND_PAIRING_CLOSED_VALUE = 9;
+    /**
+     * <pre>
+     * A clipboard item is kept in the history until the user downloads it.
+     * </pre>
+     *
+     * <code>EVENT_KIND_CLIP_DOWNLOAD = 10;</code>
+     */
+    public static final int EVENT_KIND_CLIP_DOWNLOAD_VALUE = 10;
+    /**
+     * <pre>
+     * A clipboard item waits for the user to apply it.
+     * </pre>
+     *
+     * <code>EVENT_KIND_CLIP_APPLY = 11;</code>
+     */
+    public static final int EVENT_KIND_CLIP_APPLY_VALUE = 11;
 
 
     @java.lang.Override
@@ -744,6 +776,8 @@ public final class Local {
         case 7: return EVENT_KIND_PAIRING_PAIRED;
         case 8: return EVENT_KIND_PAIRING_FAILED;
         case 9: return EVENT_KIND_PAIRING_CLOSED;
+        case 10: return EVENT_KIND_CLIP_DOWNLOAD;
+        case 11: return EVENT_KIND_CLIP_APPLY;
         default: return null;
       }
     }
@@ -18410,6 +18444,4165 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<SetClipResponse> PARSER;
 
     public static com.google.protobuf.Parser<SetClipResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface HistoryItemOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.HistoryItem)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     * @return Whether the item field is set.
+     */
+    boolean hasItem();
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     * @return The item.
+     */
+    unison.local.v1.Local.ClipItem getItem();
+
+    /**
+     * <pre>
+     * Every payload of the item is stored on this device.
+     * </pre>
+     *
+     * <code>bool complete = 2 [json_name = "complete"];</code>
+     * @return The complete.
+     */
+    boolean getComplete();
+  }
+  /**
+   * <pre>
+   * A history entry with the state of its payloads.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.HistoryItem}
+   */
+  public  static final class HistoryItem extends
+      com.google.protobuf.GeneratedMessageLite<
+          HistoryItem, HistoryItem.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.HistoryItem)
+      HistoryItemOrBuilder {
+    private HistoryItem() {
+    }
+    private int bitField0_;
+    public static final int ITEM_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.ClipItem item_;
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.Override
+    public boolean hasItem() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.ClipItem getItem() {
+      return item_ == null ? unison.local.v1.Local.ClipItem.getDefaultInstance() : item_;
+    }
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     */
+    private void setItem(unison.local.v1.Local.ClipItem value) {
+      java.util.Objects.requireNonNull(value);
+      item_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeItem(unison.local.v1.Local.ClipItem value) {
+      java.util.Objects.requireNonNull(value);
+      if (item_ != null &&
+          item_ != unison.local.v1.Local.ClipItem.getDefaultInstance()) {
+        item_ =
+          unison.local.v1.Local.ClipItem.newBuilder(item_).mergeFrom(value).buildPartial();
+      } else {
+        item_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+     */
+    private void clearItem() {
+      item_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int COMPLETE_FIELD_NUMBER = 2;
+    private boolean complete_;
+    /**
+     * <pre>
+     * Every payload of the item is stored on this device.
+     * </pre>
+     *
+     * <code>bool complete = 2 [json_name = "complete"];</code>
+     * @return The complete.
+     */
+    @java.lang.Override
+    public boolean getComplete() {
+      return complete_;
+    }
+    /**
+     * <pre>
+     * Every payload of the item is stored on this device.
+     * </pre>
+     *
+     * <code>bool complete = 2 [json_name = "complete"];</code>
+     * @param value The complete to set.
+     */
+    private void setComplete(boolean value) {
+      
+      complete_ = value;
+    }
+    /**
+     * <pre>
+     * Every payload of the item is stored on this device.
+     * </pre>
+     *
+     * <code>bool complete = 2 [json_name = "complete"];</code>
+     */
+    private void clearComplete() {
+
+      complete_ = false;
+    }
+
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.HistoryItem parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.HistoryItem parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.HistoryItem parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.HistoryItem prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * A history entry with the state of its payloads.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.HistoryItem}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.HistoryItem, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.HistoryItem)
+        unison.local.v1.Local.HistoryItemOrBuilder {
+      // Construct using unison.local.v1.Local.HistoryItem.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+       */
+      @java.lang.Override
+      public boolean hasItem() {
+        return instance.hasItem();
+      }
+      /**
+       * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.ClipItem getItem() {
+        return instance.getItem();
+      }
+      /**
+       * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder setItem(unison.local.v1.Local.ClipItem value) {
+        copyOnWrite();
+        instance.setItem(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder setItem(
+          unison.local.v1.Local.ClipItem.Builder builderForValue) {
+        copyOnWrite();
+        instance.setItem(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder mergeItem(unison.local.v1.Local.ClipItem value) {
+        copyOnWrite();
+        instance.mergeItem(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.ClipItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder clearItem() {  copyOnWrite();
+        instance.clearItem();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Every payload of the item is stored on this device.
+       * </pre>
+       *
+       * <code>bool complete = 2 [json_name = "complete"];</code>
+       * @return The complete.
+       */
+      @java.lang.Override
+      public boolean getComplete() {
+        return instance.getComplete();
+      }
+      /**
+       * <pre>
+       * Every payload of the item is stored on this device.
+       * </pre>
+       *
+       * <code>bool complete = 2 [json_name = "complete"];</code>
+       * @param value The complete to set.
+       * @return This builder for chaining.
+       */
+      public Builder setComplete(boolean value) {
+        copyOnWrite();
+        instance.setComplete(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Every payload of the item is stored on this device.
+       * </pre>
+       *
+       * <code>bool complete = 2 [json_name = "complete"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearComplete() {
+        copyOnWrite();
+        instance.clearComplete();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.HistoryItem)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.HistoryItem();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "item_",
+              "complete_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0001\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u1009\u0000\u0002" +
+                "\u0007";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.HistoryItem> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.HistoryItem.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.HistoryItem>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.HistoryItem)
+    private static final unison.local.v1.Local.HistoryItem DEFAULT_INSTANCE;
+    static {
+      HistoryItem defaultInstance = new HistoryItem();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        HistoryItem.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.HistoryItem getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<HistoryItem> PARSER;
+
+    public static com.google.protobuf.Parser<HistoryItem> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ListHistoryRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ListHistoryRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     * @return The enum numeric value on the wire for kind.
+     */
+    int getKindValue();
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     * @return The kind.
+     */
+    unison.local.v1.Local.Kind getKind();
+
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    java.lang.String getDeviceId();
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdBytes();
+
+    /**
+     * <pre>
+     * Maximum number of items. Zero uses the default, the server caps it.
+     * </pre>
+     *
+     * <code>uint32 limit = 3 [json_name = "limit"];</code>
+     * @return The limit.
+     */
+    int getLimit();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ListHistoryRequest}
+   */
+  public  static final class ListHistoryRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ListHistoryRequest, ListHistoryRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ListHistoryRequest)
+      ListHistoryRequestOrBuilder {
+    private ListHistoryRequest() {
+      deviceId_ = "";
+    }
+    public static final int KIND_FIELD_NUMBER = 1;
+    private int kind_;
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     * @return The enum numeric value on the wire for kind.
+     */
+    @java.lang.Override
+    public int getKindValue() {
+      return kind_;
+    }
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     * @return The kind.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Kind getKind() {
+      unison.local.v1.Local.Kind result = unison.local.v1.Local.Kind.forNumber(kind_);
+      return result == null ? unison.local.v1.Local.Kind.UNRECOGNIZED : result;
+    }
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     * @param value The enum numeric value on the wire for kind to set.
+     */
+    private void setKindValue(int value) {
+        kind_ = value;
+    }
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     * @param value The kind to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setKind(unison.local.v1.Local.Kind value) {
+      kind_ = value.getNumber();
+
+    }
+    /**
+     * <pre>
+     * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+     */
+    private void clearKind() {
+
+      kind_ = 0;
+    }
+
+    public static final int DEVICE_ID_FIELD_NUMBER = 2;
+    private java.lang.String deviceId_;
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceId() {
+      return deviceId_;
+    }
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceId_);
+    }
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @param value The deviceId to set.
+     */
+    private void setDeviceId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceId_ = value;
+    }
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     */
+    private void clearDeviceId() {
+
+      deviceId_ = getDefaultInstance().getDeviceId();
+    }
+    /**
+     * <pre>
+     * Only items captured by this device, lowercase hex. Empty lists every
+     * device.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @param value The bytes for deviceId to set.
+     */
+    private void setDeviceIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceId_ = value.toStringUtf8();
+
+    }
+
+    public static final int LIMIT_FIELD_NUMBER = 3;
+    private int limit_;
+    /**
+     * <pre>
+     * Maximum number of items. Zero uses the default, the server caps it.
+     * </pre>
+     *
+     * <code>uint32 limit = 3 [json_name = "limit"];</code>
+     * @return The limit.
+     */
+    @java.lang.Override
+    public int getLimit() {
+      return limit_;
+    }
+    /**
+     * <pre>
+     * Maximum number of items. Zero uses the default, the server caps it.
+     * </pre>
+     *
+     * <code>uint32 limit = 3 [json_name = "limit"];</code>
+     * @param value The limit to set.
+     */
+    private void setLimit(int value) {
+      
+      limit_ = value;
+    }
+    /**
+     * <pre>
+     * Maximum number of items. Zero uses the default, the server caps it.
+     * </pre>
+     *
+     * <code>uint32 limit = 3 [json_name = "limit"];</code>
+     */
+    private void clearLimit() {
+
+      limit_ = 0;
+    }
+
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ListHistoryRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ListHistoryRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListHistoryRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ListHistoryRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ListHistoryRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ListHistoryRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ListHistoryRequest)
+        unison.local.v1.Local.ListHistoryRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ListHistoryRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+       * @return The enum numeric value on the wire for kind.
+       */
+      @java.lang.Override
+      public int getKindValue() {
+        return instance.getKindValue();
+      }
+      /**
+       * <pre>
+       * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+       * @param value The kind to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setKindValue(int value) {
+        copyOnWrite();
+        instance.setKindValue(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+       * @return The kind.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Kind getKind() {
+        return instance.getKind();
+      }
+      /**
+       * <pre>
+       * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+       * @param value The enum numeric value on the wire for kind to set.
+       * @return This builder for chaining.
+       */
+      public Builder setKind(unison.local.v1.Local.Kind value) {
+        copyOnWrite();
+        instance.setKind(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Only items of this kind. KIND_UNSPECIFIED lists every kind.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Kind kind = 1 [json_name = "kind"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearKind() {
+        copyOnWrite();
+        instance.clearKind();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Only items captured by this device, lowercase hex. Empty lists every
+       * device.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @return The deviceId.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceId() {
+        return instance.getDeviceId();
+      }
+      /**
+       * <pre>
+       * Only items captured by this device, lowercase hex. Empty lists every
+       * device.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @return The bytes for deviceId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdBytes() {
+        return instance.getDeviceIdBytes();
+      }
+      /**
+       * <pre>
+       * Only items captured by this device, lowercase hex. Empty lists every
+       * device.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @param value The deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Only items captured by this device, lowercase hex. Empty lists every
+       * device.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceId() {
+        copyOnWrite();
+        instance.clearDeviceId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Only items captured by this device, lowercase hex. Empty lists every
+       * device.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @param value The bytes for deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Maximum number of items. Zero uses the default, the server caps it.
+       * </pre>
+       *
+       * <code>uint32 limit = 3 [json_name = "limit"];</code>
+       * @return The limit.
+       */
+      @java.lang.Override
+      public int getLimit() {
+        return instance.getLimit();
+      }
+      /**
+       * <pre>
+       * Maximum number of items. Zero uses the default, the server caps it.
+       * </pre>
+       *
+       * <code>uint32 limit = 3 [json_name = "limit"];</code>
+       * @param value The limit to set.
+       * @return This builder for chaining.
+       */
+      public Builder setLimit(int value) {
+        copyOnWrite();
+        instance.setLimit(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Maximum number of items. Zero uses the default, the server caps it.
+       * </pre>
+       *
+       * <code>uint32 limit = 3 [json_name = "limit"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearLimit() {
+        copyOnWrite();
+        instance.clearLimit();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ListHistoryRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ListHistoryRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "kind_",
+              "deviceId_",
+              "limit_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\f\u0002\u0208" +
+                "\u0003\u000b";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ListHistoryRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ListHistoryRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ListHistoryRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ListHistoryRequest)
+    private static final unison.local.v1.Local.ListHistoryRequest DEFAULT_INSTANCE;
+    static {
+      ListHistoryRequest defaultInstance = new ListHistoryRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ListHistoryRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ListHistoryRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ListHistoryRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ListHistoryRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ListHistoryResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ListHistoryResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    java.util.List<unison.local.v1.Local.HistoryItem> 
+        getItemsList();
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    unison.local.v1.Local.HistoryItem getItems(int index);
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    int getItemsCount();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ListHistoryResponse}
+   */
+  public  static final class ListHistoryResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ListHistoryResponse, ListHistoryResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ListHistoryResponse)
+      ListHistoryResponseOrBuilder {
+    private ListHistoryResponse() {
+      items_ = emptyProtobufList();
+    }
+    public static final int ITEMS_FIELD_NUMBER = 1;
+    private com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.HistoryItem> items_;
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    @java.lang.Override
+    public java.util.List<unison.local.v1.Local.HistoryItem> getItemsList() {
+      return items_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    public java.util.List<? extends unison.local.v1.Local.HistoryItemOrBuilder> 
+        getItemsOrBuilderList() {
+      return items_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    @java.lang.Override
+    public int getItemsCount() {
+      return items_.size();
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.HistoryItem getItems(int index) {
+      return items_.get(index);
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    public unison.local.v1.Local.HistoryItemOrBuilder getItemsOrBuilder(
+        int index) {
+      return items_.get(index);
+    }
+    private void ensureItemsIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.HistoryItem> tmp = items_;
+      if (!tmp.isModifiable()) {
+        items_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    private void setItems(
+        int index, unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      ensureItemsIsMutable();
+      items_.set(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    private void addItems(unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      ensureItemsIsMutable();
+      items_.add(value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    private void addItems(
+        int index, unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      ensureItemsIsMutable();
+      items_.add(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    private void addAllItems(
+        java.lang.Iterable<? extends unison.local.v1.Local.HistoryItem> values) {
+      ensureItemsIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, items_);
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    private void clearItems() {
+      items_ = emptyProtobufList();
+    }
+    /**
+     * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+     */
+    private void removeItems(int index) {
+      ensureItemsIsMutable();
+      items_.remove(index);
+    }
+
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ListHistoryResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ListHistoryResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListHistoryResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ListHistoryResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ListHistoryResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ListHistoryResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ListHistoryResponse)
+        unison.local.v1.Local.ListHistoryResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ListHistoryResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      @java.lang.Override
+      public java.util.List<unison.local.v1.Local.HistoryItem> getItemsList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getItemsList());
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      @java.lang.Override
+      public int getItemsCount() {
+        return instance.getItemsCount();
+      }/**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.HistoryItem getItems(int index) {
+        return instance.getItems(index);
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder setItems(
+          int index, unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.setItems(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder setItems(
+          int index, unison.local.v1.Local.HistoryItem.Builder builderForValue) {
+        copyOnWrite();
+        instance.setItems(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder addItems(unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.addItems(value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder addItems(
+          int index, unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.addItems(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder addItems(
+          unison.local.v1.Local.HistoryItem.Builder builderForValue) {
+        copyOnWrite();
+        instance.addItems(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder addItems(
+          int index, unison.local.v1.Local.HistoryItem.Builder builderForValue) {
+        copyOnWrite();
+        instance.addItems(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder addAllItems(
+          java.lang.Iterable<? extends unison.local.v1.Local.HistoryItem> values) {
+        copyOnWrite();
+        instance.addAllItems(values);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder clearItems() {
+        copyOnWrite();
+        instance.clearItems();
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.HistoryItem items = 1 [json_name = "items"];</code>
+       */
+      public Builder removeItems(int index) {
+        copyOnWrite();
+        instance.removeItems(index);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ListHistoryResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ListHistoryResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "items_",
+              unison.local.v1.Local.HistoryItem.class,
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0001\u0000\u0001\u001b";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ListHistoryResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ListHistoryResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ListHistoryResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ListHistoryResponse)
+    private static final unison.local.v1.Local.ListHistoryResponse DEFAULT_INSTANCE;
+    static {
+      ListHistoryResponse defaultInstance = new ListHistoryResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ListHistoryResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ListHistoryResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ListHistoryResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ListHistoryResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetHistoryItemRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetHistoryItemRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetHistoryItemRequest}
+   */
+  public  static final class GetHistoryItemRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetHistoryItemRequest, GetHistoryItemRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetHistoryItemRequest)
+      GetHistoryItemRequestOrBuilder {
+    private GetHistoryItemRequest() {
+      id_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetHistoryItemRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetHistoryItemRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetHistoryItemRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetHistoryItemRequest)
+        unison.local.v1.Local.GetHistoryItemRequestOrBuilder {
+      // Construct using unison.local.v1.Local.GetHistoryItemRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetHistoryItemRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetHistoryItemRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetHistoryItemRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetHistoryItemRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetHistoryItemRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetHistoryItemRequest)
+    private static final unison.local.v1.Local.GetHistoryItemRequest DEFAULT_INSTANCE;
+    static {
+      GetHistoryItemRequest defaultInstance = new GetHistoryItemRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetHistoryItemRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetHistoryItemRequest> PARSER;
+
+    public static com.google.protobuf.Parser<GetHistoryItemRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetHistoryItemResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetHistoryItemResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     * @return Whether the item field is set.
+     */
+    boolean hasItem();
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     * @return The item.
+     */
+    unison.local.v1.Local.HistoryItem getItem();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetHistoryItemResponse}
+   */
+  public  static final class GetHistoryItemResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetHistoryItemResponse, GetHistoryItemResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetHistoryItemResponse)
+      GetHistoryItemResponseOrBuilder {
+    private GetHistoryItemResponse() {
+    }
+    private int bitField0_;
+    public static final int ITEM_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.HistoryItem item_;
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.Override
+    public boolean hasItem() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.HistoryItem getItem() {
+      return item_ == null ? unison.local.v1.Local.HistoryItem.getDefaultInstance() : item_;
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    private void setItem(unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      item_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeItem(unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      if (item_ != null &&
+          item_ != unison.local.v1.Local.HistoryItem.getDefaultInstance()) {
+        item_ =
+          unison.local.v1.Local.HistoryItem.newBuilder(item_).mergeFrom(value).buildPartial();
+      } else {
+        item_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    private void clearItem() {
+      item_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetHistoryItemResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetHistoryItemResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetHistoryItemResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetHistoryItemResponse)
+        unison.local.v1.Local.GetHistoryItemResponseOrBuilder {
+      // Construct using unison.local.v1.Local.GetHistoryItemResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      @java.lang.Override
+      public boolean hasItem() {
+        return instance.hasItem();
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.HistoryItem getItem() {
+        return instance.getItem();
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder setItem(unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.setItem(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder setItem(
+          unison.local.v1.Local.HistoryItem.Builder builderForValue) {
+        copyOnWrite();
+        instance.setItem(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder mergeItem(unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.mergeItem(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder clearItem() {  copyOnWrite();
+        instance.clearItem();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetHistoryItemResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetHistoryItemResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "item_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetHistoryItemResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetHistoryItemResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetHistoryItemResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetHistoryItemResponse)
+    private static final unison.local.v1.Local.GetHistoryItemResponse DEFAULT_INSTANCE;
+    static {
+      GetHistoryItemResponse defaultInstance = new GetHistoryItemResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetHistoryItemResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetHistoryItemResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetHistoryItemResponse> PARSER;
+
+    public static com.google.protobuf.Parser<GetHistoryItemResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface DeleteHistoryItemRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.DeleteHistoryItemRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.DeleteHistoryItemRequest}
+   */
+  public  static final class DeleteHistoryItemRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          DeleteHistoryItemRequest, DeleteHistoryItemRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.DeleteHistoryItemRequest)
+      DeleteHistoryItemRequestOrBuilder {
+    private DeleteHistoryItemRequest() {
+      id_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.DeleteHistoryItemRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.DeleteHistoryItemRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.DeleteHistoryItemRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.DeleteHistoryItemRequest)
+        unison.local.v1.Local.DeleteHistoryItemRequestOrBuilder {
+      // Construct using unison.local.v1.Local.DeleteHistoryItemRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.DeleteHistoryItemRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.DeleteHistoryItemRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.DeleteHistoryItemRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.DeleteHistoryItemRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.DeleteHistoryItemRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.DeleteHistoryItemRequest)
+    private static final unison.local.v1.Local.DeleteHistoryItemRequest DEFAULT_INSTANCE;
+    static {
+      DeleteHistoryItemRequest defaultInstance = new DeleteHistoryItemRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        DeleteHistoryItemRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<DeleteHistoryItemRequest> PARSER;
+
+    public static com.google.protobuf.Parser<DeleteHistoryItemRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface DeleteHistoryItemResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.DeleteHistoryItemResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.DeleteHistoryItemResponse}
+   */
+  public  static final class DeleteHistoryItemResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          DeleteHistoryItemResponse, DeleteHistoryItemResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.DeleteHistoryItemResponse)
+      DeleteHistoryItemResponseOrBuilder {
+    private DeleteHistoryItemResponse() {
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DeleteHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.DeleteHistoryItemResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.DeleteHistoryItemResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.DeleteHistoryItemResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.DeleteHistoryItemResponse)
+        unison.local.v1.Local.DeleteHistoryItemResponseOrBuilder {
+      // Construct using unison.local.v1.Local.DeleteHistoryItemResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.DeleteHistoryItemResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.DeleteHistoryItemResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.DeleteHistoryItemResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.DeleteHistoryItemResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.DeleteHistoryItemResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.DeleteHistoryItemResponse)
+    private static final unison.local.v1.Local.DeleteHistoryItemResponse DEFAULT_INSTANCE;
+    static {
+      DeleteHistoryItemResponse defaultInstance = new DeleteHistoryItemResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        DeleteHistoryItemResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.DeleteHistoryItemResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<DeleteHistoryItemResponse> PARSER;
+
+    public static com.google.protobuf.Parser<DeleteHistoryItemResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface FetchHistoryItemRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.FetchHistoryItemRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     * @return The path.
+     */
+    java.lang.String getPath();
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     * @return The bytes for path.
+     */
+    com.google.protobuf.ByteString
+        getPathBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.FetchHistoryItemRequest}
+   */
+  public  static final class FetchHistoryItemRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          FetchHistoryItemRequest, FetchHistoryItemRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.FetchHistoryItemRequest)
+      FetchHistoryItemRequestOrBuilder {
+    private FetchHistoryItemRequest() {
+      id_ = "";
+      path_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static final int PATH_FIELD_NUMBER = 2;
+    private java.lang.String path_;
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     * @return The path.
+     */
+    @java.lang.Override
+    public java.lang.String getPath() {
+      return path_;
+    }
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     * @return The bytes for path.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getPathBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(path_);
+    }
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     * @param value The path to set.
+     */
+    private void setPath(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      path_ = value;
+    }
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     */
+    private void clearPath() {
+
+      path_ = getDefaultInstance().getPath();
+    }
+    /**
+     * <pre>
+     * Where the payloads are written. Empty downloads them only.
+     * </pre>
+     *
+     * <code>string path = 2 [json_name = "path"];</code>
+     * @param value The bytes for path to set.
+     */
+    private void setPathBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      path_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.FetchHistoryItemRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.FetchHistoryItemRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.FetchHistoryItemRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.FetchHistoryItemRequest)
+        unison.local.v1.Local.FetchHistoryItemRequestOrBuilder {
+      // Construct using unison.local.v1.Local.FetchHistoryItemRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Where the payloads are written. Empty downloads them only.
+       * </pre>
+       *
+       * <code>string path = 2 [json_name = "path"];</code>
+       * @return The path.
+       */
+      @java.lang.Override
+      public java.lang.String getPath() {
+        return instance.getPath();
+      }
+      /**
+       * <pre>
+       * Where the payloads are written. Empty downloads them only.
+       * </pre>
+       *
+       * <code>string path = 2 [json_name = "path"];</code>
+       * @return The bytes for path.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getPathBytes() {
+        return instance.getPathBytes();
+      }
+      /**
+       * <pre>
+       * Where the payloads are written. Empty downloads them only.
+       * </pre>
+       *
+       * <code>string path = 2 [json_name = "path"];</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPath(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setPath(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Where the payloads are written. Empty downloads them only.
+       * </pre>
+       *
+       * <code>string path = 2 [json_name = "path"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPath() {
+        copyOnWrite();
+        instance.clearPath();
+        return this;
+      }
+      /**
+       * <pre>
+       * Where the payloads are written. Empty downloads them only.
+       * </pre>
+       *
+       * <code>string path = 2 [json_name = "path"];</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPathBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setPathBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.FetchHistoryItemRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.FetchHistoryItemRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+              "path_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.FetchHistoryItemRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.FetchHistoryItemRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.FetchHistoryItemRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.FetchHistoryItemRequest)
+    private static final unison.local.v1.Local.FetchHistoryItemRequest DEFAULT_INSTANCE;
+    static {
+      FetchHistoryItemRequest defaultInstance = new FetchHistoryItemRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        FetchHistoryItemRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<FetchHistoryItemRequest> PARSER;
+
+    public static com.google.protobuf.Parser<FetchHistoryItemRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface FetchHistoryItemResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.FetchHistoryItemResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     * @return Whether the item field is set.
+     */
+    boolean hasItem();
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     * @return The item.
+     */
+    unison.local.v1.Local.HistoryItem getItem();
+
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @return A list containing the files.
+     */
+    java.util.List<java.lang.String>
+        getFilesList();
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @return The count of files.
+     */
+    int getFilesCount();
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param index The index of the element to return.
+     * @return The files at the given index.
+     */
+    java.lang.String getFiles(int index);
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param index The index of the element to return.
+     * @return The files at the given index.
+     */
+    com.google.protobuf.ByteString
+        getFilesBytes(int index);
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.FetchHistoryItemResponse}
+   */
+  public  static final class FetchHistoryItemResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          FetchHistoryItemResponse, FetchHistoryItemResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.FetchHistoryItemResponse)
+      FetchHistoryItemResponseOrBuilder {
+    private FetchHistoryItemResponse() {
+      files_ = emptyProtobufList();
+    }
+    private int bitField0_;
+    public static final int ITEM_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.HistoryItem item_;
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.Override
+    public boolean hasItem() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.HistoryItem getItem() {
+      return item_ == null ? unison.local.v1.Local.HistoryItem.getDefaultInstance() : item_;
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    private void setItem(unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      item_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeItem(unison.local.v1.Local.HistoryItem value) {
+      java.util.Objects.requireNonNull(value);
+      if (item_ != null &&
+          item_ != unison.local.v1.Local.HistoryItem.getDefaultInstance()) {
+        item_ =
+          unison.local.v1.Local.HistoryItem.newBuilder(item_).mergeFrom(value).buildPartial();
+      } else {
+        item_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+     */
+    private void clearItem() {
+      item_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int FILES_FIELD_NUMBER = 2;
+    private com.google.protobuf.Internal.ProtobufList<java.lang.String> files_;
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @return A list containing the files.
+     */
+    @java.lang.Override
+    public java.util.List<java.lang.String> getFilesList() {
+      return files_;
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @return The count of files.
+     */
+    @java.lang.Override
+    public int getFilesCount() {
+      return files_.size();
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param index The index of the element to return.
+     * @return The files at the given index.
+     */
+    @java.lang.Override
+    public java.lang.String getFiles(int index) {
+      return files_.get(index);
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the files at the given index.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getFilesBytes(int index) {
+      return com.google.protobuf.ByteString.copyFromUtf8(
+          files_.get(index));
+    }
+    private void ensureFilesIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<java.lang.String> tmp =
+          files_;  if (!tmp.isModifiable()) {
+        files_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param index The index to set the value at.
+     * @param value The files to set.
+     */
+    private void setFiles(
+        int index, java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureFilesIsMutable();
+      files_.set(index, value);
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param value The files to add.
+     */
+    private void addFiles(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureFilesIsMutable();
+      files_.add(value);
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param values The files to add.
+     */
+    private void addAllFiles(
+        java.lang.Iterable<java.lang.String> values) {
+      ensureFilesIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, files_);
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     */
+    private void clearFiles() {
+      files_ = emptyProtobufList();
+    }
+    /**
+     * <pre>
+     * Paths of the written payloads.
+     * </pre>
+     *
+     * <code>repeated string files = 2 [json_name = "files"];</code>
+     * @param value The bytes of the files to add.
+     */
+    private void addFilesBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      ensureFilesIsMutable();
+      files_.add(value.toStringUtf8());
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.FetchHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.FetchHistoryItemResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.FetchHistoryItemResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.FetchHistoryItemResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.FetchHistoryItemResponse)
+        unison.local.v1.Local.FetchHistoryItemResponseOrBuilder {
+      // Construct using unison.local.v1.Local.FetchHistoryItemResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      @java.lang.Override
+      public boolean hasItem() {
+        return instance.hasItem();
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.HistoryItem getItem() {
+        return instance.getItem();
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder setItem(unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.setItem(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder setItem(
+          unison.local.v1.Local.HistoryItem.Builder builderForValue) {
+        copyOnWrite();
+        instance.setItem(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder mergeItem(unison.local.v1.Local.HistoryItem value) {
+        copyOnWrite();
+        instance.mergeItem(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.HistoryItem item = 1 [json_name = "item"];</code>
+       */
+      public Builder clearItem() {  copyOnWrite();
+        instance.clearItem();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @return A list containing the files.
+       */
+      @java.lang.Override
+      public java.util.List<java.lang.String>
+          getFilesList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getFilesList());
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @return The count of files.
+       */
+      @java.lang.Override
+      public int getFilesCount() {
+        return instance.getFilesCount();
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @param index The index of the element to return.
+       * @return The files at the given index.
+       */
+      @java.lang.Override
+      public java.lang.String getFiles(int index) {
+        return instance.getFiles(index);
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the files at the given index.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getFilesBytes(int index) {
+        return instance.getFilesBytes(index);
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @param index The index to set the value at.
+       * @param value The files to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFiles(
+          int index, java.lang.String value) {
+        copyOnWrite();
+        instance.setFiles(index, value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @param value The files to add.
+       * @return This builder for chaining.
+       */
+      public Builder addFiles(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.addFiles(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @param values The files to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllFiles(
+          java.lang.Iterable<java.lang.String> values) {
+        copyOnWrite();
+        instance.addAllFiles(values);
+        return this;
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFiles() {
+        copyOnWrite();
+        instance.clearFiles();
+        return this;
+      }
+      /**
+       * <pre>
+       * Paths of the written payloads.
+       * </pre>
+       *
+       * <code>repeated string files = 2 [json_name = "files"];</code>
+       * @param value The bytes of the files to add.
+       * @return This builder for chaining.
+       */
+      public Builder addFilesBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.addFilesBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.FetchHistoryItemResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.FetchHistoryItemResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "item_",
+              "files_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0001\u0001\u0002\u0002\u0000\u0001\u0000\u0001\u1009\u0000\u0002" +
+                "\u021a";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.FetchHistoryItemResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.FetchHistoryItemResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.FetchHistoryItemResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.FetchHistoryItemResponse)
+    private static final unison.local.v1.Local.FetchHistoryItemResponse DEFAULT_INSTANCE;
+    static {
+      FetchHistoryItemResponse defaultInstance = new FetchHistoryItemResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        FetchHistoryItemResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.FetchHistoryItemResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<FetchHistoryItemResponse> PARSER;
+
+    public static com.google.protobuf.Parser<FetchHistoryItemResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface CopyHistoryItemRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.CopyHistoryItemRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.CopyHistoryItemRequest}
+   */
+  public  static final class CopyHistoryItemRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          CopyHistoryItemRequest, CopyHistoryItemRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.CopyHistoryItemRequest)
+      CopyHistoryItemRequestOrBuilder {
+    private CopyHistoryItemRequest() {
+      id_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.CopyHistoryItemRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.CopyHistoryItemRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.CopyHistoryItemRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.CopyHistoryItemRequest)
+        unison.local.v1.Local.CopyHistoryItemRequestOrBuilder {
+      // Construct using unison.local.v1.Local.CopyHistoryItemRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.CopyHistoryItemRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.CopyHistoryItemRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.CopyHistoryItemRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.CopyHistoryItemRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.CopyHistoryItemRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.CopyHistoryItemRequest)
+    private static final unison.local.v1.Local.CopyHistoryItemRequest DEFAULT_INSTANCE;
+    static {
+      CopyHistoryItemRequest defaultInstance = new CopyHistoryItemRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        CopyHistoryItemRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<CopyHistoryItemRequest> PARSER;
+
+    public static com.google.protobuf.Parser<CopyHistoryItemRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface CopyHistoryItemResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.CopyHistoryItemResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.CopyHistoryItemResponse}
+   */
+  public  static final class CopyHistoryItemResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          CopyHistoryItemResponse, CopyHistoryItemResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.CopyHistoryItemResponse)
+      CopyHistoryItemResponseOrBuilder {
+    private CopyHistoryItemResponse() {
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CopyHistoryItemResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.CopyHistoryItemResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.CopyHistoryItemResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.CopyHistoryItemResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.CopyHistoryItemResponse)
+        unison.local.v1.Local.CopyHistoryItemResponseOrBuilder {
+      // Construct using unison.local.v1.Local.CopyHistoryItemResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.CopyHistoryItemResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.CopyHistoryItemResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.CopyHistoryItemResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.CopyHistoryItemResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.CopyHistoryItemResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.CopyHistoryItemResponse)
+    private static final unison.local.v1.Local.CopyHistoryItemResponse DEFAULT_INSTANCE;
+    static {
+      CopyHistoryItemResponse defaultInstance = new CopyHistoryItemResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        CopyHistoryItemResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.CopyHistoryItemResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<CopyHistoryItemResponse> PARSER;
+
+    public static com.google.protobuf.Parser<CopyHistoryItemResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }

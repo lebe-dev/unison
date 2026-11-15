@@ -125,8 +125,9 @@ desktop-lint:
 
 # Bind the Go core into an Android library that the app consumes.
 aar:
-    mkdir -p android/core
-    gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}}" -trimpath -o android/core/core.aar ./mobile
+    mkdir -p android/core bin
+    go build -o bin/gobind golang.org/x/mobile/cmd/gobind
+    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}}" -trimpath -o android/core/core.aar ./mobile
     rm -f android/core/core-sources.jar
 
 # Build the Android debug APK.

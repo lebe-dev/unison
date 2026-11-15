@@ -5,6 +5,7 @@ go 1.27
 tool (
 	connectrpc.com/connect/cmd/protoc-gen-connect-go
 	golang.org/x/mobile/cmd/gobind
+	golang.org/x/mobile/cmd/gomobile
 	google.golang.org/protobuf/cmd/protoc-gen-go
 )
 
