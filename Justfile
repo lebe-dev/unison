@@ -88,6 +88,10 @@ tidy:
 proto:
     buf generate
 
+# Generate Java lite classes of the local and mobile APIs for the Android app.
+proto-android:
+    buf generate --template buf.gen.android.yaml --path proto/unison/local --path proto/unison/mobile proto
+
 # Lint the protobuf definitions.
 proto-lint:
     buf lint
