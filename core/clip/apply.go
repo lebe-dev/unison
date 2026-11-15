@@ -314,7 +314,7 @@ func downloadName(rep model.Representation, index int) string {
 		return fmt.Sprintf("file-%d.bin", index+1)
 	}
 	if len(name) > maxFileNameLength {
-		name = name[:maxFileNameLength]
+		name = strings.ToValidUTF8(name[:maxFileNameLength], "")
 	}
 	return name
 }
