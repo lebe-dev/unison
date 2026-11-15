@@ -33,9 +33,24 @@ class DaemonStore {
   #running = false;
   #statusTimer: ReturnType<typeof setInterval> | null = null;
   #unlisten: UnlistenFn | null = null;
+  #events = new Set<(event: DaemonEvent) => void>();
+  #stream: AbortController | null = null;
 
   get connected(): boolean {
     return this.status?.running ?? false;
+  }
+
+  /** loading reports a first status that has not arrived yet. */
+  get loading(): boolean {
+    return this.status === null && this.error === null;
+  }
+
+  get deviceName(): string {
+    return this.status?.deviceName ?? "Unison";
+  }
+
+  get deviceID(): string {
+    return this.status?.deviceId ?? "";
   }
 
   get devices(): Device[] {
@@ -88,8 +103,21 @@ class DaemonStore {
       clearInterval(this.#statusTimer);
       this.#statusTimer = null;
     }
+    this.#stream?.abort();
+    this.#stream = null;
     void this.#unlisten?.();
     this.#unlisten = null;
+  }
+
+  /**
+   * onEvent subscribes to the daemon events. The returned function removes the
+   * subscription.
+   */
+  onEvent(handler: (event: DaemonEvent) => void): () => void {
+    this.#events.add(handler);
+    return () => {
+      this.#events.delete(handler);
+    };
   }
 
   /** refresh reloads the status of the daemon. */
@@ -140,8 +168,10 @@ class DaemonStore {
 
   async #watch(): Promise<void> {
     while (this.#running) {
+      const controller = new AbortController();
+      this.#stream = controller;
       try {
-        for await (const response of client.watchEvents({})) {
+        for await (const response of client.watchEvents({}, { signal: controller.signal })) {
           const event = response.event;
           if (!event) {
             continue;
@@ -156,6 +186,10 @@ class DaemonStore {
           return;
         }
         this.error = messageOf(error);
+      } finally {
+        if (this.#stream === controller) {
+          this.#stream = null;
+        }
       }
       if (!this.#running) {
         return;
@@ -166,6 +200,9 @@ class DaemonStore {
 
   #record(event: DaemonEvent): void {
     this.activity = [event, ...this.activity].slice(0, ACTIVITY_LIMIT);
+    for (const handler of this.#events) {
+      handler(event);
+    }
   }
 }
 

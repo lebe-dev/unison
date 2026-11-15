@@ -1,10 +1,11 @@
-import { defineConfig } from "vite";
+import { svelteTesting } from "@testing-library/svelte/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { defineConfig } from "vitest/config";
 
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), svelteTesting()],
   // Keep the Rust compiler output readable and fail when the dev port is busy.
   clearScreen: false,
   server: {
@@ -15,5 +16,10 @@ export default defineConfig({
     watch: {
       ignored: ["**/src-tauri/**"],
     },
+  },
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.ts"],
+    setupFiles: ["@testing-library/svelte/vitest"],
   },
 });

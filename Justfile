@@ -121,9 +121,14 @@ desktop-dev:
 desktop-build:
     cd desktop && yarn tauri build
 
-# Lint the desktop app: frontend checks, rustfmt and clippy.
+# Run the component tests of the desktop app.
+desktop-test:
+    cd desktop && yarn test
+
+# Lint the desktop app: frontend checks, component tests, rustfmt and clippy.
 desktop-lint:
     cd desktop && yarn lint
+    cd desktop && yarn test
     cd desktop/src-tauri && cargo fmt --check
     cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
 
