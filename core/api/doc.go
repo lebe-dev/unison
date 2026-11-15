@@ -1,2 +1,2 @@
-// Package api implements the local API used by the GUI and the CLI.
+// Package api serves the local API of the daemon over a running core node.
 package api
