@@ -5,9 +5,13 @@ import app.unison.clipboard.ClipboardWriter
 import app.unison.core.AndroidKeystore
 import app.unison.core.coreEvents
 import app.unison.core.mobile.Platform
+import app.unison.discovery.NsdDiscovery
 
 /** Platform callbacks the core uses to reach Android. */
-class CorePlatform(private val context: Context) : Platform {
+class CorePlatform(
+    private val context: Context,
+    private val discovery: NsdDiscovery,
+) : Platform {
     override fun onEvent(evt: ByteArray) = coreEvents.publish(evt)
 
     override fun writeClipboard(item: ByteArray) = ClipboardWriter.write(context, item)
@@ -18,5 +22,5 @@ class CorePlatform(private val context: Context) : Platform {
 
     override fun keystoreWrap(plain: ByteArray): ByteArray = AndroidKeystore.wrap(plain)
 
-    override fun announce(info: ByteArray) = Unit
+    override fun announce(info: ByteArray) = discovery.announce(info)
 }

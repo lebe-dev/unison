@@ -16,6 +16,7 @@ import app.unison.core.CoreClient
 import app.unison.core.CoreException
 import app.unison.core.coreEvents
 import app.unison.core.mobile.Mobile
+import app.unison.discovery.NsdDiscovery
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,10 +32,12 @@ class UnisonService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var coreStarted = false
     private var statusJob: Job? = null
+    private lateinit var discovery: NsdDiscovery
 
     override fun onCreate() {
         super.onCreate()
         NotificationChannels.create(this)
+        discovery = NsdDiscovery(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -52,6 +55,7 @@ class UnisonService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        discovery.stop()
         if (coreStarted) {
             coreStarted = false
             runBlocking(Dispatchers.IO) {
@@ -106,11 +110,13 @@ class UnisonService : Service() {
             .setDeviceName(UnisonSettings.deviceName(this))
             .setDebugLog(debug)
             .build()
-        Mobile.start(config.toByteArray(), CorePlatform(this))
+        discovery.start()
+        Mobile.start(config.toByteArray(), CorePlatform(this, discovery))
         Log.i(TAG, "core started")
         true
     } catch (e: Exception) {
         Log.e(TAG, "core start failed", e)
+        discovery.stop()
         false
     }
 
