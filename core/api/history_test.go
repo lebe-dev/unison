@@ -167,3 +167,28 @@ func TestFetchAndCopyHistoryItem(t *testing.T) {
 		t.Fatalf("clipboard holds %q", got)
 	}
 }
+
+func TestApplyHistoryItem(t *testing.T) {
+	client, n := historyClient(t)
+	ctx := callTimeout(t)
+
+	items := emitHistory(t, client, n, "held", 1)
+	id := items[0].GetItem().GetId()
+
+	if _, err := client.ApplyHistoryItem(ctx, connect.NewRequest(&localv1.ApplyHistoryItemRequest{Id: id})); err != nil {
+		t.Fatalf("apply history item: %v", err)
+	}
+	content, ok := n.clipboard.LastWrite()
+	if !ok {
+		t.Fatal("the clipboard did not receive the item")
+	}
+	if got := string(content.Representations[0].Data); got != "held" {
+		t.Fatalf("clipboard holds %q", got)
+	}
+
+	_, err := client.ApplyHistoryItem(ctx, connect.NewRequest(&localv1.ApplyHistoryItemRequest{Id: "bad"}))
+	requireCode(t, err, connect.CodeInvalidArgument)
+
+	_, err = client.ApplyHistoryItem(ctx, connect.NewRequest(&localv1.ApplyHistoryItemRequest{Id: model.ClipID{1}.String()}))
+	requireCode(t, err, connect.CodeNotFound)
+}
