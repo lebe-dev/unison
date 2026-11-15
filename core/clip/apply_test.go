@@ -132,6 +132,7 @@ func TestApplyWritesOnlyTextRepresentations(t *testing.T) {
 	item.Representations = append(item.Representations, model.Representation{
 		MIME:   "image/png",
 		Size:   3,
+		Hash:   hashOf([]byte("png")),
 		Inline: []byte("png"),
 	})
 	if err := f.pipe.Apply(t.Context(), testPeer, item); err != nil {

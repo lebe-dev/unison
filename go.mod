@@ -16,6 +16,7 @@ require (
 	github.com/miekg/dns v1.1.61
 	github.com/quic-go/quic-go v0.65.0
 	golang.org/x/crypto v0.59.0
+	golang.org/x/image v0.47.0
 	golang.org/x/net v0.62.0
 	golang.org/x/sys v0.50.0
 	google.golang.org/protobuf v1.36.12

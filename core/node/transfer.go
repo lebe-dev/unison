@@ -2,10 +2,12 @@ package node
 
 import (
 	"context"
+	"io"
 	"path/filepath"
 
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/blob/transfer"
+	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/session"
@@ -15,6 +17,32 @@ import (
 
 // blobsDir is the directory of the blob files inside the data directory.
 const blobsDir = "blobs"
+
+// blobPayloads serves the payload store of the clipboard pipeline.
+type blobPayloads struct {
+	blobs *blob.Store
+}
+
+var _ clip.PayloadStore = blobPayloads{}
+
+// Put stores content of size bytes and returns its BLAKE3 hash.
+func (b blobPayloads) Put(ctx context.Context, src io.ReaderAt, size int64) ([32]byte, error) {
+	info, err := b.blobs.Put(ctx, src, size)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return info.Hash, nil
+}
+
+// Has reports whether the payload is stored on this device.
+func (b blobPayloads) Has(ctx context.Context, hash [32]byte) (bool, error) {
+	return b.blobs.Has(ctx, hash)
+}
+
+// Open returns a reader of a stored payload.
+func (b blobPayloads) Open(ctx context.Context, hash [32]byte) (clip.Payload, error) {
+	return b.blobs.Open(ctx, hash)
+}
 
 // openBlobs opens the blob store and the transfer service of the node.
 func (n *Node) openBlobs(db *store.Store) error {
