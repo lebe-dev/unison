@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- The daemon of the bundle discovers and serves the paired devices. -->
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_unison._udp</string>
+    <string>_unison-pair._udp</string>
+  </array>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Unison finds your other devices on the local network and exchanges clipboard items and files with them.</string>
+</dict>
+</plist>

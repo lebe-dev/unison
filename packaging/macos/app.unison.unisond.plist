@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>app.unison.unisond</string>
+  <!-- The path is relative to the Contents directory of the bundle. -->
+  <key>BundleProgram</key>
+  <string>Contents/MacOS/unisond</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- Restart after a crash, but not after a clean exit of a second instance. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

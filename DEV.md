@@ -87,6 +87,8 @@ just run-daemon-2         # run a second daemon, for pairing on one machine
 just desktop-dev          # run the desktop app with hot reload
 just desktop-build        # build the desktop app bundle for the host platform
 just desktop-lint         # svelte-check, rustfmt and clippy for the desktop app
+just package-macos        # macOS bundle with the daemon, signed and notarized
+just verify-macos         # check the layout and the signature of the macOS bundle
 just clean                # remove bin/
 ```
 
@@ -335,6 +337,69 @@ the arguments of the command. The daemon does not serve the device management ca
 
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
+
+## macOS packaging
+
+`just package-macos` builds the app with the daemon inside it, signs both, and writes
+`packaging/macos/build/Unison.app` and `packaging/macos/build/Unison-<version>.dmg`. The version
+comes from the `VERSION` file for the bundle, the disk image and the daemon.
+
+The daemon is `Contents/MacOS/unisond`, a universal arm64 and x86_64 binary: it uses cgo for the
+Keychain and the pasteboard, so both slices are built on macOS and merged with `lipo`. The app
+itself is built for the host architecture; `just package-macos --universal` builds it universal
+as well and needs `rustup target add x86_64-apple-darwin`.
+
+`Contents/Library/LaunchAgents/app.unison.unisond.plist` makes the daemon a login item of the
+bundle: `BundleProgram` points at `Contents/MacOS/unisond`, the job starts at login and launchd
+restarts it after a crash. The app registers the login item with `SMAppService` on the first
+launch of a packaged build, and the Startup toggle of the settings screen registers and
+unregisters it afterwards. A system that asks for approval reports `requires-approval` until the
+user allows the item in System Settings > General > Login Items. When the login item is turned
+off, the app starts the daemon of the bundle for the rest of the session. `--login-item=status`,
+`--login-item=register` and `--login-item=unregister` change the login item from the command
+line, which is how the packaged app is checked without the window.
+
+The Info.plist of the bundle declares `NSLocalNetworkUsageDescription` and `NSBonjourServices`
+with `_unison._udp` and `_unison-pair._udp`, because the daemon of the bundle does the discovery.
+The bundle is signed with the hardened runtime and the entitlements in
+`desktop/src-tauri/entitlements.plist`: network client for the paired devices and the local API,
+network server for the QUIC listener of the daemon. The daemon is signed under the identifier
+`app.unison.unisond`, so its Keychain access survives an update of the app.
+
+Signing and notarization take the Apple Developer credentials from the environment and never
+store them:
+
+```sh
+export UNISON_MACOS_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"
+xcrun notarytool store-credentials unison-notary --apple-id you@example.com --team-id TEAMID
+export UNISON_MACOS_NOTARY_PROFILE=unison-notary
+just package-macos
+```
+
+Instead of the keychain profile, `UNISON_MACOS_APPLE_ID`, `UNISON_MACOS_APPLE_PASSWORD` (an
+app-specific password) and `UNISON_MACOS_TEAM_ID` notarize with the account directly.
+`UNISON_MACOS_SKIP_NOTARIZE=1` or `--skip-notarize` stops after signing, and `--no-dmg` builds
+the app only. Without `UNISON_MACOS_SIGN_IDENTITY` the app is signed ad-hoc, which is enough to
+build, install and run the bundle on the building machine but not for distribution: Gatekeeper
+rejects it and notarization is skipped.
+
+The login item needs an Apple-issued signature as well. An ad-hoc build can register it, but the
+system then stores a code requirement without a hash and launchd refuses to start the job with
+exit code 78, so the daemon neither runs at login nor after the registration. Sign with a
+Developer ID certificate to check the login item, and expect a `not-found` status from
+`SMAppService` before the first registration of a build that was never launched from its bundle.
+
+The daemon is signed under `app.unison.unisond`, and the Keychain items it stores belong to that
+identity. A change of the signing identity makes macOS ask for access to the existing items, and
+an ad-hoc rebuild changes it on every build. Keep the identifier and the certificate stable across
+releases; a first run with an unreadable item set can wait on a Keychain dialog, so the daemon
+writes no log line until the dialog is answered.
+
+`just verify-macos [path]` checks the layout, the login item property list, the Info.plist keys,
+the entitlements, the hardened runtime and the signature of the bundle, and prints the checks
+that need a second machine: the local network prompt, the daemon after a re-login, and the
+clipboard between two devices. Its login item check prints the state `SMAppService` reports for
+the bundle, which is `not-registered` before the first registration and `enabled` afterwards.
 
 `just aar` binds the `mobile` package with gomobile for API 29 and the `arm64-v8a`,
 `armeabi-v7a` and `x86_64` ABIs. The library is written to `android/core/core.aar`, which the
