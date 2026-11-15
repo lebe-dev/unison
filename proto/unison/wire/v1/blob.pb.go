@@ -21,6 +21,62 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Reason a peer cannot serve a blob request.
+type BlobStatus int32
+
+const (
+	BlobStatus_BLOB_STATUS_UNSPECIFIED BlobStatus = 0
+	// The peer may not fetch the blob.
+	BlobStatus_BLOB_STATUS_DENIED BlobStatus = 1
+	// The peer does not store the blob.
+	BlobStatus_BLOB_STATUS_MISSING BlobStatus = 2
+	// The peer stores the blob but cannot serve it now.
+	BlobStatus_BLOB_STATUS_UNAVAILABLE BlobStatus = 3
+)
+
+// Enum value maps for BlobStatus.
+var (
+	BlobStatus_name = map[int32]string{
+		0: "BLOB_STATUS_UNSPECIFIED",
+		1: "BLOB_STATUS_DENIED",
+		2: "BLOB_STATUS_MISSING",
+		3: "BLOB_STATUS_UNAVAILABLE",
+	}
+	BlobStatus_value = map[string]int32{
+		"BLOB_STATUS_UNSPECIFIED": 0,
+		"BLOB_STATUS_DENIED":      1,
+		"BLOB_STATUS_MISSING":     2,
+		"BLOB_STATUS_UNAVAILABLE": 3,
+	}
+)
+
+func (x BlobStatus) Enum() *BlobStatus {
+	p := new(BlobStatus)
+	*p = x
+	return p
+}
+
+func (x BlobStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BlobStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_unison_wire_v1_blob_proto_enumTypes[0].Descriptor()
+}
+
+func (BlobStatus) Type() protoreflect.EnumType {
+	return &file_unison_wire_v1_blob_proto_enumTypes[0]
+}
+
+func (x BlobStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BlobStatus.Descriptor instead.
+func (BlobStatus) EnumDescriptor() ([]byte, []int) {
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{0}
+}
+
 // Availability of a blob on a peer.
 type HaveBlob struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -137,7 +193,9 @@ type BlobRequest struct {
 	Hash      []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	FromChunk uint32 `protobuf:"varint,2,opt,name=from_chunk,json=fromChunk,proto3" json:"from_chunk,omitempty"`
 	// Inclusive bound, zero means the last chunk.
-	ToChunk       uint32 `protobuf:"varint,3,opt,name=to_chunk,json=toChunk,proto3" json:"to_chunk,omitempty"`
+	ToChunk uint32 `protobuf:"varint,3,opt,name=to_chunk,json=toChunk,proto3" json:"to_chunk,omitempty"`
+	// Send only the hash tree, without chunks.
+	TreeOnly      bool `protobuf:"varint,4,opt,name=tree_only,json=treeOnly,proto3" json:"tree_only,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -193,6 +251,232 @@ func (x *BlobRequest) GetToChunk() uint32 {
 	return 0
 }
 
+func (x *BlobRequest) GetTreeOnly() bool {
+	if x != nil {
+		return x.TreeOnly
+	}
+	return false
+}
+
+// Hash tree of a blob. A receiver needs it to verify every chunk against the
+// hash of the whole content.
+type BlobTree struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// BLAKE3 hash of the blob, 32 bytes.
+	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	// Plaintext size in bytes.
+	Size uint64 `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	// Number of chunks.
+	Chunks uint32 `protobuf:"varint,3,opt,name=chunks,proto3" json:"chunks,omitempty"`
+	// Outboard Bao tree with a length prefix.
+	Tree          []byte `protobuf:"bytes,4,opt,name=tree,proto3" json:"tree,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlobTree) Reset() {
+	*x = BlobTree{}
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlobTree) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlobTree) ProtoMessage() {}
+
+func (x *BlobTree) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlobTree.ProtoReflect.Descriptor instead.
+func (*BlobTree) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BlobTree) GetHash() []byte {
+	if x != nil {
+		return x.Hash
+	}
+	return nil
+}
+
+func (x *BlobTree) GetSize() uint64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *BlobTree) GetChunks() uint32 {
+	if x != nil {
+		return x.Chunks
+	}
+	return 0
+}
+
+func (x *BlobTree) GetTree() []byte {
+	if x != nil {
+		return x.Tree
+	}
+	return nil
+}
+
+// Frame of a blob request stream. The tree comes first, then the requested
+// chunks in ascending index order.
+type BlobReply struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Body:
+	//
+	//	*BlobReply_Tree
+	//	*BlobReply_Chunk
+	//	*BlobReply_Error
+	Body          isBlobReply_Body `protobuf_oneof:"body"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlobReply) Reset() {
+	*x = BlobReply{}
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlobReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlobReply) ProtoMessage() {}
+
+func (x *BlobReply) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlobReply.ProtoReflect.Descriptor instead.
+func (*BlobReply) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BlobReply) GetBody() isBlobReply_Body {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+func (x *BlobReply) GetTree() *BlobTree {
+	if x != nil {
+		if x, ok := x.Body.(*BlobReply_Tree); ok {
+			return x.Tree
+		}
+	}
+	return nil
+}
+
+func (x *BlobReply) GetChunk() *BlobChunk {
+	if x != nil {
+		if x, ok := x.Body.(*BlobReply_Chunk); ok {
+			return x.Chunk
+		}
+	}
+	return nil
+}
+
+func (x *BlobReply) GetError() *BlobError {
+	if x != nil {
+		if x, ok := x.Body.(*BlobReply_Error); ok {
+			return x.Error
+		}
+	}
+	return nil
+}
+
+type isBlobReply_Body interface {
+	isBlobReply_Body()
+}
+
+type BlobReply_Tree struct {
+	Tree *BlobTree `protobuf:"bytes,1,opt,name=tree,proto3,oneof"`
+}
+
+type BlobReply_Chunk struct {
+	Chunk *BlobChunk `protobuf:"bytes,2,opt,name=chunk,proto3,oneof"`
+}
+
+type BlobReply_Error struct {
+	Error *BlobError `protobuf:"bytes,3,opt,name=error,proto3,oneof"`
+}
+
+func (*BlobReply_Tree) isBlobReply_Body() {}
+
+func (*BlobReply_Chunk) isBlobReply_Body() {}
+
+func (*BlobReply_Error) isBlobReply_Body() {}
+
+// Refusal of a blob request. It is the only frame of the answer.
+type BlobError struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        BlobStatus             `protobuf:"varint,1,opt,name=status,proto3,enum=unison.wire.v1.BlobStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlobError) Reset() {
+	*x = BlobError{}
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlobError) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlobError) ProtoMessage() {}
+
+func (x *BlobError) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlobError.ProtoReflect.Descriptor instead.
+func (*BlobError) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *BlobError) GetStatus() BlobStatus {
+	if x != nil {
+		return x.Status
+	}
+	return BlobStatus_BLOB_STATUS_UNSPECIFIED
+}
+
 // One chunk of a blob payload.
 type BlobChunk struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -206,7 +490,7 @@ type BlobChunk struct {
 
 func (x *BlobChunk) Reset() {
 	*x = BlobChunk{}
-	mi := &file_unison_wire_v1_blob_proto_msgTypes[3]
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -218,7 +502,7 @@ func (x *BlobChunk) String() string {
 func (*BlobChunk) ProtoMessage() {}
 
 func (x *BlobChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_blob_proto_msgTypes[3]
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -231,7 +515,7 @@ func (x *BlobChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlobChunk.ProtoReflect.Descriptor instead.
 func (*BlobChunk) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{3}
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BlobChunk) GetIndex() uint32 {
@@ -266,7 +550,7 @@ type ShareOffer struct {
 
 func (x *ShareOffer) Reset() {
 	*x = ShareOffer{}
-	mi := &file_unison_wire_v1_blob_proto_msgTypes[4]
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -278,7 +562,7 @@ func (x *ShareOffer) String() string {
 func (*ShareOffer) ProtoMessage() {}
 
 func (x *ShareOffer) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_blob_proto_msgTypes[4]
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -291,7 +575,7 @@ func (x *ShareOffer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShareOffer.ProtoReflect.Descriptor instead.
 func (*ShareOffer) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{4}
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ShareOffer) GetTransferId() string {
@@ -319,7 +603,7 @@ type ShareDecision struct {
 
 func (x *ShareDecision) Reset() {
 	*x = ShareDecision{}
-	mi := &file_unison_wire_v1_blob_proto_msgTypes[5]
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -331,7 +615,7 @@ func (x *ShareDecision) String() string {
 func (*ShareDecision) ProtoMessage() {}
 
 func (x *ShareDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_blob_proto_msgTypes[5]
+	mi := &file_unison_wire_v1_blob_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -344,7 +628,7 @@ func (x *ShareDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShareDecision.ProtoReflect.Descriptor instead.
 func (*ShareDecision) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{5}
+	return file_unison_wire_v1_blob_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ShareDecision) GetTransferId() string {
@@ -371,12 +655,25 @@ const file_unison_wire_v1_blob_proto_rawDesc = "" +
 	"\fHaveBlobResp\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x12\n" +
 	"\x04have\x18\x02 \x01(\bR\x04have\x12\x16\n" +
-	"\x06chunks\x18\x03 \x01(\rR\x06chunks\"[\n" +
+	"\x06chunks\x18\x03 \x01(\rR\x06chunks\"x\n" +
 	"\vBlobRequest\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x1d\n" +
 	"\n" +
 	"from_chunk\x18\x02 \x01(\rR\tfromChunk\x12\x19\n" +
-	"\bto_chunk\x18\x03 \x01(\rR\atoChunk\"T\n" +
+	"\bto_chunk\x18\x03 \x01(\rR\atoChunk\x12\x1b\n" +
+	"\ttree_only\x18\x04 \x01(\bR\btreeOnly\"^\n" +
+	"\bBlobTree\x12\x12\n" +
+	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x04R\x04size\x12\x16\n" +
+	"\x06chunks\x18\x03 \x01(\rR\x06chunks\x12\x12\n" +
+	"\x04tree\x18\x04 \x01(\fR\x04tree\"\xa9\x01\n" +
+	"\tBlobReply\x12.\n" +
+	"\x04tree\x18\x01 \x01(\v2\x18.unison.wire.v1.BlobTreeH\x00R\x04tree\x121\n" +
+	"\x05chunk\x18\x02 \x01(\v2\x19.unison.wire.v1.BlobChunkH\x00R\x05chunk\x121\n" +
+	"\x05error\x18\x03 \x01(\v2\x19.unison.wire.v1.BlobErrorH\x00R\x05errorB\x06\n" +
+	"\x04body\"?\n" +
+	"\tBlobError\x122\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x1a.unison.wire.v1.BlobStatusR\x06status\"T\n" +
 	"\tBlobChunk\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\rR\x05index\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x1d\n" +
@@ -390,7 +687,13 @@ const file_unison_wire_v1_blob_proto_rawDesc = "" +
 	"\rShareDecision\x12\x1f\n" +
 	"\vtransfer_id\x18\x01 \x01(\tR\n" +
 	"transferId\x12\x1a\n" +
-	"\baccepted\x18\x02 \x01(\bR\bacceptedB8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
+	"\baccepted\x18\x02 \x01(\bR\baccepted*w\n" +
+	"\n" +
+	"BlobStatus\x12\x1b\n" +
+	"\x17BLOB_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12BLOB_STATUS_DENIED\x10\x01\x12\x17\n" +
+	"\x13BLOB_STATUS_MISSING\x10\x02\x12\x1b\n" +
+	"\x17BLOB_STATUS_UNAVAILABLE\x10\x03B8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
 
 var (
 	file_unison_wire_v1_blob_proto_rawDescOnce sync.Once
@@ -404,23 +707,32 @@ func file_unison_wire_v1_blob_proto_rawDescGZIP() []byte {
 	return file_unison_wire_v1_blob_proto_rawDescData
 }
 
-var file_unison_wire_v1_blob_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_unison_wire_v1_blob_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_unison_wire_v1_blob_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_unison_wire_v1_blob_proto_goTypes = []any{
-	(*HaveBlob)(nil),      // 0: unison.wire.v1.HaveBlob
-	(*HaveBlobResp)(nil),  // 1: unison.wire.v1.HaveBlobResp
-	(*BlobRequest)(nil),   // 2: unison.wire.v1.BlobRequest
-	(*BlobChunk)(nil),     // 3: unison.wire.v1.BlobChunk
-	(*ShareOffer)(nil),    // 4: unison.wire.v1.ShareOffer
-	(*ShareDecision)(nil), // 5: unison.wire.v1.ShareDecision
-	(*FileMeta)(nil),      // 6: unison.wire.v1.FileMeta
+	(BlobStatus)(0),       // 0: unison.wire.v1.BlobStatus
+	(*HaveBlob)(nil),      // 1: unison.wire.v1.HaveBlob
+	(*HaveBlobResp)(nil),  // 2: unison.wire.v1.HaveBlobResp
+	(*BlobRequest)(nil),   // 3: unison.wire.v1.BlobRequest
+	(*BlobTree)(nil),      // 4: unison.wire.v1.BlobTree
+	(*BlobReply)(nil),     // 5: unison.wire.v1.BlobReply
+	(*BlobError)(nil),     // 6: unison.wire.v1.BlobError
+	(*BlobChunk)(nil),     // 7: unison.wire.v1.BlobChunk
+	(*ShareOffer)(nil),    // 8: unison.wire.v1.ShareOffer
+	(*ShareDecision)(nil), // 9: unison.wire.v1.ShareDecision
+	(*FileMeta)(nil),      // 10: unison.wire.v1.FileMeta
 }
 var file_unison_wire_v1_blob_proto_depIdxs = []int32{
-	6, // 0: unison.wire.v1.ShareOffer.files:type_name -> unison.wire.v1.FileMeta
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	4,  // 0: unison.wire.v1.BlobReply.tree:type_name -> unison.wire.v1.BlobTree
+	7,  // 1: unison.wire.v1.BlobReply.chunk:type_name -> unison.wire.v1.BlobChunk
+	6,  // 2: unison.wire.v1.BlobReply.error:type_name -> unison.wire.v1.BlobError
+	0,  // 3: unison.wire.v1.BlobError.status:type_name -> unison.wire.v1.BlobStatus
+	10, // 4: unison.wire.v1.ShareOffer.files:type_name -> unison.wire.v1.FileMeta
+	5,  // [5:5] is the sub-list for method output_type
+	5,  // [5:5] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_unison_wire_v1_blob_proto_init() }
@@ -429,18 +741,24 @@ func file_unison_wire_v1_blob_proto_init() {
 		return
 	}
 	file_unison_wire_v1_types_proto_init()
+	file_unison_wire_v1_blob_proto_msgTypes[4].OneofWrappers = []any{
+		(*BlobReply_Tree)(nil),
+		(*BlobReply_Chunk)(nil),
+		(*BlobReply_Error)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_wire_v1_blob_proto_rawDesc), len(file_unison_wire_v1_blob_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   6,
+			NumEnums:      1,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_unison_wire_v1_blob_proto_goTypes,
 		DependencyIndexes: file_unison_wire_v1_blob_proto_depIdxs,
+		EnumInfos:         file_unison_wire_v1_blob_proto_enumTypes,
 		MessageInfos:      file_unison_wire_v1_blob_proto_msgTypes,
 	}.Build()
 	File_unison_wire_v1_blob_proto = out.File
