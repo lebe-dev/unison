@@ -29,6 +29,7 @@
 
   let viewportHeight = $state(360);
   let scrollTop = $state(0);
+  let feed: HTMLDivElement | null = $state(null);
   let deleting = $state<string | null>(null);
   let preview = $state<{ title: string; url: string } | null>(null);
   let startedAt = $state<Record<string, number>>({});
@@ -43,7 +44,12 @@
     })),
   ]);
 
-  const windowStart = $derived(Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN));
+  const windowStart = $derived(
+    Math.min(
+      Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN),
+      Math.max(0, history.items.length - 1),
+    ),
+  );
   const windowEnd = $derived(
     Math.min(
       history.items.length,
@@ -66,6 +72,9 @@
     history.kind;
     history.origin;
     scrollTop = 0;
+    if (feed) {
+      feed.scrollTop = 0;
+    }
   });
 
   $effect(() => {
@@ -201,6 +210,7 @@
     {:else}
       <div
         class="feed"
+        bind:this={feed}
         bind:clientHeight={viewportHeight}
         onscroll={(event) => (scrollTop = event.currentTarget.scrollTop)}
       >
@@ -406,6 +416,7 @@
     flex-direction: column;
     gap: 0.25rem;
     min-width: 0;
+    overflow: hidden;
   }
 
   .line {
@@ -425,6 +436,9 @@
   }
 
   .meta {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
     color: var(--muted);
     font-size: 0.75rem;
   }
@@ -436,10 +450,9 @@
   .actions {
     display: flex;
     flex: 0 0 auto;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     gap: 0.35rem;
-    max-width: 260px;
   }
 
   .overlay {
