@@ -40,6 +40,10 @@ test-pasteboard:
 test-clipboard:
     go test -tags clipboardtest ./platform/windows/clipboard/
 
+# Run the large blob round trip, which writes about 1.2 GiB of content.
+test-blob-large:
+    go test -tags bloblarge -timeout 30m ./core/blob/
+
 # Vet and build the Go sources for Windows from any host.
 vet-windows:
     GOOS=windows go vet ./...
