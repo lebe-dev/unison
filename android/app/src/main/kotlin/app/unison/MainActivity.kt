@@ -27,15 +27,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        Mobile.start(ByteArray(0), CorePlatform)
         setContent {
             UnisonApp(coreVersion)
         }
-    }
-
-    override fun onDestroy() {
-        Mobile.stop()
-        super.onDestroy()
     }
 }
 
@@ -47,6 +41,10 @@ private object CorePlatform : Platform {
     override fun openBlobSink(meta: ByteArray): Long = -1
 
     override fun keystoreUnwrap(blob: ByteArray): ByteArray = ByteArray(0)
+
+    override fun keystoreWrap(plain: ByteArray): ByteArray = ByteArray(0)
+
+    override fun announce(info: ByteArray) = Unit
 }
 
 @Composable

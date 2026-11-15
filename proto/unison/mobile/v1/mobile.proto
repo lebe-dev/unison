@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package unison.mobile.v1;
 
+import "unison/local/v1/local.proto";
+
 option go_package = "github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1";
 
 // Kind of an event delivered to the mobile host.
@@ -9,6 +11,14 @@ enum EventType {
   EVENT_TYPE_UNSPECIFIED = 0;
   EVENT_TYPE_CLIP_RECEIVED = 1;
   EVENT_TYPE_NETWORK_CHANGED = 2;
+  EVENT_TYPE_PEER_ONLINE = 3;
+  EVENT_TYPE_PEER_OFFLINE = 4;
+  EVENT_TYPE_PEER_INCOMPATIBLE = 5;
+  EVENT_TYPE_PAIRING_CANDIDATE = 6;
+  EVENT_TYPE_PAIRING_REQUEST = 7;
+  EVENT_TYPE_PAIRING_PAIRED = 8;
+  EVENT_TYPE_PAIRING_FAILED = 9;
+  EVENT_TYPE_PAIRING_CLOSED = 10;
 }
 
 // Event delivered to the mobile host.
@@ -16,8 +26,20 @@ message Event {
   EventType type = 1;
   // Event time, unix milliseconds.
   int64 ts_unix_ms = 2;
+  // Clipboard payload, set when a text item is available for a preview.
   ClipPayload clip = 3;
+  // Network conditions, set on a network change.
   NetworkState network = 4;
+  // The full event in the local API form.
+  unison.local.v1.Event event = 5;
+}
+
+// One representation of clipboard content.
+message ClipPart {
+  string mime_type = 1;
+  bytes data = 2;
+  // File name, set for file payloads.
+  string file_name = 3;
 }
 
 // Payload to write into the Android clipboard.
@@ -26,6 +48,8 @@ message ClipPayload {
   bytes data = 2;
   // File name, set for file payloads.
   string file_name = 3;
+  // Every representation at once. When set, the fields above are ignored.
+  repeated ClipPart parts = 4;
 }
 
 // Network conditions reported by the host.
@@ -35,4 +59,58 @@ message NetworkState {
   bool roaming = 3;
   bool vpn = 4;
   bool data_saver = 5;
+}
+
+// Configuration of the core.
+message Config {
+  // Directory of the database and other node data.
+  string data_dir = 1;
+  string device_name = 2;
+  // Blob store limit in bytes. The package default is used when zero.
+  int64 blob_limit_bytes = 3;
+  // Log at debug level.
+  bool debug_log = 4;
+}
+
+// A call of the local API.
+message CallRequest {
+  // RPC name, for example "GetStatus".
+  string method = 1;
+  // Serialized request of the RPC.
+  bytes payload = 2;
+}
+
+// Result of a local API call.
+message CallResponse {
+  // Serialized response of the RPC.
+  bytes payload = 1;
+  // Connect code of a failure, zero on success.
+  int32 code = 2;
+  // Failure in plain English.
+  string message = 3;
+}
+
+// Metadata of a file submitted by the host.
+message FilePayload {
+  string mime_type = 1;
+  string file_name = 2;
+  // Size in bytes. The size of the descriptor is used when zero.
+  int64 size = 3;
+}
+
+// A service instance to announce or withdraw on the local network.
+message Announcement {
+  // Service name: "main" or "pairing".
+  string service = 1;
+  // Withdraw the announcement instead of publishing it.
+  bool withdraw = 2;
+  // Instance name of the service.
+  string instance = 3;
+  int32 port = 4;
+  map<string, string> txt = 5;
+}
+
+// Service metadata of a discovered candidate.
+message CandidateTxt {
+  map<string, string> records = 1;
 }
