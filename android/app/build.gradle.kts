@@ -27,6 +27,9 @@ android {
 }
 
 dependencies {
+    // The Go core, built by `just aar`.
+    implementation(files("../core/core.aar"))
+
     implementation(project(":bridge-aidl"))
 
     implementation(libs.androidx.activity.compose)
