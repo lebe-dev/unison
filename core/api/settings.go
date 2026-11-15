@@ -3,10 +3,14 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 
 	"github.com/lebe-dev/unison/core/blob"
+	"github.com/lebe-dev/unison/core/share"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -57,6 +61,15 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 			return nil, errorOf(err)
 		}
 	}
+	if value := req.Msg.DownloadsDir; value != nil {
+		dir, err := downloadsDir(*value)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.node.Store().Settings().SetString(ctx, share.SettingDownloadsDir, dir); err != nil {
+			return nil, errorOf(err)
+		}
+	}
 
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -87,9 +100,32 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 	if err != nil {
 		return nil, err
 	}
+	dir, err := s.node.Store().Settings().GetString(ctx, share.SettingDownloadsDir, "")
+	if err != nil {
+		return nil, err
+	}
+	if dir == "" {
+		dir = share.DefaultDownloadsDir()
+	}
 	return &localv1.Settings{
 		DeviceName:          stored,
 		RequireConfirmation: require,
 		BlobMaxSizeBytes:    limit,
+		DownloadsDir:        dir,
 	}, nil
+}
+
+// downloadsDir validates the directory of received files.
+func downloadsDir(value string) (string, *connect.Error) {
+	dir := strings.TrimSpace(value)
+	switch {
+	case dir == "":
+		return share.DefaultDownloadsDir(), nil
+	case !utf8.ValidString(dir):
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.New("downloads directory is not valid UTF-8"))
+	case len(dir) > maxPathLength:
+		return "", connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("downloads directory is longer than %d bytes", maxPathLength))
+	}
+	return dir, nil
 }

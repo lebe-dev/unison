@@ -206,6 +206,8 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_PAIRING_FAILED
 	case node.EventPairingClosed:
 		return localv1.EventKind_EVENT_KIND_PAIRING_CLOSED
+	case node.EventTransfer:
+		return localv1.EventKind_EVENT_KIND_TRANSFER
 	default:
 		return localv1.EventKind_EVENT_KIND_UNSPECIFIED
 	}
@@ -229,6 +231,8 @@ func eventToProto(event node.Event) *localv1.Event {
 	switch event.Kind {
 	case node.EventClipboard, node.EventClipDownload, node.EventClipApply:
 		out.Item = clipItemToProto(event.Item)
+	case node.EventTransfer:
+		out.Transfer = transferToProto(event.Transfer)
 	}
 	if event.Err != nil {
 		out.Error = event.Err.Error()

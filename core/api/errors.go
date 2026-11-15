@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/pairing"
+	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/trust"
 )
 
@@ -41,7 +42,11 @@ func codeOf(err error) connect.Code {
 		errors.Is(err, pairing.ErrClosed),
 		errors.Is(err, pairing.ErrDecided),
 		errors.Is(err, pairing.ErrPending),
-		errors.Is(err, pairing.ErrRoleMismatch):
+		errors.Is(err, pairing.ErrRoleMismatch),
+		errors.Is(err, share.ErrPeerOffline),
+		errors.Is(err, share.ErrNotPending),
+		errors.Is(err, share.ErrEnded),
+		errors.Is(err, share.ErrTooManyPending):
 		return connect.CodeFailedPrecondition
 	case errors.Is(err, pairing.ErrBusy):
 		return connect.CodeResourceExhausted
@@ -56,14 +61,19 @@ func codeOf(err error) connect.Code {
 		errors.Is(err, trust.ErrSecretNotFound),
 		errors.Is(err, trust.ErrRevocationNotFound),
 		errors.Is(err, trust.ErrIntroductionNotFound),
-		errors.Is(err, history.ErrNotFound):
+		errors.Is(err, history.ErrNotFound),
+		errors.Is(err, share.ErrNotFound):
 		return connect.CodeNotFound
 	case errors.Is(err, trust.ErrPeerExists):
 		return connect.CodeAlreadyExists
 	case errors.Is(err, pairing.ErrInvalidPeer),
 		errors.Is(err, trust.ErrInvalidPeer),
 		errors.Is(err, clip.ErrUnsupportedContent),
-		errors.Is(err, history.ErrInvalidItem):
+		errors.Is(err, history.ErrInvalidItem),
+		errors.Is(err, share.ErrNoFiles),
+		errors.Is(err, share.ErrNoPeers),
+		errors.Is(err, share.ErrTooManyFiles),
+		errors.Is(err, share.ErrInvalidFile):
 		return connect.CodeInvalidArgument
 	case errors.Is(err, history.ErrUnsupported):
 		return connect.CodeUnimplemented
