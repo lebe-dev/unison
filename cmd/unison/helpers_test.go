@@ -195,6 +195,24 @@ func (d *testDevice) addPeer(t *testing.T, other *testDevice, name string) {
 	}
 }
 
+// waitOnline waits until the device has a session with the peer.
+func waitOnline(t *testing.T, d *testDevice, other *testDevice) {
+	t.Helper()
+
+	deadline := time.Now().Add(testTimeout)
+	for time.Now().Before(deadline) {
+		state, err := d.Peer(context.Background(), other.DeviceID())
+		if err != nil {
+			t.Fatalf("read the peer: %v", err)
+		}
+		if state.Online {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("no session with %s within %v", other.DeviceID(), testTimeout)
+}
+
 // emit puts plain text into the clipboard of the device and waits until the
 // pipeline captures it. A clipboard without a watcher drops the snapshot, so the
 // snapshot is emitted again when the first one is lost. The clock is advanced

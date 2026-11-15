@@ -180,6 +180,9 @@ commands:
   status                      show the daemon, the network and the peers
   devices [ls]                list the paired devices
   devices rename <id> <name>  change the name of a paired device
+  devices confirm <id|self> on|off
+                              hold the clipboard items of a device, or the items
+                              of every device, until they are applied
   pair [--role personal|friends]
                               pair a device and compare the short code
   clip get [--from <id>]       print the last clipboard item, optionally of one
