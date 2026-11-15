@@ -95,23 +95,33 @@ func waitSingleConnection(t *testing.T, small, large *testNode) {
 
 	deadline := time.Now().Add(testTimeout)
 	for {
-		smallLocal, smallRemote := small.sessionAddrs(large.DeviceID())
-		largeLocal, largeRemote := large.sessionAddrs(small.DeviceID())
-		if smallLocal == small.dialerAddr() && smallRemote == large.listenAddr() &&
-			largeLocal == large.listenAddr() && largeRemote == small.dialerAddr() {
-			break
+		if !singleConnection(small, large) {
+			if time.Now().After(deadline) {
+				smallLocal, smallRemote := small.sessionAddrs(large.DeviceID())
+				largeLocal, largeRemote := large.sessionAddrs(small.DeviceID())
+				t.Fatalf("the nodes did not settle on one connection: small %s -> %s, large %s -> %s",
+					smallLocal, smallRemote, largeLocal, largeRemote)
+			}
+			time.Sleep(10 * time.Millisecond)
+			continue
 		}
-		if time.Now().After(deadline) {
-			t.Fatalf("the nodes did not settle on one connection: small %s -> %s, large %s -> %s",
-				smallLocal, smallRemote, largeLocal, largeRemote)
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
 
-	time.Sleep(300 * time.Millisecond)
-	if !small.online(large.DeviceID()) || !large.online(small.DeviceID()) {
-		t.Fatal("a node lost the connection after the simultaneous dial")
+		// The connection has to hold: a replacement in the meantime means the
+		// nodes did not settle.
+		time.Sleep(300 * time.Millisecond)
+		if singleConnection(small, large) {
+			return
+		}
 	}
+}
+
+// singleConnection reports whether the nodes share the connection the smaller
+// device initiated.
+func singleConnection(small, large *testNode) bool {
+	smallLocal, smallRemote := small.sessionAddrs(large.DeviceID())
+	largeLocal, largeRemote := large.sessionAddrs(small.DeviceID())
+	return smallLocal == small.dialerAddr() && smallRemote == large.listenAddr() &&
+		largeLocal == large.listenAddr() && largeRemote == small.dialerAddr()
 }
 
 // TestUnknownDeviceRefused checks that a device that is not in the trust store
@@ -217,6 +227,8 @@ func TestNodesTransferBlob(t *testing.T) {
 	b.pair(t, a)
 	waitOnline(t, a, b.DeviceID())
 	waitOnline(t, b, a.DeviceID())
+	small, large := smaller(a, b)
+	waitSingleConnection(t, small, large)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
@@ -227,10 +239,7 @@ func TestNodesTransferBlob(t *testing.T) {
 		t.Fatalf("put blob: %v", err)
 	}
 
-	peers := b.BlobPeers()
-	if len(peers) != 1 {
-		t.Fatalf("the node reports %d blob peers, want 1", len(peers))
-	}
+	peers := waitBlobPeers(t, b, 1)
 	if _, err := b.Fetcher().Fetch(ctx, transfer.FetchRequest{Hash: info.Hash, Peers: peers}); err != nil {
 		t.Fatalf("fetch blob: %v", err)
 	}
@@ -248,6 +257,21 @@ func TestNodesTransferBlob(t *testing.T) {
 	if !bytes.Equal(got, content) {
 		t.Fatalf("the fetched blob is %q, want %q", got, content)
 	}
+}
+
+// waitBlobPeers waits until the node reports the wanted number of blob peers.
+func waitBlobPeers(t *testing.T, n *testNode, want int) []transfer.Peer {
+	t.Helper()
+
+	deadline := time.Now().Add(testTimeout)
+	for time.Now().Before(deadline) {
+		if peers := n.BlobPeers(); len(peers) == want {
+			return peers
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("the node reports %d blob peers within %v", want, testTimeout)
+	return nil
 }
 
 // TestPolicySkipsIncomingText checks that the clipboard policy of the node
@@ -268,6 +292,8 @@ func TestPolicySkipsIncomingText(t *testing.T) {
 	b.pair(t, a)
 	waitOnline(t, a, b.DeviceID())
 	waitOnline(t, b, a.DeviceID())
+	small, large := smaller(a, b)
+	waitSingleConnection(t, small, large)
 
 	config := a.Policy().Config()
 	config.Unmetered.Text.Action = policy.ActionReject
@@ -279,6 +305,57 @@ func TestPolicySkipsIncomingText(t *testing.T) {
 	if content, ok := a.clipboard.LastWrite(); ok {
 		t.Fatalf("the refused item reached the clipboard: %v", content)
 	}
+}
+
+// TestPairingWindowPairs checks that two nodes pair through the windows the node
+// owns and connect afterwards.
+func TestPairingWindowPairs(t *testing.T) {
+	network := vnet.NewNetwork()
+	t.Cleanup(func() { _ = network.Close() })
+	bus := fake.NewBus()
+
+	a := newTestNode(t, network, bus, 32000)
+	b := newTestNode(t, network, bus, 33000)
+	a.start(t)
+	b.start(t)
+
+	eventsA := a.subscribe(t)
+	eventsB := b.subscribe(t)
+
+	if err := a.OpenPairing(model.RolePersonal); err != nil {
+		t.Fatalf("open the window of the first node: %v", err)
+	}
+	if err := b.OpenPairing(model.RolePersonal); err != nil {
+		t.Fatalf("open the window of the second node: %v", err)
+	}
+
+	candidate := waitEvent(t, eventsA, EventPairingCandidate, model.DeviceID{})
+	if err := a.StartPairing(candidate.Addr); err != nil {
+		t.Fatalf("start pairing: %v", err)
+	}
+
+	requestA := waitEvent(t, eventsA, EventPairingRequest, model.DeviceID{})
+	requestB := waitEvent(t, eventsB, EventPairingRequest, model.DeviceID{})
+	if requestA.SAS.String() != requestB.SAS.String() {
+		t.Fatalf("the SAS differs: %s and %s", requestA.SAS, requestB.SAS)
+	}
+	if requestA.Role != model.RolePersonal {
+		t.Fatalf("the proposed role is %s", requestA.Role)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := a.ConfirmPairing(ctx, requestA.Peer); err != nil {
+		t.Fatalf("confirm on the first node: %v", err)
+	}
+	if err := b.ConfirmPairing(ctx, requestB.Peer); err != nil {
+		t.Fatalf("confirm on the second node: %v", err)
+	}
+
+	waitEvent(t, eventsA, EventPairingPaired, model.DeviceID{})
+	waitEvent(t, eventsB, EventPairingPaired, model.DeviceID{})
+	waitOnline(t, a, requestA.Peer)
+	waitOnline(t, b, requestB.Peer)
 }
 
 // TestReconnectAfterDisconnect checks that a peer that lost its session comes

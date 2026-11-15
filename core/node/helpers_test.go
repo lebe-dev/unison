@@ -179,7 +179,7 @@ func (n *testNode) sessionAddrs(peer model.DeviceID) (local, remote string) {
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.conn == nil || !l.online {
+	if l.conn == nil || l.sess == nil {
 		return "", ""
 	}
 	return l.conn.LocalAddr().String(), l.conn.RemoteAddr().String()
