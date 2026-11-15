@@ -118,9 +118,16 @@ func (s *Store) SelfRequireConfirmation(ctx context.Context) (bool, error) {
 }
 
 // SetSelfRequireConfirmation stores the local confirmation policy advertised to
-// peers in the handshake.
+// peers in the handshake. The change is dated, so a remote policy that was
+// signed earlier does not override the choice of the user.
 func (s *Store) SetSelfRequireConfirmation(ctx context.Context, require bool) error {
-	return s.db.Settings().SetBool(ctx, selfRequireConfirmationKey, require)
+	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		settings := store.NewSettings(tx, s.db.Sealer())
+		if err := settings.SetBool(ctx, selfRequireConfirmationKey, require); err != nil {
+			return err
+		}
+		return settings.SetInt(ctx, selfPolicyTsKey, unixMilli(time.Now()))
+	})
 }
 
 // rendezvousKeyName returns the secret name of the rendezvous key of a peer.
