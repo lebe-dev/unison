@@ -1,0 +1,9 @@
+*.md
+
+!README.md
+!DEV.md
+!docs/**/*.md
+
+/unison
+
+tasks/
