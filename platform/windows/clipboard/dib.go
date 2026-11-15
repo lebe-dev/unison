@@ -337,6 +337,9 @@ func encodePNG(img image.Image) ([]byte, error) {
 	if err := png.Encode(&buffer, img); err != nil {
 		return nil, fmt.Errorf("clipboard: encode png: %w", err)
 	}
+	if buffer.Len() > maxImageBytes {
+		return nil, fmt.Errorf("clipboard: png of %d bytes exceeds the limit %d", buffer.Len(), maxImageBytes)
+	}
 	return buffer.Bytes(), nil
 }
 

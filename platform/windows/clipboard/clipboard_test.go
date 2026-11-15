@@ -35,7 +35,7 @@ func TestNewRejectsNegativeTimeout(t *testing.T) {
 	}
 }
 
-func TestTextOf(t *testing.T) {
+func TestPayloadOfText(t *testing.T) {
 	tests := []struct {
 		name    string
 		content ports.Content
@@ -59,28 +59,64 @@ func TestTextOf(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := textOf(test.content)
+			got, err := payloadOf(test.content)
 			if err != nil {
-				t.Fatalf("textOf: %v", err)
+				t.Fatalf("payloadOf: %v", err)
 			}
-			if got.hasPlain != test.want.hasPlain || got.hasHTML != test.want.hasHTML {
-				t.Fatalf("textOf = %+v, want %+v", got, test.want)
+			if got.text.hasPlain != test.want.hasPlain || got.text.hasHTML != test.want.hasHTML {
+				t.Fatalf("payloadOf text = %+v, want %+v", got.text, test.want)
 			}
-			if !bytes.Equal(got.plain, test.want.plain) || !bytes.Equal(got.html, test.want.html) {
-				t.Fatalf("textOf payloads = %q, %q; want %q, %q", got.plain, got.html, test.want.plain, test.want.html)
+			if !bytes.Equal(got.text.plain, test.want.plain) || !bytes.Equal(got.text.html, test.want.html) {
+				t.Fatalf("payloadOf payloads = %q, %q; want %q, %q", got.text.plain, got.text.html, test.want.plain, test.want.html)
+			}
+			if got.png != nil || len(got.files) != 0 {
+				t.Fatalf("payloadOf returned image or files for text: %+v", got)
 			}
 		})
 	}
 }
 
-func TestTextOfRejectsUnsupportedContent(t *testing.T) {
+func TestPayloadOfImage(t *testing.T) {
+	data := []byte("\x89PNG\r\n\x1a\n")
+	got, err := payloadOf(ports.Content{Representations: []ports.Representation{
+		{MIME: MIMEImagePNG, Data: data},
+	}})
+	if err != nil {
+		t.Fatalf("payloadOf: %v", err)
+	}
+	if !bytes.Equal(got.png, data) {
+		t.Fatalf("payloadOf png = %q, want %q", got.png, data)
+	}
+}
+
+func TestPayloadOfFiles(t *testing.T) {
+	paths := []string{"/tmp/a.txt", "/tmp/b.png"}
+	representations := make([]ports.Representation, 0, len(paths))
+	for _, path := range paths {
+		representations = append(representations, ports.Representation{MIME: "application/x-unison-file", FilePath: path})
+	}
+	got, err := payloadOf(ports.Content{Representations: representations})
+	if err != nil {
+		t.Fatalf("payloadOf: %v", err)
+	}
+	if len(got.files) != len(paths) {
+		t.Fatalf("payloadOf files = %v, want %v", got.files, paths)
+	}
+	for i, path := range paths {
+		if got.files[i] != path {
+			t.Fatalf("payloadOf file %d = %q, want %q", i, got.files[i], path)
+		}
+	}
+}
+
+func TestPayloadOfRejectsUnsupportedContent(t *testing.T) {
 	tests := []ports.Content{
 		{},
-		{Representations: []ports.Representation{{MIME: "image/png", Data: []byte{0x89, 'P', 'N', 'G'}}}},
+		{Representations: []ports.Representation{{MIME: "image/gif", Data: []byte("GIF89a")}}},
 	}
 	for _, content := range tests {
-		if _, err := textOf(content); !errors.Is(err, ErrUnsupportedContent) {
-			t.Fatalf("textOf error = %v, want ErrUnsupportedContent", err)
+		if _, err := payloadOf(content); !errors.Is(err, ErrUnsupportedContent) {
+			t.Fatalf("payloadOf error = %v, want ErrUnsupportedContent", err)
 		}
 	}
 }

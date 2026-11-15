@@ -18,3 +18,8 @@ func (c *Clipboard) Watch(_ context.Context) (<-chan ports.Snapshot, error) {
 func (c *Clipboard) Write(_ context.Context, _ ports.Content) error {
 	return fmt.Errorf("clipboard: write: %w", ErrUnsupported)
 }
+
+// WriteExcluded returns ErrUnsupported.
+func (c *Clipboard) WriteExcluded(_ context.Context, _ ports.Content) error {
+	return fmt.Errorf("clipboard: write: %w", ErrUnsupported)
+}

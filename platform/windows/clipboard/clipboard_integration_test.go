@@ -6,7 +6,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"image"
+	"image/color"
+	"image/png"
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -20,8 +24,8 @@ const (
 	testChangeWait  = 500 * time.Millisecond
 )
 
-// TestMain puts back the plain text the tests replace. The adapter reads text
-// only, so the remaining formats of the user clipboard are not preserved.
+// TestMain puts back the plain text the tests replace. The adapter writes more
+// formats than are restored, so the rest of the user clipboard is lost.
 func TestMain(m *testing.M) {
 	text, ok := readPlainText()
 	code := m.Run()
@@ -231,6 +235,17 @@ func readPlainText() ([]byte, bool) {
 	return decodeText(payload), true
 }
 
+// readFormat returns one format of the current clipboard.
+func readFormat(format uint32) ([]byte, bool) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	if err := openClipboard(testOpenTimeout); err != nil {
+		return nil, false
+	}
+	defer closeClipboard()
+	return clipboardData(format)
+}
+
 // writePlainText replaces the clipboard with plain text.
 func writePlainText(text []byte) error {
 	return grabClipboard(func() error {
@@ -268,4 +283,119 @@ func grabClipboard(change func() error) error {
 	}
 	defer closeClipboard()
 	return change()
+}
+
+func TestWriteImageAndReadBack(t *testing.T) {
+	snapshots, _ := watch(t)
+	c := newClipboard(t)
+
+	source := image.NewNRGBA(image.Rect(0, 0, 4, 3))
+	for y := range 3 {
+		for x := range 4 {
+			source.SetNRGBA(x, y, color.NRGBA{R: uint8(20 * x), G: uint8(40 * y), B: 0x40, A: 0xFF})
+		}
+	}
+	encoded, err := encodePNG(source)
+	if err != nil {
+		t.Fatalf("encodePNG: %v", err)
+	}
+	content := ports.Content{Representations: []ports.Representation{{MIME: MIMEImagePNG, Data: encoded}}}
+	if err := c.Write(context.Background(), content); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	snapshot := next(t, snapshots)
+	if !snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = false, want true")
+	}
+	representations := snapshot.Content.Representations
+	if len(representations) != 1 || representations[0].MIME != MIMEImagePNG {
+		t.Fatalf("got %d representations, want one PNG", len(representations))
+	}
+	decoded, err := png.Decode(bytes.NewReader(representations[0].Data))
+	if err != nil {
+		t.Fatalf("decode snapshot png: %v", err)
+	}
+	if got := decoded.Bounds(); got != source.Bounds() {
+		t.Fatalf("snapshot image is %v, want %v", got, source.Bounds())
+	}
+	if got := color.NRGBAModel.Convert(decoded.At(3, 2)); got != (color.NRGBA{R: 0x3C, G: 0x50, B: 0x40, A: 0xFF}) {
+		t.Fatalf("snapshot pixel = %+v, want the written color", got)
+	}
+
+	// Applications without PNG support read the bitmap copy.
+	bitmap, ok := readFormat(cfDIB)
+	if !ok {
+		t.Fatal("the clipboard carries no bitmap")
+	}
+	converted, err := decodeDIB(bitmap)
+	if err != nil {
+		t.Fatalf("decodeDIB: %v", err)
+	}
+	if got := converted.Bounds(); got != source.Bounds() {
+		t.Fatalf("bitmap is %v, want %v", got, source.Bounds())
+	}
+	if got := converted.NRGBAAt(3, 2); got != (color.NRGBA{R: 0x3C, G: 0x50, B: 0x40, A: 0xFF}) {
+		t.Fatalf("bitmap pixel = %+v, want the written color", got)
+	}
+}
+
+func TestWriteFilesAndReadBack(t *testing.T) {
+	dir := t.TempDir()
+	paths := []string{filepath.Join(dir, "first.txt"), filepath.Join(dir, "second.bin")}
+	for i, path := range paths {
+		if err := os.WriteFile(path, bytes.Repeat([]byte("x"), i+1), 0o600); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	representations := make([]ports.Representation, 0, len(paths))
+	for _, path := range paths {
+		representations = append(representations, ports.Representation{MIME: "application/x-unison-file", FilePath: path})
+	}
+
+	snapshots, _ := watch(t)
+	c := newClipboard(t)
+	if err := c.Write(context.Background(), ports.Content{Representations: representations}); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	snapshot := next(t, snapshots)
+	got := snapshot.Content.Representations
+	if len(got) != len(paths) {
+		t.Fatalf("got %d representations, want %d", len(got), len(paths))
+	}
+	for i, path := range paths {
+		if got[i].MIME != MIMEUnisonFile || got[i].FilePath != path {
+			t.Fatalf("representation %d is %s %q, want %s %q", i, got[i].MIME, got[i].FilePath, MIMEUnisonFile, path)
+		}
+	}
+}
+
+func TestWriteExcludedKeepsContentFromHistory(t *testing.T) {
+	snapshots, _ := watch(t)
+	c := newClipboard(t)
+
+	content := ports.Content{Representations: []ports.Representation{{MIME: MIMETextPlain, Data: []byte("private")}}}
+	if err := c.WriteExcluded(context.Background(), content); err != nil {
+		t.Fatalf("WriteExcluded: %v", err)
+	}
+
+	ids := registeredFormats()
+	for name, format := range map[string]uint32{"history": ids.history, "cloud": ids.cloud} {
+		payload, ok := readFormat(format)
+		if !ok {
+			t.Fatalf("%s marker is missing", name)
+		}
+		if value := binary.LittleEndian.Uint32(payload); value != 0 {
+			t.Fatalf("%s marker = %d, want 0", name, value)
+		}
+	}
+
+	snapshot := next(t, snapshots)
+	if !snapshot.Sensitive {
+		t.Fatal("Sensitive = false for excluded content, want true")
+	}
+	if !snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = false, want true")
+	}
 }
