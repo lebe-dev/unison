@@ -183,6 +183,9 @@ commands:
   devices confirm <id|self> on|off
                               hold the clipboard items of a device, or the items
                               of every device, until they are applied
+  devices revoke <id|self> [--yes]
+                              revoke a device or leave the group; the device is
+                              cut off and never trusted again
   pair [--role personal|friends]
                               pair a device and compare the short code
   clip get [--from <id>]       print the last clipboard item, optionally of one
