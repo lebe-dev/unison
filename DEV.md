@@ -80,6 +80,9 @@ just check                # lint, proto lint and tests, run before committing
 just aar                  # bind the Go core into android/core/core.aar
 just android-build        # build the Android debug APK
 just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64
+just build-unisond-host   # unisond for the host with the Keychain and pasteboard
+just run-daemon           # run the daemon of the default data directory
+just run-daemon-2         # run a second daemon, for pairing on one machine
 just desktop-dev          # run the desktop app with hot reload
 just desktop-build        # build the desktop app bundle for the host platform
 just desktop-lint         # svelte-check, rustfmt and clippy for the desktop app
@@ -87,6 +90,12 @@ just clean                # remove bin/
 ```
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
+
+The daemon is the exception on macOS. The Keychain and the pasteboard are cgo packages, so a
+macOS daemon that is meant to run needs cgo: `just build-unisond-host` builds it for the host with
+`CGO_ENABLED=1`, and `just run-daemon` and `just run-daemon-2` run it from the source tree. A
+daemon of the cross-compiled `just build-unisond-all` targets has no Keychain and exits at startup
+with a message that asks for a build with cgo.
 
 The macOS Keychain keystore in `platform/darwin/keystore` uses cgo: it links Security.framework
 and needs a host build to reach the Keychain. Without cgo, for example in a cross-compiled
@@ -111,7 +120,8 @@ succeed. Apple shipped the alert as a developer preview in macOS 15.4: the
 Privacy & Security > Paste from Other Apps and `tccutil reset Pasteboard` cleared them. The preview
 is off by default and macOS 27.2 ignores the default. The package exposes `AccessBehavior` so a
 daemon can detect an ask or deny policy and direct the user to System Settings instead of reading
-nothing silently.
+nothing silently: `unisond` checks the policy at startup and logs a warning that names the setting
+when reads may show an alert or be refused.
 
 The Windows keystore in `platform/windows/keystore` keeps every secret in its own file, protected
 with DPAPI for the current Windows user. The secret name maps to the file path with a `.bin`
@@ -196,12 +206,12 @@ the fetcher and the peers that may serve a blob.
 `core/api` serves the local API over a node: the `UnisonService` of `proto/unison/local/v1` with
 the status, device, pairing, clipboard, pause and settings calls. The service takes the node, the
 daemon version and the device name the node runs with, and an optional `LocalClip`, which is how
-`SetClip` reaches the clipboard pipeline: without it the call reports that it is not implemented.
-`Handler` returns the connect handler with the request and response size limits. The errors of the
-core are mapped to connect codes: a missing peer is `not_found`, a closed pairing window or a
-stopped node `failed_precondition`, invalid input `invalid_argument` and a refused device
-`permission_denied`. The calls that manage paired devices are part of the contract but report
-`unimplemented`.
+`SetClip` reaches the clipboard pipeline: without it the call reports that it is not implemented,
+and the daemon passes the pipeline of the node. `Handler` returns the connect handler with the
+request and response size limits. The errors of the core are mapped to connect codes: a missing
+peer is `not_found`, a closed pairing window or a stopped node `failed_precondition`, invalid input
+`invalid_argument` and a refused device `permission_denied`. The calls that manage paired devices
+are part of the contract but report `unimplemented`.
 
 `core/api/localconn` serves that API on the endpoint of the daemon: the unix socket
 `~/Library/Application Support/Unison/unisond.sock` on macOS and the named pipe
@@ -220,6 +230,32 @@ of a server stream arrives with the first event, so a client opens the stream be
 events. `GetClip` returns the latest clipboard item. The settings hold the device name, which the
 daemon reads at the next start, the confirmation flag of the local device, which the next handshake
 advertises, and the blob store limit, which applies at once.
+
+`cmd/unisond` runs the daemon of the current user. Its data directory is
+`~/Library/Application Support/Unison` on macOS and `%LOCALAPPDATA%\Unison` on Windows, and
+`--data-dir` gives an instance a directory of its own. The database, the blob store, the logs and
+the lock file live there, and the local API endpoint follows: `unisond.sock` inside the directory
+on macOS and a named pipe derived from the path on Windows. `--endpoint` and `UNISON_LOCAL_API`
+override it.
+
+One instance owns a data directory. The daemon takes an exclusive lock on `unisond.lock` and also
+checks whether an instance answers on the endpoint; a second one reports that another instance is
+running and exits with code 1. The system releases the lock when the process ends, so a crash
+leaves no lock behind, and an endpoint file that nobody serves is removed at startup.
+
+The log is JSON on `<data dir>/logs/unisond.log`, five MiB per file with three rotated files kept.
+`--log-stderr` copies the records to the terminal and `--log-level` takes `debug`, `info`, `warn`
+or `error`. The log names a clipboard item by its identifier, kind, size and MIME types, never by
+its content, and it never carries keys or tokens.
+
+`--clipboard=none` starts a daemon without the system clipboard, which is what a second daemon on
+one machine needs: two daemons would otherwise read and write the same pasteboard. The default
+data directory keeps its keys in the `app.unison` Keychain service and any other data directory
+gets a service of its own; on Windows the keys live below the data directory. Two instances on one
+machine are therefore two devices and can pair. `--name` sets the device name announced to peers;
+the name stored through the local API is used when the flag is absent. `SIGINT` and `SIGTERM` stop
+the daemon: the local API closes, the node stops, and the endpoint disappears. `--version` prints
+the version from the `VERSION` file.
 
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
