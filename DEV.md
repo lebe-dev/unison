@@ -75,6 +75,7 @@ just vet-windows          # vet and build everything for Windows from any host
 just fmt                  # format the Go sources
 just tidy                 # update go.mod and go.sum
 just proto                # generate Go code from proto/ with buf
+just proto-android        # generate Java lite classes for the Android app
 just proto-lint           # lint the protobuf definitions
 just check                # lint, proto lint and tests, run before committing
 just aar                  # bind the Go core into android/core/core.aar
@@ -285,6 +286,32 @@ app cannot be compiled without it.
 
 The version of all binaries comes from the `VERSION` file and is injected at build time, so
 `bin/unisond --version`, `just build` and the core version shown by the app always agree.
+
+The Android app keeps the core in `UnisonService`, a foreground service of the type
+`connectedDevice`. The service starts the core with the app files directory, passes the device
+name from the app settings and stops the core when the service is destroyed. It shows the device
+name and the number of online devices in a persistent notification on the `service` channel and
+keeps the `transfers`, `requests` and `clipboard` channels ready for the other components;
+`clipboard` is silent. The service runs without `POST_NOTIFICATIONS`; the notification is then
+hidden by the system. The UI talks to the core through `CoreClient`, which runs local API methods
+in process and delivers the answers as suspend functions, and collects events from
+`coreEvents.events`.
+
+`OperatingMode` decides how long the core runs: `always` also starts the service from
+`BOOT_COMPLETED` when the user unlocks the device, `app_open` stops the service when the
+activity goes to the background, and `wifi_only` starts with the app while the network policy
+decides what it may transfer. The mode is stored in the `unison.settings` shared preferences
+under `service.operating_mode`; the startup device name is stored under `device.name`. The
+manifest also declares `ACCESS_LOCAL_NETWORK`, which apps targeting API 37 need to reach the
+local network.
+
+Identity seeds and the store key are wrapped by an AES-GCM master key that lives in the Android
+Keystore under the `unison.master` alias, so a process restart keeps the same device ID. The
+wrapped blobs are files in the app files directory and the master key never leaves the keystore.
+
+`just proto-android` generates Java lite classes for `unison.local.v1` and `unison.mobile.v1`
+from the protobuf definitions into `android/app/src/main/java`, where the app module compiles
+them; run it after changing a proto file and commit the result.
 
 The blob store in `core/blob` keeps files and images addressed by the BLAKE3 hash of the whole
 content. Content is split into one MiB chunks and the Bao tree of the content is stored next to
