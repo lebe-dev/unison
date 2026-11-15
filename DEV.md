@@ -172,11 +172,11 @@ five clip announcements per second with a burst of ten.
 domains. `node.New(node.Config{...})` takes the data directory, the device name and platform, the
 platform ports (keystore, clipboard, discovery), an optional clock and logger, the connection
 limits and a function that binds the packet connections, so a test runs the node on the virtual
-network. `Start` opens the database with the migrations of the trust, clipboard and blob domains,
-loads the identity, binds the main listener on the persisted port and a second socket for outgoing
-connections, announces the device, opens the blob store with its transfer service and fetcher,
-reads the clipboard policy from the settings and starts the clipboard pipeline. `Stop` ends the
-sessions, the sockets, discovery and the database.
+network. `Start` opens the database with the migrations of the trust, clipboard, blob and history
+domains, loads the identity, binds the main listener on the persisted port and a second socket for
+outgoing connections, announces the device, opens the blob store with its transfer service and
+fetcher, reads the clipboard policy and the history lifetimes from the settings and starts the
+clipboard pipeline. `Stop` ends the sessions, the sockets, discovery and the database.
 
 Every paired device has one connection. A simultaneous dial is settled by comparing the device IDs:
 both sides keep the connection that the device with the lower ID initiated, and that device dials
@@ -203,6 +203,26 @@ store, the network state and the peer path, and loads from the `policy.*` settin
 not been told its network state treats itself as online. Blobs live in the `blobs` directory of the
 data directory; `Blobs`, `Fetcher` and `BlobPeers` give the local API and the share flow the store,
 the fetcher and the peers that may serve a blob.
+
+The history in `core/history` is the log of the device: one row per origin device and origin
+sequence number, and the version vector that outlives the cleanup of expired entries. Captured and
+received items are recorded there together with the payload description of every blob, so the local
+API can tell a stored payload from one that still has to be downloaded. A manual deletion adds a
+tombstone with the id of the deleted item to the log of the device that deletes, so it travels to
+the other devices like any other entry. Expiry is decided by the origin device and carried in the
+item: the queries skip entries past their expiry and a cleanup every ten minutes removes them, so
+an expired item disappears on every device without a network exchange. The lifetimes are the
+`history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, seven days, three days and
+one day by default.
+
+When a session with a Personal peer opens, both sides send the version vector of their history in
+`HistorySync`, and `HistoryBatch` answers it with the entries the other side misses, oldest first,
+up to 64 entries or 512 KiB per batch and 4096 entries per exchange, so an exchange that was cut
+short continues with the next one. A Friends peer takes no part in the exchange. Payloads are not
+part of it: `Fetch` downloads the missing blobs from the online peers through the blob transfer and
+writes them to a path, and `Copy` puts an item back on the local clipboard. The local API exposes
+the log as `ListHistory`, `GetHistoryItem`, `DeleteHistoryItem`, `FetchHistoryItem` and
+`CopyHistoryItem`; the CLI prints it with `unison history` and `unison clip get --from`.
 
 `core/api` serves the local API over a node: the `UnisonService` of `proto/unison/local/v1` with
 the status, device, pairing, clipboard, pause and settings calls. The service takes the node, the
