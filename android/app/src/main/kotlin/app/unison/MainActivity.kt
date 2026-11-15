@@ -19,7 +19,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.unison.core.mobile.Mobile
-import app.unison.core.mobile.Platform
+import app.unison.service.OperatingMode
+import app.unison.service.UnisonService
+import app.unison.service.UnisonSettings
 
 class MainActivity : ComponentActivity() {
     private val coreVersion by lazy { Mobile.version() }
@@ -31,20 +33,18 @@ class MainActivity : ComponentActivity() {
             UnisonApp(coreVersion)
         }
     }
-}
 
-private object CorePlatform : Platform {
-    override fun onEvent(evt: ByteArray) = Unit
+    override fun onStart() {
+        super.onStart()
+        UnisonService.start(this)
+    }
 
-    override fun writeClipboard(item: ByteArray) = Unit
-
-    override fun openBlobSink(meta: ByteArray): Long = -1
-
-    override fun keystoreUnwrap(blob: ByteArray): ByteArray = ByteArray(0)
-
-    override fun keystoreWrap(plain: ByteArray): ByteArray = ByteArray(0)
-
-    override fun announce(info: ByteArray) = Unit
+    override fun onStop() {
+        if (UnisonSettings.operatingMode(this) == OperatingMode.APP_OPEN) {
+            UnisonService.stop(this)
+        }
+        super.onStop()
+    }
 }
 
 @Composable

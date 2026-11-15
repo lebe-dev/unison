@@ -2,4 +2,15 @@
 <resources>
     <string name="app_name">Unison</string>
     <string name="core_version">Core version %1$s</string>
+    <string name="channel_service">Service</string>
+    <string name="channel_transfers">Transfers</string>
+    <string name="channel_requests">Requests</string>
+    <string name="channel_clipboard">Clipboard</string>
+    <string name="service_starting">Starting</string>
+    <string name="service_failed">Core stopped</string>
+    <string name="service_status">%1$s, %2$s</string>
+    <plurals name="service_peers_online">
+        <item quantity="one">%d device online</item>
+        <item quantity="other">%d devices online</item>
+    </plurals>
 </resources>
