@@ -88,13 +88,24 @@ func (s *Store) Add(ctx context.Context, peer Peer) error {
 	if peer.LastSeenAt.IsZero() {
 		peer.LastSeenAt = peer.AddedAt
 	}
+
+	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := checkDenyList(ctx, tx, peer); err != nil {
+			return err
+		}
+		return insertPeer(ctx, tx, s.db.Sealer(), peer)
+	})
+}
+
+// insertPeer stores a validated peer that passed the deny-list check.
+func insertPeer(ctx context.Context, tx *sql.Tx, sealer *store.Sealer, peer Peer) error {
 	peer.LastAddrs = boundAddrs(peer.LastAddrs)
 
-	sealedProfile, err := sealPeerProfile(s.db.Sealer(), peer)
+	sealedProfile, err := sealPeerProfile(sealer, peer)
 	if err != nil {
 		return err
 	}
-	sealedAddrs, err := sealPeerAddrs(s.db.Sealer(), peer)
+	sealedAddrs, err := sealPeerAddrs(sealer, peer)
 	if err != nil {
 		return err
 	}
@@ -102,26 +113,21 @@ func (s *Store) Add(ctx context.Context, peer Peer) error {
 	const query = `INSERT INTO peers
 		(device_id, ed25519_pub, mldsa_pub, role, revoked, added_at, last_seen_at, profile, addrs)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
-		if err := checkDenyList(ctx, tx, peer); err != nil {
-			return err
-		}
-		args := []any{
-			peer.Public.DeviceID.Bytes(),
-			peer.Public.Ed25519,
-			peer.Public.MLDSABytes(),
-			int(peer.Role),
-			peer.Revoked,
-			unixMilli(peer.AddedAt),
-			unixMilli(peer.LastSeenAt),
-			sealedProfile,
-			sealedAddrs,
-		}
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return fmt.Errorf("trust: add peer: %w", err)
-		}
-		return nil
-	})
+	args := []any{
+		peer.Public.DeviceID.Bytes(),
+		peer.Public.Ed25519,
+		peer.Public.MLDSABytes(),
+		int(peer.Role),
+		peer.Revoked,
+		unixMilli(peer.AddedAt),
+		unixMilli(peer.LastSeenAt),
+		sealedProfile,
+		sealedAddrs,
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("trust: add peer: %w", err)
+	}
+	return nil
 }
 
 // Get returns the peer with the given device ID, including a revoked one.
