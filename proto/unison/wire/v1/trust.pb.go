@@ -190,6 +190,61 @@ func (x *IntroductionHead) GetTsUnixMs() int64 {
 	return 0
 }
 
+// One known revocation in the digest of a device.
+type RevocationHead struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Device ID of the revoked device, 32 bytes.
+	Subject []byte `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+	// Signing time of the revocation, unix milliseconds.
+	TsUnixMs      int64 `protobuf:"varint,2,opt,name=ts_unix_ms,json=tsUnixMs,proto3" json:"ts_unix_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevocationHead) Reset() {
+	*x = RevocationHead{}
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevocationHead) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevocationHead) ProtoMessage() {}
+
+func (x *RevocationHead) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevocationHead.ProtoReflect.Descriptor instead.
+func (*RevocationHead) Descriptor() ([]byte, []int) {
+	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RevocationHead) GetSubject() []byte {
+	if x != nil {
+		return x.Subject
+	}
+	return nil
+}
+
+func (x *RevocationHead) GetTsUnixMs() int64 {
+	if x != nil {
+		return x.TsUnixMs
+	}
+	return 0
+}
+
 // Digest of the trust state of a device, exchanged on every session between
 // personal devices.
 type GossipDigest struct {
@@ -201,14 +256,15 @@ type GossipDigest struct {
 	RelayTsUnixMs int64 `protobuf:"varint,3,opt,name=relay_ts_unix_ms,json=relayTsUnixMs,proto3" json:"relay_ts_unix_ms,omitempty"`
 	// Set when the digest answers another digest, so the peer does not answer it
 	// back.
-	Reply         bool `protobuf:"varint,4,opt,name=reply,proto3" json:"reply,omitempty"`
+	Reply         bool              `protobuf:"varint,4,opt,name=reply,proto3" json:"reply,omitempty"`
+	Revocations   []*RevocationHead `protobuf:"bytes,5,rep,name=revocations,proto3" json:"revocations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GossipDigest) Reset() {
 	*x = GossipDigest{}
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[2]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -220,7 +276,7 @@ func (x *GossipDigest) String() string {
 func (*GossipDigest) ProtoMessage() {}
 
 func (x *GossipDigest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[2]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -233,7 +289,7 @@ func (x *GossipDigest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GossipDigest.ProtoReflect.Descriptor instead.
 func (*GossipDigest) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{2}
+	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GossipDigest) GetIntroductions() []*IntroductionHead {
@@ -264,19 +320,27 @@ func (x *GossipDigest) GetReply() bool {
 	return false
 }
 
+func (x *GossipDigest) GetRevocations() []*RevocationHead {
+	if x != nil {
+		return x.Revocations
+	}
+	return nil
+}
+
 // Data of the personal group shared over a session. The receiver keeps the
 // parts that are newer than the stored ones.
 type GossipRecords struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Introductions []*Introduction        `protobuf:"bytes,1,rep,name=introductions,proto3" json:"introductions,omitempty"`
 	Group         *GroupData             `protobuf:"bytes,2,opt,name=group,proto3" json:"group,omitempty"`
+	Revocations   []*Revocation          `protobuf:"bytes,3,rep,name=revocations,proto3" json:"revocations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GossipRecords) Reset() {
 	*x = GossipRecords{}
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[3]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -288,7 +352,7 @@ func (x *GossipRecords) String() string {
 func (*GossipRecords) ProtoMessage() {}
 
 func (x *GossipRecords) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[3]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,7 +365,7 @@ func (x *GossipRecords) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GossipRecords.ProtoReflect.Descriptor instead.
 func (*GossipRecords) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{3}
+	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GossipRecords) GetIntroductions() []*Introduction {
@@ -314,6 +378,13 @@ func (x *GossipRecords) GetIntroductions() []*Introduction {
 func (x *GossipRecords) GetGroup() *GroupData {
 	if x != nil {
 		return x.Group
+	}
+	return nil
+}
+
+func (x *GossipRecords) GetRevocations() []*Revocation {
+	if x != nil {
+		return x.Revocations
 	}
 	return nil
 }
@@ -335,7 +406,7 @@ type GroupData struct {
 
 func (x *GroupData) Reset() {
 	*x = GroupData{}
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[4]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -347,7 +418,7 @@ func (x *GroupData) String() string {
 func (*GroupData) ProtoMessage() {}
 
 func (x *GroupData) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[4]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -360,7 +431,7 @@ func (x *GroupData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupData.ProtoReflect.Descriptor instead.
 func (*GroupData) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{4}
+	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GroupData) GetDiscoveryKey() []byte {
@@ -415,7 +486,7 @@ type Revocation struct {
 
 func (x *Revocation) Reset() {
 	*x = Revocation{}
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[5]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -427,7 +498,7 @@ func (x *Revocation) String() string {
 func (*Revocation) ProtoMessage() {}
 
 func (x *Revocation) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[5]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -440,7 +511,7 @@ func (x *Revocation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Revocation.ProtoReflect.Descriptor instead.
 func (*Revocation) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{5}
+	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Revocation) GetSubject() []byte {
@@ -494,7 +565,7 @@ type SetPeerPolicy struct {
 
 func (x *SetPeerPolicy) Reset() {
 	*x = SetPeerPolicy{}
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[6]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -506,7 +577,7 @@ func (x *SetPeerPolicy) String() string {
 func (*SetPeerPolicy) ProtoMessage() {}
 
 func (x *SetPeerPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_wire_v1_trust_proto_msgTypes[6]
+	mi := &file_unison_wire_v1_trust_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -519,7 +590,7 @@ func (x *SetPeerPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetPeerPolicy.ProtoReflect.Descriptor instead.
 func (*SetPeerPolicy) Descriptor() ([]byte, []int) {
-	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{6}
+	return file_unison_wire_v1_trust_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SetPeerPolicy) GetTarget() []byte {
@@ -577,15 +648,21 @@ const file_unison_wire_v1_trust_proto_rawDesc = "" +
 	"\x10IntroductionHead\x12\x18\n" +
 	"\asubject\x18\x01 \x01(\fR\asubject\x12\x1c\n" +
 	"\n" +
-	"ts_unix_ms\x18\x02 \x01(\x03R\btsUnixMs\"\xc6\x01\n" +
+	"ts_unix_ms\x18\x02 \x01(\x03R\btsUnixMs\"H\n" +
+	"\x0eRevocationHead\x12\x18\n" +
+	"\asubject\x18\x01 \x01(\fR\asubject\x12\x1c\n" +
+	"\n" +
+	"ts_unix_ms\x18\x02 \x01(\x03R\btsUnixMs\"\x88\x02\n" +
 	"\fGossipDigest\x12F\n" +
 	"\rintroductions\x18\x01 \x03(\v2 .unison.wire.v1.IntroductionHeadR\rintroductions\x12/\n" +
 	"\x14discovery_ts_unix_ms\x18\x02 \x01(\x03R\x11discoveryTsUnixMs\x12'\n" +
 	"\x10relay_ts_unix_ms\x18\x03 \x01(\x03R\rrelayTsUnixMs\x12\x14\n" +
-	"\x05reply\x18\x04 \x01(\bR\x05reply\"\x84\x01\n" +
+	"\x05reply\x18\x04 \x01(\bR\x05reply\x12@\n" +
+	"\vrevocations\x18\x05 \x03(\v2\x1e.unison.wire.v1.RevocationHeadR\vrevocations\"\xc2\x01\n" +
 	"\rGossipRecords\x12B\n" +
 	"\rintroductions\x18\x01 \x03(\v2\x1c.unison.wire.v1.IntroductionR\rintroductions\x12/\n" +
-	"\x05group\x18\x02 \x01(\v2\x19.unison.wire.v1.GroupDataR\x05group\"\xc8\x01\n" +
+	"\x05group\x18\x02 \x01(\v2\x19.unison.wire.v1.GroupDataR\x05group\x12<\n" +
+	"\vrevocations\x18\x03 \x03(\v2\x1a.unison.wire.v1.RevocationR\vrevocations\"\xc8\x01\n" +
 	"\tGroupData\x12#\n" +
 	"\rdiscovery_key\x18\x01 \x01(\fR\fdiscoveryKey\x12/\n" +
 	"\x14discovery_ts_unix_ms\x18\x02 \x01(\x03R\x11discoveryTsUnixMs\x12\x1b\n" +
@@ -623,29 +700,32 @@ func file_unison_wire_v1_trust_proto_rawDescGZIP() []byte {
 	return file_unison_wire_v1_trust_proto_rawDescData
 }
 
-var file_unison_wire_v1_trust_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_unison_wire_v1_trust_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_unison_wire_v1_trust_proto_goTypes = []any{
 	(*Introduction)(nil),     // 0: unison.wire.v1.Introduction
 	(*IntroductionHead)(nil), // 1: unison.wire.v1.IntroductionHead
-	(*GossipDigest)(nil),     // 2: unison.wire.v1.GossipDigest
-	(*GossipRecords)(nil),    // 3: unison.wire.v1.GossipRecords
-	(*GroupData)(nil),        // 4: unison.wire.v1.GroupData
-	(*Revocation)(nil),       // 5: unison.wire.v1.Revocation
-	(*SetPeerPolicy)(nil),    // 6: unison.wire.v1.SetPeerPolicy
-	(Role)(0),                // 7: unison.wire.v1.Role
-	(Platform)(0),            // 8: unison.wire.v1.Platform
+	(*RevocationHead)(nil),   // 2: unison.wire.v1.RevocationHead
+	(*GossipDigest)(nil),     // 3: unison.wire.v1.GossipDigest
+	(*GossipRecords)(nil),    // 4: unison.wire.v1.GossipRecords
+	(*GroupData)(nil),        // 5: unison.wire.v1.GroupData
+	(*Revocation)(nil),       // 6: unison.wire.v1.Revocation
+	(*SetPeerPolicy)(nil),    // 7: unison.wire.v1.SetPeerPolicy
+	(Role)(0),                // 8: unison.wire.v1.Role
+	(Platform)(0),            // 9: unison.wire.v1.Platform
 }
 var file_unison_wire_v1_trust_proto_depIdxs = []int32{
-	7, // 0: unison.wire.v1.Introduction.role:type_name -> unison.wire.v1.Role
-	8, // 1: unison.wire.v1.Introduction.platform:type_name -> unison.wire.v1.Platform
+	8, // 0: unison.wire.v1.Introduction.role:type_name -> unison.wire.v1.Role
+	9, // 1: unison.wire.v1.Introduction.platform:type_name -> unison.wire.v1.Platform
 	1, // 2: unison.wire.v1.GossipDigest.introductions:type_name -> unison.wire.v1.IntroductionHead
-	0, // 3: unison.wire.v1.GossipRecords.introductions:type_name -> unison.wire.v1.Introduction
-	4, // 4: unison.wire.v1.GossipRecords.group:type_name -> unison.wire.v1.GroupData
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 3: unison.wire.v1.GossipDigest.revocations:type_name -> unison.wire.v1.RevocationHead
+	0, // 4: unison.wire.v1.GossipRecords.introductions:type_name -> unison.wire.v1.Introduction
+	5, // 5: unison.wire.v1.GossipRecords.group:type_name -> unison.wire.v1.GroupData
+	6, // 6: unison.wire.v1.GossipRecords.revocations:type_name -> unison.wire.v1.Revocation
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_unison_wire_v1_trust_proto_init() }
@@ -660,7 +740,7 @@ func file_unison_wire_v1_trust_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_wire_v1_trust_proto_rawDesc), len(file_unison_wire_v1_trust_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

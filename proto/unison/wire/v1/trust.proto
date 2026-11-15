@@ -32,6 +32,14 @@ message IntroductionHead {
   int64 ts_unix_ms = 2;
 }
 
+// One known revocation in the digest of a device.
+message RevocationHead {
+  // Device ID of the revoked device, 32 bytes.
+  bytes subject = 1;
+  // Signing time of the revocation, unix milliseconds.
+  int64 ts_unix_ms = 2;
+}
+
 // Digest of the trust state of a device, exchanged on every session between
 // personal devices.
 message GossipDigest {
@@ -43,6 +51,7 @@ message GossipDigest {
   // Set when the digest answers another digest, so the peer does not answer it
   // back.
   bool reply = 4;
+  repeated RevocationHead revocations = 5;
 }
 
 // Data of the personal group shared over a session. The receiver keeps the
@@ -50,6 +59,7 @@ message GossipDigest {
 message GossipRecords {
   repeated Introduction introductions = 1;
   GroupData group = 2;
+  repeated Revocation revocations = 3;
 }
 
 // State of the personal group that the devices share.
