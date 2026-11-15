@@ -104,6 +104,25 @@ the platform independent parts from any host.
 The protobuf code generators are pinned as tools in `go.mod`, so `just proto` needs only `buf` and
 `go` installed. Generated Go code is committed and builds do not require `buf`.
 
+The peer protocol lives in `core/session`. A session runs on an authenticated transport connection:
+both sides write `Hello` on the control stream, the first stream that already carried the
+authentication proof, and read the peer one. A peer that announces another protocol version is asked
+to update: the session reports the `peer-needs-update` event and closes the connection with code
+`0x10`. A malformed Hello or another protocol violation closes it with code `0x11`.
+
+Every message is a uvarint payload length followed by a protobuf message, and the length is checked
+against the limit before the payload is allocated. Each control message is checked against the
+capability matrix of the peer before its handler runs. A message the role of the peer forbids is
+dropped and counted as a violation, and three violations end the session. Clip announcements are
+also rate limited with a token bucket. Request streams are bidirectional and carry one request with
+its answer, transfer streams are unidirectional; the payload type of the stream header selects the
+handler, which also states the capability its streams need.
+
+Handlers are registered before the session is opened, because the peer may send messages right after
+its Hello. The limits are constants of that package: one MiB per control message and per stream
+frame, 16 request and 32 transfer streams in flight, a ten second Hello and stream header timeout,
+five clip announcements per second with a burst of ten.
+
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
 
