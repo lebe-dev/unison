@@ -33,6 +33,9 @@ object UnisonSettings {
     /** Device name passed to the core at start. */
     const val KEY_DEVICE_NAME = "device.name"
 
+    /** Hash of the last clipboard content this device sent or applied. */
+    const val KEY_LAST_CLIP = "clipboard.last_hash"
+
     fun operatingMode(context: Context): OperatingMode {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
         return OperatingMode.fromValue(prefs.getString(KEY_OPERATING_MODE, null))
@@ -51,5 +54,16 @@ object UnisonSettings {
     fun setDeviceName(context: Context, name: String) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putString(KEY_DEVICE_NAME, name) }
+    }
+
+    /** Hash of the content this device sent or applied last, null when there was none. */
+    fun lastClipHash(context: Context): String? {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_LAST_CLIP, null)
+    }
+
+    fun setLastClipHash(context: Context, hash: String) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putString(KEY_LAST_CLIP, hash) }
     }
 }
