@@ -3,9 +3,13 @@
 package clipboard
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"image"
+	"image/png"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,6 +19,8 @@ import (
 const (
 	testInterval = 100 * time.Millisecond
 	testTimeout  = 3 * time.Second
+	// restoreDelay lets the restored pasteboard content reach the server.
+	restoreDelay = 300 * time.Millisecond
 )
 
 // TestMain preserves the user clipboard around the tests, which change it.
@@ -22,6 +28,10 @@ func TestMain(m *testing.M) {
 	saved := savePasteboard()
 	code := m.Run()
 	restorePasteboard(saved)
+	// The pasteboard server takes the restored items from this process
+	// asynchronously, so the process has to outlive the hand-off or a file URL
+	// is lost.
+	time.Sleep(restoreDelay)
 	os.Exit(code)
 }
 
@@ -123,7 +133,17 @@ func TestWriteHTMLOnly(t *testing.T) {
 func TestWriteRejectsUnsupportedMIME(t *testing.T) {
 	c := newClipboard(t)
 	content := ports.Content{Representations: []ports.Representation{
-		{MIME: "image/png", Data: []byte{0x89, 'P', 'N', 'G'}},
+		{MIME: "video/mp4", Data: []byte{0x00, 0x00, 0x00, 0x18}},
+	}}
+	if err := c.Write(context.Background(), content); !errors.Is(err, ErrUnsupportedContent) {
+		t.Fatalf("Write error = %v, want ErrUnsupportedContent", err)
+	}
+}
+
+func TestWriteRejectsRelativePath(t *testing.T) {
+	c := newClipboard(t)
+	content := ports.Content{Representations: []ports.Representation{
+		{MIME: MIMEUnisonFile, FilePath: "relative.txt"},
 	}}
 	if err := c.Write(context.Background(), content); !errors.Is(err, ErrUnsupportedContent) {
 		t.Fatalf("Write error = %v, want ErrUnsupportedContent", err)
@@ -207,5 +227,184 @@ func TestAccessBehavior(t *testing.T) {
 	case BehaviorDefault, BehaviorAsk, BehaviorAlwaysAllow, BehaviorAlwaysDeny:
 	default:
 		t.Fatalf("AccessBehavior = %d, want a known behavior", behavior)
+	}
+}
+
+func TestWritePNG(t *testing.T) {
+	data := testPNG(t, 4, 3)
+	snapshots, _ := watch(t)
+
+	content := ports.Content{Representations: []ports.Representation{
+		{MIME: MIMEImagePNG, Data: data},
+	}}
+	if err := newClipboard(t).Write(context.Background(), content); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	snapshot := next(t, snapshots)
+	if !snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = false, want true")
+	}
+	reps := snapshot.Content.Representations
+	if len(reps) != 1 || reps[0].MIME != MIMEImagePNG {
+		t.Fatalf("got %d representations, want one PNG", len(reps))
+	}
+	if !bytes.Equal(reps[0].Data, data) {
+		t.Fatal("the reported PNG differs from the written one")
+	}
+	if got := pasteboardData(t, "public.png"); !bytes.Equal(got, data) {
+		t.Fatalf("public.png holds %d bytes, want %d", len(got), len(data))
+	}
+}
+
+func TestWriteTextAndPNGShareOneItem(t *testing.T) {
+	data := testPNG(t, 2, 2)
+	c := newClipboard(t)
+
+	content := ports.Content{Representations: []ports.Representation{
+		{MIME: MIMETextPlain, Data: []byte("captioned")},
+		{MIME: MIMEImagePNG, Data: data},
+	}}
+	if err := c.Write(context.Background(), content); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if got := pasteboardItemCount(); got != 1 {
+		t.Fatalf("pasteboard holds %d items, want 1", got)
+	}
+	if got := pasteboardData(t, "public.png"); !bytes.Equal(got, data) {
+		t.Fatalf("public.png holds %d bytes, want %d", len(got), len(data))
+	}
+}
+
+func TestReadScreenshotPrefersPNG(t *testing.T) {
+	data := testPNG(t, 6, 5)
+	snapshots, _ := watch(t)
+	writeImage(t, data, true)
+
+	snapshot := next(t, snapshots)
+	reps := snapshot.Content.Representations
+	if len(reps) != 1 || reps[0].MIME != MIMEImagePNG {
+		t.Fatalf("got %d representations, want one PNG", len(reps))
+	}
+	if !bytes.Equal(reps[0].Data, data) {
+		t.Fatal("the reported PNG differs from the PNG on the pasteboard")
+	}
+}
+
+func TestReadTIFFAsPNG(t *testing.T) {
+	snapshots, _ := watch(t)
+	writeImage(t, testPNG(t, 7, 4), false)
+
+	snapshot := next(t, snapshots)
+	reps := snapshot.Content.Representations
+	if len(reps) != 1 || reps[0].MIME != MIMEImagePNG {
+		t.Fatalf("got %d representations, want one PNG", len(reps))
+	}
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(reps[0].Data))
+	if err != nil {
+		t.Fatalf("decode the reported image: %v", err)
+	}
+	if format != "png" || cfg.Width != 7 || cfg.Height != 4 {
+		t.Fatalf("image is %s %dx%d, want png 7x4", format, cfg.Width, cfg.Height)
+	}
+}
+
+func TestReadFileURLs(t *testing.T) {
+	first := writeTestFile(t, "first.txt", "first")
+	second := writeTestFile(t, "second.txt", "second")
+	snapshots, _ := watch(t)
+	writeFileURLs(t, first, second)
+
+	snapshot := next(t, snapshots)
+	if snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = true, want false")
+	}
+	reps := snapshot.Content.Representations
+	if len(reps) != 2 {
+		t.Fatalf("got %d representations, want 2", len(reps))
+	}
+	for i, path := range []string{first, second} {
+		if reps[i].MIME != MIMEUnisonFile || reps[i].FilePath != path {
+			t.Fatalf("representation %d is %s %q, want %s %q",
+				i, reps[i].MIME, reps[i].FilePath, MIMEUnisonFile, path)
+		}
+		if len(reps[i].Data) != 0 {
+			t.Fatalf("representation %d carries data, want a path only", i)
+		}
+	}
+}
+
+func TestReadSkipsDirectories(t *testing.T) {
+	snapshots, _ := watch(t)
+	writeFileURLs(t, t.TempDir())
+	expectNone(t, snapshots, 3*testInterval)
+}
+
+func TestWriteFiles(t *testing.T) {
+	first := writeTestFile(t, "one.txt", "one")
+	second := writeTestFile(t, "two.txt", "two")
+	snapshots, _ := watch(t)
+
+	content := ports.Content{Representations: []ports.Representation{
+		{MIME: MIMEUnisonFile, FilePath: first},
+		{MIME: MIMEUnisonFile, FilePath: second},
+	}}
+	if err := newClipboard(t).Write(context.Background(), content); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	snapshot := next(t, snapshots)
+	if !snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = false, want true")
+	}
+	reps := snapshot.Content.Representations
+	if len(reps) != 2 || reps[0].FilePath != first || reps[1].FilePath != second {
+		t.Fatalf("got %d representations, want the two written files", len(reps))
+	}
+	// Every item carries a file URL that resolves to the path, which is what
+	// Finder pastes onto a folder.
+	paths := pasteboardFilePaths(t)
+	if len(paths) != 2 || paths[0] != first || paths[1] != second {
+		t.Fatalf("pasteboard holds %v, want %q and %q", paths, first, second)
+	}
+}
+
+// writeTestFile creates a file with content and returns its path.
+func writeTestFile(t *testing.T, name, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+	return path
+}
+
+// testPNG returns a PNG encoded image of the given size.
+func testPNG(t *testing.T, width, height int) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.Pix[i] = byte(i)
+		img.Pix[i+3] = 0xff
+	}
+	var buffer bytes.Buffer
+	if err := png.Encode(&buffer, img); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	return buffer.Bytes()
+}
+
+func TestSensitiveMarkerHidesFiles(t *testing.T) {
+	path := writeTestFile(t, "secret.txt", "secret")
+	snapshots, _ := watch(t)
+	writeFilesWithMarker(t, "org.nspasteboard.ConcealedType", path)
+
+	snapshot := next(t, snapshots)
+	if !snapshot.Sensitive {
+		t.Fatal("Sensitive = false, want true")
+	}
+	if len(snapshot.Content.Representations) != 0 {
+		t.Fatalf("got %d representations for sensitive content, want none",
+			len(snapshot.Content.Representations))
 	}
 }

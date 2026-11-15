@@ -57,7 +57,7 @@ test-keychain:
 
 # Run the pasteboard integration tests against the real pasteboard.
 test-pasteboard:
-    CGO_ENABLED=1 go test -tags pasteboardtest ./platform/darwin/clipboard/
+    CGO_ENABLED=1 go test -count=1 -tags pasteboardtest ./platform/darwin/clipboard/
 
 # Run the Win32 clipboard integration tests against the real clipboard (Windows).
 test-clipboard:
