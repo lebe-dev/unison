@@ -10,6 +10,7 @@ tool (
 
 require (
 	connectrpc.com/connect v1.21.1
+	github.com/google/uuid v1.6.0
 	github.com/quic-go/quic-go v0.65.0
 	golang.org/x/crypto v0.59.0
 	golang.org/x/sys v0.50.0
@@ -20,7 +21,6 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.1.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
