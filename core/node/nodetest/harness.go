@@ -195,17 +195,18 @@ func (h *Harness) NewNode(name string) *Node {
 	clipboard := fake.NewClipboard()
 	sockets := newSockets(h.net, h.ports)
 	host, err := node.New(node.Config{
-		DataDir:      h.t.TempDir(),
-		Name:         name,
-		Platform:     model.PlatformMacOS,
-		Keystore:     fake.NewKeystore(),
-		Clipboard:    clipboard,
-		Discovery:    h.bus.Discovery(),
-		Clock:        h.clock,
-		Logger:       h.log,
-		Limits:       h.limits,
-		Transport:    h.transport,
-		ListenPacket: sockets.listenPacket,
+		DataDir:        h.t.TempDir(),
+		Name:           name,
+		Platform:       model.PlatformMacOS,
+		Keystore:       fake.NewKeystore(),
+		Clipboard:      clipboard,
+		Discovery:      h.bus.Discovery(),
+		Clock:          h.clock,
+		Logger:         h.log,
+		Limits:         h.limits,
+		Transport:      h.transport,
+		ShareDownloads: h.t.TempDir(),
+		ListenPacket:   sockets.listenPacket,
 	})
 	if err != nil {
 		h.t.Fatalf("create node %q: %v", name, err)
