@@ -65,6 +65,30 @@ func TestFriendsSearchJSON(t *testing.T) {
 	}
 }
 
+// TestFriendsUsage checks that the command needs its subcommand and prints the
+// usage when asked.
+func TestFriendsUsage(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 330, api.Options{})
+	device.start(t)
+
+	code, _, stderr := runCommand(t, "", "--endpoint", device.endpoint, "friends", "--help")
+	if code != exitOK {
+		t.Fatalf("friends --help exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stderr, "friends search") {
+		t.Errorf("the usage does not list the subcommand:\n%s", stderr)
+	}
+
+	code, _, stderr = runCommand(t, "", "--endpoint", device.endpoint, "friends", "--json")
+	if code != exitFailure {
+		t.Fatalf("friends --json exited with %d", code)
+	}
+	if !strings.Contains(stderr, "needs a subcommand") {
+		t.Errorf("the error does not name the missing subcommand:\n%s", stderr)
+	}
+}
+
 // TestStatusReportsFriendsSearch checks that the status shows the running
 // search.
 func TestStatusReportsFriendsSearch(t *testing.T) {

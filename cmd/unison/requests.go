@@ -14,17 +14,9 @@ import (
 // requests runs the request subcommands. Without a subcommand it lists the
 // requests.
 func (a *app) requests(ctx context.Context, args []string) error {
-	flags := a.newFlagSet("requests")
-	if err := parseFlags(flags, args); err != nil {
-		return err
-	}
-	rest := flags.Args()
-	if len(rest) == 0 {
-		return a.requestsList(ctx, rest)
-	}
-	command, rest := rest[0], rest[1:]
+	command, rest := subcommand(args)
 	switch command {
-	case "ls":
+	case "", "ls":
 		return a.requestsList(ctx, rest)
 	case "accept":
 		return a.requestsDecide(ctx, rest, true)

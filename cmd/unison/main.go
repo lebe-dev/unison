@@ -190,6 +190,24 @@ func splitFlags(args []string, valued map[string]bool) (flags, rest []string) {
 	return flags, rest
 }
 
+// subcommand returns the subcommand of a command line and its arguments. The
+// flags of a command may come before the subcommand as well as after it, so the
+// returned arguments keep the flags in front of the positional ones. A line
+// without a subcommand returns an empty name with its flags only. The named
+// flags take the next argument as their value.
+func subcommand(args []string, valued ...string) (name string, rest []string) {
+	takesValue := map[string]bool{"endpoint": true}
+	for _, flagName := range valued {
+		takesValue[flagName] = true
+	}
+
+	flags, positional := splitFlags(args, takesValue)
+	if len(positional) == 0 {
+		return "", flags
+	}
+	return positional[0], append(flags, positional[1:]...)
+}
+
 // newFlagSet returns the flag set of a command. The common flags may be given
 // after the command as well.
 func (a *app) newFlagSet(name string) *flag.FlagSet {
@@ -231,7 +249,8 @@ commands:
   clip get [--from <id>]       print the last clipboard item, optionally of one
                               paired device
   clip set [-]                copy standard input to the clipboard
-  history [ls]                list the clipboard history
+  history [ls] [--type text|image|file] [--limit N]
+                              list the clipboard history
   history fetch <id> [-o path]
                               download the payloads of a history item
   history apply <id>          apply a held history item to the clipboard

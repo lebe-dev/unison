@@ -8,6 +8,29 @@ import (
 	"github.com/lebe-dev/unison/core/trust"
 )
 
+// TestRelayStatus checks the status form with and without its subcommand.
+func TestRelayStatus(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 350, api.Options{})
+	device.start(t)
+
+	forms := [][]string{
+		{"relay"},
+		{"relay", "status"},
+		{"relay", "--json"},
+		{"relay", "status", "--json"},
+	}
+	for _, args := range forms {
+		code, stdout, stderr := runCommand(t, "", append([]string{"--endpoint", device.endpoint}, args...)...)
+		if code != exitOK {
+			t.Fatalf("%v exited with %d, stderr %q", args, code, stderr)
+		}
+		if !strings.Contains(stdout, "relay") {
+			t.Errorf("%v does not report the relay:\n%s", args, stdout)
+		}
+	}
+}
+
 // TestRelaySetAndOff checks that the command stores and clears the relay of the
 // group without printing the token.
 func TestRelaySetAndOff(t *testing.T) {
