@@ -9,6 +9,13 @@ export CGO_ENABLED := "0"
 # The daemon reaches the Keychain and the pasteboard through cgo on macOS.
 daemon_cgo := if os() == "macos" { "1" } else { "0" }
 
+# Data directory of the daemon.
+daemon_dir := if os() == "windows" {
+    env_var("LOCALAPPDATA") + "/Unison"
+} else {
+    home_directory() + "/Library/Application Support/Unison"
+}
+
 # Data directory of the second daemon, which pairs with the first one on the
 # same machine.
 daemon_second_dir := if os() == "windows" {
@@ -39,13 +46,46 @@ build-unisond-all:
 build-unisond-host:
     CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond ./cmd/unisond
 
-# Run the daemon of the default data directory, with its log on stderr.
+# Build and run the daemon of the default data directory, replacing the one that runs.
 run-daemon *args: build-unisond-host
-    bin/unisond --log-stderr {{args}}
+    just stop-daemon "{{daemon_dir}}"
+    exec bin/unisond --log-stderr {{args}}
 
 # Run a second daemon next to the first one, for pairing on a single machine.
 run-daemon-2 *args: build-unisond-host
-    bin/unisond --log-stderr --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
+    just stop-daemon "{{daemon_second_dir}}"
+    exec bin/unisond --log-stderr --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
+
+# Stop the daemon that holds the lock of a data directory, and wait for it to exit.
+stop-daemon dir=daemon_dir:
+    #!/usr/bin/env bash
+    set -eu -o pipefail
+    lock="{{dir}}/unisond.lock"
+    if [ ! -e "$lock" ] || ! command -v lsof >/dev/null; then
+        exit 0
+    fi
+    pids="$(lsof -t "$lock" 2>/dev/null || true)"
+    if [ -z "$pids" ]; then
+        exit 0
+    fi
+    for pid in $pids; do
+        echo "stopping the daemon $pid: $(ps -o command= -p "$pid" || true)" >&2
+        kill -TERM "$pid" 2>/dev/null || true
+    done
+    for _ in $(seq 1 50); do
+        alive=""
+        for pid in $pids; do
+            if kill -0 "$pid" 2>/dev/null; then
+                alive="$alive $pid"
+            fi
+        done
+        if [ -z "$alive" ]; then
+            exit 0
+        fi
+        sleep 0.2
+    done
+    echo "the daemon did not stop:$alive" >&2
+    exit 1
 
 # Run the unit tests.
 test:

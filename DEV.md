@@ -84,8 +84,9 @@ just android-build        # build the Android debug APK
 just bridge-publish       # publish the keyboard bridge contract to the local Maven repository
 just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64
 just build-unisond-host   # unisond for the host with the Keychain and pasteboard
-just run-daemon           # run the daemon of the default data directory
+just run-daemon           # build and run the daemon of the default data directory
 just run-daemon-2         # run a second daemon, for pairing on one machine
+just stop-daemon          # stop the daemon of the default data directory
 just desktop-dev          # run the desktop app with hot reload
 just desktop-build        # build the desktop app bundle for the host platform
 just desktop-lint         # svelte-check, rustfmt and clippy for the desktop app
@@ -100,8 +101,10 @@ Binaries are built without cgo so every target can be cross-compiled from any ho
 
 The daemon is the exception on macOS. The Keychain and the pasteboard are cgo packages, so a
 macOS daemon that is meant to run needs cgo: `just build-unisond-host` builds it for the host with
-`CGO_ENABLED=1`, and `just run-daemon` and `just run-daemon-2` run it from the source tree. A
-daemon of the cross-compiled `just build-unisond-all` targets has no Keychain and exits at startup
+`CGO_ENABLED=1`, and `just run-daemon` and `just run-daemon-2` run it from the source tree. Both
+rebuild the daemon first and stop the daemon that already holds the lock of their data directory,
+whether a terminal, the desktop app or the login item started it, so the fresh build is the one
+that runs. A daemon of the cross-compiled `just build-unisond-all` targets has no Keychain and exits at startup
 with a message that asks for a build with cgo.
 
 The macOS Keychain keystore in `platform/darwin/keystore` uses cgo: it links Security.framework
