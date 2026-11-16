@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import { daemon } from "./lib/daemon.svelte";
+  import DaemonStatus from "./lib/DaemonStatus.svelte";
   import { eventKindLabel } from "./lib/events";
   import { history } from "./lib/history.svelte";
   import { notifications } from "./lib/notifications.svelte";
@@ -117,18 +118,7 @@
           <option value="dark">Dark</option>
         </select>
       </label>
-      <div class="connection">
-        <span class="dot" class:online={daemon.connected}></span>
-        <span>
-          {#if daemon.connected}
-            Daemon {daemon.status?.version ?? ""}
-          {:else if daemon.loading}
-            Connecting...
-          {:else}
-            Daemon offline
-          {/if}
-        </span>
-      </div>
+      <DaemonStatus />
     </div>
   </aside>
 
@@ -142,7 +132,7 @@
       </div>
     </header>
 
-    {#if daemon.error}
+    {#if daemon.connected && daemon.error}
       <p class="error">{daemon.error}</p>
     {/if}
 

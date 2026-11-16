@@ -1,9 +1,11 @@
 //! Discovery and startup of the daemon.
 
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::process::{Command, ExitStatus, Stdio};
+use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
+
+use serde::Serialize;
 
 use crate::proxy;
 
@@ -32,6 +34,59 @@ const BINARY_NAME: &str = if cfg!(windows) {
 /// login item takes over.
 static STARTED: Mutex<Option<u32>> = Mutex::new(None);
 
+/// LAST_EXIT is the exit status of the last daemon the app started itself.
+static LAST_EXIT: Mutex<Option<ExitStatus>> = Mutex::new(None);
+
+/// STATUS is what the app knows about the daemon, which the window reads.
+static STATUS: Mutex<Status> = Mutex::new(Status {
+    state: State::Offline,
+    reason: None,
+});
+
+/// State of the daemon as the app knows it.
+#[derive(Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum State {
+    /// The daemon answers on the endpoint.
+    Running,
+    /// The daemon does not answer and no start has failed.
+    Offline,
+    /// The last start of the daemon failed.
+    Failed,
+}
+
+/// Status of the daemon and the reason of the last failed start.
+#[derive(Clone, Serialize)]
+pub struct Status {
+    pub state: State,
+    /// Reason of the last failed start, absent when it is not known.
+    pub reason: Option<String>,
+}
+
+/// status returns the state of the daemon and the reason of the last failed
+/// start.
+pub fn status() -> Status {
+    lock(&STATUS).clone()
+}
+
+/// set_failed records a reason the daemon is not available for.
+pub fn set_failed(reason: &str) {
+    set_status(State::Failed, Some(reason.to_string()));
+}
+
+/// set_status records the state of the daemon.
+fn set_status(state: State, reason: Option<String>) {
+    let mut status = lock(&STATUS);
+    status.state = state;
+    status.reason = reason;
+}
+
+/// lock takes a mutex and keeps its contents after a panic of another thread,
+/// so a failure never hides the state of the daemon.
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|err| err.into_inner())
+}
+
 /// resolve_endpoint returns the endpoint of the local API.
 pub fn resolve_endpoint() -> Result<String, String> {
     if let Some(path) = std::env::var_os(ENDPOINT_ENV) {
@@ -43,10 +98,27 @@ pub fn resolve_endpoint() -> Result<String, String> {
     platform_endpoint()
 }
 
-/// ensure_running starts the daemon when it does not answer on the endpoint. A
+/// ensure_running starts the daemon when it does not answer on the endpoint and
+/// keeps the reason of a start that failed.
+pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
+    // A new attempt drops the reason of the previous one.
+    set_status(State::Offline, None);
+    match start_if_needed(endpoint).await {
+        Ok(()) => {
+            set_status(State::Running, None);
+            Ok(())
+        }
+        Err(err) => {
+            set_status(State::Failed, Some(err.clone()));
+            Err(err)
+        }
+    }
+}
+
+/// start_if_needed starts the daemon when it does not answer on the endpoint. A
 /// login item that the system manages owns the daemon, so the app only waits
 /// for it.
-pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
+async fn start_if_needed(endpoint: &str) -> Result<(), String> {
     if probe(endpoint).await {
         return Ok(());
     }
@@ -61,7 +133,7 @@ pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
             match binary() {
                 Some(binary) => {
                     start(&binary)?;
-                    wait_for(endpoint, START_TIMEOUT).await
+                    wait_started(endpoint, START_TIMEOUT).await
                 }
                 None => Err(format!(
                     "the login item does not start the daemon on {endpoint}"
@@ -74,7 +146,7 @@ pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
         _ => match binary() {
             Some(binary) => {
                 start(&binary)?;
-                wait_for(endpoint, START_TIMEOUT).await
+                wait_started(endpoint, START_TIMEOUT).await
             }
             None => Err(format!("the daemon is not running on {endpoint}")),
         },
@@ -91,6 +163,18 @@ async fn wait_for(endpoint: &str, limit: Duration) -> Result<(), String> {
         }
     }
     Err(format!("the daemon did not answer on {endpoint}"))
+}
+
+/// wait_started waits for the daemon the app started and reports why it did not
+/// come up.
+async fn wait_started(endpoint: &str, limit: Duration) -> Result<(), String> {
+    match wait_for(endpoint, limit).await {
+        Ok(()) => Ok(()),
+        Err(err) => match *lock(&LAST_EXIT) {
+            Some(status) => Err(format!("the daemon stopped during startup ({status})")),
+            None => Err(err),
+        },
+    }
 }
 
 /// wait_stopped waits until nothing answers on the endpoint any more, which is
@@ -148,6 +232,7 @@ pub fn stop_started() -> bool {
 /// start runs the daemon next to the app. The daemon outlives the app, so the
 /// child is waited on in the background and never killed.
 fn start(binary: &PathBuf) -> Result<(), String> {
+    *lock(&LAST_EXIT) = None;
     let mut child = Command::new(binary)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -159,7 +244,9 @@ fn start(binary: &PathBuf) -> Result<(), String> {
         *slot = Some(pid);
     }
     std::thread::spawn(move || {
-        let _ = child.wait();
+        if let Ok(status) = child.wait() {
+            *lock(&LAST_EXIT) = Some(status);
+        }
         if let Ok(mut slot) = STARTED.lock()
             && *slot == Some(pid)
         {

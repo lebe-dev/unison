@@ -122,10 +122,18 @@ body {
 
 .connection {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   color: var(--muted);
   font-size: 0.8125rem;
+}
+
+.connection .reason {
+  flex-basis: 100%;
+  padding-left: 1rem;
+  color: var(--danger);
+  line-height: 1.35;
 }
 
 .dot {
