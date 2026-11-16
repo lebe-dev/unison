@@ -79,10 +79,14 @@ async fn set_login_item(
     enabled: bool,
 ) -> Result<agent::LoginItem, String> {
     let endpoint = state.endpoint.as_ref().ok().cloned();
+    // Only the macOS login item is a process the system owns, so only macOS has
+    // to hand the running daemon over to it. The Windows entry starts the
+    // daemon at the next login and leaves the running one alone.
+    let managed = cfg!(target_os = "macos");
     // The daemon of the app holds the lock and the endpoint, so it steps aside
     // before the login item starts its own.
-    if enabled
-        && cfg!(target_os = "macos")
+    if managed
+        && enabled
         && daemon::stop_started()
         && let Some(path) = &endpoint
     {
@@ -103,7 +107,7 @@ async fn set_login_item(
         }
     };
 
-    if let Some(path) = endpoint {
+    if managed && let Some(path) = endpoint {
         tauri::async_runtime::spawn(async move {
             if !enabled {
                 daemon::wait_stopped(&path, Duration::from_secs(5)).await;
