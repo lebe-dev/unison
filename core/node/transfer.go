@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	"io"
 	"path/filepath"
 
@@ -112,6 +113,25 @@ func (n *Node) openPolicy(ctx context.Context, db *store.Store) (*policy.Decider
 	}
 	decider.SetConfig(cfg)
 	return decider, nil
+}
+
+// ReloadPolicy rereads the stored policy, so a saved change applies to the next
+// item without a restart.
+func (n *Node) ReloadPolicy(ctx context.Context) error {
+	if n.policy == nil {
+		return errors.New("node: policy is not ready")
+	}
+	cfg, err := policy.LoadConfig(ctx, n.db.Settings())
+	if err != nil {
+		// A value out of range keeps its default, so the rest of the table
+		// still applies.
+		if verify := cfg.Validate(); verify != nil {
+			return err
+		}
+		n.log.Warn("reading the clipboard policy failed, applying the usable values", "error", err)
+	}
+	n.policy.SetConfig(cfg)
+	return nil
 }
 
 // Blobs returns the blob store of the node. It is nil before Start.

@@ -258,6 +258,7 @@
     <string name="policy_megabytes">MB</string>
     <string name="policy_reset">Reset to defaults</string>
     <string name="policy_reset_done">Network policy reset</string>
+    <string name="policy_save_failed">The network policy could not be saved</string>
     <string name="service_waiting_wifi">Waiting for Wi-Fi</string>
 
     <string name="onboarding_title">Welcome to Unison</string>

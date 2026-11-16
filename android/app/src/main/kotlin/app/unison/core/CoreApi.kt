@@ -1,6 +1,7 @@
 package app.unison.core
 
 import android.content.Context
+import app.unison.policy.PolicyConfig
 import unison.local.v1.Local
 
 /** Local API calls the app screens make. */
@@ -214,6 +215,18 @@ class RunningCore(
     override suspend fun rejectPairing(deviceId: String) {
         ensureRunning()
         client.rejectPairing(deviceId)
+    }
+
+    /** Stores the whole network policy and returns the resulting settings. */
+    suspend fun updatePolicy(table: PolicyConfig): Local.Settings {
+        ensureRunning()
+        return client.updatePolicy(table)
+    }
+
+    /** Drops the stored policy overrides and returns the defaults. */
+    suspend fun resetPolicy(): Local.Settings {
+        ensureRunning()
+        return client.resetPolicy()
     }
 
     private suspend fun ensureRunning() {

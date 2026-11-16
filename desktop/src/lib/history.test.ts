@@ -248,6 +248,7 @@ describe("tray entries", () => {
         requireConfirmation: false,
         blobMaxSizeBytes: 0n,
         downloadsDir: "/downloads",
+        relayMaxSizeBytes: 0n,
       },
     });
 

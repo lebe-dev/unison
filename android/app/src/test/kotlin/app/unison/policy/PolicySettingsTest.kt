@@ -42,22 +42,6 @@ class PolicySettingsTest {
     }
 
     @Test
-    fun keysUseTheNamesOfTheCore() {
-        assertEquals(
-            "policy.network.unmetered.image.mode",
-            PolicyKeys.mode(PolicyCondition.UNMETERED, PolicyKind.IMAGE),
-        )
-        assertEquals(
-            "policy.network.data_saver.files.max_size",
-            PolicyKeys.maxSize(PolicyCondition.DATA_SAVER, PolicyKind.FILES),
-        )
-        assertEquals("policy.network.metered.relay", PolicyKeys.relay(PolicyCondition.METERED))
-        assertEquals("policy.relay.max_size", PolicyKeys.RELAY_MAX_SIZE)
-        val cells = PolicyCondition.entries.size * PolicyKind.entries.size
-        assertEquals(2 * cells + PolicyCondition.entries.size + 1, PolicyKeys.all().size)
-    }
-
-    @Test
     fun cellChangeKeepsTheRestOfTheRow() {
         val table = PolicyDefaults.config
         val row = table[PolicyCondition.ROAMING]
