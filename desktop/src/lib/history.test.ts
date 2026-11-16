@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import {
+  ApplyHistoryItemResponseSchema,
   ClipItemSchema,
   CopyHistoryItemResponseSchema,
   DeleteHistoryItemResponseSchema,
+  EventKind,
+  EventSchema,
   FetchHistoryItemResponseSchema,
   HistoryItemSchema,
   Kind,
@@ -18,6 +21,7 @@ vi.mock("./api/client", () => ({
     listHistory: vi.fn(),
     getSettings: vi.fn(),
     copyHistoryItem: vi.fn(),
+    applyHistoryItem: vi.fn(),
     fetchHistoryItem: vi.fn(),
     deleteHistoryItem: vi.fn(),
   },
@@ -27,9 +31,27 @@ vi.mock("./tray", () => ({
   updateTray: vi.fn(),
 }));
 
+const eventHarness = vi.hoisted(() => {
+  const handlers: Array<(event: unknown) => void> = [];
+  return {
+    handlers,
+    onEvent(handler: (event: unknown) => void) {
+      handlers.push(handler);
+      return () => {
+        handlers.length = 0;
+      };
+    },
+  };
+});
+
+vi.mock("./daemon.svelte", () => ({
+  daemon: { onEvent: eventHarness.onEvent },
+}));
+
 const listHistory = vi.mocked(client.listHistory);
 const getSettings = vi.mocked(client.getSettings);
 const copyHistoryItem = vi.mocked(client.copyHistoryItem);
+const applyHistoryItem = vi.mocked(client.applyHistoryItem);
 const fetchHistoryItem = vi.mocked(client.fetchHistoryItem);
 const deleteHistoryItem = vi.mocked(client.deleteHistoryItem);
 const updateTrayMock = vi.mocked(updateTray);
@@ -44,6 +66,7 @@ beforeEach(() => {
   history.notice = null;
   history.downloadsDir = "";
   history.downloading = [];
+  history.held = [];
 });
 
 describe("history list", () => {
@@ -151,6 +174,44 @@ describe("history actions", () => {
     await history.copy("item-1");
 
     expect(history.notice).toEqual({ kind: "error", text: "unsupported content" });
+  });
+
+  it("applies an item that waited for confirmation", async () => {
+    applyHistoryItem.mockResolvedValue(create(ApplyHistoryItemResponseSchema, {}));
+    history.held = ["item-1", "item-2"];
+
+    await history.apply("item-1");
+
+    expect(applyHistoryItem).toHaveBeenCalledWith(expect.objectContaining({ id: "item-1" }));
+    expect(history.held).toEqual(["item-2"]);
+    expect(history.notice?.kind).toBe("info");
+  });
+
+  it("keeps an item that could not be applied", async () => {
+    applyHistoryItem.mockRejectedValue(new Error("the item is gone"));
+    history.held = ["item-1"];
+
+    await history.apply("item-1");
+
+    expect(history.held).toEqual(["item-1"]);
+    expect(history.notice).toEqual({ kind: "error", text: "the item is gone" });
+  });
+});
+
+describe("held items", () => {
+  it("collects the items that wait for confirmation", async () => {
+    listHistory.mockResolvedValue(create(ListHistoryResponseSchema, {}));
+    history.start();
+
+    eventHarness.handlers[0](
+      create(EventSchema, {
+        kind: EventKind.CLIP_APPLY,
+        item: create(ClipItemSchema, { id: "item-1", kind: Kind.TEXT }),
+      }),
+    );
+
+    expect(history.held).toEqual(["item-1"]);
+    history.stop();
   });
 });
 

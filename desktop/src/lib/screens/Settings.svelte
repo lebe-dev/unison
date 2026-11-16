@@ -199,9 +199,9 @@
           onchange={(event) => void setConfirmation(event.currentTarget.checked)}
         />
         <span>
-          Ask other devices to confirm items sent from this device
+          Hold incoming items for confirmation
           <small>
-            The receiving device keeps the item until the user applies it.
+            Items from other devices wait in the history until you apply them.
           </small>
         </span>
       </label>

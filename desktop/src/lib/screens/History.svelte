@@ -238,7 +238,9 @@
             <div class="body">
               <div class="line">
                 <span class="title">{description(item) || "Item"}</span>
-                {#if info && !item.complete}
+                {#if info && history.held.includes(info.id)}
+                  <span class="badge confirm">Waits for you</span>
+                {:else if info && !item.complete}
                   <span class="badge confirm">Not downloaded</span>
                 {/if}
               </div>
@@ -255,14 +257,25 @@
             </div>
 
             <div class="actions">
-              <button
-                class="button small"
-                type="button"
-                onclick={() => void history.copy(info?.id ?? "")}
-                disabled={!info}
-              >
-                Copy
-              </button>
+              {#if history.held.includes(info?.id ?? "")}
+                <button
+                  class="button primary small"
+                  type="button"
+                  onclick={() => void history.apply(info?.id ?? "")}
+                  disabled={!info}
+                >
+                  Apply
+                </button>
+              {:else}
+                <button
+                  class="button small"
+                  type="button"
+                  onclick={() => void history.copy(info?.id ?? "")}
+                  disabled={!info}
+                >
+                  Copy
+                </button>
+              {/if}
               <button
                 class="button small"
                 type="button"

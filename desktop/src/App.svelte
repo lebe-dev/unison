@@ -7,9 +7,11 @@
   import { notifications } from "./lib/notifications.svelte";
   import { notify } from "./lib/notify";
   import { pairing } from "./lib/pairing.svelte";
+  import { requests } from "./lib/requests.svelte";
   import AddDevice from "./lib/screens/AddDevice.svelte";
   import Devices from "./lib/screens/Devices.svelte";
   import History from "./lib/screens/History.svelte";
+  import Requests from "./lib/screens/Requests.svelte";
   import Settings from "./lib/screens/Settings.svelte";
   import Transfers from "./lib/screens/Transfers.svelte";
   import { theme } from "./lib/theme.svelte";
@@ -19,6 +21,7 @@
   const sections = [
     { id: "devices", label: "Devices" },
     { id: "add", label: "Add device" },
+    { id: "requests", label: "Requests" },
     { id: "history", label: "History" },
     { id: "transfers", label: "Transfers" },
     { id: "settings", label: "Settings" },
@@ -34,8 +37,10 @@
     pairing.start();
     history.start();
     transfers.start();
-    notifications.start();
-    void daemon.start();
+    requests.start();
+    // A notification shows its buttons while the shell listens to them, so the
+    // events of the daemon start after the subscription.
+    void notifications.start().then(() => daemon.start());
     void onTrayAction(handleTrayAction).then((unlisten) => {
       unlistenTray = unlisten;
     });
@@ -45,6 +50,7 @@
     pairing.stop();
     history.stop();
     transfers.stop();
+    requests.stop();
     notifications.stop();
     daemon.stop();
     void unlistenTray?.();
@@ -96,6 +102,9 @@
           {#if section.id === "add" && pairing.request}
             <span class="badge confirm" aria-label="Pairing request waiting">!</span>
           {/if}
+          {#if section.id === "requests" && requests.pending > 0}
+            <span class="badge confirm" aria-label="Requests waiting">{requests.pending}</span>
+          {/if}
         </button>
       {/each}
     </nav>
@@ -142,6 +151,8 @@
         <Devices onAdd={() => (active = "add")} />
       {:else if active === "add"}
         <AddDevice />
+      {:else if active === "requests"}
+        <Requests />
       {:else if active === "history"}
         <History />
       {:else if active === "transfers"}
