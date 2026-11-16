@@ -55,9 +55,41 @@ test:
 fuzz-qr time="30s":
     go test -run '^$' -fuzz '^FuzzParseQR$' -fuzztime {{time}} ./core/pairing/
 
-# Fuzz the parsers for a short while.
-fuzz time="20s":
-    just fuzz-qr {{time}}
+# Fuzz one parser for the given time.
+fuzz-target package target time:
+    go test -run '^$' -fuzz '^{{target}}$' -fuzztime {{time}} {{package}}
+
+# Fuzz every parser, with the given time per target.
+fuzz time="10m":
+    just fuzz-target ./core/session FuzzReadFrame {{time}}
+    just fuzz-target ./core/session FuzzParseHello {{time}}
+    just fuzz-target ./core/session FuzzStreamHeader {{time}}
+    just fuzz-target ./core/clip FuzzClipAnnounce {{time}}
+    just fuzz-target ./core/history FuzzHistorySync {{time}}
+    just fuzz-target ./core/history FuzzHistoryBatch {{time}}
+    just fuzz-target ./core/trust FuzzIntroduction {{time}}
+    just fuzz-target ./core/trust FuzzRevocation {{time}}
+    just fuzz-target ./core/trust FuzzSetPeerPolicy {{time}}
+    just fuzz-target ./core/gossip FuzzGossipDigest {{time}}
+    just fuzz-target ./core/gossip FuzzGossipRecords {{time}}
+    just fuzz-target ./core/share FuzzShareOffer {{time}}
+    just fuzz-target ./core/share FuzzShareAnswer {{time}}
+    just fuzz-target ./core/blob/transfer FuzzBlobRequest {{time}}
+    just fuzz-target ./core/blob/transfer FuzzBlobTree {{time}}
+    just fuzz-target ./core/blob/transfer FuzzHaveBlob {{time}}
+    just fuzz-target ./core/discovery FuzzParseTXT {{time}}
+    just fuzz-target ./core/pairing FuzzPairingFrame {{time}}
+    just fuzz-target ./core/pairing FuzzParseQR {{time}}
+    just fuzz-target ./core/relay FuzzRelayFrame {{time}}
+    just fuzz-target ./internal/relay FuzzServerDatagram {{time}}
+    just fuzz-target ./internal/relay FuzzServerRegister {{time}}
+    just fuzz-target ./platform/windows/clipboard FuzzCFHTML {{time}}
+    just fuzz-target ./platform/windows/clipboard FuzzDIB {{time}}
+    just fuzz-target ./platform/windows/clipboard FuzzHDROP {{time}}
+
+# Fuzz every parser for a short while, as a smoke run.
+fuzz-short:
+    just fuzz 30s
 
 # Run the long integration tests of the node harness.
 test-integration:

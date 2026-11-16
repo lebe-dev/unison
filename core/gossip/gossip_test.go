@@ -134,9 +134,11 @@ func TestParseDigest(t *testing.T) {
 
 	cases := map[string]*wirev1.GossipDigest{
 		"short subject":        {Introductions: []*wirev1.IntroductionHead{{Subject: []byte{1}, TsUnixMs: at.UnixMilli()}}},
+		"empty subject":        {Introductions: []*wirev1.IntroductionHead{{Subject: make([]byte, 32), TsUnixMs: at.UnixMilli()}}},
 		"no time":              {Introductions: []*wirev1.IntroductionHead{{Subject: a.Bytes()}}},
 		"too many":             {Introductions: make([]*wirev1.IntroductionHead, MaxDigestHeads+1)},
 		"short revoked":        {Revocations: []*wirev1.RevocationHead{{Subject: []byte{1}, TsUnixMs: at.UnixMilli()}}},
+		"empty revoked":        {Revocations: []*wirev1.RevocationHead{{Subject: make([]byte, 32), TsUnixMs: at.UnixMilli()}}},
 		"revoked without time": {Revocations: []*wirev1.RevocationHead{{Subject: a.Bytes()}}},
 		"too many revocations": {Revocations: make([]*wirev1.RevocationHead, MaxDigestHeads+1)},
 	}
