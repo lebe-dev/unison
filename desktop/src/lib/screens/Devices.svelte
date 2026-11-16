@@ -3,7 +3,7 @@
   import { client } from "../api/client";
   import { confirmation } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
-  import { errorText, isUnimplemented } from "../errors";
+  import { errorText } from "../errors";
   import { formatDateTime, formatTime, pathLabel, platformLabel, roleLabel, shortDeviceID } from "../format";
 
   let { onAdd }: { /** Opens the screen that adds a device. */ onAdd?: () => void } = $props();
@@ -55,9 +55,7 @@
     } catch (error) {
       notice = {
         kind: "error",
-        text: isUnimplemented(error)
-          ? "The daemon cannot rename devices yet."
-          : errorText(error, "The device could not be renamed."),
+        text: errorText(error, "The device could not be renamed."),
       };
     } finally {
       busy = false;

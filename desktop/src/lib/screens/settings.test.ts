@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import {
+  DeviceSchema,
   FriendsDiscoverySchema,
   GetRelayResponseSchema,
   GetSettingsResponseSchema,
@@ -10,6 +11,7 @@ import {
   PolicyCellSchema,
   PolicyRowSchema,
   RelaySchema,
+  RenameDeviceResponseSchema,
   SetFriendsDiscoveryResponseSchema,
   SettingsSchema,
   UpdateSettingsResponseSchema,
@@ -24,6 +26,7 @@ vi.mock("../api/client", () => ({
     getStatus: vi.fn(),
     getSettings: vi.fn(),
     updateSettings: vi.fn(),
+    renameDevice: vi.fn(),
     setFriendsDiscovery: vi.fn(),
     getRelay: vi.fn(),
     setRelay: vi.fn(),
@@ -34,6 +37,7 @@ vi.mock("../api/client", () => ({
 const getStatus = vi.mocked(client.getStatus);
 const getSettings = vi.mocked(client.getSettings);
 const updateSettings = vi.mocked(client.updateSettings);
+const renameDevice = vi.mocked(client.renameDevice);
 const setFriendsDiscovery = vi.mocked(client.setFriendsDiscovery);
 const getRelay = vi.mocked(client.getRelay);
 
@@ -76,6 +80,11 @@ beforeEach(() => {
   getSettings.mockResolvedValue(create(GetSettingsResponseSchema, { settings: settings() }));
   updateSettings.mockResolvedValue(
     create(UpdateSettingsResponseSchema, { settings: settings() }),
+  );
+  renameDevice.mockResolvedValue(
+    create(RenameDeviceResponseSchema, {
+      device: create(DeviceSchema, { deviceId: "self", name: "This Mac" }),
+    }),
   );
   getRelay.mockResolvedValue(
     create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }),
@@ -239,5 +248,29 @@ describe("settings screen", () => {
     await fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
 
     expect(updateSettings).toHaveBeenCalledWith({ resetPolicy: true });
+  });
+
+  it("renames this device", async () => {
+    render(Settings);
+
+    await fireEvent.input(await screen.findByLabelText(/Device name/), {
+      target: { value: "Kitchen Mac" },
+    });
+    await fireEvent.click(screen.getAllByRole("button", { name: "Save" })[0]);
+
+    expect(renameDevice).toHaveBeenCalledWith({ deviceId: "self", name: "Kitchen Mac" });
+    expect(await screen.findByText(/announced to the paired devices/)).toBeTruthy();
+  });
+
+  it("refuses an empty device name", async () => {
+    render(Settings);
+
+    await fireEvent.input(await screen.findByLabelText(/Device name/), {
+      target: { value: "  " },
+    });
+    await fireEvent.click(screen.getAllByRole("button", { name: "Save" })[0]);
+
+    expect(screen.getByText(/cannot be empty/)).toBeTruthy();
+    expect(renameDevice).not.toHaveBeenCalled();
   });
 });

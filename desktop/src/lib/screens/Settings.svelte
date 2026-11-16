@@ -137,9 +137,10 @@
     busy = true;
     notice = null;
     try {
-      const response = await client.updateSettings({ deviceName: value });
-      name = response.settings?.deviceName ?? value;
-      notice = { kind: "info", text: "The name is announced the next time the daemon starts." };
+      const response = await client.renameDevice({ deviceId: daemon.deviceID, name: value });
+      name = response.device?.name ?? value;
+      await daemon.refresh();
+      notice = { kind: "info", text: "The name is announced to the paired devices." };
     } catch (error) {
       notice = { kind: "error", text: errorText(error, "The device name could not be saved.") };
     } finally {
@@ -365,7 +366,7 @@
               if (event.key === "Enter") void saveName();
             }}
           />
-          <small>Peers see this name. It is announced at the next start.</small>
+          <small>Peers see this name. They learn it the next time they connect.</small>
         </label>
         <button class="button primary" type="button" onclick={() => void saveName()} disabled={busy || !loaded}>
           Save
