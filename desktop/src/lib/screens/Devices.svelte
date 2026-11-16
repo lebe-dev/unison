@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Role, type Device } from "../api/gen/unison/local/v1/local_pb";
   import { client } from "../api/client";
+  import { confirmation } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
   import { errorText, isUnimplemented } from "../errors";
   import { formatDateTime, formatTime, pathLabel, platformLabel, roleLabel, shortDeviceID } from "../format";
@@ -63,6 +64,15 @@
     }
   }
 
+  async function setConfirmation(device: Device, require: boolean): Promise<void> {
+    notice = null;
+    const failure = await confirmation.set(device.deviceId, require);
+    if (!failure) {
+      return;
+    }
+    notice = { kind: "error", text: failure };
+  }
+
   async function revoke(device: Device): Promise<void> {
     busy = true;
     notice = null;
@@ -70,14 +80,12 @@
       await client.revokeDevice({ deviceId: device.deviceId });
       revoking = null;
       await daemon.refresh();
-      notice = { kind: "info", text: `${device.name || "The device"} is revoked.` };
-    } catch (error) {
       notice = {
-        kind: "error",
-        text: isUnimplemented(error)
-          ? "The daemon cannot revoke devices yet."
-          : errorText(error, "The device could not be revoked."),
+        kind: "info",
+        text: `${device.name || "The device"} is revoked and cannot reconnect.`,
       };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, "The device could not be revoked.") };
     } finally {
       busy = false;
     }
@@ -141,15 +149,6 @@
                     {#if device.online && pathLabel(device.path)}
                       <span class="badge">{pathLabel(device.path)}</span>
                     {/if}
-                    {#if device.requireConfirmation}
-                      <span class="badge confirm" title="Items from this device are applied after confirmation">
-                        Confirms items
-                      </span>
-                    {:else}
-                      <span class="badge" title="Items from this device are applied automatically">
-                        Applies automatically
-                      </span>
-                    {/if}
                   </div>
                 </div>
 
@@ -162,6 +161,23 @@
                     - last seen {formatTime(device.lastSeenAtUnixMs)}
                   {/if}
                 </p>
+
+                {#if device.role === Role.PERSONAL}
+                  <label class="toggle">
+                    <input
+                      type="checkbox"
+                      checked={confirmation.require(device)}
+                      disabled={confirmation.busy.includes(device.deviceId)}
+                      onchange={(event) => void setConfirmation(device, event.currentTarget.checked)}
+                    />
+                    <span>
+                      Hold incoming items for confirmation
+                      <small>
+                        The device keeps the items it receives until you apply them there.
+                      </small>
+                    </span>
+                  </label>
+                {/if}
 
                 {#if editing === device.deviceId}
                   <div class="rename">
@@ -188,10 +204,10 @@
                     </button>
                   </div>
                 {:else if revoking === device.deviceId}
-                  <div class="revoke">
+                  <div class="revoke" role="alertdialog" aria-label="Revoke the device">
                     <p class="muted">
-                      Revoke {device.name || "the device"}? It leaves the group and cannot reconnect
-                      until it is paired again.
+                      Revoke {device.name || "the device"}? Every Personal device of the group stops
+                      trusting it, and it cannot reconnect until it is paired again.
                     </p>
                     <div class="toolbar">
                       <button
@@ -200,7 +216,7 @@
                         onclick={() => void revoke(device)}
                         disabled={busy}
                       >
-                        Revoke
+                        Revoke device
                       </button>
                       <button
                         class="button ghost small"
