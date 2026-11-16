@@ -213,7 +213,8 @@ commands:
                               revoke a device or leave the group; the device is
                               cut off and never trusted again
   pair [--role personal|friends]
-                              pair a device and compare the short code
+                              pair a device: print a square to scan, or compare
+                              the short code
   clip get [--from <id>]       print the last clipboard item, optionally of one
                               paired device
   clip set [-]                copy standard input to the clipboard

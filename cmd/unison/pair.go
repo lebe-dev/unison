@@ -83,6 +83,7 @@ func (a *app) pair(ctx context.Context, args []string) error {
 	window := opened.Msg.GetWindow()
 	a.info("pairing window open until %s", formatTime(window.GetExpiresAtUnixMs()))
 	a.info("proposing role %s", roleText(role))
+	a.showPairingQr(pairCtx, client)
 
 	events := a.watch(pairCtx, client)
 	lines := readLines(pairCtx, a.stdin)
@@ -316,15 +317,23 @@ func chooseCandidate(line string, candidates []string) (string, bool) {
 }
 
 // showCode prints the short authentication code of an exchange and asks for the
-// confirmation.
+// confirmation. The device of a scanned QR code shows no code: the pair is
+// confirmed by the code that was read.
 func (a *app) showCode(event *localv1.Event) {
+	a.info("")
+	a.info("device  %s", deviceLabel(event.GetDeviceId(), event.GetName()))
+	a.info("role    %s", roleText(event.GetRole()))
+	if event.GetPairingMethod() == localv1.PairingMethod_PAIRING_METHOD_QR {
+		a.info("")
+		a.info("the device scanned the square of this one")
+		_, _ = fmt.Fprint(a.stderr, "add the device? [y/N]: ")
+		return
+	}
+
 	code := event.GetSas().GetDigits()
 	if len(code) == 6 {
 		code = code[:3] + " " + code[3:]
 	}
-	a.info("")
-	a.info("device  %s", deviceLabel(event.GetDeviceId(), event.GetName()))
-	a.info("role    %s", roleText(event.GetRole()))
 	a.info("code    %s   %s", code, strings.Join(event.GetSas().GetEmoji(), " "))
 	a.info("")
 	a.info("check that the other device shows the same code")
