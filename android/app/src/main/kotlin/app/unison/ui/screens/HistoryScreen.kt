@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -24,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +62,18 @@ fun HistoryScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
     ) {
+        val listState = rememberLazyListState()
+        val newest = history.items.firstOrNull()?.item?.id
+        LaunchedEffect(newest) {
+            // An entry that arrives while the list is at its top stays visible:
+            // a keyed list would otherwise keep the older entry in place and
+            // push the new one above the screen. A list the user scrolled
+            // further down keeps its position.
+            if (newest != null && listState.firstVisibleItemIndex <= 1) {
+                listState.requestScrollToItem(0)
+            }
+        }
+
         ScreenTitle(title = stringResource(R.string.nav_history)) {
             TextButton(onClick = onRefresh) {
                 Text(text = stringResource(R.string.action_refresh))
@@ -90,7 +104,7 @@ fun HistoryScreen(
         if (history.isEmpty) {
             EmptyHistory()
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 items(history.items, key = { it.item.id }) { entry ->
                     HistoryRow(
                         entry = entry,

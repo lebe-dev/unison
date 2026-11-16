@@ -802,6 +802,7 @@ class AppState(
             Local.EventKind.EVENT_KIND_CLIPBOARD,
             Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD,
             Local.EventKind.EVENT_KIND_CLIP_APPLY,
+            Local.EventKind.EVENT_KIND_HISTORY,
             -> true
             else -> false
         }
