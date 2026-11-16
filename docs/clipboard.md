@@ -87,6 +87,19 @@ An item lives for a fixed time from the moment it was captured:
 Expired items are removed every ten minutes and when the daemon starts. Deleting an item removes it
 on the other Personal devices as well, so it does not come back from them.
 
+The lifetimes are a setting of the device that captured the item: it writes the expiry into the
+item, so a change applies to the next copy and the items that are already recorded keep theirs. The
+lifetimes are never sent to the other devices. Change them in `Settings` of the desktop app, in
+`History` of the Android settings, or from the command line:
+
+```sh
+unison settings                  # print the settings, with the lifetimes
+unison settings ttl text 30d     # keep text for 30 days
+unison settings ttl reset        # back to the defaults
+```
+
+Days and hours are accepted, from one second up to 365 days.
+
 An item that arrived as metadata only is listed as not downloaded yet; the payload is fetched when
 you ask for it, which needs the device that has it to be online.
 
