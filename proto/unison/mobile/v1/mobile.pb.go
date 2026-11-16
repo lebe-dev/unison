@@ -37,6 +37,7 @@ const (
 	EventType_EVENT_TYPE_PAIRING_PAIRED    EventType = 8
 	EventType_EVENT_TYPE_PAIRING_FAILED    EventType = 9
 	EventType_EVENT_TYPE_PAIRING_CLOSED    EventType = 10
+	EventType_EVENT_TYPE_HISTORY           EventType = 11
 )
 
 // Enum value maps for EventType.
@@ -53,6 +54,7 @@ var (
 		8:  "EVENT_TYPE_PAIRING_PAIRED",
 		9:  "EVENT_TYPE_PAIRING_FAILED",
 		10: "EVENT_TYPE_PAIRING_CLOSED",
+		11: "EVENT_TYPE_HISTORY",
 	}
 	EventType_value = map[string]int32{
 		"EVENT_TYPE_UNSPECIFIED":       0,
@@ -66,6 +68,7 @@ var (
 		"EVENT_TYPE_PAIRING_PAIRED":    8,
 		"EVENT_TYPE_PAIRING_FAILED":    9,
 		"EVENT_TYPE_PAIRING_CLOSED":    10,
+		"EVENT_TYPE_HISTORY":           11,
 	}
 )
 
@@ -835,7 +838,7 @@ const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\arecords\x18\x01 \x03(\v2+.unison.mobile.v1.CandidateTxt.RecordsEntryR\arecords\x1a:\n" +
 	"\fRecordsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xdf\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xf7\x02\n" +
 	"\tEventType\x12\x1a\n" +
 	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18EVENT_TYPE_CLIP_RECEIVED\x10\x01\x12\x1e\n" +
@@ -848,7 +851,8 @@ const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\x19EVENT_TYPE_PAIRING_PAIRED\x10\b\x12\x1d\n" +
 	"\x19EVENT_TYPE_PAIRING_FAILED\x10\t\x12\x1d\n" +
 	"\x19EVENT_TYPE_PAIRING_CLOSED\x10\n" +
-	"B<Z:github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1b\x06proto3"
+	"\x12\x16\n" +
+	"\x12EVENT_TYPE_HISTORY\x10\vB<Z:github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1b\x06proto3"
 
 var (
 	file_unison_mobile_v1_mobile_proto_rawDescOnce sync.Once

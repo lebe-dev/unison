@@ -151,15 +151,22 @@ func (s *Store) handleBatch(ctx context.Context, peer Sender, batch *wirev1.Hist
 		s.log.Warn("history batch cut at the exchange limit",
 			"peer", peer.DeviceID(), "items", len(items), "accepted", accepted)
 	}
+	var recorded bool
 	for _, raw := range items[:accepted] {
 		item, err := protoconv.ClipItemFromProto(raw)
 		if err != nil {
 			s.log.Warn("history entry dropped", "peer", peer.DeviceID(), "error", err)
 			continue
 		}
-		if err := s.Append(ctx, item); err != nil {
+		inserted, err := s.record(ctx, item)
+		if err != nil {
 			s.log.Warn("history entry not recorded", "peer", peer.DeviceID(), "error", err)
+			continue
 		}
+		recorded = recorded || inserted
+	}
+	if recorded {
+		s.changed()
 	}
 	return nil
 }

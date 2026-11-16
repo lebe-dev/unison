@@ -221,6 +221,42 @@ func TestHistoryConvergesAfterOffline(t *testing.T) {
 	waitHistoryGone(t, c, id)
 }
 
+// TestHistoryChangeReachesSubscribers checks that an entry the history exchange
+// records is reported to the subscribers like a captured one: a reader that
+// only listens to events would otherwise keep a list that misses it.
+func TestHistoryChangeReachesSubscribers(t *testing.T) {
+	network := vnet.NewNetwork()
+	t.Cleanup(func() { _ = network.Close() })
+	bus := fake.NewBus()
+
+	dir := t.TempDir()
+	keys := fake.NewKeystore()
+
+	a := newTestNode(t, network, bus, 33000)
+	b := newTestNodeAt(t, network, bus, 33100, dir, keys)
+	a.start(t)
+	b.start(t)
+	mesh(t, a, b)
+
+	a.clipboard.Emit(textSnapshot("before"))
+	waitHistoryText(t, b, "before")
+
+	// The device is away while the other one captures an entry.
+	stopNode(t, b)
+	a.clipboard.Emit(textSnapshot("after"))
+	waitHistoryText(t, a, "after")
+
+	// The returning device learns the entry from the exchange.
+	b = newTestNodeAt(t, network, bus, 33100, dir, keys)
+	b.start(t)
+	sub := b.Subscribe()
+	defer sub.Close()
+
+	waitMeshOnline(t, a, b)
+	waitHistoryText(t, b, "after")
+	waitEvent(t, sub, EventHistory, model.DeviceID{})
+}
+
 // TestHistoryExpiryWithoutNetwork checks that an entry that reaches its expiry
 // disappears from every device while the network is down.
 func TestHistoryExpiryWithoutNetwork(t *testing.T) {

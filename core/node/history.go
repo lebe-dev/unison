@@ -39,12 +39,20 @@ func (n *Node) openHistory(db *store.Store, origin model.DeviceID) (*history.Sto
 		Fetch:     n.fetchPayload,
 		Clock:     n.clock,
 		Logger:    n.log,
+		OnChange:  n.historyChanged,
 	})
 	if err != nil {
 		return nil, err
 	}
 	n.history = hist
 	return hist, nil
+}
+
+// historyChanged reports a changed history to the subscribers. Every writer
+// goes through it, including the history exchange, so a reader never keeps a
+// list that misses entries.
+func (n *Node) historyChanged() {
+	n.publish(Event{Kind: EventHistory})
 }
 
 // History returns the history of the node. It is nil before Start.

@@ -45,6 +45,9 @@ const (
 	EventPairingClosed
 	// EventTransfer reports a change of a file transfer.
 	EventTransfer
+	// EventHistory reports a change of the history: an entry was recorded,
+	// deleted or expired, whoever produced it.
+	EventHistory
 )
 
 // String returns the name of the event kind.
@@ -74,6 +77,8 @@ func (k EventKind) String() string {
 		return "pairing-closed"
 	case EventTransfer:
 		return "transfer"
+	case EventHistory:
+		return "history"
 	default:
 		return "unknown"
 	}

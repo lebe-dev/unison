@@ -69,6 +69,8 @@ enum EventKind {
   EVENT_KIND_CLIP_APPLY = 11;
   // A file transfer changed its state or made progress.
   EVENT_KIND_TRANSFER = 12;
+  // The history changed: an entry was recorded, deleted or expired.
+  EVENT_KIND_HISTORY = 13;
 }
 
 // Pause mode requested by the client.

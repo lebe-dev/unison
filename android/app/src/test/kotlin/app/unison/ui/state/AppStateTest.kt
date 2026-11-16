@@ -277,6 +277,36 @@ class AppStateTest {
     }
 
     @Test
+    fun historyEventReloadsTheList() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.refreshHistory()
+        advanceUntilIdle()
+        val before = core.historyCalls.size
+
+        core.history = listOf(entry("2", Local.Kind.KIND_TEXT))
+        events.emit(historyEvent())
+        advanceUntilIdle()
+
+        assertTrue("the list was not read again", core.historyCalls.size > before)
+        assertEquals(1, state.history.value.items.size)
+    }
+
+    @Test
+    fun clipboardEventReloadsTheList() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.refreshHistory()
+        advanceUntilIdle()
+        val before = core.historyCalls.size
+
+        events.emit(historyEvent(Local.EventKind.EVENT_KIND_CLIPBOARD))
+        advanceUntilIdle()
+
+        assertTrue("the list was not read again", core.historyCalls.size > before)
+    }
+
+    @Test
     fun pauseIsSentAndReloaded() = runTest {
         val core = FakeCore()
         val state = appState(core)
@@ -857,6 +887,13 @@ class AppStateTest {
                     .build(),
             )
             .setComplete(true)
+            .build()
+
+        fun historyEvent(
+            kind: Local.EventKind = Local.EventKind.EVENT_KIND_HISTORY,
+        ): Mobile.Event = Mobile.Event.newBuilder()
+            .setType(Mobile.EventType.EVENT_TYPE_HISTORY)
+            .setEvent(Local.Event.newBuilder().setKind(kind).build())
             .build()
 
         fun request(id: String): Local.ShareRequest = Local.ShareRequest.newBuilder()

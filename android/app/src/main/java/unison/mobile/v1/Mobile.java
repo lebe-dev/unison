@@ -64,6 +64,10 @@ public final class Mobile {
      * <code>EVENT_TYPE_PAIRING_CLOSED = 10;</code>
      */
     EVENT_TYPE_PAIRING_CLOSED(10),
+    /**
+     * <code>EVENT_TYPE_HISTORY = 11;</code>
+     */
+    EVENT_TYPE_HISTORY(11),
     UNRECOGNIZED(-1),
     ;
 
@@ -111,6 +115,10 @@ public final class Mobile {
      * <code>EVENT_TYPE_PAIRING_CLOSED = 10;</code>
      */
     public static final int EVENT_TYPE_PAIRING_CLOSED_VALUE = 10;
+    /**
+     * <code>EVENT_TYPE_HISTORY = 11;</code>
+     */
+    public static final int EVENT_TYPE_HISTORY_VALUE = 11;
 
 
     @java.lang.Override
@@ -144,6 +152,7 @@ public final class Mobile {
         case 8: return EVENT_TYPE_PAIRING_PAIRED;
         case 9: return EVENT_TYPE_PAIRING_FAILED;
         case 10: return EVENT_TYPE_PAIRING_CLOSED;
+        case 11: return EVENT_TYPE_HISTORY;
         default: return null;
       }
     }
