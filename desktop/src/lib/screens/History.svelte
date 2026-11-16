@@ -1,8 +1,504 @@
 <script lang="ts">
-  import Placeholder from "./Placeholder.svelte";
+  import { onMount } from "svelte";
+  import { Kind, type HistoryItem } from "../api/gen/unison/local/v1/local_pb";
+  import { daemon } from "../daemon.svelte";
+  import {
+    fileNames,
+    formatBytes,
+    formatDateTime,
+    imagePreview,
+    itemSize,
+    kindLabel,
+    shortDeviceID,
+    textSnippet,
+  } from "../format";
+  import { history } from "../history.svelte";
+
+  /** Height of one row of the feed, in pixels. */
+  const ROW_HEIGHT = 88;
+
+  /** Rows rendered outside the visible area. */
+  const OVERSCAN = 4;
+
+  const kinds: { value: Kind; label: string }[] = [
+    { value: Kind.UNSPECIFIED, label: "All types" },
+    { value: Kind.TEXT, label: "Text" },
+    { value: Kind.IMAGE, label: "Images" },
+    { value: Kind.FILES, label: "Files" },
+  ];
+
+  let viewportHeight = $state(360);
+  let scrollTop = $state(0);
+  let feed: HTMLDivElement | null = $state(null);
+  let deleting = $state<string | null>(null);
+  let preview = $state<{ title: string; url: string } | null>(null);
+  let startedAt = $state<Record<string, number>>({});
+  let now = $state(Date.now());
+
+  const origins = $derived([
+    { value: "", label: "All devices" },
+    { value: daemon.deviceID, label: "This device" },
+    ...daemon.devices.map((device) => ({
+      value: device.deviceId,
+      label: device.name || shortDeviceID(device.deviceId),
+    })),
+  ]);
+
+  const windowStart = $derived(
+    Math.min(
+      Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN),
+      Math.max(0, history.items.length - 1),
+    ),
+  );
+  const windowEnd = $derived(
+    Math.min(
+      history.items.length,
+      windowStart + Math.ceil(viewportHeight / ROW_HEIGHT) + OVERSCAN * 2,
+    ),
+  );
+  const visible = $derived(history.items.slice(windowStart, windowEnd));
+  const topPad = $derived(windowStart * ROW_HEIGHT);
+  const bottomPad = $derived(Math.max(0, (history.items.length - windowEnd) * ROW_HEIGHT));
+
+  onMount(() => {
+    void history.load();
+    void history.loadSettings();
+    const timer = setInterval(() => void history.load(true), 10_000);
+    return () => clearInterval(timer);
+  });
+
+  $effect(() => {
+    // A new filter starts the feed from the newest item.
+    history.kind;
+    history.origin;
+    scrollTop = 0;
+    if (feed) {
+      feed.scrollTop = 0;
+    }
+  });
+
+  $effect(() => {
+    if (history.downloading.length === 0) {
+      return;
+    }
+    const timer = setInterval(() => (now = Date.now()), 1000);
+    return () => clearInterval(timer);
+  });
+
+  function originName(origin: string): string {
+    if (origin === daemon.deviceID) {
+      return "This device";
+    }
+    const device = daemon.devices.find((candidate) => candidate.deviceId === origin);
+    return device?.name || shortDeviceID(origin);
+  }
+
+  function description(item: HistoryItem): string {
+    const info = item.item;
+    if (!info) {
+      return "";
+    }
+    if (info.kind === Kind.FILES) {
+      return fileNames(info).join(", ");
+    }
+    if (info.kind === Kind.TEXT) {
+      return textSnippet(info, 140);
+    }
+    return `Stored as ${info.representations[0]?.mimeType ?? "an image"}`;
+  }
+
+  function thumbnail(item: HistoryItem): string | null {
+    return imagePreview(item.item);
+  }
+
+  function openPreview(item: HistoryItem): void {
+    const info = item.item;
+    const url = thumbnail(item);
+    if (!info || !url) {
+      return;
+    }
+    preview = { title: `Image from ${originName(info.origin)}`, url };
+  }
+
+  async function download(item: HistoryItem): Promise<void> {
+    const id = item.item?.id;
+    if (!id) {
+      return;
+    }
+    startedAt = { ...startedAt, [id]: Date.now() };
+    await history.download(item);
+    const next = { ...startedAt };
+    delete next[id];
+    startedAt = next;
+  }
+
+  function elapsed(id: string): string {
+    const start = startedAt[id];
+    if (!start) {
+      return "";
+    }
+    const seconds = Math.max(0, Math.round((now - start) / 1000));
+    return `${seconds} s`;
+  }
 </script>
 
-<Placeholder
-  title="History"
-  description="Clip items of every device with filters, download and copy back to the clipboard will appear here."
-/>
+{#if !daemon.connected}
+  <section class="state">
+    {#if daemon.loading}
+      <p class="muted">Connecting to the daemon...</p>
+    {:else}
+      <p class="notice error">The daemon is not running, so the history is unavailable.</p>
+      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+    {/if}
+  </section>
+{:else}
+  <div class="history">
+    <div class="toolbar">
+      <label class="field">
+        <span>Type</span>
+        <select
+          aria-label="Type"
+          value={history.kind}
+          onchange={(event) => void history.setKind(Number(event.currentTarget.value) as Kind)}
+        >
+          {#each kinds as option (option.value)}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </label>
+      <label class="field">
+        <span>Device</span>
+        <select
+          aria-label="Device"
+          value={history.origin}
+          onchange={(event) => void history.setOrigin(event.currentTarget.value)}
+        >
+          {#each origins as option (option.value)}
+            <option value={option.value}>{option.label}</option>
+          {/each}
+        </select>
+      </label>
+      <span class="count muted">{history.items.length} items</span>
+      <button
+        class="button small ghost"
+        type="button"
+        onclick={() => void history.load()}
+        disabled={history.loading}
+      >
+        Refresh
+      </button>
+    </div>
+
+    {#if history.notice}
+      <p
+        class="notice"
+        class:error={history.notice.kind === "error"}
+        class:info={history.notice.kind === "info"}
+      >
+        {history.notice.text}
+      </p>
+    {/if}
+
+    {#if history.error}
+      <p class="notice error">{history.error}</p>
+    {/if}
+
+    {#if history.items.length === 0}
+      <p class="empty">
+        {history.loading ? "Loading the history..." : "No items match this filter."}
+      </p>
+    {:else}
+      <div
+        class="feed"
+        bind:this={feed}
+        bind:clientHeight={viewportHeight}
+        onscroll={(event) => (scrollTop = event.currentTarget.scrollTop)}
+      >
+        <div style:height={`${topPad}px`}></div>
+        {#each visible as item (item.item?.id)}
+          {@const info = item.item}
+          <article class="row" class:pending={!item.complete}>
+            <div class="preview">
+              {#if thumbnail(item)}
+                <button
+                  type="button"
+                  class="thumb"
+                  aria-label="Show the image"
+                  onclick={() => openPreview(item)}
+                >
+                  <img src={thumbnail(item) ?? ""} alt="" />
+                </button>
+              {:else}
+                <span class="kind" title={kindLabel(info?.kind ?? Kind.UNSPECIFIED)}>
+                  {kindLabel(info?.kind ?? Kind.UNSPECIFIED).slice(0, 1)}
+                </span>
+              {/if}
+            </div>
+
+            <div class="body">
+              <div class="line">
+                <span class="title">{description(item) || "Item"}</span>
+                {#if info && !item.complete}
+                  <span class="badge confirm">Not downloaded</span>
+                {/if}
+              </div>
+              <div class="line meta">
+                <span>{originName(info?.origin ?? "")}</span>
+                <span>{formatDateTime(info?.createdAtUnixMs ?? 0)}</span>
+                {#if itemSize(info) > 0}
+                  <span>{formatBytes(itemSize(info))}</span>
+                {/if}
+                {#if history.downloading.includes(info?.id ?? "")}
+                  <span class="downloading">Downloading... {elapsed(info?.id ?? "")}</span>
+                {/if}
+              </div>
+            </div>
+
+            <div class="actions">
+              <button
+                class="button small"
+                type="button"
+                onclick={() => void history.copy(info?.id ?? "")}
+                disabled={!info}
+              >
+                Copy
+              </button>
+              <button
+                class="button small"
+                type="button"
+                onclick={() => info && void download(item)}
+                disabled={
+                  !info ||
+                  history.downloading.includes(info.id) ||
+                  (item.complete && info.kind !== Kind.FILES)
+                }
+              >
+                {item.complete && info?.kind !== Kind.FILES ? "Downloaded" : "Download"}
+              </button>
+              {#if deleting === info?.id}
+                <button
+                  class="button danger small"
+                  type="button"
+                  onclick={() => void history.remove(info?.id ?? "")}
+                >
+                  Delete
+                </button>
+                <button class="button ghost small" type="button" onclick={() => (deleting = null)}>
+                  Cancel
+                </button>
+              {:else}
+                <button
+                  class="button danger small"
+                  type="button"
+                  onclick={() => (deleting = info?.id ?? null)}
+                  disabled={!info}
+                >
+                  Delete
+                </button>
+              {/if}
+            </div>
+          </article>
+        {/each}
+        <div style:height={`${bottomPad}px`}></div>
+      </div>
+    {/if}
+  </div>
+{/if}
+
+{#if preview}
+  <div class="overlay" role="dialog" aria-modal="true" aria-label="Image preview">
+    <button
+      class="backdrop"
+      type="button"
+      aria-label="Close the preview"
+      onclick={() => (preview = null)}
+    ></button>
+    <figure>
+      <img src={preview.url} alt={preview.title} />
+      <figcaption>
+        <span>{preview.title}</span>
+        <button class="button small" type="button" onclick={() => (preview = null)}>Close</button>
+      </figcaption>
+    </figure>
+  </div>
+{/if}
+
+<style>
+  .history {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .toolbar {
+    align-items: flex-end;
+  }
+
+  .toolbar .field {
+    min-width: 140px;
+  }
+
+  .count {
+    margin-left: auto;
+    padding-bottom: 0.45rem;
+  }
+
+  .feed {
+    display: flex;
+    flex-direction: column;
+    height: min(58vh, 560px);
+    margin: 0 -0.25rem;
+    padding: 0 0.25rem;
+    overflow-y: auto;
+  }
+
+  .row {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.75rem;
+    height: 80px;
+    margin-bottom: 8px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-sizing: border-box;
+  }
+
+  .row.pending {
+    border-style: dashed;
+  }
+
+  .preview {
+    flex: 0 0 auto;
+  }
+
+  .thumb {
+    display: block;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background-color: var(--surface-soft);
+    overflow: hidden;
+    cursor: zoom-in;
+  }
+
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .kind {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    color: var(--muted);
+    background-color: var(--surface-soft);
+    font-weight: 600;
+  }
+
+  .body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+  }
+
+  .meta {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .downloading {
+    color: var(--accent);
+  }
+
+  .actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-color: rgba(16, 20, 28, 0.6);
+    z-index: 10;
+  }
+
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: transparent;
+    cursor: zoom-out;
+  }
+
+  .overlay figure {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 90vw;
+    max-height: 90vh;
+    margin: 0;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background-color: var(--surface);
+  }
+
+  .overlay img {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+  }
+
+  .overlay figcaption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+</style>

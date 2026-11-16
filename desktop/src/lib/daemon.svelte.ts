@@ -1,5 +1,4 @@
 import { ConnectError } from "@connectrpc/connect";
-import type { UnlistenFn } from "@tauri-apps/api/event";
 import { client } from "./api/client";
 import {
   EventKind,
@@ -8,7 +7,8 @@ import {
   type Event as DaemonEvent,
   type GetStatusResponse,
 } from "./api/gen/unison/local/v1/local_pb";
-import { onTrayAction, syncTray, type PauseChoice } from "./tray";
+import { updateTray, type PauseChoice } from "./tray";
+import { shortDeviceID } from "./format";
 
 /** Times of the shell. */
 const STATUS_INTERVAL = 5_000;
@@ -32,7 +32,6 @@ class DaemonStore {
 
   #running = false;
   #statusTimer: ReturnType<typeof setInterval> | null = null;
-  #unlisten: UnlistenFn | null = null;
   #events = new Set<(event: DaemonEvent) => void>();
   #stream: AbortController | null = null;
 
@@ -86,11 +85,6 @@ class DaemonStore {
       return;
     }
     this.#running = true;
-    this.#unlisten = await onTrayAction((action) => {
-      if (action.action === "pause") {
-        void this.setPause(action.mode);
-      }
-    });
     await this.refresh();
     this.#statusTimer = setInterval(() => void this.refresh(), STATUS_INTERVAL);
     void this.#watch();
@@ -105,8 +99,6 @@ class DaemonStore {
     }
     this.#stream?.abort();
     this.#stream = null;
-    void this.#unlisten?.();
-    this.#unlisten = null;
   }
 
   /**
@@ -160,8 +152,11 @@ class DaemonStore {
       connected: this.connected,
       onlinePeers: this.onlinePeers,
       paused: this.paused,
+      devices: this.devices
+        .filter((device) => device.online && !device.revoked)
+        .map((device) => ({ id: device.deviceId, name: device.name || shortDeviceID(device.deviceId) })),
     };
-    void syncTray(state).catch((error: unknown) => {
+    void updateTray(state).catch((error: unknown) => {
       console.warn("cannot update the tray", error);
     });
   }

@@ -12,6 +12,7 @@ const LABELS: Record<number, string> = {
   [EventKind.PAIRING_CLOSED]: "Pairing window closed",
   [EventKind.CLIP_DOWNLOAD]: "Item waiting for download",
   [EventKind.CLIP_APPLY]: "Item waiting for confirmation",
+  [EventKind.TRANSFER]: "Transfer updated",
 };
 
 /** eventKindLabel returns a short English label of a daemon event. */

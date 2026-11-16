@@ -120,6 +120,7 @@ async fn set_login_item(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if let Some(Err(err)) = agent::register_at_launch() {
                 eprintln!("unison: the login item could not be registered: {err}");
@@ -142,7 +143,8 @@ pub fn run() {
             api_stream,
             login_item_status,
             set_login_item,
-            tray::set_tray_state
+            tray::set_tray_state,
+            tray::pick_files
         ])
         .on_window_event(|window, event| {
             // The window stays alive in the tray, so the app keeps the daemon

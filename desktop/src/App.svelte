@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import type { UnlistenFn } from "@tauri-apps/api/event";
   import { daemon } from "./lib/daemon.svelte";
   import { eventKindLabel } from "./lib/events";
+  import { history } from "./lib/history.svelte";
+  import { notifications } from "./lib/notifications.svelte";
+  import { notify } from "./lib/notify";
   import { pairing } from "./lib/pairing.svelte";
   import AddDevice from "./lib/screens/AddDevice.svelte";
   import Devices from "./lib/screens/Devices.svelte";
@@ -9,6 +13,8 @@
   import Settings from "./lib/screens/Settings.svelte";
   import Transfers from "./lib/screens/Transfers.svelte";
   import { theme } from "./lib/theme.svelte";
+  import { onTrayAction, type TrayAction } from "./lib/tray";
+  import { transfers } from "./lib/transfers.svelte";
 
   const sections = [
     { id: "devices", label: "Devices" },
@@ -22,16 +28,47 @@
 
   let active = $state<SectionID>("devices");
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
+  let unlistenTray: UnlistenFn | null = null;
 
   onMount(() => {
     pairing.start();
+    history.start();
+    transfers.start();
+    notifications.start();
     void daemon.start();
+    void onTrayAction(handleTrayAction).then((unlisten) => {
+      unlistenTray = unlisten;
+    });
   });
 
   onDestroy(() => {
     pairing.stop();
+    history.stop();
+    transfers.stop();
+    notifications.stop();
     daemon.stop();
+    void unlistenTray?.();
+    unlistenTray = null;
   });
+
+  function handleTrayAction(action: TrayAction): void {
+    switch (action.action) {
+      case "pause":
+        void daemon.setPause(action.mode);
+        break;
+      case "copy_item":
+        void history.copy(action.id).then(() => {
+          const notice = history.notice;
+          if (notice?.kind === "error") {
+            void notify({ title: "Copy failed", body: notice.text });
+          }
+        });
+        break;
+      case "send_files":
+        void transfers.send(action.paths, [action.deviceId]);
+        break;
+    }
+  }
 
   function clock(value: bigint): string {
     return new Date(Number(value)).toLocaleTimeString();

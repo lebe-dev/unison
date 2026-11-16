@@ -1,0 +1,227 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { create } from "@bufbuild/protobuf";
+import {
+  ClipItemSchema,
+  CopyHistoryItemResponseSchema,
+  DeleteHistoryItemResponseSchema,
+  FetchHistoryItemResponseSchema,
+  HistoryItemSchema,
+  Kind,
+  ListHistoryResponseSchema,
+} from "./api/gen/unison/local/v1/local_pb";
+import { client } from "./api/client";
+import { history } from "./history.svelte";
+import { updateTray } from "./tray";
+
+vi.mock("./api/client", () => ({
+  client: {
+    listHistory: vi.fn(),
+    getSettings: vi.fn(),
+    copyHistoryItem: vi.fn(),
+    fetchHistoryItem: vi.fn(),
+    deleteHistoryItem: vi.fn(),
+  },
+}));
+
+vi.mock("./tray", () => ({
+  updateTray: vi.fn(),
+}));
+
+const listHistory = vi.mocked(client.listHistory);
+const getSettings = vi.mocked(client.getSettings);
+const copyHistoryItem = vi.mocked(client.copyHistoryItem);
+const fetchHistoryItem = vi.mocked(client.fetchHistoryItem);
+const deleteHistoryItem = vi.mocked(client.deleteHistoryItem);
+const updateTrayMock = vi.mocked(updateTray);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  updateTrayMock.mockResolvedValue(undefined);
+  history.items = [];
+  history.kind = Kind.UNSPECIFIED;
+  history.origin = "";
+  history.error = null;
+  history.notice = null;
+  history.downloadsDir = "";
+  history.downloading = [];
+});
+
+describe("history list", () => {
+  it("loads the list with the current filter", async () => {
+    listHistory.mockResolvedValue(
+      create(ListHistoryResponseSchema, { items: [textHistory("a", "first")] }),
+    );
+
+    await history.load();
+
+    expect(listHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: Kind.UNSPECIFIED, deviceId: "", limit: 200 }),
+    );
+    expect(history.items).toHaveLength(1);
+    expect(history.error).toBeNull();
+  });
+
+  it("applies a kind filter and reloads", async () => {
+    listHistory.mockResolvedValue(create(ListHistoryResponseSchema, {}));
+
+    await history.setKind(Kind.IMAGE);
+
+    expect(history.kind).toBe(Kind.IMAGE);
+    expect(listHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: Kind.IMAGE }),
+    );
+  });
+
+  it("applies a device filter and reloads", async () => {
+    listHistory.mockResolvedValue(create(ListHistoryResponseSchema, {}));
+
+    await history.setOrigin("device-1");
+
+    expect(history.origin).toBe("device-1");
+    expect(listHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ deviceId: "device-1" }),
+    );
+  });
+
+  it("reports a failure of the daemon", async () => {
+    listHistory.mockRejectedValue(new Error("connection refused"));
+
+    await history.load();
+
+    expect(history.error).toBe("connection refused");
+  });
+});
+
+describe("history actions", () => {
+  it("copies an item back to the clipboard", async () => {
+    copyHistoryItem.mockResolvedValue(create(CopyHistoryItemResponseSchema, {}));
+
+    await history.copy("item-1");
+
+    expect(copyHistoryItem).toHaveBeenCalledWith(expect.objectContaining({ id: "item-1" }));
+    expect(history.notice?.kind).toBe("info");
+  });
+
+  it("downloads a file into the downloads directory", async () => {
+    history.downloadsDir = "/downloads";
+    fetchHistoryItem.mockResolvedValue(
+      create(FetchHistoryItemResponseSchema, {
+        item: fileHistory("item-1", "report.pdf"),
+        files: ["/downloads/report.pdf"],
+      }),
+    );
+    history.items = [fileHistory("item-1", "report.pdf")];
+
+    await history.download(history.items[0]);
+
+    expect(fetchHistoryItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "item-1", path: "/downloads" }),
+    );
+    expect(history.notice?.text).toContain("/downloads/report.pdf");
+    expect(history.downloading).toEqual([]);
+  });
+
+  it("downloads an image into the local store", async () => {
+    fetchHistoryItem.mockResolvedValue(
+      create(FetchHistoryItemResponseSchema, { item: textHistory("item-2", "text") }),
+    );
+
+    await history.download(textHistory("item-2", "text"));
+
+    expect(fetchHistoryItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "item-2", path: "" }),
+    );
+    expect(history.notice?.text).toBe("Downloaded to the local store.");
+  });
+
+  it("removes a deleted item from the list", async () => {
+    deleteHistoryItem.mockResolvedValue(create(DeleteHistoryItemResponseSchema, {}));
+    listHistory.mockResolvedValue(create(ListHistoryResponseSchema, {}));
+    history.items = [textHistory("item-1", "first"), textHistory("item-2", "second")];
+
+    await history.remove("item-1");
+
+    expect(deleteHistoryItem).toHaveBeenCalledWith(expect.objectContaining({ id: "item-1" }));
+    expect(history.items.map((item) => item.item?.id)).toEqual(["item-2"]);
+  });
+
+  it("keeps an error of a copy", async () => {
+    copyHistoryItem.mockRejectedValue(new Error("unsupported content"));
+
+    await history.copy("item-1");
+
+    expect(history.notice).toEqual({ kind: "error", text: "unsupported content" });
+  });
+});
+
+describe("tray entries", () => {
+  it("keeps the five newest items", async () => {
+    const items = [1, 2, 3, 4, 5, 6].map((index) => textHistory(`item-${index}`, `text ${index}`));
+    listHistory.mockResolvedValue(create(ListHistoryResponseSchema, { items }));
+
+    await history.refreshRecent();
+
+    expect(listHistory).toHaveBeenCalledWith(expect.objectContaining({ limit: 5 }));
+    const recent = updateTrayMock.mock.calls.at(-1)?.[0]?.recent ?? [];
+    expect(recent).toHaveLength(5);
+    expect(recent[0]).toEqual({ id: "item-1", label: "text 1" });
+  });
+
+  it("labels files with their kind", async () => {
+    listHistory.mockResolvedValue(
+      create(ListHistoryResponseSchema, { items: [fileHistory("item-1", "report.pdf")] }),
+    );
+
+    await history.refreshRecent();
+
+    const recent = updateTrayMock.mock.calls.at(-1)?.[0]?.recent ?? [];
+    expect(recent[0].label).toBe("Files: report.pdf");
+  });
+
+  it("reads the downloads directory", async () => {
+    getSettings.mockResolvedValue({
+      $typeName: "unison.local.v1.GetSettingsResponse",
+      settings: {
+        $typeName: "unison.local.v1.Settings",
+        deviceName: "Mac",
+        requireConfirmation: false,
+        blobMaxSizeBytes: 0n,
+        downloadsDir: "/downloads",
+      },
+    });
+
+    await history.loadSettings();
+
+    expect(history.downloadsDir).toBe("/downloads");
+  });
+});
+
+function textHistory(id: string, text: string) {
+  return create(HistoryItemSchema, {
+    complete: true,
+    item: create(ClipItemSchema, {
+      id,
+      kind: Kind.TEXT,
+      representations: [
+        {
+          mimeType: "text/plain",
+          size: BigInt(text.length),
+          inlineBytes: new TextEncoder().encode(text),
+        },
+      ],
+    }),
+  });
+}
+
+function fileHistory(id: string, name: string) {
+  return create(HistoryItemSchema, {
+    complete: false,
+    item: create(ClipItemSchema, {
+      id,
+      kind: Kind.FILES,
+      representations: [
+        { mimeType: "application/x-unison-file", fileName: name, size: 2048n, blake3: "ab" },
+      ],
+    }),
+  });
+}
