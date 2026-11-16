@@ -7,6 +7,11 @@
 - On macOS 15 and newer the app needs the local network permission: System Settings >
   Privacy & Security > Local Network. Allow Unison there. A daemon started from a terminal belongs
   to the terminal: the permission of the terminal app is the one that matters.
+- When the system refuses the daemon the local network, the window of the app says so above the
+  screen and its `Open settings` button opens the Local Network pane. The daemon logs the same at
+  the warning level. If the warning stays while the switch of `unisond` is on, the switch may
+  belong to an earlier build of a daemon that you built yourself: remove the entry with the minus
+  button and start the daemon again to get a new prompt.
 - Pairing by code does not need discovery. `unison pair` prints a code, and the other device scans
   it, or joins with `unison pair --qr <code>`. See [Devices and pairing](devices.md#pairing).
 - A paired device can be reached by an address that you enter. `unison status` prints the addresses

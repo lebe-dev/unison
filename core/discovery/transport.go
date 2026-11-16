@@ -45,16 +45,19 @@ type transport struct {
 	closeOnce sync.Once
 	sendMu    sync.Mutex
 	log       *slog.Logger
+	// access learns from every send whether the local network is reachable.
+	access *lanAccess
 }
 
 // openTransport opens the mDNS sockets and joins the groups on every
 // interface. An address family without a usable interface is disabled.
-func openTransport(ifaces []net.Interface, logger *slog.Logger) (*transport, error) {
+func openTransport(ifaces []net.Interface, logger *slog.Logger, access *lanAccess) (*transport, error) {
 	t := &transport{
 		ifaces:  ifaces,
 		packets: make(chan packet, packetBuffer),
 		done:    make(chan struct{}),
 		log:     logger,
+		access:  access,
 	}
 	t.v4 = join4(ifaces, logger)
 	t.v6 = join6(ifaces, logger)
@@ -217,14 +220,20 @@ func (t *transport) send(iface *net.Interface, msg *dns.Msg) error {
 		if err := t.v4.SetMulticastInterface(iface); err != nil {
 			errs = append(errs, err)
 		} else if _, err := t.v4.WriteTo(buf, nil, group4); err != nil {
+			t.access.record(iface, err)
 			errs = append(errs, err)
+		} else {
+			t.access.record(iface, nil)
 		}
 	}
 	if t.v6 != nil {
 		if err := t.v6.SetMulticastInterface(iface); err != nil {
 			errs = append(errs, err)
 		} else if _, err := t.v6.WriteTo(buf, nil, group6); err != nil {
+			t.access.record(iface, err)
 			errs = append(errs, err)
+		} else {
+			t.access.record(iface, nil)
 		}
 	}
 	return errors.Join(errs...)
@@ -253,6 +262,7 @@ func (t *transport) reply(iface *net.Interface, from *net.UDPAddr, msg *dns.Msg)
 	default:
 		return errors.New("discovery: no socket for the reply")
 	}
+	t.access.record(iface, err)
 	return err
 }
 

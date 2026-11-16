@@ -138,7 +138,7 @@ func Run(ctx context.Context, opts Options) error {
 		key.use(func(context.Context) ([]byte, error) { return discoveryKey, nil })
 	}
 
-	n, err := newNode(opts, name, key, log)
+	n, disc, err := newNode(opts, name, key, log)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func Run(ctx context.Context, opts Options) error {
 
 	serveCtx, stopServing := context.WithCancel(context.Background())
 	defer stopServing()
-	serveDone, err := serve(serveCtx, n, opts, name)
+	serveDone, err := serve(serveCtx, n, opts, name, localNetworkBlocked(disc))
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func Run(ctx context.Context, opts Options) error {
 }
 
 // newNode assembles the node from the options and the platform ports.
-func newNode(opts Options, name string, key *keyProvider, log *slog.Logger) (*node.Node, error) {
+func newNode(opts Options, name string, key *keyProvider, log *slog.Logger) (*node.Node, ports.Discovery, error) {
 	disc := opts.Discovery
 	if disc == nil {
 		var err error
@@ -213,7 +213,7 @@ func newNode(opts Options, name string, key *keyProvider, log *slog.Logger) (*no
 			Logger:      log,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("daemon: start discovery: %w", err)
+			return nil, nil, fmt.Errorf("daemon: start discovery: %w", err)
 		}
 	}
 
@@ -228,17 +228,38 @@ func newNode(opts Options, name string, key *keyProvider, log *slog.Logger) (*no
 		Logger:    log,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return n, nil
+	return n, disc, nil
+}
+
+// localNetworkReporter is a discovery that knows whether the system lets its
+// sends reach the local network.
+type localNetworkReporter interface {
+	LocalNetworkBlocked() bool
+}
+
+// localNetworkBlocked returns the check of the local network access of disc,
+// or nil when the discovery cannot tell.
+func localNetworkBlocked(disc ports.Discovery) func() bool {
+	reporter, ok := disc.(localNetworkReporter)
+	if !ok {
+		return nil
+	}
+	return reporter.LocalNetworkBlocked
 }
 
 // serve binds the endpoint and serves the local API on it. The returned channel
 // reports the end of the server.
-func serve(ctx context.Context, n *node.Node, opts Options, name string) (<-chan error, error) {
+func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBlocked func() bool) (<-chan error, error) {
 	// SetClip copies text from the clients into the pipeline, which records and
 	// announces it.
-	service, err := api.New(n, api.Options{Version: opts.Version, DeviceName: name, LocalClip: n.Clip()})
+	service, err := api.New(n, api.Options{
+		Version:             opts.Version,
+		DeviceName:          name,
+		LocalClip:           n.Clip(),
+		LocalNetworkBlocked: lanBlocked,
+	})
 	if err != nil {
 		return nil, err
 	}

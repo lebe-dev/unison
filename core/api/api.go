@@ -42,15 +42,19 @@ type Options struct {
 	LocalClip LocalClip
 	// Clock is the time source. The system clock is used when nil.
 	Clock ports.Clock
+	// LocalNetworkBlocked reports that the system refuses the sends of the
+	// daemon to the local network. The access is reported as granted when nil.
+	LocalNetworkBlocked func() bool
 }
 
 // Service implements the local API over a node.
 type Service struct {
-	node      *node.Node
-	version   string
-	name      string
-	localClip LocalClip
-	clock     ports.Clock
+	node       *node.Node
+	version    string
+	name       string
+	localClip  LocalClip
+	clock      ports.Clock
+	lanBlocked func() bool
 }
 
 // compile time check of the generated handler interface.
@@ -67,11 +71,12 @@ func New(n *node.Node, opts Options) (*Service, error) {
 		clock = ports.SystemClock
 	}
 	return &Service{
-		node:      n,
-		version:   opts.Version,
-		name:      opts.DeviceName,
-		localClip: opts.LocalClip,
-		clock:     clock,
+		node:       n,
+		version:    opts.Version,
+		name:       opts.DeviceName,
+		localClip:  opts.LocalClip,
+		clock:      clock,
+		lanBlocked: opts.LocalNetworkBlocked,
 	}, nil
 }
 

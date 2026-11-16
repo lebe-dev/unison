@@ -2001,9 +2001,13 @@ type GetStatusResponse struct {
 	Pause            *Pause            `protobuf:"bytes,7,opt,name=pause,proto3" json:"pause,omitempty"`
 	FriendsDiscovery *FriendsDiscovery `protobuf:"bytes,8,opt,name=friends_discovery,json=friendsDiscovery,proto3" json:"friends_discovery,omitempty"`
 	// Addresses of the main listener that a peer can reach, host:port.
-	Addrs         []string `protobuf:"bytes,9,rep,name=addrs,proto3" json:"addrs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Addrs []string `protobuf:"bytes,9,rep,name=addrs,proto3" json:"addrs,omitempty"`
+	// The system refuses the sends of the daemon to the local network, so the
+	// device is neither found nor finds the others. On macOS the daemon lacks the
+	// local network permission.
+	LocalNetworkBlocked bool `protobuf:"varint,10,opt,name=local_network_blocked,json=localNetworkBlocked,proto3" json:"local_network_blocked,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *GetStatusResponse) Reset() {
@@ -2097,6 +2101,13 @@ func (x *GetStatusResponse) GetAddrs() []string {
 		return x.Addrs
 	}
 	return nil
+}
+
+func (x *GetStatusResponse) GetLocalNetworkBlocked() bool {
+	if x != nil {
+		return x.LocalNetworkBlocked
+	}
+	return false
 }
 
 type WatchEventsRequest struct {
@@ -6085,7 +6096,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	" \x01(\x03R\x15historyTtlTextSeconds\x129\n" +
 	"\x19history_ttl_image_seconds\x18\v \x01(\x03R\x16historyTtlImageSeconds\x129\n" +
 	"\x19history_ttl_files_seconds\x18\f \x01(\x03R\x16historyTtlFilesSeconds\"\x12\n" +
-	"\x10GetStatusRequest\"\x85\x03\n" +
+	"\x10GetStatusRequest\"\xb9\x03\n" +
 	"\x11GetStatusResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1f\n" +
@@ -6096,7 +6107,9 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\adevices\x18\x06 \x03(\v2\x17.unison.local.v1.DeviceR\adevices\x12,\n" +
 	"\x05pause\x18\a \x01(\v2\x16.unison.local.v1.PauseR\x05pause\x12N\n" +
 	"\x11friends_discovery\x18\b \x01(\v2!.unison.local.v1.FriendsDiscoveryR\x10friendsDiscovery\x12\x14\n" +
-	"\x05addrs\x18\t \x03(\tR\x05addrs\"\x14\n" +
+	"\x05addrs\x18\t \x03(\tR\x05addrs\x122\n" +
+	"\x15local_network_blocked\x18\n" +
+	" \x01(\bR\x13localNetworkBlocked\"\x14\n" +
 	"\x12WatchEventsRequest\"C\n" +
 	"\x13WatchEventsResponse\x12,\n" +
 	"\x05event\x18\x01 \x01(\v2\x16.unison.local.v1.EventR\x05event\"=\n" +

@@ -5,6 +5,7 @@
   import DaemonStatus from "./lib/DaemonStatus.svelte";
   import { eventKindLabel } from "./lib/events";
   import { history } from "./lib/history.svelte";
+  import { openLocalNetworkSettings } from "./lib/localNetwork";
   import { notifications } from "./lib/notifications.svelte";
   import { notify } from "./lib/notify";
   import { pairing } from "./lib/pairing.svelte";
@@ -77,6 +78,12 @@
     }
   }
 
+  function openSettings(): void {
+    void openLocalNetworkSettings().catch((error: unknown) => {
+      console.warn("cannot open the local network settings", error);
+    });
+  }
+
   function clock(value: bigint): string {
     return new Date(Number(value)).toLocaleTimeString();
   }
@@ -131,6 +138,16 @@
         <span class:paused={daemon.paused}>{daemon.pauseText}</span>
       </div>
     </header>
+
+    {#if daemon.localNetworkBlocked}
+      <div class="notice error local-network" role="alert">
+        <p>
+          Unison has no access to the local network, so your devices cannot find this Mac. Allow
+          Unison in System Settings &gt; Privacy &amp; Security &gt; Local Network.
+        </p>
+        <button type="button" onclick={openSettings}>Open settings</button>
+      </div>
+    {/if}
 
     {#if daemon.connected && daemon.error}
       <p class="error">{daemon.error}</p>

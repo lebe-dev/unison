@@ -14243,6 +14243,18 @@ java.lang.String defaultValue) {
      */
     com.google.protobuf.ByteString
         getAddrsBytes(int index);
+
+    /**
+     * <pre>
+     * The system refuses the sends of the daemon to the local network, so the
+     * device is neither found nor finds the others. On macOS the daemon lacks the
+     * local network permission.
+     * </pre>
+     *
+     * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+     * @return The localNetworkBlocked.
+     */
+    boolean getLocalNetworkBlocked();
   }
   /**
    * Protobuf type {@code unison.local.v1.GetStatusResponse}
@@ -14853,6 +14865,50 @@ java.lang.String defaultValue) {
       checkByteStringIsUtf8(value);
       ensureAddrsIsMutable();
       addrs_.add(value.toStringUtf8());
+    }
+
+    public static final int LOCAL_NETWORK_BLOCKED_FIELD_NUMBER = 10;
+    private boolean localNetworkBlocked_;
+    /**
+     * <pre>
+     * The system refuses the sends of the daemon to the local network, so the
+     * device is neither found nor finds the others. On macOS the daemon lacks the
+     * local network permission.
+     * </pre>
+     *
+     * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+     * @return The localNetworkBlocked.
+     */
+    @java.lang.Override
+    public boolean getLocalNetworkBlocked() {
+      return localNetworkBlocked_;
+    }
+    /**
+     * <pre>
+     * The system refuses the sends of the daemon to the local network, so the
+     * device is neither found nor finds the others. On macOS the daemon lacks the
+     * local network permission.
+     * </pre>
+     *
+     * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+     * @param value The localNetworkBlocked to set.
+     */
+    private void setLocalNetworkBlocked(boolean value) {
+      
+      localNetworkBlocked_ = value;
+    }
+    /**
+     * <pre>
+     * The system refuses the sends of the daemon to the local network, so the
+     * device is neither found nor finds the others. On macOS the daemon lacks the
+     * local network permission.
+     * </pre>
+     *
+     * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+     */
+    private void clearLocalNetworkBlocked() {
+
+      localNetworkBlocked_ = false;
     }
 
     public static unison.local.v1.Local.GetStatusResponse parseFrom(
@@ -15566,6 +15622,52 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The system refuses the sends of the daemon to the local network, so the
+       * device is neither found nor finds the others. On macOS the daemon lacks the
+       * local network permission.
+       * </pre>
+       *
+       * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+       * @return The localNetworkBlocked.
+       */
+      @java.lang.Override
+      public boolean getLocalNetworkBlocked() {
+        return instance.getLocalNetworkBlocked();
+      }
+      /**
+       * <pre>
+       * The system refuses the sends of the daemon to the local network, so the
+       * device is neither found nor finds the others. On macOS the daemon lacks the
+       * local network permission.
+       * </pre>
+       *
+       * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+       * @param value The localNetworkBlocked to set.
+       * @return This builder for chaining.
+       */
+      public Builder setLocalNetworkBlocked(boolean value) {
+        copyOnWrite();
+        instance.setLocalNetworkBlocked(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The system refuses the sends of the daemon to the local network, so the
+       * device is neither found nor finds the others. On macOS the daemon lacks the
+       * local network permission.
+       * </pre>
+       *
+       * <code>bool local_network_blocked = 10 [json_name = "localNetworkBlocked"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearLocalNetworkBlocked() {
+        copyOnWrite();
+        instance.clearLocalNetworkBlocked();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.GetStatusResponse)
     }
     @java.lang.Override
@@ -15593,11 +15695,12 @@ java.lang.String defaultValue) {
               "pause_",
               "friendsDiscovery_",
               "addrs_",
+              "localNetworkBlocked_",
             };
             java.lang.String info =
-                "\u0000\t\u0000\u0001\u0001\t\t\u0000\u0002\u0000\u0001\u0208\u0002\u0208\u0003\u0208" +
+                "\u0000\n\u0000\u0001\u0001\n\n\u0000\u0002\u0000\u0001\u0208\u0002\u0208\u0003\u0208" +
                 "\u0004\u0007\u0005\u1009\u0000\u0006\u001b\u0007\u1009\u0001\b\u1009\u0002\t\u021a" +
-                "";
+                "\n\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

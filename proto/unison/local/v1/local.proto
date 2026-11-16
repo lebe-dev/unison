@@ -422,6 +422,10 @@ message GetStatusResponse {
   FriendsDiscovery friends_discovery = 8;
   // Addresses of the main listener that a peer can reach, host:port.
   repeated string addrs = 9;
+  // The system refuses the sends of the daemon to the local network, so the
+  // device is neither found nor finds the others. On macOS the daemon lacks the
+  // local network permission.
+  bool local_network_blocked = 10;
 }
 
 message WatchEventsRequest {}

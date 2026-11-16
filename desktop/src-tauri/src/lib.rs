@@ -64,6 +64,32 @@ async fn api_stream(
 
 /// daemon_status reports the state of the daemon and the reason of the last
 /// failed start.
+/// LOCAL_NETWORK_PANE is the Local Network pane of the privacy settings.
+#[cfg(target_os = "macos")]
+const LOCAL_NETWORK_PANE: &str =
+    "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_LocalNetwork";
+
+/// open_local_network_settings opens the settings where the user lets the
+/// daemon reach the local network.
+#[tauri::command]
+fn open_local_network_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let status = std::process::Command::new("/usr/bin/open")
+            .arg(LOCAL_NETWORK_PANE)
+            .status()
+            .map_err(|err| format!("cannot open the settings: {err}"))?;
+        if !status.success() {
+            return Err(format!("cannot open the settings: {status}"));
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("the local network settings exist only on macOS".to_string())
+    }
+}
+
 #[tauri::command]
 fn daemon_status() -> daemon::Status {
     daemon::status()
@@ -157,6 +183,7 @@ pub fn run() {
             api_call,
             api_stream,
             daemon_status,
+            open_local_network_settings,
             login_item_status,
             set_login_item,
             tray::set_tray_state,

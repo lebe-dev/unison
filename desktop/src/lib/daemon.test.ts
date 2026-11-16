@@ -38,6 +38,23 @@ describe("daemon store", () => {
     daemon.startup = { state: "offline", reason: null };
   });
 
+  it("reports the local network blocked only while the daemon says so", async () => {
+    getStatus.mockResolvedValueOnce(create(GetStatusResponseSchema, { running: true }));
+    await daemon.refresh();
+    expect(daemon.localNetworkBlocked).toBe(false);
+
+    getStatus.mockResolvedValueOnce(
+      create(GetStatusResponseSchema, { running: true, localNetworkBlocked: true }),
+    );
+    await daemon.refresh();
+    expect(daemon.localNetworkBlocked).toBe(true);
+
+    offline();
+    readStatus.mockResolvedValue({ state: "offline", reason: null });
+    await daemon.refresh();
+    expect(daemon.localNetworkBlocked).toBe(false);
+  });
+
   it("keeps the reason of a failed start while the daemon is offline", async () => {
     offline();
     readStatus.mockResolvedValue({ state: "failed", reason: REASON });

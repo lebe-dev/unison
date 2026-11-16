@@ -15,7 +15,8 @@ the connections. Starting the app starts the daemon as well; the footer of the w
 
 On macOS 15 and newer the first start asks whether Unison may find and connect to the devices of
 the local network. Allow it. Without the permission the daemon still runs, but it neither announces
-itself nor finds other devices; see [Troubleshooting](troubleshooting.md).
+itself nor finds other devices, and the window shows a warning with a button that opens the Local
+Network settings; see [Troubleshooting](troubleshooting.md).
 
 `Start Unison at login` in the settings keeps the daemon running after a restart. macOS may ask you
 to approve the login item in System Settings > General > Login Items.

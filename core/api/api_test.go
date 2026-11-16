@@ -51,6 +51,28 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
+// TestGetStatusLocalNetworkBlocked checks that the state of the local network
+// access is reported as the option tells it.
+func TestGetStatusLocalNetworkBlocked(t *testing.T) {
+	for _, blocked := range []bool{false, true} {
+		n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 150)
+		n.start(t)
+		client := newClient(t, n.Node, api.Options{
+			Version:             "1.2.3",
+			DeviceName:          "workstation",
+			LocalNetworkBlocked: func() bool { return blocked },
+		})
+
+		response, err := client.GetStatus(callTimeout(t), connect.NewRequest(&localv1.GetStatusRequest{}))
+		if err != nil {
+			t.Fatalf("get status: %v", err)
+		}
+		if got := response.Msg.GetLocalNetworkBlocked(); got != blocked {
+			t.Errorf("local network blocked is %v, want %v", got, blocked)
+		}
+	}
+}
+
 // TestGetStatusNotRunning checks that a node that has not started still answers.
 func TestGetStatusNotRunning(t *testing.T) {
 	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 200)

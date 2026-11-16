@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -111,6 +112,10 @@ type Discovery struct {
 	nextID    int
 	tr        *transport
 	ifaceHash string
+	// access follows whether the system lets the sends reach the local network.
+	access *lanAccess
+	// lanWarned is set while the refused local network has been logged.
+	lanWarned atomic.Bool
 	epoch     int64
 	group     keyCache
 	friends   keyCache
@@ -144,6 +149,7 @@ func New(opts Options) (*Discovery, error) {
 		ads:      make(map[ports.Service]*advert),
 		browsers: make(map[int]*browser),
 	}
+	d.access = newLANAccess(d.clock.Now)
 	d.ctx, d.cancel = context.WithCancel(context.Background())
 	d.epoch = Epoch(d.clock.Now())
 	d.opts.Ifaces = cloneIfaces(opts.Ifaces)
@@ -409,11 +415,37 @@ func (d *Discovery) expire(ad advert, tr *transport) {
 	}
 }
 
+// LocalNetworkBlocked reports that the system refuses the sends of this
+// process to the local network, while the loopback interface still works. On
+// macOS it means that the process has no local network permission.
+func (d *Discovery) LocalNetworkBlocked() bool {
+	return d.access.blocked()
+}
+
 // send writes msg on iface and logs failures at debug level.
 func (d *Discovery) send(tr *transport, iface *net.Interface, msg *dns.Msg) {
 	if err := tr.send(iface, msg); err != nil {
 		debugf(d.log, "send mDNS message on %s: %v", ifaceName(iface), err)
 	}
+	d.logLocalNetwork()
+}
+
+// logLocalNetwork logs once when the system starts and stops refusing the
+// local network.
+func (d *Discovery) logLocalNetwork() {
+	if d.log == nil {
+		return
+	}
+	blocked := d.access.blocked()
+	if blocked == d.lanWarned.Load() || !d.lanWarned.CompareAndSwap(!blocked, blocked) {
+		return
+	}
+	if blocked {
+		d.log.Warn("the system refuses access to the local network, so other devices cannot find this one; " +
+			"on macOS allow it in System Settings > Privacy & Security > Local Network")
+		return
+	}
+	d.log.Info("access to the local network is back")
 }
 
 // records returns the records of ad at the current time.
@@ -734,7 +766,7 @@ func (d *Discovery) transportLocked() error {
 	if len(ifaces) == 0 {
 		return ErrNoInterfaces
 	}
-	tr, err := openTransport(ifaces, d.log)
+	tr, err := openTransport(ifaces, d.log, d.access)
 	if err != nil {
 		return err
 	}

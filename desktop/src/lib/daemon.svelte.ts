@@ -74,6 +74,12 @@ class DaemonStore {
     return this.devices.filter((device) => device.online).length;
   }
 
+  /** localNetworkBlocked reports a daemon that the system keeps off the local
+   * network, so the other devices neither find it nor are found. */
+  get localNetworkBlocked(): boolean {
+    return this.connected && (this.status?.localNetworkBlocked ?? false);
+  }
+
   get paused(): boolean {
     return this.status?.pause?.paused ?? false;
   }

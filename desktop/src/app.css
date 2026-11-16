@@ -481,3 +481,14 @@ select:focus-visible,
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
 }
+
+.notice.local-network {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notice.local-network p {
+  flex: 1;
+  margin: 0;
+}

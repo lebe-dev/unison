@@ -107,6 +107,9 @@ func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetS
 	status.Addrs = s.node.ListenAddrs()
 
 	status.Network = networkToProto(s.node.Network())
+	if s.lanBlocked != nil {
+		status.LocalNetworkBlocked = s.lanBlocked()
+	}
 
 	pause, err := s.pauseState(ctx)
 	if err != nil {
