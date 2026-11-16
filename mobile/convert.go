@@ -152,6 +152,18 @@ func sasToProto(sas pairing.SAS) *localv1.Sas {
 	return &localv1.Sas{Digits: sas.Digits, Emoji: append([]string(nil), sas.Emoji...)}
 }
 
+// pairingMethodToProto converts a pairing method to its local API form.
+func pairingMethodToProto(method pairing.Method) localv1.PairingMethod {
+	switch method {
+	case pairing.MethodSAS:
+		return localv1.PairingMethod_PAIRING_METHOD_SAS
+	case pairing.MethodQR:
+		return localv1.PairingMethod_PAIRING_METHOD_QR
+	default:
+		return localv1.PairingMethod_PAIRING_METHOD_UNSPECIFIED
+	}
+}
+
 // localEventToProto converts a node event to its local API form.
 func localEventToProto(event node.Event) *localv1.Event {
 	out := &localv1.Event{
@@ -166,6 +178,7 @@ func localEventToProto(event node.Event) *localv1.Event {
 		Sas:             sasToProto(event.SAS),
 		ProtocolVersion: event.Version,
 		AtUnixMs:        unixMilli(event.At),
+		PairingMethod:   pairingMethodToProto(event.Method),
 	}
 	switch event.Kind {
 	case node.EventClipboard, node.EventClipDownload, node.EventClipApply:
