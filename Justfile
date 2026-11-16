@@ -146,6 +146,15 @@ test-blob-large:
 test-share-large:
     go test -tags sharelarge -timeout 30m ./core/share/
 
+# Build the binaries of the end-to-end scenarios.
+e2e-build: build-unisond-host
+    go build -trimpath -ldflags "{{ldflags}}" -o bin/unison ./cmd/unison
+    go build -trimpath -ldflags "{{ldflags}}" -o bin/unison-relay ./cmd/unison-relay
+
+# Run the end-to-end scenarios of the release matrix on this machine.
+e2e *scenarios: e2e-build
+    e2e/run.sh {{scenarios}}
+
 # Vet and build the Go sources for Windows from any host.
 vet-windows:
     GOOS=windows go vet ./...
