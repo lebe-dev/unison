@@ -210,6 +210,13 @@ func (n *Node) WaitOffline(peer *Node) {
 	n.waitState(peer, false)
 }
 
+// SessionCount returns how many sessions the node opened with peer so far. A
+// count that grows while the peer stays online means the connection was
+// replaced.
+func (n *Node) SessionCount(peer *Node) int {
+	return n.sessions.count(peer.DeviceID())
+}
+
 // waitState waits until the node reports the peer as online or offline.
 func (n *Node) waitState(peer *Node, online bool) {
 	n.harness.t.Helper()
