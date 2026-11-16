@@ -533,6 +533,16 @@ under `service.operating_mode`; the startup device name is stored under `device.
 manifest also declares `ACCESS_LOCAL_NETWORK`, which apps targeting API 37 need to reach the
 local network.
 
+An outgoing transfer is followed in the `transfers` channel with its progress and reported once
+when it ends, also when the transfer finishes before the first poll. The `clipboard` channel
+carries an entry that is only metadata on this device with a Download action, and the request
+channel does the same for an offer of a Friends device.
+
+`ShareActivity` is the share target: it takes the streams or the text of another app, lists the
+online Personal devices for both and the Friends devices for files, and hands every file to the
+core through `Mobile.submitFile`. The screen reads its content again when another share arrives
+while it is open and the devices again when it comes back to the front.
+
 Incoming clipboard items reach the system clipboard from `UnisonService`: the core hands a
 `ClipPayload` to the platform callback, which writes plain text with `ClipData.newPlainText` and
 text with HTML with `ClipData.newHtmlText`. Writing is allowed in the background, reading is not,

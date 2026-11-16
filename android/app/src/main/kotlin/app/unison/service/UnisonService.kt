@@ -28,6 +28,7 @@ import app.unison.requests.RequestNotifications
 import app.unison.share.TransferNotifications
 import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,6 +55,7 @@ class UnisonService : Service() {
     private var requestsJob: Job? = null
     private var requestsTimer: Job? = null
     private val watchedTransfers = mutableSetOf<String>()
+    private val reportedTransfers = mutableSetOf<String>()
     private val notifiedRequests = mutableSetOf<String>()
     private var transferNames = emptyList<String>()
     private var transfersCanceled = false
@@ -147,6 +149,8 @@ class UnisonService : Service() {
                 val allowed = mode != OperatingMode.WIFI_ONLY || network.conditions.localNetwork
                 when {
                     allowed && !coreRunning -> startCoreLocked()
+                    // A start command of a running service restores the status.
+                    allowed && coreRunning -> refreshStatus()
                     !allowed && coreRunning -> pauseCoreLocked()
                     !allowed -> show(getString(R.string.service_waiting_wifi))
                 }
@@ -245,6 +249,7 @@ class UnisonService : Service() {
             return
         }
         transfersJob = scope.launch {
+            var sawActive = false
             while (true) {
                 val transfers = listTransfers()
                 if (transfers == null) {
@@ -253,9 +258,10 @@ class UnisonService : Service() {
                 }
                 val active = TransferProgress.active(transfers)
                 if (active.isEmpty()) {
-                    finishTransfers(transfers)
+                    finishTransfers(transfers, fresh = !sawActive)
                     return@launch
                 }
+                sawActive = true
                 watchedTransfers += active.map { it.id }
                 transferNames = TransferProgress.names(active)
                 showTransfers(TransferNotifications.progress(this@UnisonService, active))
@@ -267,28 +273,51 @@ class UnisonService : Service() {
     /** Running outgoing transfers, or null when the core does not answer. */
     private suspend fun listTransfers(): List<Local.Transfer>? = try {
         withContext(Dispatchers.IO) { client.listTransfers() }.transfersList
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "cannot read the transfers: ${e.message}")
         null
     }
 
-    /** Shows the result of the transfers that just ended. */
-    private fun finishTransfers(transfers: List<Local.Transfer>) {
-        if (watchedTransfers.isEmpty()) {
+    /**
+     * Shows the result of the transfers that just ended. A transfer can end
+     * before the first poll, then the ones that started a moment ago are
+     * reported once.
+     */
+    private fun finishTransfers(transfers: List<Local.Transfer>, fresh: Boolean) {
+        val ended = transfers.filter { it.id in watchedTransfers }
+        val reported = if (ended.isNotEmpty() || !fresh) ended else justStarted(transfers)
+        if (reported.isEmpty()) {
             transfersCanceled = false
             return
         }
-        val failed = transfers.any {
-            it.id in watchedTransfers && it.state == Local.TransferState.TRANSFER_STATE_FAILED
+        if (transferNames.isEmpty()) {
+            transferNames = TransferProgress.names(reported)
         }
+        val failed = reported.any { it.state == Local.TransferState.TRANSFER_STATE_FAILED }
         val message = when {
             transfersCanceled -> getString(R.string.transfer_canceled)
             failed -> getString(R.string.transfer_failed)
             else -> getString(R.string.transfer_sent, namesText())
         }
+        reportedTransfers += reported.map { it.id }
+        if (reportedTransfers.size > REPORTED_LIMIT) {
+            reportedTransfers.clear()
+        }
         watchedTransfers.clear()
         transfersCanceled = false
         showTransfers(TransferNotifications.result(this, message))
+    }
+
+    /** Outgoing transfers that started recently and were not reported yet. */
+    private fun justStarted(transfers: List<Local.Transfer>): List<Local.Transfer> {
+        val since = System.currentTimeMillis() - RECENT_TRANSFER_MS
+        return transfers.filter { transfer ->
+            transfer.direction == Local.TransferDirection.TRANSFER_DIRECTION_OUTGOING &&
+                transfer.id !in reportedTransfers &&
+                transfer.createdAtUnixMs >= since
+        }
     }
 
     /** Tells the user that the transfers cannot be followed any more. */
@@ -540,6 +569,8 @@ class UnisonService : Service() {
             status.deviceName,
             resources.getQuantityString(R.plurals.service_peers_online, online, online),
         )
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: CoreException) {
         Log.w(TAG, "status failed: ${e.message}")
         getString(R.string.service_failed)
@@ -601,6 +632,12 @@ class UnisonService : Service() {
 
         /** Time between two reads of the running transfers. */
         private const val TRANSFERS_POLL_MS = 500L
+
+        /** Age of a finished transfer that is still reported after a single poll. */
+        private const val RECENT_TRANSFER_MS = 30_000L
+
+        /** Transfers remembered as reported before the list is dropped. */
+        private const val REPORTED_LIMIT = 32
 
         /** Time between two reads of the offers that still wait for an answer. */
         private const val REQUESTS_REFRESH_MS = 30_000L

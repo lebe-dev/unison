@@ -1,6 +1,7 @@
 package app.unison.history
 
 import android.content.Context
+import androidx.core.app.NotificationManagerCompat
 import app.unison.core.CoreClient
 import app.unison.storage.Downloads
 import java.io.File
@@ -35,7 +36,10 @@ class HistoryDownloads(
             if (files.isEmpty()) {
                 throw IllegalStateException("the item has no payload to write")
             }
-            files.count { copy(it) }
+            val saved = files.count { copy(it) }
+            // The entry is on the device now, the download offer is gone.
+            NotificationManagerCompat.from(context).cancel(HistoryNotifications.idOf(id))
+            saved
         } finally {
             staging.deleteRecursively()
         }
