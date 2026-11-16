@@ -1,6 +1,8 @@
 package app.unison.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,11 +28,14 @@ import app.unison.service.OperatingMode
 import app.unison.ui.screens.AddScreen
 import app.unison.ui.screens.DevicesScreen
 import app.unison.ui.screens.HistoryScreen
+import app.unison.ui.screens.RequestsScreen
 import app.unison.ui.screens.SettingsScreen
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.HistoryState
 import app.unison.ui.state.PairingState
+import app.unison.ui.state.RequestsState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import unison.local.v1.Local
 
 /** Bottom navigation and the screens above it. */
@@ -39,11 +44,15 @@ fun UnisonRoot(
     state: CoreState,
     history: HistoryState,
     pairing: PairingState,
+    requests: RequestsState,
+    held: Set<String>,
     deviceName: String,
     operatingMode: OperatingMode,
     policy: PolicyConfig,
     clipboardOffer: ClipboardDraft?,
     notices: Flow<Int>,
+    requestedScreen: StateFlow<Destination?>,
+    onScreenShown: () -> Unit,
     onRefresh: () -> Unit,
     onSendClipboard: (ClipboardDraft) -> Unit,
     onDismissClipboard: () -> Unit,
@@ -52,12 +61,20 @@ fun UnisonRoot(
     onPolicyChange: (PolicyConfig) -> Unit,
     onPolicyReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
+    onSelfConfirmationChange: (Boolean) -> Unit,
+    onLeaveGroup: () -> Unit,
+    onSetDeviceConfirmation: (Local.Device, Boolean) -> Unit,
+    onRevokeDevice: (Local.Device) -> Unit,
     onRefreshHistory: () -> Unit,
     onHistoryKindChange: (Local.Kind) -> Unit,
     onHistoryDeviceChange: (String) -> Unit,
     onCopyHistoryItem: (Local.HistoryItem) -> Unit,
+    onApplyHistoryItem: (Local.HistoryItem) -> Unit,
     onDownloadHistoryItem: (Local.HistoryItem) -> Unit,
     onDeleteHistoryItem: (Local.HistoryItem) -> Unit,
+    onRefreshRequests: () -> Unit,
+    onAcceptRequest: (Local.ShareRequest) -> Unit,
+    onDeclineRequest: (Local.ShareRequest) -> Unit,
     onPairingRoleChange: (Local.Role) -> Unit,
     onOpenPairingWindow: () -> Unit,
     onExtendPairingWindow: () -> Unit,
@@ -76,6 +93,14 @@ fun UnisonRoot(
     LaunchedEffect(notices) {
         notices.collect { message -> snackbar.showSnackbar(resources.getString(message)) }
     }
+    LaunchedEffect(requestedScreen) {
+        requestedScreen.collect { screen ->
+            if (screen != null) {
+                destination = screen
+                onScreenShown()
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -85,7 +110,9 @@ fun UnisonRoot(
                     NavigationBarItem(
                         selected = item == destination,
                         onClick = { destination = item },
-                        icon = { Icon(painter = painterResource(item.icon), contentDescription = null) },
+                        icon = {
+                            DestinationIcon(item = item, pending = requests.pending)
+                        },
                         label = { Text(text = stringResource(item.label)) },
                     )
                 }
@@ -100,6 +127,8 @@ fun UnisonRoot(
                 onRefresh = onRefresh,
                 onSendClipboard = onSendClipboard,
                 onDismissClipboard = onDismissClipboard,
+                onSetConfirmation = onSetDeviceConfirmation,
+                onRevoke = onRevokeDevice,
                 modifier = content,
             )
             Destination.ADD -> AddScreen(
@@ -117,13 +146,25 @@ fun UnisonRoot(
                 onDismissResult = onDismissPairingResult,
                 modifier = content,
             )
+            Destination.REQUESTS -> {
+                LaunchedEffect(Unit) { onRefreshRequests() }
+                RequestsScreen(
+                    requests = requests,
+                    onRefresh = onRefreshRequests,
+                    onAccept = onAcceptRequest,
+                    onDecline = onDeclineRequest,
+                    modifier = content,
+                )
+            }
             Destination.HISTORY -> HistoryScreen(
                 history = history,
                 status = state.status,
+                held = held,
                 onRefresh = onRefreshHistory,
                 onKindChange = onHistoryKindChange,
                 onDeviceChange = onHistoryDeviceChange,
                 onCopy = onCopyHistoryItem,
+                onApply = onApplyHistoryItem,
                 onDownload = onDownloadHistoryItem,
                 onDelete = onDeleteHistoryItem,
                 modifier = content,
@@ -138,9 +179,23 @@ fun UnisonRoot(
                 onPolicyChange = onPolicyChange,
                 onPolicyReset = onPolicyReset,
                 onPause = onPause,
+                onSelfConfirmationChange = onSelfConfirmationChange,
+                onLeaveGroup = onLeaveGroup,
                 onRefresh = onRefresh,
                 modifier = content,
             )
         }
+    }
+}
+
+/** Icon of a destination with the number of requests that wait for an answer. */
+@Composable
+private fun DestinationIcon(item: Destination, pending: Int) {
+    if (item != Destination.REQUESTS || pending <= 0) {
+        Icon(painter = painterResource(item.icon), contentDescription = null)
+        return
+    }
+    BadgedBox(badge = { Badge { Text(text = pending.toString()) } }) {
+        Icon(painter = painterResource(item.icon), contentDescription = null)
     }
 }

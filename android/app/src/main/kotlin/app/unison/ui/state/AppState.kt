@@ -2,6 +2,7 @@ package app.unison.ui.state
 
 import androidx.annotation.StringRes
 import app.unison.R
+import app.unison.clipboard.HeldItems
 import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
@@ -36,6 +37,7 @@ class AppState(
     private val saver: HistorySaver,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
     private val localAddresses: () -> List<String> = { emptyList() },
+    private val held: HeldItems = HeldItems.shared,
 ) {
     private val mutableState = MutableStateFlow(CoreState())
 
@@ -52,6 +54,11 @@ class AppState(
     /** What the add screen renders. */
     val pairing: StateFlow<PairingState> = mutablePairing.asStateFlow()
 
+    private val mutableRequests = MutableStateFlow(RequestsState())
+
+    /** What the requests screen renders. */
+    val requests: StateFlow<RequestsState> = mutableRequests.asStateFlow()
+
     private val mutableNotices = MutableSharedFlow<Int>(
         extraBufferCapacity = NOTICE_BUFFER,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
@@ -62,6 +69,7 @@ class AppState(
 
     private var load: Job? = null
     private var loadHistory: Job? = null
+    private var loadRequests: Job? = null
     private var pollCandidates: Job? = null
     private var closeWindow: Job? = null
     private var loadingCandidates = false
@@ -75,18 +83,28 @@ class AppState(
                 if (event.changesHistory()) {
                     refreshHistory()
                 }
+                if (event.isTransfer()) {
+                    refreshRequests()
+                }
+                if (event.isHeld()) {
+                    held.add(event.event.item.id)
+                }
                 onPairingEvent(event)
             }
         }
     }
 
-    /** Reloads the status of the core. */
+    /** Reloads the status and the settings of the core. */
     fun refresh() {
         load?.cancel()
         load = scope.launch {
             mutableState.update { it.copy(loading = it.status == null, failure = null) }
             try {
-                mutableState.value = CoreState(loading = false, status = core.status())
+                val status = core.status()
+                val settings = loadSettings()
+                mutableState.update {
+                    it.copy(loading = false, status = status, settings = settings ?: it.settings, failure = null)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -164,6 +182,17 @@ class AppState(
         refreshHistory()
     }
 
+    /** Writes an entry that waited for a confirmation to the clipboard. */
+    fun applyHistoryItem(itemId: String) = runHistoryAction(
+        itemId = itemId,
+        failure = R.string.history_apply_failed,
+    ) {
+        core.applyHistoryItem(itemId)
+        held.remove(itemId)
+        mutableNotices.tryEmit(R.string.history_applied)
+        refreshHistory()
+    }
+
     /** Changes the pause of the clipboard synchronization. */
     fun setPause(request: PauseRequest) {
         scope.launch {
@@ -174,6 +203,113 @@ class AppState(
                 throw e
             } catch (e: Exception) {
                 mutableNotices.tryEmit(R.string.pause_failed)
+            }
+        }
+    }
+
+    /** Reloads the file offers that wait for an answer. */
+    fun refreshRequests() {
+        loadRequests?.cancel()
+        loadRequests = scope.launch { loadRequestsBlocking() }
+    }
+
+    /** Accepts or declines one offer of a Friends device. */
+    fun decideRequest(id: String, accept: Boolean) {
+        if (id.isEmpty() || id in mutableRequests.value.answering) {
+            return
+        }
+        mutableRequests.update { it.copy(answering = it.answering + id) }
+        scope.launch {
+            try {
+                core.decideRequest(id, accept)
+                mutableRequests.update {
+                    it.copy(
+                        requests = it.requests.filter { request -> request.id != id },
+                        loaded = true,
+                    )
+                }
+                mutableNotices.tryEmit(
+                    if (accept) R.string.requests_accepted else R.string.requests_declined,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.requests_answer_failed)
+                loadRequestsBlocking()
+            } finally {
+                mutableRequests.update { it.copy(answering = it.answering - id) }
+            }
+        }
+    }
+
+    /** Makes a paired device, or this device, ask for a confirmation on arrival. */
+    fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+        if (deviceId.isEmpty()) {
+            return
+        }
+        scope.launch {
+            try {
+                core.setDeviceConfirmation(deviceId, require)
+                mutableNotices.tryEmit(R.string.devices_confirmation_saved)
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.devices_confirmation_failed)
+            }
+        }
+    }
+
+    /** Removes a paired device from the group for good. */
+    fun revokeDevice(deviceId: String) {
+        if (deviceId.isEmpty()) {
+            return
+        }
+        scope.launch {
+            try {
+                core.revokeDevice(deviceId)
+                mutableNotices.tryEmit(R.string.devices_removed)
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.devices_remove_failed)
+            }
+        }
+    }
+
+    /** Leaves the group: the other devices stop syncing with this one. */
+    fun leaveGroup() {
+        val own = mutableState.value.status?.deviceId.orEmpty()
+        if (own.isEmpty()) {
+            return
+        }
+        scope.launch {
+            try {
+                core.revokeDevice(own)
+                mutableNotices.tryEmit(R.string.settings_left_group)
+                refresh()
+                refreshHistory()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_leave_group_failed)
+            }
+        }
+    }
+
+    /** Makes this device ask for a confirmation before the clipboard is applied. */
+    fun setSelfConfirmation(require: Boolean) {
+        scope.launch {
+            try {
+                val settings = core.setSelfConfirmation(require)
+                mutableState.update { it.copy(settings = settings) }
+                mutableNotices.tryEmit(R.string.settings_confirmation_saved)
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_confirmation_failed)
             }
         }
     }
@@ -389,6 +525,29 @@ class AppState(
         }
     }
 
+    /** Reads the offers of Friends, keeping the list on screen meanwhile. */
+    private suspend fun loadRequestsBlocking() {
+        try {
+            val response = core.requests()
+            mutableRequests.update {
+                it.copy(loading = false, loaded = true, requests = response.requestsList, failure = null)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            mutableRequests.update { it.copy(loading = false, failure = failureOf(e)) }
+        }
+    }
+
+    /** Reads the settings of the core, null when they are not available. */
+    private suspend fun loadSettings(): Local.Settings? = try {
+        core.settings()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
     private fun failureOf(e: Exception): CoreFailure =
         if (e is CoreException && e.isNotRunning) CoreFailure.STOPPED else CoreFailure.UNAVAILABLE
 
@@ -589,6 +748,14 @@ class AppState(
             else -> false
         }
     }
+
+    /** Events of the file transfers, new offers arrive with them. */
+    private fun Mobile.Event.isTransfer(): Boolean =
+        hasEvent() && event.kind == Local.EventKind.EVENT_KIND_TRANSFER
+
+    /** Events of an item that waits for the user to apply it. */
+    private fun Mobile.Event.isHeld(): Boolean =
+        hasEvent() && event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY
 
     private companion object {
         const val NOTICE_BUFFER = 4

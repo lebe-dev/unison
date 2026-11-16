@@ -13,6 +13,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import app.unison.R
+import app.unison.clipboard.HeldItems
+import app.unison.clipboard.HeldNotifications
 import app.unison.core.CoreClient
 import app.unison.core.CoreException
 import app.unison.core.coreEvents
@@ -22,6 +24,7 @@ import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryNotifications
 import app.unison.network.NetworkConditions
 import app.unison.network.NetworkMonitor
+import app.unison.requests.RequestNotifications
 import app.unison.share.TransferNotifications
 import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
@@ -48,7 +51,10 @@ class UnisonService : Service() {
     private var eventsJob: Job? = null
     private var statusJob: Job? = null
     private var transfersJob: Job? = null
+    private var requestsJob: Job? = null
+    private var requestsTimer: Job? = null
     private val watchedTransfers = mutableSetOf<String>()
+    private val notifiedRequests = mutableSetOf<String>()
     private var transferNames = emptyList<String>()
     private var transfersCanceled = false
     private lateinit var discovery: NsdDiscovery
@@ -79,6 +85,15 @@ class UnisonService : Service() {
         if (intent?.action == ACTION_CANCEL_TRANSFERS) {
             cancelTransfers()
         }
+        if (intent?.action == ACTION_APPLY_ITEM) {
+            intent.getStringExtra(EXTRA_ITEM_ID)?.let(::applyItem)
+        }
+        if (intent?.action == ACTION_ACCEPT_REQUEST || intent?.action == ACTION_DECLINE_REQUEST) {
+            val requestId = intent.getStringExtra(EXTRA_REQUEST_ID)
+            if (requestId != null) {
+                answerRequest(requestId, accept = intent.action == ACTION_ACCEPT_REQUEST)
+            }
+        }
         return START_STICKY
     }
 
@@ -89,6 +104,10 @@ class UnisonService : Service() {
         scope.cancel()
         discovery.stop()
         NotificationManagerCompat.from(this).cancel(TransferNotifications.ID)
+        for (requestId in notifiedRequests) {
+            NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(requestId))
+        }
+        notifiedRequests.clear()
         if (coreRunning) {
             coreRunning = false
             runBlocking(Dispatchers.IO) {
@@ -212,7 +231,11 @@ class UnisonService : Service() {
             event.type == MobileProto.EventType.EVENT_TYPE_PEER_ONLINE ||
                 event.type == MobileProto.EventType.EVENT_TYPE_PEER_OFFLINE -> refreshStatus()
             event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD -> notifyPending(event.event)
-            event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_TRANSFER -> refreshTransfers()
+            event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY -> notifyHeld(event.event)
+            event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_TRANSFER -> {
+                refreshTransfers()
+                refreshRequests()
+            }
         }
     }
 
@@ -344,6 +367,136 @@ class UnisonService : Service() {
         )
     }
 
+    /** Tells the user about an item that waits for the apply action. */
+    private fun notifyHeld(event: Local.Event) {
+        val item = event.item
+        if (item.id.isEmpty()) {
+            return
+        }
+        scope.launch { showHeld(item, deviceName(event.deviceId)) }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showHeld(item: Local.ClipItem, device: String) {
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(
+            HeldNotifications.idOf(item.id),
+            HeldNotifications.held(this, item, device),
+        )
+    }
+
+    /** Applies the clipboard item of the notification action. */
+    private fun applyItem(itemId: String) {
+        startInForeground(getString(R.string.clipboard_applying))
+        scope.launch {
+            val applied = try {
+                withContext(Dispatchers.IO) { client.applyHistoryItem(itemId) }
+                true
+            } catch (e: Exception) {
+                Log.w(TAG, "apply of $itemId failed: ${e.message}")
+                false
+            }
+            NotificationManagerCompat.from(this@UnisonService).cancel(HeldNotifications.idOf(itemId))
+            if (applied) {
+                HeldItems.shared.remove(itemId)
+            }
+            showApplyResult(applied)
+            refreshStatus()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showApplyResult(applied: Boolean) {
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(
+            HeldNotifications.RESULT_ID,
+            HeldNotifications.result(this, applied),
+        )
+    }
+
+    /** Keeps the request notifications in step with the offers of the core. */
+    private fun refreshRequests() {
+        if (requestsJob?.isActive == true) {
+            return
+        }
+        requestsJob = scope.launch {
+            val requests = listRequests() ?: return@launch
+            val current = requests.map { it.id }.toSet()
+            for (gone in notifiedRequests - current) {
+                NotificationManagerCompat.from(this@UnisonService)
+                    .cancel(RequestNotifications.idOf(gone))
+                notifiedRequests -= gone
+            }
+            for (request in requests) {
+                notifiedRequests += request.id
+                showRequest(request)
+            }
+            scheduleRequestsRefresh()
+        }
+    }
+
+    /** Reads the offers again while some of them still wait for an answer. */
+    private fun scheduleRequestsRefresh() {
+        requestsTimer?.cancel()
+        if (notifiedRequests.isEmpty()) {
+            return
+        }
+        requestsTimer = scope.launch {
+            delay(REQUESTS_REFRESH_MS)
+            refreshRequests()
+        }
+    }
+
+    /** Offers of Friends that wait for an answer, or null when the core does not answer. */
+    private suspend fun listRequests(): List<Local.ShareRequest>? = try {
+        withContext(Dispatchers.IO) { client.requests() }.requestsList
+    } catch (e: Exception) {
+        Log.w(TAG, "cannot read the requests: ${e.message}")
+        null
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showRequest(request: Local.ShareRequest) {
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(
+            RequestNotifications.idOf(request.id),
+            RequestNotifications.request(this, request),
+        )
+    }
+
+    /** Answers the offer of the notification action. */
+    private fun answerRequest(requestId: String, accept: Boolean) {
+        startInForeground(getString(R.string.requests_answering))
+        scope.launch {
+            val answered = try {
+                withContext(Dispatchers.IO) { client.decideRequest(requestId, accept) }
+                true
+            } catch (e: Exception) {
+                Log.w(TAG, "cannot answer the request: ${e.message}")
+                false
+            }
+            NotificationManagerCompat.from(this@UnisonService)
+                .cancel(RequestNotifications.idOf(requestId))
+            notifiedRequests -= requestId
+            showRequestResult(answered, accept)
+            refreshRequests()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showRequestResult(answered: Boolean, accept: Boolean) {
+        val text = when {
+            !answered -> getString(R.string.requests_answer_failed)
+            accept -> getString(R.string.requests_accepted)
+            else -> getString(R.string.requests_declined)
+        }
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(
+            RequestNotifications.RESULT_ID,
+            RequestNotifications.result(this, text),
+        )
+    }
+
     /** Saves the payloads of an item into the Downloads collection. */
     private fun download(itemId: String) {
         startInForeground(getString(R.string.history_downloading))
@@ -422,8 +575,20 @@ class UnisonService : Service() {
         /** Stops the outgoing file transfers. */
         const val ACTION_CANCEL_TRANSFERS = "app.unison.action.CANCEL_TRANSFERS"
 
+        /** Applies a clipboard item that waited for a confirmation. */
+        const val ACTION_APPLY_ITEM = "app.unison.action.APPLY_ITEM"
+
+        /** Accepts the file offer of a Friends device. */
+        const val ACTION_ACCEPT_REQUEST = "app.unison.action.ACCEPT_REQUEST"
+
+        /** Declines the file offer of a Friends device. */
+        const val ACTION_DECLINE_REQUEST = "app.unison.action.DECLINE_REQUEST"
+
         /** Entry the download action refers to. */
         const val EXTRA_ITEM_ID = "app.unison.extra.ITEM_ID"
+
+        /** File offer the answer actions refer to. */
+        const val EXTRA_REQUEST_ID = "app.unison.extra.REQUEST_ID"
 
         fun start(context: Context) {
             val intent = Intent(context, UnisonService::class.java).setAction(ACTION_START)
@@ -436,5 +601,8 @@ class UnisonService : Service() {
 
         /** Time between two reads of the running transfers. */
         private const val TRANSFERS_POLL_MS = 500L
+
+        /** Time between two reads of the offers that still wait for an answer. */
+        private const val REQUESTS_REFRESH_MS = 30_000L
     }
 }

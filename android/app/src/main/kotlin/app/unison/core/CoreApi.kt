@@ -11,6 +11,18 @@ interface CoreApi {
     /** Stores the device name used from the next start. */
     suspend fun setDeviceName(name: String): Local.Settings
 
+    /** Current settings of the core. */
+    suspend fun settings(): Local.Settings
+
+    /** Makes this device ask for a confirmation before the clipboard is applied. */
+    suspend fun setSelfConfirmation(require: Boolean): Local.Settings
+
+    /** Changes the confirmation flag of a paired device. */
+    suspend fun setDeviceConfirmation(deviceId: String, require: Boolean)
+
+    /** Removes a device from the group; the ID of this device leaves the group. */
+    suspend fun revokeDevice(deviceId: String)
+
     /** Changes the pause of the clipboard synchronization. */
     suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long = 0): Local.Pause
 
@@ -24,6 +36,9 @@ interface CoreApi {
     /** Writes one history entry back to the clipboard. */
     suspend fun copyHistoryItem(id: String)
 
+    /** Writes an entry that waited for a confirmation to the clipboard. */
+    suspend fun applyHistoryItem(id: String)
+
     /** Deletes one history entry on every device. */
     suspend fun deleteHistoryItem(id: String)
 
@@ -35,6 +50,12 @@ interface CoreApi {
 
     /** Stops one file transfer. */
     suspend fun cancelTransfer(id: String)
+
+    /** File offers of Friends that wait for an answer, newest first. */
+    suspend fun requests(): Local.ListRequestsResponse
+
+    /** Accepts or declines an incoming file offer. */
+    suspend fun decideRequest(id: String, accept: Boolean)
 
     /** Opens a pairing window that proposes [role] to the devices it pairs with. */
     suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow
@@ -80,6 +101,26 @@ class RunningCore(
         return client.setDeviceName(name)
     }
 
+    override suspend fun settings(): Local.Settings {
+        ensureRunning()
+        return client.settings()
+    }
+
+    override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
+        ensureRunning()
+        return client.setSelfConfirmation(require)
+    }
+
+    override suspend fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+        ensureRunning()
+        client.setDeviceConfirmation(deviceId, require)
+    }
+
+    override suspend fun revokeDevice(deviceId: String) {
+        ensureRunning()
+        client.revokeDevice(deviceId)
+    }
+
     override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
         ensureRunning()
         return client.setPause(mode, untilUnixMs)
@@ -93,6 +134,11 @@ class RunningCore(
     override suspend fun copyHistoryItem(id: String) {
         ensureRunning()
         client.copyHistoryItem(id)
+    }
+
+    override suspend fun applyHistoryItem(id: String) {
+        ensureRunning()
+        client.applyHistoryItem(id)
     }
 
     override suspend fun deleteHistoryItem(id: String) {
@@ -113,6 +159,16 @@ class RunningCore(
     override suspend fun cancelTransfer(id: String) {
         ensureRunning()
         client.cancelTransfer(id)
+    }
+
+    override suspend fun requests(): Local.ListRequestsResponse {
+        ensureRunning()
+        return client.requests()
+    }
+
+    override suspend fun decideRequest(id: String, accept: Boolean) {
+        ensureRunning()
+        client.decideRequest(id, accept)
     }
 
     override suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow {

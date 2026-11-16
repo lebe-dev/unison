@@ -44,6 +44,7 @@
 
     <string name="nav_devices">Devices</string>
     <string name="nav_add">Add</string>
+    <string name="nav_requests">Requests</string>
     <string name="nav_history">History</string>
     <string name="nav_settings">Settings</string>
 
@@ -59,6 +60,13 @@
     <string name="device_detail">%1$s, %2$s</string>
     <string name="device_online">Online</string>
     <string name="device_offline">Offline</string>
+    <string name="devices_confirmation">Ask before applying</string>
+    <string name="devices_confirmation_saved">Confirmation setting saved</string>
+    <string name="devices_confirmation_failed">Cannot change the confirmation setting</string>
+    <string name="devices_remove_title">Remove %1$s?</string>
+    <string name="devices_remove_body">The device loses access to this one for good and cannot pair again until you add it. The other devices learn about the removal when they meet.</string>
+    <string name="devices_removed">Device removed</string>
+    <string name="devices_remove_failed">Cannot remove the device</string>
     <string name="device_path_lan">LAN</string>
     <string name="device_path_relay">Relay</string>
     <string name="platform_macos">macOS</string>
@@ -76,6 +84,18 @@
     <string name="settings_name_saved">Device name saved</string>
     <string name="settings_name_failed">Cannot save the device name</string>
     <string name="settings_section_service">Service mode</string>
+    <string name="settings_section_confirmation">Confirmation</string>
+    <string name="settings_confirmation">Ask before applying</string>
+    <string name="settings_confirmation_hint">Keeps the clipboard of other devices until you apply it from the history.</string>
+    <string name="settings_confirmation_saved">Confirmation setting saved</string>
+    <string name="settings_confirmation_failed">Cannot change the confirmation setting</string>
+    <string name="settings_section_group">Your devices</string>
+    <string name="settings_leave_hint">Removing this device stops syncing with your other devices for good.</string>
+    <string name="settings_leave_group">Remove this device from the group</string>
+    <string name="settings_leave_title">Remove this device from the group?</string>
+    <string name="settings_leave_body">Unison stops syncing with your other devices and they cannot reach this one any more. You have to pair them again to use them. This cannot be undone.</string>
+    <string name="settings_left_group">This device left the group</string>
+    <string name="settings_leave_group_failed">Cannot leave the group</string>
     <string name="settings_section_about">About</string>
     <string name="settings_device_id">Device ID %1$s</string>
     <string name="mode_always">Always</string>
@@ -161,6 +181,25 @@
     <string name="history_notification_body">%1$s received - download it to use it</string>
     <string name="history_saved_notification">Saved to Downloads/Unison</string>
     <string name="history_failed_notification">Download failed</string>
+    <string name="history_held">Waits for you</string>
+    <string name="history_applied">Applied to the clipboard</string>
+    <string name="history_apply_failed">Cannot apply this item</string>
+    <string name="clipboard_held_body">Clipboard arrived - apply it to use it</string>
+    <string name="clipboard_applying">Applying the clipboard</string>
+    <string name="clipboard_applied">Clipboard applied</string>
+    <string name="clipboard_apply_failed">Cannot apply the clipboard</string>
+
+    <string name="requests_empty">No requests</string>
+    <string name="requests_empty_body">File offers from friends wait here until you answer them.</string>
+    <plurals name="request_files">
+        <item quantity="one">%1$d file - %2$s</item>
+        <item quantity="other">%1$d files - %2$s</item>
+    </plurals>
+    <string name="requests_expires">Waiting %1$s</string>
+    <string name="requests_answering">Answering the request</string>
+    <string name="requests_accepted">Files on their way</string>
+    <string name="requests_declined">Request declined</string>
+    <string name="requests_answer_failed">Cannot answer the request</string>
 
     <string name="share_label">Send with Unison</string>
     <string name="share_text_summary">Text</string>
@@ -194,6 +233,10 @@
     <string name="kind_image">Image</string>
     <string name="kind_files">File</string>
     <string name="action_copy">Copy</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_accept">Accept</string>
+    <string name="action_decline">Decline</string>
+    <string name="action_remove">Remove</string>
     <string name="action_download">Download</string>
     <string name="action_delete">Delete</string>
 

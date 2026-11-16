@@ -45,10 +45,12 @@ import unison.local.v1.Local
 fun HistoryScreen(
     history: HistoryState,
     status: Local.GetStatusResponse?,
+    held: Set<String>,
     onRefresh: () -> Unit,
     onKindChange: (Local.Kind) -> Unit,
     onDeviceChange: (String) -> Unit,
     onCopy: (Local.HistoryItem) -> Unit,
+    onApply: (Local.HistoryItem) -> Unit,
     onDownload: (Local.HistoryItem) -> Unit,
     onDelete: (Local.HistoryItem) -> Unit,
     modifier: Modifier = Modifier,
@@ -94,7 +96,9 @@ fun HistoryScreen(
                         entry = entry,
                         device = deviceName(status, entry.item.origin),
                         busy = entry.item.id in history.busy,
+                        held = entry.item.id in held,
                         onCopy = { onCopy(entry) },
+                        onApply = { onApply(entry) },
                         onDownload = { onDownload(entry) },
                         onDelete = { onDelete(entry) },
                     )
@@ -167,7 +171,9 @@ private fun HistoryRow(
     entry: Local.HistoryItem,
     device: String,
     busy: Boolean,
+    held: Boolean,
     onCopy: () -> Unit,
+    onApply: () -> Unit,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -184,6 +190,14 @@ private fun HistoryRow(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
+            if (held) {
+                Text(
+                    text = stringResource(R.string.history_held),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
             if (busy) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -223,7 +237,11 @@ private fun HistoryRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
         ) {
-            if (item.kind != Local.Kind.KIND_FILES) {
+            if (held) {
+                TextButton(onClick = onApply, enabled = !busy) {
+                    Text(text = stringResource(R.string.action_apply))
+                }
+            } else if (item.kind != Local.Kind.KIND_FILES) {
                 TextButton(onClick = onCopy, enabled = !busy) {
                     Text(text = stringResource(R.string.action_copy))
                 }
