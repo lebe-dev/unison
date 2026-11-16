@@ -390,6 +390,12 @@ message Settings {
   PolicyRow data_saver = 8;
   // Largest item fetched eagerly over the relay, in bytes.
   int64 relay_max_size_bytes = 9;
+  // Lifetime of a text item of the history, in seconds.
+  int64 history_ttl_text_seconds = 10;
+  // Lifetime of an image item of the history, in seconds.
+  int64 history_ttl_image_seconds = 11;
+  // Lifetime of a file item of the history, in seconds.
+  int64 history_ttl_files_seconds = 12;
 }
 
 message GetStatusRequest {}
@@ -756,6 +762,15 @@ message UpdateSettingsRequest {
   // Remove the stored policy overrides and return to the defaults. Rows given
   // in the same request are stored on top of the defaults.
   bool reset_policy = 10;
+  // Lifetime of a text item of the history, in seconds.
+  optional int64 history_ttl_text_seconds = 11;
+  // Lifetime of an image item of the history, in seconds.
+  optional int64 history_ttl_image_seconds = 12;
+  // Lifetime of a file item of the history, in seconds.
+  optional int64 history_ttl_files_seconds = 13;
+  // Remove the stored history lifetimes and return to the defaults. Lifetimes
+  // given in the same request are stored on top of the defaults.
+  bool reset_history_ttl = 14;
 }
 
 message UpdateSettingsResponse {
