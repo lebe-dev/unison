@@ -331,6 +331,37 @@ message PairingCandidate {
   int64 first_seen_unix_ms = 3;
 }
 
+// Outcome of one policy cell for an item that arrives without an explicit
+// request.
+enum PolicyAction {
+  POLICY_ACTION_UNSPECIFIED = 0;
+  // The item is dropped and not recorded.
+  POLICY_ACTION_REJECT = 1;
+  // The item is recorded and fetched on request.
+  POLICY_ACTION_METADATA = 2;
+  // The item is recorded and applied after a confirmation.
+  POLICY_ACTION_CONFIRM = 3;
+  // The item is applied without asking.
+  POLICY_ACTION_AUTO = 4;
+}
+
+// Policy of one content kind under one network condition.
+message PolicyCell {
+  // Outcome for the item.
+  optional PolicyAction action = 1;
+  // Largest item fetched eagerly, in bytes.
+  optional int64 max_size_bytes = 2;
+}
+
+// Policy of one network condition.
+message PolicyRow {
+  PolicyCell text = 1;
+  PolicyCell image = 2;
+  PolicyCell files = 3;
+  // Whether the relay path may be used.
+  optional bool relay = 4;
+}
+
 // Settings of the daemon.
 message Settings {
   // Device name announced to peers. Applied at the next start.
@@ -341,6 +372,16 @@ message Settings {
   int64 blob_max_size_bytes = 3;
   // Directory that receives shared files.
   string downloads_dir = 4;
+  // Policy of an online network without restrictions.
+  PolicyRow unmetered = 5;
+  // Policy of a network billed by volume.
+  PolicyRow metered = 6;
+  // Policy of a roaming network.
+  PolicyRow roaming = 7;
+  // Policy of a network with the system data saver on.
+  PolicyRow data_saver = 8;
+  // Largest item fetched eagerly over the relay, in bytes.
+  int64 relay_max_size_bytes = 9;
 }
 
 message GetStatusRequest {}
@@ -697,6 +738,16 @@ message UpdateSettingsRequest {
   optional bool require_confirmation = 2;
   optional int64 blob_max_size_bytes = 3;
   optional string downloads_dir = 4;
+  // Policy rows to change. A missing row, cell or field keeps the stored
+  // value.
+  PolicyRow unmetered = 5;
+  PolicyRow metered = 6;
+  PolicyRow roaming = 7;
+  PolicyRow data_saver = 8;
+  optional int64 relay_max_size_bytes = 9;
+  // Remove the stored policy overrides and return to the defaults. Rows given
+  // in the same request are stored on top of the defaults.
+  bool reset_policy = 10;
 }
 
 message UpdateSettingsResponse {

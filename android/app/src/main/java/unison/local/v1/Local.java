@@ -1356,6 +1356,159 @@ public final class Local {
     // @@protoc_insertion_point(enum_scope:unison.local.v1.PairingMethod)
   }
 
+  /**
+   * <pre>
+   * Outcome of one policy cell for an item that arrives without an explicit
+   * request.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.PolicyAction}
+   */
+  public enum PolicyAction
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>POLICY_ACTION_UNSPECIFIED = 0;</code>
+     */
+    POLICY_ACTION_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * The item is dropped and not recorded.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_REJECT = 1;</code>
+     */
+    POLICY_ACTION_REJECT(1),
+    /**
+     * <pre>
+     * The item is recorded and fetched on request.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_METADATA = 2;</code>
+     */
+    POLICY_ACTION_METADATA(2),
+    /**
+     * <pre>
+     * The item is recorded and applied after a confirmation.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_CONFIRM = 3;</code>
+     */
+    POLICY_ACTION_CONFIRM(3),
+    /**
+     * <pre>
+     * The item is applied without asking.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_AUTO = 4;</code>
+     */
+    POLICY_ACTION_AUTO(4),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>POLICY_ACTION_UNSPECIFIED = 0;</code>
+     */
+    public static final int POLICY_ACTION_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * The item is dropped and not recorded.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_REJECT = 1;</code>
+     */
+    public static final int POLICY_ACTION_REJECT_VALUE = 1;
+    /**
+     * <pre>
+     * The item is recorded and fetched on request.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_METADATA = 2;</code>
+     */
+    public static final int POLICY_ACTION_METADATA_VALUE = 2;
+    /**
+     * <pre>
+     * The item is recorded and applied after a confirmation.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_CONFIRM = 3;</code>
+     */
+    public static final int POLICY_ACTION_CONFIRM_VALUE = 3;
+    /**
+     * <pre>
+     * The item is applied without asking.
+     * </pre>
+     *
+     * <code>POLICY_ACTION_AUTO = 4;</code>
+     */
+    public static final int POLICY_ACTION_AUTO_VALUE = 4;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static PolicyAction valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static PolicyAction forNumber(int value) {
+      switch (value) {
+        case 0: return POLICY_ACTION_UNSPECIFIED;
+        case 1: return POLICY_ACTION_REJECT;
+        case 2: return POLICY_ACTION_METADATA;
+        case 3: return POLICY_ACTION_CONFIRM;
+        case 4: return POLICY_ACTION_AUTO;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<PolicyAction>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        PolicyAction> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<PolicyAction>() {
+            @java.lang.Override
+            public PolicyAction findValueByNumber(int number) {
+              return PolicyAction.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return PolicyActionVerifier.INSTANCE;
+    }
+
+    private static final class PolicyActionVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new PolicyActionVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return PolicyAction.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private PolicyAction(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.PolicyAction)
+  }
+
   public interface NetworkStateOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.NetworkState)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -3104,6 +3257,379 @@ public final class Local {
     }
   }
 
+  public interface FriendsDiscoveryOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.FriendsDiscovery)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The device looks for Friends devices.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     * @return The on.
+     */
+    boolean getOn();
+
+    /**
+     * <pre>
+     * End of the search, unix milliseconds. Zero when it is off.
+     * </pre>
+     *
+     * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+     * @return The untilUnixMs.
+     */
+    long getUntilUnixMs();
+  }
+  /**
+   * <pre>
+   * State of the clipboard pause.
+   * Temporary search for Friends devices.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.FriendsDiscovery}
+   */
+  public  static final class FriendsDiscovery extends
+      com.google.protobuf.GeneratedMessageLite<
+          FriendsDiscovery, FriendsDiscovery.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.FriendsDiscovery)
+      FriendsDiscoveryOrBuilder {
+    private FriendsDiscovery() {
+    }
+    public static final int ON_FIELD_NUMBER = 1;
+    private boolean on_;
+    /**
+     * <pre>
+     * The device looks for Friends devices.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     * @return The on.
+     */
+    @java.lang.Override
+    public boolean getOn() {
+      return on_;
+    }
+    /**
+     * <pre>
+     * The device looks for Friends devices.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     * @param value The on to set.
+     */
+    private void setOn(boolean value) {
+      
+      on_ = value;
+    }
+    /**
+     * <pre>
+     * The device looks for Friends devices.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     */
+    private void clearOn() {
+
+      on_ = false;
+    }
+
+    public static final int UNTIL_UNIX_MS_FIELD_NUMBER = 2;
+    private long untilUnixMs_;
+    /**
+     * <pre>
+     * End of the search, unix milliseconds. Zero when it is off.
+     * </pre>
+     *
+     * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+     * @return The untilUnixMs.
+     */
+    @java.lang.Override
+    public long getUntilUnixMs() {
+      return untilUnixMs_;
+    }
+    /**
+     * <pre>
+     * End of the search, unix milliseconds. Zero when it is off.
+     * </pre>
+     *
+     * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+     * @param value The untilUnixMs to set.
+     */
+    private void setUntilUnixMs(long value) {
+      
+      untilUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * End of the search, unix milliseconds. Zero when it is off.
+     * </pre>
+     *
+     * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+     */
+    private void clearUntilUnixMs() {
+
+      untilUnixMs_ = 0L;
+    }
+
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.FriendsDiscovery parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.FriendsDiscovery parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.FriendsDiscovery parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.FriendsDiscovery prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * State of the clipboard pause.
+     * Temporary search for Friends devices.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.FriendsDiscovery}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.FriendsDiscovery, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.FriendsDiscovery)
+        unison.local.v1.Local.FriendsDiscoveryOrBuilder {
+      // Construct using unison.local.v1.Local.FriendsDiscovery.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The device looks for Friends devices.
+       * </pre>
+       *
+       * <code>bool on = 1 [json_name = "on"];</code>
+       * @return The on.
+       */
+      @java.lang.Override
+      public boolean getOn() {
+        return instance.getOn();
+      }
+      /**
+       * <pre>
+       * The device looks for Friends devices.
+       * </pre>
+       *
+       * <code>bool on = 1 [json_name = "on"];</code>
+       * @param value The on to set.
+       * @return This builder for chaining.
+       */
+      public Builder setOn(boolean value) {
+        copyOnWrite();
+        instance.setOn(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device looks for Friends devices.
+       * </pre>
+       *
+       * <code>bool on = 1 [json_name = "on"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearOn() {
+        copyOnWrite();
+        instance.clearOn();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * End of the search, unix milliseconds. Zero when it is off.
+       * </pre>
+       *
+       * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+       * @return The untilUnixMs.
+       */
+      @java.lang.Override
+      public long getUntilUnixMs() {
+        return instance.getUntilUnixMs();
+      }
+      /**
+       * <pre>
+       * End of the search, unix milliseconds. Zero when it is off.
+       * </pre>
+       *
+       * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+       * @param value The untilUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUntilUnixMs(long value) {
+        copyOnWrite();
+        instance.setUntilUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * End of the search, unix milliseconds. Zero when it is off.
+       * </pre>
+       *
+       * <code>int64 until_unix_ms = 2 [json_name = "untilUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUntilUnixMs() {
+        copyOnWrite();
+        instance.clearUntilUnixMs();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.FriendsDiscovery)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.FriendsDiscovery();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "on_",
+              "untilUnixMs_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0007\u0002\u0002" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.FriendsDiscovery> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.FriendsDiscovery.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.FriendsDiscovery>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.FriendsDiscovery)
+    private static final unison.local.v1.Local.FriendsDiscovery DEFAULT_INSTANCE;
+    static {
+      FriendsDiscovery defaultInstance = new FriendsDiscovery();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        FriendsDiscovery.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.FriendsDiscovery getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<FriendsDiscovery> PARSER;
+
+    public static com.google.protobuf.Parser<FriendsDiscovery> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
   public interface PauseOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.Pause)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -3135,10 +3661,6 @@ public final class Local {
     long getUntilUnixMs();
   }
   /**
-   * <pre>
-   * State of the clipboard pause.
-   * </pre>
-   *
    * Protobuf type {@code unison.local.v1.Pause}
    */
   public  static final class Pause extends
@@ -3334,10 +3856,6 @@ public final class Local {
     }
 
     /**
-     * <pre>
-     * State of the clipboard pause.
-     * </pre>
-     *
      * Protobuf type {@code unison.local.v1.Pause}
      */
     public static final class Builder extends
@@ -10129,6 +10647,1141 @@ java.lang.String defaultValue) {
     }
   }
 
+  public interface PolicyCellOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.PolicyCell)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @return Whether the action field is set.
+     */
+    boolean hasAction();
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @return The enum numeric value on the wire for action.
+     */
+    int getActionValue();
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @return The action.
+     */
+    unison.local.v1.Local.PolicyAction getAction();
+
+    /**
+     * <pre>
+     * Largest item fetched eagerly, in bytes.
+     * </pre>
+     *
+     * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+     * @return Whether the maxSizeBytes field is set.
+     */
+    boolean hasMaxSizeBytes();
+    /**
+     * <pre>
+     * Largest item fetched eagerly, in bytes.
+     * </pre>
+     *
+     * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+     * @return The maxSizeBytes.
+     */
+    long getMaxSizeBytes();
+  }
+  /**
+   * <pre>
+   * Policy of one content kind under one network condition.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.PolicyCell}
+   */
+  public  static final class PolicyCell extends
+      com.google.protobuf.GeneratedMessageLite<
+          PolicyCell, PolicyCell.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.PolicyCell)
+      PolicyCellOrBuilder {
+    private PolicyCell() {
+    }
+    private int bitField0_;
+    public static final int ACTION_FIELD_NUMBER = 1;
+    private int action_;
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @return Whether the action field is set.
+     */
+    @java.lang.Override
+    public boolean hasAction() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @return The enum numeric value on the wire for action.
+     */
+    @java.lang.Override
+    public int getActionValue() {
+      return action_;
+    }
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @return The action.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyAction getAction() {
+      unison.local.v1.Local.PolicyAction result = unison.local.v1.Local.PolicyAction.forNumber(action_);
+      return result == null ? unison.local.v1.Local.PolicyAction.UNRECOGNIZED : result;
+    }
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @param value The enum numeric value on the wire for action to set.
+     */
+    private void setActionValue(int value) {
+      bitField0_ |= 0x00000001;  action_ = value;
+    }
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     * @param value The action to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setAction(unison.local.v1.Local.PolicyAction value) {
+      action_ = value.getNumber();
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Outcome for the item.
+     * </pre>
+     *
+     * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+     */
+    private void clearAction() {
+      bitField0_ = (bitField0_ & ~0x00000001);
+      action_ = 0;
+    }
+
+    public static final int MAX_SIZE_BYTES_FIELD_NUMBER = 2;
+    private long maxSizeBytes_;
+    /**
+     * <pre>
+     * Largest item fetched eagerly, in bytes.
+     * </pre>
+     *
+     * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+     * @return Whether the maxSizeBytes field is set.
+     */
+    @java.lang.Override
+    public boolean hasMaxSizeBytes() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <pre>
+     * Largest item fetched eagerly, in bytes.
+     * </pre>
+     *
+     * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+     * @return The maxSizeBytes.
+     */
+    @java.lang.Override
+    public long getMaxSizeBytes() {
+      return maxSizeBytes_;
+    }
+    /**
+     * <pre>
+     * Largest item fetched eagerly, in bytes.
+     * </pre>
+     *
+     * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+     * @param value The maxSizeBytes to set.
+     */
+    private void setMaxSizeBytes(long value) {
+      bitField0_ |= 0x00000002;
+      maxSizeBytes_ = value;
+    }
+    /**
+     * <pre>
+     * Largest item fetched eagerly, in bytes.
+     * </pre>
+     *
+     * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+     */
+    private void clearMaxSizeBytes() {
+      bitField0_ = (bitField0_ & ~0x00000002);
+      maxSizeBytes_ = 0L;
+    }
+
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.PolicyCell parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.PolicyCell parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.PolicyCell parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.PolicyCell prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * Policy of one content kind under one network condition.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.PolicyCell}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.PolicyCell, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.PolicyCell)
+        unison.local.v1.Local.PolicyCellOrBuilder {
+      // Construct using unison.local.v1.Local.PolicyCell.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Outcome for the item.
+       * </pre>
+       *
+       * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+       * @return Whether the action field is set.
+       */
+      @java.lang.Override
+      public boolean hasAction() {
+        return instance.hasAction();
+      }
+      /**
+       * <pre>
+       * Outcome for the item.
+       * </pre>
+       *
+       * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+       * @return The enum numeric value on the wire for action.
+       */
+      @java.lang.Override
+      public int getActionValue() {
+        return instance.getActionValue();
+      }
+      /**
+       * <pre>
+       * Outcome for the item.
+       * </pre>
+       *
+       * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+       * @param value The action to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setActionValue(int value) {
+        copyOnWrite();
+        instance.setActionValue(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Outcome for the item.
+       * </pre>
+       *
+       * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+       * @return The action.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyAction getAction() {
+        return instance.getAction();
+      }
+      /**
+       * <pre>
+       * Outcome for the item.
+       * </pre>
+       *
+       * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+       * @param value The enum numeric value on the wire for action to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAction(unison.local.v1.Local.PolicyAction value) {
+        copyOnWrite();
+        instance.setAction(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Outcome for the item.
+       * </pre>
+       *
+       * <code>optional .unison.local.v1.PolicyAction action = 1 [json_name = "action"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAction() {
+        copyOnWrite();
+        instance.clearAction();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Largest item fetched eagerly, in bytes.
+       * </pre>
+       *
+       * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+       * @return Whether the maxSizeBytes field is set.
+       */
+      @java.lang.Override
+      public boolean hasMaxSizeBytes() {
+        return instance.hasMaxSizeBytes();
+      }
+      /**
+       * <pre>
+       * Largest item fetched eagerly, in bytes.
+       * </pre>
+       *
+       * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+       * @return The maxSizeBytes.
+       */
+      @java.lang.Override
+      public long getMaxSizeBytes() {
+        return instance.getMaxSizeBytes();
+      }
+      /**
+       * <pre>
+       * Largest item fetched eagerly, in bytes.
+       * </pre>
+       *
+       * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+       * @param value The maxSizeBytes to set.
+       * @return This builder for chaining.
+       */
+      public Builder setMaxSizeBytes(long value) {
+        copyOnWrite();
+        instance.setMaxSizeBytes(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Largest item fetched eagerly, in bytes.
+       * </pre>
+       *
+       * <code>optional int64 max_size_bytes = 2 [json_name = "maxSizeBytes"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearMaxSizeBytes() {
+        copyOnWrite();
+        instance.clearMaxSizeBytes();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.PolicyCell)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.PolicyCell();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "action_",
+              "maxSizeBytes_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0001\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u100c\u0000\u0002" +
+                "\u1002\u0001";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.PolicyCell> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.PolicyCell.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.PolicyCell>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.PolicyCell)
+    private static final unison.local.v1.Local.PolicyCell DEFAULT_INSTANCE;
+    static {
+      PolicyCell defaultInstance = new PolicyCell();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        PolicyCell.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.PolicyCell getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<PolicyCell> PARSER;
+
+    public static com.google.protobuf.Parser<PolicyCell> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface PolicyRowOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.PolicyRow)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     * @return Whether the text field is set.
+     */
+    boolean hasText();
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     * @return The text.
+     */
+    unison.local.v1.Local.PolicyCell getText();
+
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     * @return Whether the image field is set.
+     */
+    boolean hasImage();
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     * @return The image.
+     */
+    unison.local.v1.Local.PolicyCell getImage();
+
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     * @return Whether the files field is set.
+     */
+    boolean hasFiles();
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     * @return The files.
+     */
+    unison.local.v1.Local.PolicyCell getFiles();
+
+    /**
+     * <pre>
+     * Whether the relay path may be used.
+     * </pre>
+     *
+     * <code>optional bool relay = 4 [json_name = "relay"];</code>
+     * @return Whether the relay field is set.
+     */
+    boolean hasRelay();
+    /**
+     * <pre>
+     * Whether the relay path may be used.
+     * </pre>
+     *
+     * <code>optional bool relay = 4 [json_name = "relay"];</code>
+     * @return The relay.
+     */
+    boolean getRelay();
+  }
+  /**
+   * <pre>
+   * Policy of one network condition.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.PolicyRow}
+   */
+  public  static final class PolicyRow extends
+      com.google.protobuf.GeneratedMessageLite<
+          PolicyRow, PolicyRow.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.PolicyRow)
+      PolicyRowOrBuilder {
+    private PolicyRow() {
+    }
+    private int bitField0_;
+    public static final int TEXT_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.PolicyCell text_;
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     */
+    @java.lang.Override
+    public boolean hasText() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyCell getText() {
+      return text_ == null ? unison.local.v1.Local.PolicyCell.getDefaultInstance() : text_;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     */
+    private void setText(unison.local.v1.Local.PolicyCell value) {
+      java.util.Objects.requireNonNull(value);
+      text_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeText(unison.local.v1.Local.PolicyCell value) {
+      java.util.Objects.requireNonNull(value);
+      if (text_ != null &&
+          text_ != unison.local.v1.Local.PolicyCell.getDefaultInstance()) {
+        text_ =
+          unison.local.v1.Local.PolicyCell.newBuilder(text_).mergeFrom(value).buildPartial();
+      } else {
+        text_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+     */
+    private void clearText() {
+      text_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int IMAGE_FIELD_NUMBER = 2;
+    private unison.local.v1.Local.PolicyCell image_;
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     */
+    @java.lang.Override
+    public boolean hasImage() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyCell getImage() {
+      return image_ == null ? unison.local.v1.Local.PolicyCell.getDefaultInstance() : image_;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     */
+    private void setImage(unison.local.v1.Local.PolicyCell value) {
+      java.util.Objects.requireNonNull(value);
+      image_ = value;
+      bitField0_ |= 0x00000002;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeImage(unison.local.v1.Local.PolicyCell value) {
+      java.util.Objects.requireNonNull(value);
+      if (image_ != null &&
+          image_ != unison.local.v1.Local.PolicyCell.getDefaultInstance()) {
+        image_ =
+          unison.local.v1.Local.PolicyCell.newBuilder(image_).mergeFrom(value).buildPartial();
+      } else {
+        image_ = value;
+      }
+      bitField0_ |= 0x00000002;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+     */
+    private void clearImage() {
+      image_ = null;
+      bitField0_ = (bitField0_ & ~0x00000002);
+    }
+
+    public static final int FILES_FIELD_NUMBER = 3;
+    private unison.local.v1.Local.PolicyCell files_;
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     */
+    @java.lang.Override
+    public boolean hasFiles() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyCell getFiles() {
+      return files_ == null ? unison.local.v1.Local.PolicyCell.getDefaultInstance() : files_;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     */
+    private void setFiles(unison.local.v1.Local.PolicyCell value) {
+      java.util.Objects.requireNonNull(value);
+      files_ = value;
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeFiles(unison.local.v1.Local.PolicyCell value) {
+      java.util.Objects.requireNonNull(value);
+      if (files_ != null &&
+          files_ != unison.local.v1.Local.PolicyCell.getDefaultInstance()) {
+        files_ =
+          unison.local.v1.Local.PolicyCell.newBuilder(files_).mergeFrom(value).buildPartial();
+      } else {
+        files_ = value;
+      }
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+     */
+    private void clearFiles() {
+      files_ = null;
+      bitField0_ = (bitField0_ & ~0x00000004);
+    }
+
+    public static final int RELAY_FIELD_NUMBER = 4;
+    private boolean relay_;
+    /**
+     * <pre>
+     * Whether the relay path may be used.
+     * </pre>
+     *
+     * <code>optional bool relay = 4 [json_name = "relay"];</code>
+     * @return Whether the relay field is set.
+     */
+    @java.lang.Override
+    public boolean hasRelay() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <pre>
+     * Whether the relay path may be used.
+     * </pre>
+     *
+     * <code>optional bool relay = 4 [json_name = "relay"];</code>
+     * @return The relay.
+     */
+    @java.lang.Override
+    public boolean getRelay() {
+      return relay_;
+    }
+    /**
+     * <pre>
+     * Whether the relay path may be used.
+     * </pre>
+     *
+     * <code>optional bool relay = 4 [json_name = "relay"];</code>
+     * @param value The relay to set.
+     */
+    private void setRelay(boolean value) {
+      bitField0_ |= 0x00000008;
+      relay_ = value;
+    }
+    /**
+     * <pre>
+     * Whether the relay path may be used.
+     * </pre>
+     *
+     * <code>optional bool relay = 4 [json_name = "relay"];</code>
+     */
+    private void clearRelay() {
+      bitField0_ = (bitField0_ & ~0x00000008);
+      relay_ = false;
+    }
+
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.PolicyRow parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.PolicyRow parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.PolicyRow parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.PolicyRow prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * Policy of one network condition.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.PolicyRow}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.PolicyRow, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.PolicyRow)
+        unison.local.v1.Local.PolicyRowOrBuilder {
+      // Construct using unison.local.v1.Local.PolicyRow.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+       */
+      @java.lang.Override
+      public boolean hasText() {
+        return instance.hasText();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyCell getText() {
+        return instance.getText();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+       */
+      public Builder setText(unison.local.v1.Local.PolicyCell value) {
+        copyOnWrite();
+        instance.setText(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+       */
+      public Builder setText(
+          unison.local.v1.Local.PolicyCell.Builder builderForValue) {
+        copyOnWrite();
+        instance.setText(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+       */
+      public Builder mergeText(unison.local.v1.Local.PolicyCell value) {
+        copyOnWrite();
+        instance.mergeText(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell text = 1 [json_name = "text"];</code>
+       */
+      public Builder clearText() {  copyOnWrite();
+        instance.clearText();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+       */
+      @java.lang.Override
+      public boolean hasImage() {
+        return instance.hasImage();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyCell getImage() {
+        return instance.getImage();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+       */
+      public Builder setImage(unison.local.v1.Local.PolicyCell value) {
+        copyOnWrite();
+        instance.setImage(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+       */
+      public Builder setImage(
+          unison.local.v1.Local.PolicyCell.Builder builderForValue) {
+        copyOnWrite();
+        instance.setImage(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+       */
+      public Builder mergeImage(unison.local.v1.Local.PolicyCell value) {
+        copyOnWrite();
+        instance.mergeImage(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell image = 2 [json_name = "image"];</code>
+       */
+      public Builder clearImage() {  copyOnWrite();
+        instance.clearImage();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+       */
+      @java.lang.Override
+      public boolean hasFiles() {
+        return instance.hasFiles();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyCell getFiles() {
+        return instance.getFiles();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+       */
+      public Builder setFiles(unison.local.v1.Local.PolicyCell value) {
+        copyOnWrite();
+        instance.setFiles(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+       */
+      public Builder setFiles(
+          unison.local.v1.Local.PolicyCell.Builder builderForValue) {
+        copyOnWrite();
+        instance.setFiles(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+       */
+      public Builder mergeFiles(unison.local.v1.Local.PolicyCell value) {
+        copyOnWrite();
+        instance.mergeFiles(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyCell files = 3 [json_name = "files"];</code>
+       */
+      public Builder clearFiles() {  copyOnWrite();
+        instance.clearFiles();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Whether the relay path may be used.
+       * </pre>
+       *
+       * <code>optional bool relay = 4 [json_name = "relay"];</code>
+       * @return Whether the relay field is set.
+       */
+      @java.lang.Override
+      public boolean hasRelay() {
+        return instance.hasRelay();
+      }
+      /**
+       * <pre>
+       * Whether the relay path may be used.
+       * </pre>
+       *
+       * <code>optional bool relay = 4 [json_name = "relay"];</code>
+       * @return The relay.
+       */
+      @java.lang.Override
+      public boolean getRelay() {
+        return instance.getRelay();
+      }
+      /**
+       * <pre>
+       * Whether the relay path may be used.
+       * </pre>
+       *
+       * <code>optional bool relay = 4 [json_name = "relay"];</code>
+       * @param value The relay to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRelay(boolean value) {
+        copyOnWrite();
+        instance.setRelay(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Whether the relay path may be used.
+       * </pre>
+       *
+       * <code>optional bool relay = 4 [json_name = "relay"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRelay() {
+        copyOnWrite();
+        instance.clearRelay();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.PolicyRow)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.PolicyRow();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "text_",
+              "image_",
+              "files_",
+              "relay_",
+            };
+            java.lang.String info =
+                "\u0000\u0004\u0000\u0001\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u1009\u0000\u0002" +
+                "\u1009\u0001\u0003\u1009\u0002\u0004\u1007\u0003";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.PolicyRow> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.PolicyRow.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.PolicyRow>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.PolicyRow)
+    private static final unison.local.v1.Local.PolicyRow DEFAULT_INSTANCE;
+    static {
+      PolicyRow defaultInstance = new PolicyRow();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        PolicyRow.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.PolicyRow getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<PolicyRow> PARSER;
+
+    public static com.google.protobuf.Parser<PolicyRow> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
   public interface SettingsOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.Settings)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -10192,6 +11845,92 @@ java.lang.String defaultValue) {
      */
     com.google.protobuf.ByteString
         getDownloadsDirBytes();
+
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     * @return Whether the unmetered field is set.
+     */
+    boolean hasUnmetered();
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     * @return The unmetered.
+     */
+    unison.local.v1.Local.PolicyRow getUnmetered();
+
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     * @return Whether the metered field is set.
+     */
+    boolean hasMetered();
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     * @return The metered.
+     */
+    unison.local.v1.Local.PolicyRow getMetered();
+
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     * @return Whether the roaming field is set.
+     */
+    boolean hasRoaming();
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     * @return The roaming.
+     */
+    unison.local.v1.Local.PolicyRow getRoaming();
+
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     * @return Whether the dataSaver field is set.
+     */
+    boolean hasDataSaver();
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     * @return The dataSaver.
+     */
+    unison.local.v1.Local.PolicyRow getDataSaver();
+
+    /**
+     * <pre>
+     * Largest item fetched eagerly over the relay, in bytes.
+     * </pre>
+     *
+     * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @return The relayMaxSizeBytes.
+     */
+    long getRelayMaxSizeBytes();
   }
   /**
    * <pre>
@@ -10209,6 +11948,7 @@ java.lang.String defaultValue) {
       deviceName_ = "";
       downloadsDir_ = "";
     }
+    private int bitField0_;
     public static final int DEVICE_NAME_FIELD_NUMBER = 1;
     private java.lang.String deviceName_;
     /**
@@ -10417,6 +12157,312 @@ java.lang.String defaultValue) {
       checkByteStringIsUtf8(value);
       downloadsDir_ = value.toStringUtf8();
 
+    }
+
+    public static final int UNMETERED_FIELD_NUMBER = 5;
+    private unison.local.v1.Local.PolicyRow unmetered_;
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    @java.lang.Override
+    public boolean hasUnmetered() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getUnmetered() {
+      return unmetered_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : unmetered_;
+    }
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    private void setUnmetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      unmetered_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeUnmetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (unmetered_ != null &&
+          unmetered_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        unmetered_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(unmetered_).mergeFrom(value).buildPartial();
+      } else {
+        unmetered_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Policy of an online network without restrictions.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    private void clearUnmetered() {
+      unmetered_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int METERED_FIELD_NUMBER = 6;
+    private unison.local.v1.Local.PolicyRow metered_;
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    @java.lang.Override
+    public boolean hasMetered() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getMetered() {
+      return metered_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : metered_;
+    }
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    private void setMetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      metered_ = value;
+      bitField0_ |= 0x00000002;
+    }
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeMetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (metered_ != null &&
+          metered_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        metered_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(metered_).mergeFrom(value).buildPartial();
+      } else {
+        metered_ = value;
+      }
+      bitField0_ |= 0x00000002;
+    }
+    /**
+     * <pre>
+     * Policy of a network billed by volume.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    private void clearMetered() {
+      metered_ = null;
+      bitField0_ = (bitField0_ & ~0x00000002);
+    }
+
+    public static final int ROAMING_FIELD_NUMBER = 7;
+    private unison.local.v1.Local.PolicyRow roaming_;
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    @java.lang.Override
+    public boolean hasRoaming() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getRoaming() {
+      return roaming_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : roaming_;
+    }
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    private void setRoaming(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      roaming_ = value;
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeRoaming(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (roaming_ != null &&
+          roaming_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        roaming_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(roaming_).mergeFrom(value).buildPartial();
+      } else {
+        roaming_ = value;
+      }
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <pre>
+     * Policy of a roaming network.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    private void clearRoaming() {
+      roaming_ = null;
+      bitField0_ = (bitField0_ & ~0x00000004);
+    }
+
+    public static final int DATA_SAVER_FIELD_NUMBER = 8;
+    private unison.local.v1.Local.PolicyRow dataSaver_;
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDataSaver() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getDataSaver() {
+      return dataSaver_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : dataSaver_;
+    }
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    private void setDataSaver(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      dataSaver_ = value;
+      bitField0_ |= 0x00000008;
+    }
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeDataSaver(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (dataSaver_ != null &&
+          dataSaver_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        dataSaver_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(dataSaver_).mergeFrom(value).buildPartial();
+      } else {
+        dataSaver_ = value;
+      }
+      bitField0_ |= 0x00000008;
+    }
+    /**
+     * <pre>
+     * Policy of a network with the system data saver on.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    private void clearDataSaver() {
+      dataSaver_ = null;
+      bitField0_ = (bitField0_ & ~0x00000008);
+    }
+
+    public static final int RELAY_MAX_SIZE_BYTES_FIELD_NUMBER = 9;
+    private long relayMaxSizeBytes_;
+    /**
+     * <pre>
+     * Largest item fetched eagerly over the relay, in bytes.
+     * </pre>
+     *
+     * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @return The relayMaxSizeBytes.
+     */
+    @java.lang.Override
+    public long getRelayMaxSizeBytes() {
+      return relayMaxSizeBytes_;
+    }
+    /**
+     * <pre>
+     * Largest item fetched eagerly over the relay, in bytes.
+     * </pre>
+     *
+     * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @param value The relayMaxSizeBytes to set.
+     */
+    private void setRelayMaxSizeBytes(long value) {
+      
+      relayMaxSizeBytes_ = value;
+    }
+    /**
+     * <pre>
+     * Largest item fetched eagerly over the relay, in bytes.
+     * </pre>
+     *
+     * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     */
+    private void clearRelayMaxSizeBytes() {
+
+      relayMaxSizeBytes_ = 0L;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -10738,6 +12784,330 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Policy of an online network without restrictions.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      @java.lang.Override
+      public boolean hasUnmetered() {
+        return instance.hasUnmetered();
+      }
+      /**
+       * <pre>
+       * Policy of an online network without restrictions.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getUnmetered() {
+        return instance.getUnmetered();
+      }
+      /**
+       * <pre>
+       * Policy of an online network without restrictions.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder setUnmetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setUnmetered(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Policy of an online network without restrictions.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder setUnmetered(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setUnmetered(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of an online network without restrictions.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder mergeUnmetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeUnmetered(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of an online network without restrictions.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder clearUnmetered() {  copyOnWrite();
+        instance.clearUnmetered();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Policy of a network billed by volume.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      @java.lang.Override
+      public boolean hasMetered() {
+        return instance.hasMetered();
+      }
+      /**
+       * <pre>
+       * Policy of a network billed by volume.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getMetered() {
+        return instance.getMetered();
+      }
+      /**
+       * <pre>
+       * Policy of a network billed by volume.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder setMetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setMetered(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Policy of a network billed by volume.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder setMetered(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setMetered(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of a network billed by volume.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder mergeMetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeMetered(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of a network billed by volume.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder clearMetered() {  copyOnWrite();
+        instance.clearMetered();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Policy of a roaming network.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      @java.lang.Override
+      public boolean hasRoaming() {
+        return instance.hasRoaming();
+      }
+      /**
+       * <pre>
+       * Policy of a roaming network.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getRoaming() {
+        return instance.getRoaming();
+      }
+      /**
+       * <pre>
+       * Policy of a roaming network.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder setRoaming(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setRoaming(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Policy of a roaming network.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder setRoaming(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRoaming(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of a roaming network.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder mergeRoaming(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeRoaming(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of a roaming network.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder clearRoaming() {  copyOnWrite();
+        instance.clearRoaming();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Policy of a network with the system data saver on.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      @java.lang.Override
+      public boolean hasDataSaver() {
+        return instance.hasDataSaver();
+      }
+      /**
+       * <pre>
+       * Policy of a network with the system data saver on.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getDataSaver() {
+        return instance.getDataSaver();
+      }
+      /**
+       * <pre>
+       * Policy of a network with the system data saver on.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder setDataSaver(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setDataSaver(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Policy of a network with the system data saver on.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder setDataSaver(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setDataSaver(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of a network with the system data saver on.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder mergeDataSaver(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeDataSaver(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy of a network with the system data saver on.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder clearDataSaver() {  copyOnWrite();
+        instance.clearDataSaver();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Largest item fetched eagerly over the relay, in bytes.
+       * </pre>
+       *
+       * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @return The relayMaxSizeBytes.
+       */
+      @java.lang.Override
+      public long getRelayMaxSizeBytes() {
+        return instance.getRelayMaxSizeBytes();
+      }
+      /**
+       * <pre>
+       * Largest item fetched eagerly over the relay, in bytes.
+       * </pre>
+       *
+       * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @param value The relayMaxSizeBytes to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRelayMaxSizeBytes(long value) {
+        copyOnWrite();
+        instance.setRelayMaxSizeBytes(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Largest item fetched eagerly over the relay, in bytes.
+       * </pre>
+       *
+       * <code>int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRelayMaxSizeBytes() {
+        copyOnWrite();
+        instance.clearRelayMaxSizeBytes();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -10754,14 +13124,21 @@ java.lang.String defaultValue) {
         }
         case BUILD_MESSAGE_INFO: {
             java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
               "deviceName_",
               "requireConfirmation_",
               "blobMaxSizeBytes_",
               "downloadsDir_",
+              "unmetered_",
+              "metered_",
+              "roaming_",
+              "dataSaver_",
+              "relayMaxSizeBytes_",
             };
             java.lang.String info =
-                "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
-                "\u0003\u0002\u0004\u0208";
+                "\u0000\t\u0000\u0001\u0001\t\t\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0002" +
+                "\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b\u1009\u0003" +
+                "\t\u0002";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -11100,6 +13477,58 @@ java.lang.String defaultValue) {
      * @return The pause.
      */
     unison.local.v1.Local.Pause getPause();
+
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     * @return Whether the friendsDiscovery field is set.
+     */
+    boolean hasFriendsDiscovery();
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     * @return The friendsDiscovery.
+     */
+    unison.local.v1.Local.FriendsDiscovery getFriendsDiscovery();
+
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @return A list containing the addrs.
+     */
+    java.util.List<java.lang.String>
+        getAddrsList();
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @return The count of addrs.
+     */
+    int getAddrsCount();
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param index The index of the element to return.
+     * @return The addrs at the given index.
+     */
+    java.lang.String getAddrs(int index);
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param index The index of the element to return.
+     * @return The addrs at the given index.
+     */
+    com.google.protobuf.ByteString
+        getAddrsBytes(int index);
   }
   /**
    * Protobuf type {@code unison.local.v1.GetStatusResponse}
@@ -11114,6 +13543,7 @@ java.lang.String defaultValue) {
       deviceId_ = "";
       deviceName_ = "";
       devices_ = emptyProtobufList();
+      addrs_ = emptyProtobufList();
     }
     private int bitField0_;
     public static final int VERSION_FIELD_NUMBER = 1;
@@ -11533,6 +13963,182 @@ java.lang.String defaultValue) {
     private void clearPause() {
       pause_ = null;
       bitField0_ = (bitField0_ & ~0x00000002);
+    }
+
+    public static final int FRIENDS_DISCOVERY_FIELD_NUMBER = 8;
+    private unison.local.v1.Local.FriendsDiscovery friendsDiscovery_;
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     */
+    @java.lang.Override
+    public boolean hasFriendsDiscovery() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.FriendsDiscovery getFriendsDiscovery() {
+      return friendsDiscovery_ == null ? unison.local.v1.Local.FriendsDiscovery.getDefaultInstance() : friendsDiscovery_;
+    }
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     */
+    private void setFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+      java.util.Objects.requireNonNull(value);
+      friendsDiscovery_ = value;
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+      java.util.Objects.requireNonNull(value);
+      if (friendsDiscovery_ != null &&
+          friendsDiscovery_ != unison.local.v1.Local.FriendsDiscovery.getDefaultInstance()) {
+        friendsDiscovery_ =
+          unison.local.v1.Local.FriendsDiscovery.newBuilder(friendsDiscovery_).mergeFrom(value).buildPartial();
+      } else {
+        friendsDiscovery_ = value;
+      }
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+     */
+    private void clearFriendsDiscovery() {
+      friendsDiscovery_ = null;
+      bitField0_ = (bitField0_ & ~0x00000004);
+    }
+
+    public static final int ADDRS_FIELD_NUMBER = 9;
+    private com.google.protobuf.Internal.ProtobufList<java.lang.String> addrs_;
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @return A list containing the addrs.
+     */
+    @java.lang.Override
+    public java.util.List<java.lang.String> getAddrsList() {
+      return addrs_;
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @return The count of addrs.
+     */
+    @java.lang.Override
+    public int getAddrsCount() {
+      return addrs_.size();
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param index The index of the element to return.
+     * @return The addrs at the given index.
+     */
+    @java.lang.Override
+    public java.lang.String getAddrs(int index) {
+      return addrs_.get(index);
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the addrs at the given index.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getAddrsBytes(int index) {
+      return com.google.protobuf.ByteString.copyFromUtf8(
+          addrs_.get(index));
+    }
+    private void ensureAddrsIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<java.lang.String> tmp =
+          addrs_;  if (!tmp.isModifiable()) {
+        addrs_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param index The index to set the value at.
+     * @param value The addrs to set.
+     */
+    private void setAddrs(
+        int index, java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureAddrsIsMutable();
+      addrs_.set(index, value);
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param value The addrs to add.
+     */
+    private void addAddrs(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureAddrsIsMutable();
+      addrs_.add(value);
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param values The addrs to add.
+     */
+    private void addAllAddrs(
+        java.lang.Iterable<java.lang.String> values) {
+      ensureAddrsIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, addrs_);
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     */
+    private void clearAddrs() {
+      addrs_ = emptyProtobufList();
+    }
+    /**
+     * <pre>
+     * Addresses of the main listener that a peer can reach, host:port.
+     * </pre>
+     *
+     * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+     * @param value The bytes of the addrs to add.
+     */
+    private void addAddrsBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      ensureAddrsIsMutable();
+      addrs_.add(value.toStringUtf8());
     }
 
     public static unison.local.v1.Local.GetStatusResponse parseFrom(
@@ -12071,6 +14677,181 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+       */
+      @java.lang.Override
+      public boolean hasFriendsDiscovery() {
+        return instance.hasFriendsDiscovery();
+      }
+      /**
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.FriendsDiscovery getFriendsDiscovery() {
+        return instance.getFriendsDiscovery();
+      }
+      /**
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder setFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+        copyOnWrite();
+        instance.setFriendsDiscovery(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder setFriendsDiscovery(
+          unison.local.v1.Local.FriendsDiscovery.Builder builderForValue) {
+        copyOnWrite();
+        instance.setFriendsDiscovery(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder mergeFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+        copyOnWrite();
+        instance.mergeFriendsDiscovery(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 8 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder clearFriendsDiscovery() {  copyOnWrite();
+        instance.clearFriendsDiscovery();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @return A list containing the addrs.
+       */
+      @java.lang.Override
+      public java.util.List<java.lang.String>
+          getAddrsList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getAddrsList());
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @return The count of addrs.
+       */
+      @java.lang.Override
+      public int getAddrsCount() {
+        return instance.getAddrsCount();
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @param index The index of the element to return.
+       * @return The addrs at the given index.
+       */
+      @java.lang.Override
+      public java.lang.String getAddrs(int index) {
+        return instance.getAddrs(index);
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the addrs at the given index.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getAddrsBytes(int index) {
+        return instance.getAddrsBytes(index);
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @param index The index to set the value at.
+       * @param value The addrs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAddrs(
+          int index, java.lang.String value) {
+        copyOnWrite();
+        instance.setAddrs(index, value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @param value The addrs to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAddrs(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.addAddrs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @param values The addrs to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllAddrs(
+          java.lang.Iterable<java.lang.String> values) {
+        copyOnWrite();
+        instance.addAllAddrs(values);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAddrs() {
+        copyOnWrite();
+        instance.clearAddrs();
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of the main listener that a peer can reach, host:port.
+       * </pre>
+       *
+       * <code>repeated string addrs = 9 [json_name = "addrs"];</code>
+       * @param value The bytes of the addrs to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAddrsBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.addAddrsBytes(value);
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.GetStatusResponse)
     }
     @java.lang.Override
@@ -12096,10 +14877,13 @@ java.lang.String defaultValue) {
               "devices_",
               unison.local.v1.Local.Device.class,
               "pause_",
+              "friendsDiscovery_",
+              "addrs_",
             };
             java.lang.String info =
-                "\u0000\u0007\u0000\u0001\u0001\u0007\u0007\u0000\u0001\u0000\u0001\u0208\u0002\u0208" +
-                "\u0003\u0208\u0004\u0007\u0005\u1009\u0000\u0006\u001b\u0007\u1009\u0001";
+                "\u0000\t\u0000\u0001\u0001\t\t\u0000\u0002\u0000\u0001\u0208\u0002\u0208\u0003\u0208" +
+                "\u0004\u0007\u0005\u1009\u0000\u0006\u001b\u0007\u1009\u0001\b\u1009\u0002\t\u021a" +
+                "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -15104,6 +17888,1468 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<SetDeviceConfirmationResponse> PARSER;
 
     public static com.google.protobuf.Parser<SetDeviceConfirmationResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetPeerAddressRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetPeerAddressRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    java.lang.String getDeviceId();
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdBytes();
+
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     * @return The addr.
+     */
+    java.lang.String getAddr();
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     * @return The bytes for addr.
+     */
+    com.google.protobuf.ByteString
+        getAddrBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetPeerAddressRequest}
+   */
+  public  static final class SetPeerAddressRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetPeerAddressRequest, SetPeerAddressRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetPeerAddressRequest)
+      SetPeerAddressRequestOrBuilder {
+    private SetPeerAddressRequest() {
+      deviceId_ = "";
+      addr_ = "";
+    }
+    public static final int DEVICE_ID_FIELD_NUMBER = 1;
+    private java.lang.String deviceId_;
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceId() {
+      return deviceId_;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceId_);
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The deviceId to set.
+     */
+    private void setDeviceId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceId_ = value;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     */
+    private void clearDeviceId() {
+
+      deviceId_ = getDefaultInstance().getDeviceId();
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The bytes for deviceId to set.
+     */
+    private void setDeviceIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceId_ = value.toStringUtf8();
+
+    }
+
+    public static final int ADDR_FIELD_NUMBER = 2;
+    private java.lang.String addr_;
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     * @return The addr.
+     */
+    @java.lang.Override
+    public java.lang.String getAddr() {
+      return addr_;
+    }
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     * @return The bytes for addr.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getAddrBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(addr_);
+    }
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     * @param value The addr to set.
+     */
+    private void setAddr(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      addr_ = value;
+    }
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     */
+    private void clearAddr() {
+
+      addr_ = getDefaultInstance().getAddr();
+    }
+    /**
+     * <pre>
+     * Address of the device, host:port. An IPv6 host is written in brackets.
+     * </pre>
+     *
+     * <code>string addr = 2 [json_name = "addr"];</code>
+     * @param value The bytes for addr to set.
+     */
+    private void setAddrBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      addr_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetPeerAddressRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetPeerAddressRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetPeerAddressRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetPeerAddressRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetPeerAddressRequest)
+        unison.local.v1.Local.SetPeerAddressRequestOrBuilder {
+      // Construct using unison.local.v1.Local.SetPeerAddressRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The deviceId.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceId() {
+        return instance.getDeviceId();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The bytes for deviceId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdBytes() {
+        return instance.getDeviceIdBytes();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceId() {
+        copyOnWrite();
+        instance.clearDeviceId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The bytes for deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Address of the device, host:port. An IPv6 host is written in brackets.
+       * </pre>
+       *
+       * <code>string addr = 2 [json_name = "addr"];</code>
+       * @return The addr.
+       */
+      @java.lang.Override
+      public java.lang.String getAddr() {
+        return instance.getAddr();
+      }
+      /**
+       * <pre>
+       * Address of the device, host:port. An IPv6 host is written in brackets.
+       * </pre>
+       *
+       * <code>string addr = 2 [json_name = "addr"];</code>
+       * @return The bytes for addr.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getAddrBytes() {
+        return instance.getAddrBytes();
+      }
+      /**
+       * <pre>
+       * Address of the device, host:port. An IPv6 host is written in brackets.
+       * </pre>
+       *
+       * <code>string addr = 2 [json_name = "addr"];</code>
+       * @param value The addr to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAddr(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setAddr(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Address of the device, host:port. An IPv6 host is written in brackets.
+       * </pre>
+       *
+       * <code>string addr = 2 [json_name = "addr"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAddr() {
+        copyOnWrite();
+        instance.clearAddr();
+        return this;
+      }
+      /**
+       * <pre>
+       * Address of the device, host:port. An IPv6 host is written in brackets.
+       * </pre>
+       *
+       * <code>string addr = 2 [json_name = "addr"];</code>
+       * @param value The bytes for addr to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAddrBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setAddrBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetPeerAddressRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetPeerAddressRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "deviceId_",
+              "addr_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetPeerAddressRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetPeerAddressRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetPeerAddressRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetPeerAddressRequest)
+    private static final unison.local.v1.Local.SetPeerAddressRequest DEFAULT_INSTANCE;
+    static {
+      SetPeerAddressRequest defaultInstance = new SetPeerAddressRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetPeerAddressRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetPeerAddressRequest> PARSER;
+
+    public static com.google.protobuf.Parser<SetPeerAddressRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetPeerAddressResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetPeerAddressResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     * @return Whether the device field is set.
+     */
+    boolean hasDevice();
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     * @return The device.
+     */
+    unison.local.v1.Local.Device getDevice();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetPeerAddressResponse}
+   */
+  public  static final class SetPeerAddressResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetPeerAddressResponse, SetPeerAddressResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetPeerAddressResponse)
+      SetPeerAddressResponseOrBuilder {
+    private SetPeerAddressResponse() {
+    }
+    private int bitField0_;
+    public static final int DEVICE_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Device device_;
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDevice() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Device getDevice() {
+      return device_ == null ? unison.local.v1.Local.Device.getDefaultInstance() : device_;
+    }
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    private void setDevice(unison.local.v1.Local.Device value) {
+      java.util.Objects.requireNonNull(value);
+      device_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeDevice(unison.local.v1.Local.Device value) {
+      java.util.Objects.requireNonNull(value);
+      if (device_ != null &&
+          device_ != unison.local.v1.Local.Device.getDefaultInstance()) {
+        device_ =
+          unison.local.v1.Local.Device.newBuilder(device_).mergeFrom(value).buildPartial();
+      } else {
+        device_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The device with its state after the address was stored.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    private void clearDevice() {
+      device_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetPeerAddressResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetPeerAddressResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetPeerAddressResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetPeerAddressResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetPeerAddressResponse)
+        unison.local.v1.Local.SetPeerAddressResponseOrBuilder {
+      // Construct using unison.local.v1.Local.SetPeerAddressResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The device with its state after the address was stored.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      @java.lang.Override
+      public boolean hasDevice() {
+        return instance.hasDevice();
+      }
+      /**
+       * <pre>
+       * The device with its state after the address was stored.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Device getDevice() {
+        return instance.getDevice();
+      }
+      /**
+       * <pre>
+       * The device with its state after the address was stored.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder setDevice(unison.local.v1.Local.Device value) {
+        copyOnWrite();
+        instance.setDevice(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The device with its state after the address was stored.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder setDevice(
+          unison.local.v1.Local.Device.Builder builderForValue) {
+        copyOnWrite();
+        instance.setDevice(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The device with its state after the address was stored.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder mergeDevice(unison.local.v1.Local.Device value) {
+        copyOnWrite();
+        instance.mergeDevice(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device with its state after the address was stored.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder clearDevice() {  copyOnWrite();
+        instance.clearDevice();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetPeerAddressResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetPeerAddressResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "device_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetPeerAddressResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetPeerAddressResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetPeerAddressResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetPeerAddressResponse)
+    private static final unison.local.v1.Local.SetPeerAddressResponse DEFAULT_INSTANCE;
+    static {
+      SetPeerAddressResponse defaultInstance = new SetPeerAddressResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetPeerAddressResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetPeerAddressResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetPeerAddressResponse> PARSER;
+
+    public static com.google.protobuf.Parser<SetPeerAddressResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetFriendsDiscoveryRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetFriendsDiscoveryRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * On turns the search on and extends a running one, off turns it off.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     * @return The on.
+     */
+    boolean getOn();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetFriendsDiscoveryRequest}
+   */
+  public  static final class SetFriendsDiscoveryRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetFriendsDiscoveryRequest, SetFriendsDiscoveryRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetFriendsDiscoveryRequest)
+      SetFriendsDiscoveryRequestOrBuilder {
+    private SetFriendsDiscoveryRequest() {
+    }
+    public static final int ON_FIELD_NUMBER = 1;
+    private boolean on_;
+    /**
+     * <pre>
+     * On turns the search on and extends a running one, off turns it off.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     * @return The on.
+     */
+    @java.lang.Override
+    public boolean getOn() {
+      return on_;
+    }
+    /**
+     * <pre>
+     * On turns the search on and extends a running one, off turns it off.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     * @param value The on to set.
+     */
+    private void setOn(boolean value) {
+      
+      on_ = value;
+    }
+    /**
+     * <pre>
+     * On turns the search on and extends a running one, off turns it off.
+     * </pre>
+     *
+     * <code>bool on = 1 [json_name = "on"];</code>
+     */
+    private void clearOn() {
+
+      on_ = false;
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetFriendsDiscoveryRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetFriendsDiscoveryRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetFriendsDiscoveryRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetFriendsDiscoveryRequest)
+        unison.local.v1.Local.SetFriendsDiscoveryRequestOrBuilder {
+      // Construct using unison.local.v1.Local.SetFriendsDiscoveryRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * On turns the search on and extends a running one, off turns it off.
+       * </pre>
+       *
+       * <code>bool on = 1 [json_name = "on"];</code>
+       * @return The on.
+       */
+      @java.lang.Override
+      public boolean getOn() {
+        return instance.getOn();
+      }
+      /**
+       * <pre>
+       * On turns the search on and extends a running one, off turns it off.
+       * </pre>
+       *
+       * <code>bool on = 1 [json_name = "on"];</code>
+       * @param value The on to set.
+       * @return This builder for chaining.
+       */
+      public Builder setOn(boolean value) {
+        copyOnWrite();
+        instance.setOn(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * On turns the search on and extends a running one, off turns it off.
+       * </pre>
+       *
+       * <code>bool on = 1 [json_name = "on"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearOn() {
+        copyOnWrite();
+        instance.clearOn();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetFriendsDiscoveryRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetFriendsDiscoveryRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "on_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0007";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetFriendsDiscoveryRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetFriendsDiscoveryRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetFriendsDiscoveryRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetFriendsDiscoveryRequest)
+    private static final unison.local.v1.Local.SetFriendsDiscoveryRequest DEFAULT_INSTANCE;
+    static {
+      SetFriendsDiscoveryRequest defaultInstance = new SetFriendsDiscoveryRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetFriendsDiscoveryRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetFriendsDiscoveryRequest> PARSER;
+
+    public static com.google.protobuf.Parser<SetFriendsDiscoveryRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetFriendsDiscoveryResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetFriendsDiscoveryResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     * @return Whether the friendsDiscovery field is set.
+     */
+    boolean hasFriendsDiscovery();
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     * @return The friendsDiscovery.
+     */
+    unison.local.v1.Local.FriendsDiscovery getFriendsDiscovery();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetFriendsDiscoveryResponse}
+   */
+  public  static final class SetFriendsDiscoveryResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetFriendsDiscoveryResponse, SetFriendsDiscoveryResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetFriendsDiscoveryResponse)
+      SetFriendsDiscoveryResponseOrBuilder {
+    private SetFriendsDiscoveryResponse() {
+    }
+    private int bitField0_;
+    public static final int FRIENDS_DISCOVERY_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.FriendsDiscovery friendsDiscovery_;
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     */
+    @java.lang.Override
+    public boolean hasFriendsDiscovery() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.FriendsDiscovery getFriendsDiscovery() {
+      return friendsDiscovery_ == null ? unison.local.v1.Local.FriendsDiscovery.getDefaultInstance() : friendsDiscovery_;
+    }
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     */
+    private void setFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+      java.util.Objects.requireNonNull(value);
+      friendsDiscovery_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+      java.util.Objects.requireNonNull(value);
+      if (friendsDiscovery_ != null &&
+          friendsDiscovery_ != unison.local.v1.Local.FriendsDiscovery.getDefaultInstance()) {
+        friendsDiscovery_ =
+          unison.local.v1.Local.FriendsDiscovery.newBuilder(friendsDiscovery_).mergeFrom(value).buildPartial();
+      } else {
+        friendsDiscovery_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The search after the change.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+     */
+    private void clearFriendsDiscovery() {
+      friendsDiscovery_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetFriendsDiscoveryResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetFriendsDiscoveryResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetFriendsDiscoveryResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetFriendsDiscoveryResponse)
+        unison.local.v1.Local.SetFriendsDiscoveryResponseOrBuilder {
+      // Construct using unison.local.v1.Local.SetFriendsDiscoveryResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The search after the change.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+       */
+      @java.lang.Override
+      public boolean hasFriendsDiscovery() {
+        return instance.hasFriendsDiscovery();
+      }
+      /**
+       * <pre>
+       * The search after the change.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.FriendsDiscovery getFriendsDiscovery() {
+        return instance.getFriendsDiscovery();
+      }
+      /**
+       * <pre>
+       * The search after the change.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder setFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+        copyOnWrite();
+        instance.setFriendsDiscovery(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The search after the change.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder setFriendsDiscovery(
+          unison.local.v1.Local.FriendsDiscovery.Builder builderForValue) {
+        copyOnWrite();
+        instance.setFriendsDiscovery(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The search after the change.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder mergeFriendsDiscovery(unison.local.v1.Local.FriendsDiscovery value) {
+        copyOnWrite();
+        instance.mergeFriendsDiscovery(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The search after the change.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FriendsDiscovery friends_discovery = 1 [json_name = "friendsDiscovery"];</code>
+       */
+      public Builder clearFriendsDiscovery() {  copyOnWrite();
+        instance.clearFriendsDiscovery();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetFriendsDiscoveryResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetFriendsDiscoveryResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "friendsDiscovery_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetFriendsDiscoveryResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetFriendsDiscoveryResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetFriendsDiscoveryResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetFriendsDiscoveryResponse)
+    private static final unison.local.v1.Local.SetFriendsDiscoveryResponse DEFAULT_INSTANCE;
+    static {
+      SetFriendsDiscoveryResponse defaultInstance = new SetFriendsDiscoveryResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetFriendsDiscoveryResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetFriendsDiscoveryResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetFriendsDiscoveryResponse> PARSER;
+
+    public static com.google.protobuf.Parser<SetFriendsDiscoveryResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }
@@ -35840,6 +40086,82 @@ java.lang.String defaultValue) {
      */
     com.google.protobuf.ByteString
         getDownloadsDirBytes();
+
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     * @return Whether the unmetered field is set.
+     */
+    boolean hasUnmetered();
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     * @return The unmetered.
+     */
+    unison.local.v1.Local.PolicyRow getUnmetered();
+
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     * @return Whether the metered field is set.
+     */
+    boolean hasMetered();
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     * @return The metered.
+     */
+    unison.local.v1.Local.PolicyRow getMetered();
+
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     * @return Whether the roaming field is set.
+     */
+    boolean hasRoaming();
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     * @return The roaming.
+     */
+    unison.local.v1.Local.PolicyRow getRoaming();
+
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     * @return Whether the dataSaver field is set.
+     */
+    boolean hasDataSaver();
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     * @return The dataSaver.
+     */
+    unison.local.v1.Local.PolicyRow getDataSaver();
+
+    /**
+     * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @return Whether the relayMaxSizeBytes field is set.
+     */
+    boolean hasRelayMaxSizeBytes();
+    /**
+     * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @return The relayMaxSizeBytes.
+     */
+    long getRelayMaxSizeBytes();
+
+    /**
+     * <pre>
+     * Remove the stored policy overrides and return to the defaults. Rows given
+     * in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+     * @return The resetPolicy.
+     */
+    boolean getResetPolicy();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -36030,6 +40352,294 @@ java.lang.String defaultValue) {
       checkByteStringIsUtf8(value);
       downloadsDir_ = value.toStringUtf8();
       bitField0_ |= 0x00000008;
+    }
+
+    public static final int UNMETERED_FIELD_NUMBER = 5;
+    private unison.local.v1.Local.PolicyRow unmetered_;
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    @java.lang.Override
+    public boolean hasUnmetered() {
+      return ((bitField0_ & 0x00000010) != 0);
+    }
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getUnmetered() {
+      return unmetered_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : unmetered_;
+    }
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    private void setUnmetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      unmetered_ = value;
+      bitField0_ |= 0x00000010;
+    }
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeUnmetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (unmetered_ != null &&
+          unmetered_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        unmetered_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(unmetered_).mergeFrom(value).buildPartial();
+      } else {
+        unmetered_ = value;
+      }
+      bitField0_ |= 0x00000010;
+    }
+    /**
+     * <pre>
+     * Policy rows to change. A missing row, cell or field keeps the stored
+     * value.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+     */
+    private void clearUnmetered() {
+      unmetered_ = null;
+      bitField0_ = (bitField0_ & ~0x00000010);
+    }
+
+    public static final int METERED_FIELD_NUMBER = 6;
+    private unison.local.v1.Local.PolicyRow metered_;
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    @java.lang.Override
+    public boolean hasMetered() {
+      return ((bitField0_ & 0x00000020) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getMetered() {
+      return metered_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : metered_;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    private void setMetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      metered_ = value;
+      bitField0_ |= 0x00000020;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeMetered(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (metered_ != null &&
+          metered_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        metered_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(metered_).mergeFrom(value).buildPartial();
+      } else {
+        metered_ = value;
+      }
+      bitField0_ |= 0x00000020;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+     */
+    private void clearMetered() {
+      metered_ = null;
+      bitField0_ = (bitField0_ & ~0x00000020);
+    }
+
+    public static final int ROAMING_FIELD_NUMBER = 7;
+    private unison.local.v1.Local.PolicyRow roaming_;
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    @java.lang.Override
+    public boolean hasRoaming() {
+      return ((bitField0_ & 0x00000040) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getRoaming() {
+      return roaming_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : roaming_;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    private void setRoaming(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      roaming_ = value;
+      bitField0_ |= 0x00000040;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeRoaming(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (roaming_ != null &&
+          roaming_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        roaming_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(roaming_).mergeFrom(value).buildPartial();
+      } else {
+        roaming_ = value;
+      }
+      bitField0_ |= 0x00000040;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+     */
+    private void clearRoaming() {
+      roaming_ = null;
+      bitField0_ = (bitField0_ & ~0x00000040);
+    }
+
+    public static final int DATA_SAVER_FIELD_NUMBER = 8;
+    private unison.local.v1.Local.PolicyRow dataSaver_;
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDataSaver() {
+      return ((bitField0_ & 0x00000080) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PolicyRow getDataSaver() {
+      return dataSaver_ == null ? unison.local.v1.Local.PolicyRow.getDefaultInstance() : dataSaver_;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    private void setDataSaver(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      dataSaver_ = value;
+      bitField0_ |= 0x00000080;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeDataSaver(unison.local.v1.Local.PolicyRow value) {
+      java.util.Objects.requireNonNull(value);
+      if (dataSaver_ != null &&
+          dataSaver_ != unison.local.v1.Local.PolicyRow.getDefaultInstance()) {
+        dataSaver_ =
+          unison.local.v1.Local.PolicyRow.newBuilder(dataSaver_).mergeFrom(value).buildPartial();
+      } else {
+        dataSaver_ = value;
+      }
+      bitField0_ |= 0x00000080;
+    }
+    /**
+     * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+     */
+    private void clearDataSaver() {
+      dataSaver_ = null;
+      bitField0_ = (bitField0_ & ~0x00000080);
+    }
+
+    public static final int RELAY_MAX_SIZE_BYTES_FIELD_NUMBER = 9;
+    private long relayMaxSizeBytes_;
+    /**
+     * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @return Whether the relayMaxSizeBytes field is set.
+     */
+    @java.lang.Override
+    public boolean hasRelayMaxSizeBytes() {
+      return ((bitField0_ & 0x00000100) != 0);
+    }
+    /**
+     * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @return The relayMaxSizeBytes.
+     */
+    @java.lang.Override
+    public long getRelayMaxSizeBytes() {
+      return relayMaxSizeBytes_;
+    }
+    /**
+     * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     * @param value The relayMaxSizeBytes to set.
+     */
+    private void setRelayMaxSizeBytes(long value) {
+      bitField0_ |= 0x00000100;
+      relayMaxSizeBytes_ = value;
+    }
+    /**
+     * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+     */
+    private void clearRelayMaxSizeBytes() {
+      bitField0_ = (bitField0_ & ~0x00000100);
+      relayMaxSizeBytes_ = 0L;
+    }
+
+    public static final int RESET_POLICY_FIELD_NUMBER = 10;
+    private boolean resetPolicy_;
+    /**
+     * <pre>
+     * Remove the stored policy overrides and return to the defaults. Rows given
+     * in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+     * @return The resetPolicy.
+     */
+    @java.lang.Override
+    public boolean getResetPolicy() {
+      return resetPolicy_;
+    }
+    /**
+     * <pre>
+     * Remove the stored policy overrides and return to the defaults. Rows given
+     * in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+     * @param value The resetPolicy to set.
+     */
+    private void setResetPolicy(boolean value) {
+      
+      resetPolicy_ = value;
+    }
+    /**
+     * <pre>
+     * Remove the stored policy overrides and return to the defaults. Rows given
+     * in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+     */
+    private void clearResetPolicy() {
+
+      resetPolicy_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -36315,6 +40925,303 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Policy rows to change. A missing row, cell or field keeps the stored
+       * value.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      @java.lang.Override
+      public boolean hasUnmetered() {
+        return instance.hasUnmetered();
+      }
+      /**
+       * <pre>
+       * Policy rows to change. A missing row, cell or field keeps the stored
+       * value.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getUnmetered() {
+        return instance.getUnmetered();
+      }
+      /**
+       * <pre>
+       * Policy rows to change. A missing row, cell or field keeps the stored
+       * value.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder setUnmetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setUnmetered(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Policy rows to change. A missing row, cell or field keeps the stored
+       * value.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder setUnmetered(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setUnmetered(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy rows to change. A missing row, cell or field keeps the stored
+       * value.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder mergeUnmetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeUnmetered(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Policy rows to change. A missing row, cell or field keeps the stored
+       * value.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PolicyRow unmetered = 5 [json_name = "unmetered"];</code>
+       */
+      public Builder clearUnmetered() {  copyOnWrite();
+        instance.clearUnmetered();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      @java.lang.Override
+      public boolean hasMetered() {
+        return instance.hasMetered();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getMetered() {
+        return instance.getMetered();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder setMetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setMetered(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder setMetered(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setMetered(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder mergeMetered(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeMetered(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow metered = 6 [json_name = "metered"];</code>
+       */
+      public Builder clearMetered() {  copyOnWrite();
+        instance.clearMetered();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      @java.lang.Override
+      public boolean hasRoaming() {
+        return instance.hasRoaming();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getRoaming() {
+        return instance.getRoaming();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder setRoaming(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setRoaming(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder setRoaming(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRoaming(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder mergeRoaming(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeRoaming(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow roaming = 7 [json_name = "roaming"];</code>
+       */
+      public Builder clearRoaming() {  copyOnWrite();
+        instance.clearRoaming();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      @java.lang.Override
+      public boolean hasDataSaver() {
+        return instance.hasDataSaver();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PolicyRow getDataSaver() {
+        return instance.getDataSaver();
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder setDataSaver(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.setDataSaver(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder setDataSaver(
+          unison.local.v1.Local.PolicyRow.Builder builderForValue) {
+        copyOnWrite();
+        instance.setDataSaver(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder mergeDataSaver(unison.local.v1.Local.PolicyRow value) {
+        copyOnWrite();
+        instance.mergeDataSaver(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.PolicyRow data_saver = 8 [json_name = "dataSaver"];</code>
+       */
+      public Builder clearDataSaver() {  copyOnWrite();
+        instance.clearDataSaver();
+        return this;
+      }
+
+      /**
+       * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @return Whether the relayMaxSizeBytes field is set.
+       */
+      @java.lang.Override
+      public boolean hasRelayMaxSizeBytes() {
+        return instance.hasRelayMaxSizeBytes();
+      }
+      /**
+       * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @return The relayMaxSizeBytes.
+       */
+      @java.lang.Override
+      public long getRelayMaxSizeBytes() {
+        return instance.getRelayMaxSizeBytes();
+      }
+      /**
+       * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @param value The relayMaxSizeBytes to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRelayMaxSizeBytes(long value) {
+        copyOnWrite();
+        instance.setRelayMaxSizeBytes(value);
+        return this;
+      }
+      /**
+       * <code>optional int64 relay_max_size_bytes = 9 [json_name = "relayMaxSizeBytes"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRelayMaxSizeBytes() {
+        copyOnWrite();
+        instance.clearRelayMaxSizeBytes();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Remove the stored policy overrides and return to the defaults. Rows given
+       * in the same request are stored on top of the defaults.
+       * </pre>
+       *
+       * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+       * @return The resetPolicy.
+       */
+      @java.lang.Override
+      public boolean getResetPolicy() {
+        return instance.getResetPolicy();
+      }
+      /**
+       * <pre>
+       * Remove the stored policy overrides and return to the defaults. Rows given
+       * in the same request are stored on top of the defaults.
+       * </pre>
+       *
+       * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+       * @param value The resetPolicy to set.
+       * @return This builder for chaining.
+       */
+      public Builder setResetPolicy(boolean value) {
+        copyOnWrite();
+        instance.setResetPolicy(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Remove the stored policy overrides and return to the defaults. Rows given
+       * in the same request are stored on top of the defaults.
+       * </pre>
+       *
+       * <code>bool reset_policy = 10 [json_name = "resetPolicy"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearResetPolicy() {
+        copyOnWrite();
+        instance.clearResetPolicy();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -36336,10 +41243,17 @@ java.lang.String defaultValue) {
               "requireConfirmation_",
               "blobMaxSizeBytes_",
               "downloadsDir_",
+              "unmetered_",
+              "metered_",
+              "roaming_",
+              "dataSaver_",
+              "relayMaxSizeBytes_",
+              "resetPolicy_",
             };
             java.lang.String info =
-                "\u0000\u0004\u0000\u0001\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
-                "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003";
+                "\u0000\n\u0000\u0001\u0001\n\n\u0000\u0000\u0000\u0001\u1208\u0000\u0002\u1007\u0001" +
+                "\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005\u0007\u1009" +
+                "\u0006\b\u1009\u0007\t\u1002\b\n\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
