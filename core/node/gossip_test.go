@@ -296,7 +296,7 @@ func TestGossipSpreadsGroupData(t *testing.T) {
 
 	ctx := context.Background()
 	relay := trust.RelaySettings{URL: "https://relay.example", Token: "group-token"}
-	if err := a.Trust().SetRelaySettings(ctx, relay); err != nil {
+	if err := a.SetRelay(ctx, relay); err != nil {
 		t.Fatalf("set relay settings: %v", err)
 	}
 	key := bytes.Repeat([]byte{4}, 32)

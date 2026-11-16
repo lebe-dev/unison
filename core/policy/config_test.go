@@ -130,6 +130,7 @@ func TestLoadConfigRelayOverrides(t *testing.T) {
 		RelayKey(ConditionUnmetered):               "false",
 		RelayMaxSizeKey:                            strconv.Itoa(2 * megabyte),
 		ModeKey(ConditionMetered, model.KindImage): "metadata",
+		RelayFilesKey:                              "false",
 	}
 	cfg, err := LoadConfig(context.Background(), settings)
 	if err != nil {
@@ -143,6 +144,9 @@ func TestLoadConfigRelayOverrides(t *testing.T) {
 	}
 	if cfg.RelayMaxSize != 2*megabyte {
 		t.Fatalf("relay limit: got %d, want %d", cfg.RelayMaxSize, 2*megabyte)
+	}
+	if cfg.RelayFilesOnRequest {
+		t.Fatal("the file rule did not change")
 	}
 
 	viaRelay := Decide(cfg, Input{
@@ -291,7 +295,7 @@ func TestConfigValidate(t *testing.T) {
 
 func TestKeys(t *testing.T) {
 	keys := Keys()
-	want := len(Conditions())*(2*len(Kinds())+1) + 1
+	want := len(Conditions())*(2*len(Kinds())+1) + 2
 	if len(keys) != want {
 		t.Fatalf("keys: got %d, want %d", len(keys), want)
 	}
@@ -307,6 +311,7 @@ func TestKeys(t *testing.T) {
 		"policy.network.unmetered.image.max_size",
 		"policy.network.data_saver.relay",
 		RelayMaxSizeKey,
+		RelayFilesKey,
 	} {
 		if !seen[want] {
 			t.Fatalf("missing key %q", want)

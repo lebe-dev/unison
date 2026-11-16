@@ -157,6 +157,40 @@ func TestDecideRelayPath(t *testing.T) {
 	}
 }
 
+func TestDecideFilesOverRelay(t *testing.T) {
+	share := Input{
+		Peer:    personal,
+		Network: wifi,
+		Path:    model.PathRelay,
+		Kind:    model.KindFiles,
+		Size:    smallSize,
+		Source:  model.SourceShare,
+	}
+
+	kept := Decide(Default(), share)
+	if kept.Action != ActionMetadataOnly || !kept.Relay {
+		t.Fatalf("a shared file over the relay: %+v", kept)
+	}
+
+	allowed := Default()
+	allowed.RelayFilesOnRequest = false
+	if got := Decide(allowed, share); got.Action != ActionAutoApply {
+		t.Fatalf("a shared file with the rule off: %s", got.Action)
+	}
+
+	asked := share
+	asked.Source = model.SourceCLI
+	if got := Decide(Default(), asked); got.Action != ActionAutoApply {
+		t.Fatalf("a file the user asked for: %s", got.Action)
+	}
+
+	lan := share
+	lan.Path = model.PathLAN
+	if got := Decide(Default(), lan); got.Action != ActionAutoApply {
+		t.Fatalf("a shared file in the local network: %s", got.Action)
+	}
+}
+
 func TestDecidePeer(t *testing.T) {
 	confirmation := Peer{Role: model.RolePersonal, RequireConfirmation: true}
 	friends := Peer{Role: model.RoleFriends}

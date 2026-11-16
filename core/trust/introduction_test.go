@@ -365,8 +365,8 @@ func TestGroupDataKeepsNewest(t *testing.T) {
 		Relay:        RelaySettings{URL: "https://relay.example", Token: "token"},
 		RelayAt:      at,
 	})
-	if err != nil || !changed {
-		t.Fatalf("apply group data: changed %v, error %v", changed, err)
+	if err != nil || !changed.Any() || !changed.DiscoveryKey || !changed.Relay {
+		t.Fatalf("apply group data: change %+v, error %v", changed, err)
 	}
 
 	data, err := store.GroupData(ctx)
@@ -387,11 +387,33 @@ func TestGroupDataKeepsNewest(t *testing.T) {
 		Relay:        RelaySettings{URL: "https://old.example", Token: "old"},
 		RelayAt:      at.Add(-time.Minute),
 	})
-	if err != nil || changed {
-		t.Fatalf("an older group data was applied: changed %v, error %v", changed, err)
+	if err != nil || changed.Any() {
+		t.Fatalf("an older group data was applied: change %+v, error %v", changed, err)
 	}
 	if data, err := store.GroupData(ctx); err != nil || !bytes.Equal(data.DiscoveryKey, key) {
 		t.Fatalf("the discovery key changed: %v, error %v", data.DiscoveryKey, err)
+	}
+}
+
+func TestGroupDataReportsRelayOnly(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t)
+
+	at := time.UnixMilli(1_760_000_000_000)
+	change, err := store.ApplyGroupData(ctx, GroupData{
+		Relay:   RelaySettings{URL: "https://relay.example", Token: "token"},
+		RelayAt: at,
+	})
+	if err != nil || !change.Relay || change.DiscoveryKey {
+		t.Fatalf("apply the relay settings: change %+v, error %v", change, err)
+	}
+
+	off, err := store.ApplyGroupData(ctx, GroupData{RelayAt: at.Add(time.Second)})
+	if err != nil || !off.Relay || off.DiscoveryKey {
+		t.Fatalf("turn the relay off: change %+v, error %v", off, err)
+	}
+	if data, err := store.GroupData(ctx); err != nil || !data.Relay.Empty() {
+		t.Fatalf("the relay is still configured: %+v, error %v", data.Relay, err)
 	}
 }
 

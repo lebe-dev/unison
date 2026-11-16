@@ -161,7 +161,11 @@ func (n *Node) leaveGroup(ctx context.Context) error {
 			}
 		}()
 	}
-	return n.trust.LeaveGroup(ctx)
+	if err := n.trust.LeaveGroup(ctx); err != nil {
+		return err
+	}
+	n.applyRelaySettings(trust.RelaySettings{})
+	return nil
 }
 
 // handleRevokedPeer closes the connection to a device that another device of the

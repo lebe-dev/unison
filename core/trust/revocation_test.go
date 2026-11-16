@@ -385,8 +385,8 @@ func TestApplyGroupDataKeepsPreviousKey(t *testing.T) {
 	next := bytes.Repeat([]byte{9}, secretSize)
 	at := time.Now().Add(time.Second).Truncate(time.Millisecond)
 	changed, err := store.ApplyGroupData(ctx, GroupData{DiscoveryKey: next, DiscoveryAt: at})
-	if err != nil || !changed {
-		t.Fatalf("apply the group data: changed %v, error %v", changed, err)
+	if err != nil || !changed.DiscoveryKey {
+		t.Fatalf("apply the group data: change %+v, error %v", changed, err)
 	}
 
 	keys, err := store.DiscoveryKeys(ctx)

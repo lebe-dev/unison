@@ -25,9 +25,10 @@ func (n *Node) relayAllowed() bool {
 }
 
 // relayDue reports whether the link should open the relay path: the peer stayed
-// off the local network for the relay delay and the policy allows relay.
+// off the local network for the relay delay, the group has relay access and the
+// policy allows relay.
 func (n *Node) relayDue(l *link) bool {
-	if !n.relayAllowed() {
+	if !n.relayOn.Load() || !n.relayAllowed() {
 		return false
 	}
 	offline := l.offlineAt()
@@ -104,24 +105,83 @@ func (n *Node) closeRelayLocked() {
 	n.relayConfig = relay.Config{}
 }
 
-// relaySettingsChanged drops a relay client whose settings are outdated and
-// wakes the links that wait for the relay.
+// relaySettingsChanged applies the relay settings of the stored group data.
 func (n *Node) relaySettingsChanged(ctx context.Context) {
 	data, err := n.trust.GroupData(ctx)
 	if err != nil {
 		return
 	}
+	n.applyRelaySettings(data.Relay)
+}
+
+// applyRelaySettings drops a relay client whose settings are outdated, remembers
+// whether the group has relay access and wakes the links that wait for it.
+func (n *Node) applyRelaySettings(settings trust.RelaySettings) {
+	on := !settings.Empty()
 
 	n.relayMu.Lock()
-	stale := n.relay != nil && (n.relayConfig.URL != data.Relay.URL || n.relayConfig.Token != data.Relay.Token)
+	stale := n.relay != nil && (n.relayConfig.URL != settings.URL || n.relayConfig.Token != settings.Token)
 	if stale {
 		n.closeRelayLocked()
 	}
 	n.relayMu.Unlock()
 
-	if stale {
+	n.relayOn.Store(on)
+	if !on {
+		// The relay is gone, so a session that runs over it cannot continue.
+		for _, l := range n.linkList() {
+			if l.pathIs(model.PathRelay) {
+				l.close()
+			}
+			l.retry()
+		}
 		n.wakeRelay()
+		return
 	}
+	n.wakeRelay()
+	for _, l := range n.linkList() {
+		l.retry()
+	}
+}
+
+// RelayStatus returns the state of the relay client of this device.
+func (n *Node) RelayStatus() relay.Status {
+	n.relayMu.Lock()
+	client := n.relay
+	n.relayMu.Unlock()
+
+	if client == nil {
+		return relay.Status{}
+	}
+	return client.Status()
+}
+
+// RelaySettings returns the relay access of the Personal group and when it last
+// changed.
+func (n *Node) RelaySettings(ctx context.Context) (trust.RelaySettings, time.Time, error) {
+	if err := n.usable(); err != nil {
+		return trust.RelaySettings{}, time.Time{}, err
+	}
+	data, err := n.trust.GroupData(ctx)
+	if err != nil {
+		return trust.RelaySettings{}, time.Time{}, err
+	}
+	return data.Relay, data.RelayAt, nil
+}
+
+// SetRelay stores the relay access of the Personal group and announces the
+// change to the other devices. Empty settings turn the relay off.
+func (n *Node) SetRelay(ctx context.Context, settings trust.RelaySettings) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if err := n.trust.SetRelaySettings(ctx, settings); err != nil {
+		return err
+	}
+	n.applyRelaySettings(settings)
+	n.gossip.Notify(ctx)
+	n.log.Info("relay settings changed", "on", !settings.Empty(), "relay", settings.URL)
+	return nil
 }
 
 // relayNetworkChanged reports a network change to the relay client.
@@ -133,18 +193,6 @@ func (n *Node) relayNetworkChanged() {
 	if client != nil {
 		client.NetworkChanged()
 	}
-}
-
-// relayStatus returns the state of the relay client.
-func (n *Node) relayStatus() relay.Status {
-	n.relayMu.Lock()
-	client := n.relay
-	n.relayMu.Unlock()
-
-	if client == nil {
-		return relay.Status{}
-	}
-	return client.Status()
 }
 
 // wakeRelay asks the links that wait for the relay to try it again.
@@ -206,6 +254,10 @@ func (n *Node) relayLoop(ctx context.Context, l *link) {
 		switch {
 		case errors.Is(err, errRelayOff):
 			n.log.Debug("no relay settings for the device", "peer", l.id)
+			// The group has no relay access, so the link goes back to the
+			// local addresses.
+			l.retry()
+			return
 		case errors.Is(err, relay.ErrDatagramTooSmall):
 			if !warned {
 				n.log.Warn("relay datagrams cannot carry QUIC, the relay path stays off", "error", err)
