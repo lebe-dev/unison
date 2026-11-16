@@ -7,6 +7,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/blob/transfer"
+	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/session"
@@ -49,6 +50,31 @@ func (n *Node) openHistory(db *store.Store, origin model.DeviceID) (*history.Sto
 // History returns the history of the node. It is nil before Start.
 func (n *Node) History() *history.Store {
 	return n.history
+}
+
+// ReloadTTLs rereads the stored history lifetimes, so a saved change applies to
+// the next captured item without a restart. Items already recorded keep their
+// expiry.
+func (n *Node) ReloadTTLs(ctx context.Context) error {
+	if n.clip == nil {
+		return errors.New("node: clipboard pipeline is not ready")
+	}
+	ttls, err := history.LoadTTLs(ctx, n.db.Settings())
+	n.clip.SetTTLs(clip.TTLs{Text: ttls.Text, Image: ttls.Image, Files: ttls.Files})
+	if err != nil {
+		return fmt.Errorf("node: read the history lifetimes: %w", err)
+	}
+	n.log.Info("history lifetimes changed",
+		"text", ttls.Text.String(), "image", ttls.Image.String(), "files", ttls.Files.String())
+	return nil
+}
+
+// TTLs returns the history lifetimes the pipeline uses now.
+func (n *Node) TTLs() clip.TTLs {
+	if n.clip == nil {
+		return clip.TTLs{}
+	}
+	return n.clip.TTLs()
 }
 
 // installHistory registers the history exchange on a new session.
