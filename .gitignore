@@ -8,6 +8,8 @@
 deploy/relay/secrets/
 
 packaging/macos/build/
+packaging/windows/build/
+desktop/src-tauri/binaries/
 
 /unison
 /bin/
