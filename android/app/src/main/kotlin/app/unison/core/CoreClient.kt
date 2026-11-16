@@ -24,7 +24,12 @@ class CoreException(val code: Int, message: String) : Exception(message) {
     val isNotRunning: Boolean
         get() = code == CODE_FAILED_PRECONDITION
 
+    /** The request was refused as malformed. */
+    val isInvalidArgument: Boolean
+        get() = code == CODE_INVALID_ARGUMENT
+
     companion object {
+        const val CODE_INVALID_ARGUMENT = 3
         const val CODE_FAILED_PRECONDITION = 9
     }
 }
@@ -174,6 +179,109 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             method = "CancelTransfer",
             request = request,
             parse = { Local.CancelTransferResponse.parseFrom(it) },
+        )
+    }
+
+    /** Opens a pairing window that proposes [role] to the devices it pairs with. */
+    override suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow {
+        val request = Local.OpenPairingWindowRequest.newBuilder()
+            .setRole(role)
+            .build()
+        val response = call(
+            method = "OpenPairingWindow",
+            request = request,
+            parse = { Local.OpenPairingWindowResponse.parseFrom(it) },
+        )
+        return response.window
+    }
+
+    /** Restarts the auto-close timer of the pairing window. */
+    override suspend fun extendPairingWindow(): Local.PairingWindow {
+        val response = call(
+            method = "ExtendPairingWindow",
+            request = Local.ExtendPairingWindowRequest.getDefaultInstance(),
+            parse = { Local.ExtendPairingWindowResponse.parseFrom(it) },
+        )
+        return response.window
+    }
+
+    /** Closes the pairing window. */
+    override suspend fun closePairingWindow() {
+        call(
+            method = "ClosePairingWindow",
+            request = Local.ClosePairingWindowRequest.getDefaultInstance(),
+            parse = { Local.ClosePairingWindowResponse.parseFrom(it) },
+        )
+    }
+
+    /** Code of the open pairing window. */
+    override suspend fun pairingQr(addrs: List<String>): Local.PairingQr {
+        val request = Local.GetPairingQrRequest.newBuilder()
+            .addAllAddrs(addrs)
+            .build()
+        val response = call(
+            method = "GetPairingQr",
+            request = request,
+            parse = { Local.GetPairingQrResponse.parseFrom(it) },
+        )
+        return response.qr
+    }
+
+    /** Pairs with the device of a pairing code. */
+    override suspend fun scanPairingQr(uri: String) {
+        val request = Local.ScanPairingQrRequest.newBuilder()
+            .setUri(uri)
+            .build()
+        call(
+            method = "ScanPairingQr",
+            request = request,
+            parse = { Local.ScanPairingQrResponse.parseFrom(it) },
+        )
+    }
+
+    /** Devices that are open for pairing. */
+    override suspend fun pairingCandidates(): List<Local.PairingCandidate> {
+        val response = call(
+            method = "ListPairingCandidates",
+            request = Local.ListPairingCandidatesRequest.getDefaultInstance(),
+            parse = { Local.ListPairingCandidatesResponse.parseFrom(it) },
+        )
+        return response.candidatesList
+    }
+
+    /** Starts a pairing exchange with the candidate address. */
+    override suspend fun startPairing(addr: String) {
+        val request = Local.StartSasRequest.newBuilder()
+            .setAddr(addr)
+            .build()
+        call(
+            method = "StartSas",
+            request = request,
+            parse = { Local.StartSasResponse.parseFrom(it) },
+        )
+    }
+
+    /** Accepts the pairing request of the device. */
+    override suspend fun confirmPairing(deviceId: String) {
+        val request = Local.ConfirmSasRequest.newBuilder()
+            .setDeviceId(deviceId)
+            .build()
+        call(
+            method = "ConfirmSas",
+            request = request,
+            parse = { Local.ConfirmSasResponse.parseFrom(it) },
+        )
+    }
+
+    /** Refuses the pairing request of the device. */
+    override suspend fun rejectPairing(deviceId: String) {
+        val request = Local.RejectSasRequest.newBuilder()
+            .setDeviceId(deviceId)
+            .build()
+        call(
+            method = "RejectSas",
+            request = request,
+            parse = { Local.RejectSasResponse.parseFrom(it) },
         )
     }
 }

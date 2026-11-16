@@ -1236,6 +1236,126 @@ public final class Local {
     // @@protoc_insertion_point(enum_scope:unison.local.v1.TransferState)
   }
 
+  /**
+   * <pre>
+   * How a pairing exchange was started.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.PairingMethod}
+   */
+  public enum PairingMethod
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>PAIRING_METHOD_UNSPECIFIED = 0;</code>
+     */
+    PAIRING_METHOD_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * Both devices compare a short authentication string.
+     * </pre>
+     *
+     * <code>PAIRING_METHOD_SAS = 1;</code>
+     */
+    PAIRING_METHOD_SAS(1),
+    /**
+     * <pre>
+     * One device scanned the code of the other one, so only that other device
+     * asks its user.
+     * </pre>
+     *
+     * <code>PAIRING_METHOD_QR = 2;</code>
+     */
+    PAIRING_METHOD_QR(2),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>PAIRING_METHOD_UNSPECIFIED = 0;</code>
+     */
+    public static final int PAIRING_METHOD_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * Both devices compare a short authentication string.
+     * </pre>
+     *
+     * <code>PAIRING_METHOD_SAS = 1;</code>
+     */
+    public static final int PAIRING_METHOD_SAS_VALUE = 1;
+    /**
+     * <pre>
+     * One device scanned the code of the other one, so only that other device
+     * asks its user.
+     * </pre>
+     *
+     * <code>PAIRING_METHOD_QR = 2;</code>
+     */
+    public static final int PAIRING_METHOD_QR_VALUE = 2;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static PairingMethod valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static PairingMethod forNumber(int value) {
+      switch (value) {
+        case 0: return PAIRING_METHOD_UNSPECIFIED;
+        case 1: return PAIRING_METHOD_SAS;
+        case 2: return PAIRING_METHOD_QR;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<PairingMethod>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        PairingMethod> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<PairingMethod>() {
+            @java.lang.Override
+            public PairingMethod findValueByNumber(int number) {
+              return PairingMethod.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return PairingMethodVerifier.INSTANCE;
+    }
+
+    private static final class PairingMethodVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new PairingMethodVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return PairingMethod.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private PairingMethod(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.PairingMethod)
+  }
+
   public interface NetworkStateOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.NetworkState)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -6444,6 +6564,25 @@ public final class Local {
      * @return The transfer.
      */
     unison.local.v1.Local.Transfer getTransfer();
+
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     * @return The enum numeric value on the wire for pairingMethod.
+     */
+    int getPairingMethodValue();
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     * @return The pairingMethod.
+     */
+    unison.local.v1.Local.PairingMethod getPairingMethod();
   }
   /**
    * <pre>
@@ -7200,6 +7339,69 @@ public final class Local {
     private void clearTransfer() {
       transfer_ = null;
       bitField0_ = (bitField0_ & ~0x00000004);
+    }
+
+    public static final int PAIRING_METHOD_FIELD_NUMBER = 15;
+    private int pairingMethod_;
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     * @return The enum numeric value on the wire for pairingMethod.
+     */
+    @java.lang.Override
+    public int getPairingMethodValue() {
+      return pairingMethod_;
+    }
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     * @return The pairingMethod.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PairingMethod getPairingMethod() {
+      unison.local.v1.Local.PairingMethod result = unison.local.v1.Local.PairingMethod.forNumber(pairingMethod_);
+      return result == null ? unison.local.v1.Local.PairingMethod.UNRECOGNIZED : result;
+    }
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     * @param value The enum numeric value on the wire for pairingMethod to set.
+     */
+    private void setPairingMethodValue(int value) {
+        pairingMethod_ = value;
+    }
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     * @param value The pairingMethod to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setPairingMethod(unison.local.v1.Local.PairingMethod value) {
+      pairingMethod_ = value.getNumber();
+
+    }
+    /**
+     * <pre>
+     * How the pairing exchange of the event was started.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+     */
+    private void clearPairingMethod() {
+
+      pairingMethod_ = 0;
     }
 
     public static unison.local.v1.Local.Event parseFrom(
@@ -8083,6 +8285,73 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * How the pairing exchange of the event was started.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+       * @return The enum numeric value on the wire for pairingMethod.
+       */
+      @java.lang.Override
+      public int getPairingMethodValue() {
+        return instance.getPairingMethodValue();
+      }
+      /**
+       * <pre>
+       * How the pairing exchange of the event was started.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+       * @param value The pairingMethod to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setPairingMethodValue(int value) {
+        copyOnWrite();
+        instance.setPairingMethodValue(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * How the pairing exchange of the event was started.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+       * @return The pairingMethod.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PairingMethod getPairingMethod() {
+        return instance.getPairingMethod();
+      }
+      /**
+       * <pre>
+       * How the pairing exchange of the event was started.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+       * @param value The enum numeric value on the wire for pairingMethod to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPairingMethod(unison.local.v1.Local.PairingMethod value) {
+        copyOnWrite();
+        instance.setPairingMethod(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * How the pairing exchange of the event was started.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingMethod pairing_method = 15 [json_name = "pairingMethod"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPairingMethod() {
+        copyOnWrite();
+        instance.clearPairingMethod();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Event)
     }
     @java.lang.Override
@@ -8114,11 +8383,12 @@ public final class Local {
               "error_",
               "atUnixMs_",
               "transfer_",
+              "pairingMethod_",
             };
             java.lang.String info =
-                "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\f\u0002\u0208" +
+                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\f\u0002\u0208" +
                 "\u0003\u0208\u0004\f\u0005\f\u0006\f\u0007\u0007\b\u1009\u0000\t\u0208\n\u1009\u0001" +
-                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002";
+                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -8670,6 +8940,448 @@ public final class Local {
     private static volatile com.google.protobuf.Parser<PairingWindow> PARSER;
 
     public static com.google.protobuf.Parser<PairingWindow> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface PairingQrOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.PairingQr)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The uri.
+     */
+    java.lang.String getUri();
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The bytes for uri.
+     */
+    com.google.protobuf.ByteString
+        getUriBytes();
+
+    /**
+     * <pre>
+     * Time the window closes, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+     * @return The expiresAtUnixMs.
+     */
+    long getExpiresAtUnixMs();
+  }
+  /**
+   * <pre>
+   * Code of a pairing window. It carries a one time token, so a client must not
+   * store it or put it into a log.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.PairingQr}
+   */
+  public  static final class PairingQr extends
+      com.google.protobuf.GeneratedMessageLite<
+          PairingQr, PairingQr.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.PairingQr)
+      PairingQrOrBuilder {
+    private PairingQr() {
+      uri_ = "";
+    }
+    public static final int URI_FIELD_NUMBER = 1;
+    private java.lang.String uri_;
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The uri.
+     */
+    @java.lang.Override
+    public java.lang.String getUri() {
+      return uri_;
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The bytes for uri.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getUriBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(uri_);
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @param value The uri to set.
+     */
+    private void setUri(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      uri_ = value;
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     */
+    private void clearUri() {
+
+      uri_ = getDefaultInstance().getUri();
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @param value The bytes for uri to set.
+     */
+    private void setUriBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      uri_ = value.toStringUtf8();
+
+    }
+
+    public static final int EXPIRES_AT_UNIX_MS_FIELD_NUMBER = 2;
+    private long expiresAtUnixMs_;
+    /**
+     * <pre>
+     * Time the window closes, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+     * @return The expiresAtUnixMs.
+     */
+    @java.lang.Override
+    public long getExpiresAtUnixMs() {
+      return expiresAtUnixMs_;
+    }
+    /**
+     * <pre>
+     * Time the window closes, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+     * @param value The expiresAtUnixMs to set.
+     */
+    private void setExpiresAtUnixMs(long value) {
+      
+      expiresAtUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * Time the window closes, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+     */
+    private void clearExpiresAtUnixMs() {
+
+      expiresAtUnixMs_ = 0L;
+    }
+
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.PairingQr parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.PairingQr parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.PairingQr parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.PairingQr prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * Code of a pairing window. It carries a one time token, so a client must not
+     * store it or put it into a log.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.PairingQr}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.PairingQr, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.PairingQr)
+        unison.local.v1.Local.PairingQrOrBuilder {
+      // Construct using unison.local.v1.Local.PairingQr.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @return The uri.
+       */
+      @java.lang.Override
+      public java.lang.String getUri() {
+        return instance.getUri();
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @return The bytes for uri.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getUriBytes() {
+        return instance.getUriBytes();
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @param value The uri to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUri(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setUri(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUri() {
+        copyOnWrite();
+        instance.clearUri();
+        return this;
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @param value The bytes for uri to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUriBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setUriBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Time the window closes, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+       * @return The expiresAtUnixMs.
+       */
+      @java.lang.Override
+      public long getExpiresAtUnixMs() {
+        return instance.getExpiresAtUnixMs();
+      }
+      /**
+       * <pre>
+       * Time the window closes, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+       * @param value The expiresAtUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setExpiresAtUnixMs(long value) {
+        copyOnWrite();
+        instance.setExpiresAtUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Time the window closes, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 2 [json_name = "expiresAtUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearExpiresAtUnixMs() {
+        copyOnWrite();
+        instance.clearExpiresAtUnixMs();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.PairingQr)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.PairingQr();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "uri_",
+              "expiresAtUnixMs_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0002" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.PairingQr> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.PairingQr.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.PairingQr>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.PairingQr)
+    private static final unison.local.v1.Local.PairingQr DEFAULT_INSTANCE;
+    static {
+      PairingQr defaultInstance = new PairingQr();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        PairingQr.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.PairingQr getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<PairingQr> PARSER;
+
+    public static com.google.protobuf.Parser<PairingQr> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }
@@ -17966,6 +18678,1381 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<RejectSasResponse> PARSER;
 
     public static com.google.protobuf.Parser<RejectSasResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetPairingQrRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetPairingQrRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @return A list containing the addrs.
+     */
+    java.util.List<java.lang.String>
+        getAddrsList();
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @return The count of addrs.
+     */
+    int getAddrsCount();
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param index The index of the element to return.
+     * @return The addrs at the given index.
+     */
+    java.lang.String getAddrs(int index);
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param index The index of the element to return.
+     * @return The addrs at the given index.
+     */
+    com.google.protobuf.ByteString
+        getAddrsBytes(int index);
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetPairingQrRequest}
+   */
+  public  static final class GetPairingQrRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetPairingQrRequest, GetPairingQrRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetPairingQrRequest)
+      GetPairingQrRequestOrBuilder {
+    private GetPairingQrRequest() {
+      addrs_ = emptyProtobufList();
+    }
+    public static final int ADDRS_FIELD_NUMBER = 1;
+    private com.google.protobuf.Internal.ProtobufList<java.lang.String> addrs_;
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @return A list containing the addrs.
+     */
+    @java.lang.Override
+    public java.util.List<java.lang.String> getAddrsList() {
+      return addrs_;
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @return The count of addrs.
+     */
+    @java.lang.Override
+    public int getAddrsCount() {
+      return addrs_.size();
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param index The index of the element to return.
+     * @return The addrs at the given index.
+     */
+    @java.lang.Override
+    public java.lang.String getAddrs(int index) {
+      return addrs_.get(index);
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the addrs at the given index.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getAddrsBytes(int index) {
+      return com.google.protobuf.ByteString.copyFromUtf8(
+          addrs_.get(index));
+    }
+    private void ensureAddrsIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<java.lang.String> tmp =
+          addrs_;  if (!tmp.isModifiable()) {
+        addrs_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param index The index to set the value at.
+     * @param value The addrs to set.
+     */
+    private void setAddrs(
+        int index, java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureAddrsIsMutable();
+      addrs_.set(index, value);
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param value The addrs to add.
+     */
+    private void addAddrs(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureAddrsIsMutable();
+      addrs_.add(value);
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param values The addrs to add.
+     */
+    private void addAllAddrs(
+        java.lang.Iterable<java.lang.String> values) {
+      ensureAddrsIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, addrs_);
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     */
+    private void clearAddrs() {
+      addrs_ = emptyProtobufList();
+    }
+    /**
+     * <pre>
+     * Addresses of this device to put into the code, host:port. A device that
+     * cannot list its own interfaces passes the addresses its platform reports.
+     * </pre>
+     *
+     * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+     * @param value The bytes of the addrs to add.
+     */
+    private void addAddrsBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      ensureAddrsIsMutable();
+      addrs_.add(value.toStringUtf8());
+    }
+
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetPairingQrRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetPairingQrRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetPairingQrRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetPairingQrRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetPairingQrRequest)
+        unison.local.v1.Local.GetPairingQrRequestOrBuilder {
+      // Construct using unison.local.v1.Local.GetPairingQrRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @return A list containing the addrs.
+       */
+      @java.lang.Override
+      public java.util.List<java.lang.String>
+          getAddrsList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getAddrsList());
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @return The count of addrs.
+       */
+      @java.lang.Override
+      public int getAddrsCount() {
+        return instance.getAddrsCount();
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @param index The index of the element to return.
+       * @return The addrs at the given index.
+       */
+      @java.lang.Override
+      public java.lang.String getAddrs(int index) {
+        return instance.getAddrs(index);
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the addrs at the given index.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getAddrsBytes(int index) {
+        return instance.getAddrsBytes(index);
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @param index The index to set the value at.
+       * @param value The addrs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAddrs(
+          int index, java.lang.String value) {
+        copyOnWrite();
+        instance.setAddrs(index, value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @param value The addrs to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAddrs(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.addAddrs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @param values The addrs to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllAddrs(
+          java.lang.Iterable<java.lang.String> values) {
+        copyOnWrite();
+        instance.addAllAddrs(values);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAddrs() {
+        copyOnWrite();
+        instance.clearAddrs();
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of this device to put into the code, host:port. A device that
+       * cannot list its own interfaces passes the addresses its platform reports.
+       * </pre>
+       *
+       * <code>repeated string addrs = 1 [json_name = "addrs"];</code>
+       * @param value The bytes of the addrs to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAddrsBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.addAddrsBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetPairingQrRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetPairingQrRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "addrs_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0001\u0000\u0001\u021a";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetPairingQrRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetPairingQrRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetPairingQrRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetPairingQrRequest)
+    private static final unison.local.v1.Local.GetPairingQrRequest DEFAULT_INSTANCE;
+    static {
+      GetPairingQrRequest defaultInstance = new GetPairingQrRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetPairingQrRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetPairingQrRequest> PARSER;
+
+    public static com.google.protobuf.Parser<GetPairingQrRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetPairingQrResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetPairingQrResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     * @return Whether the qr field is set.
+     */
+    boolean hasQr();
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     * @return The qr.
+     */
+    unison.local.v1.Local.PairingQr getQr();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetPairingQrResponse}
+   */
+  public  static final class GetPairingQrResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetPairingQrResponse, GetPairingQrResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetPairingQrResponse)
+      GetPairingQrResponseOrBuilder {
+    private GetPairingQrResponse() {
+    }
+    private int bitField0_;
+    public static final int QR_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.PairingQr qr_;
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     */
+    @java.lang.Override
+    public boolean hasQr() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.PairingQr getQr() {
+      return qr_ == null ? unison.local.v1.Local.PairingQr.getDefaultInstance() : qr_;
+    }
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     */
+    private void setQr(unison.local.v1.Local.PairingQr value) {
+      java.util.Objects.requireNonNull(value);
+      qr_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeQr(unison.local.v1.Local.PairingQr value) {
+      java.util.Objects.requireNonNull(value);
+      if (qr_ != null &&
+          qr_ != unison.local.v1.Local.PairingQr.getDefaultInstance()) {
+        qr_ =
+          unison.local.v1.Local.PairingQr.newBuilder(qr_).mergeFrom(value).buildPartial();
+      } else {
+        qr_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Code of the open window, absent when no window is open.
+     * </pre>
+     *
+     * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+     */
+    private void clearQr() {
+      qr_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetPairingQrResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetPairingQrResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetPairingQrResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetPairingQrResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetPairingQrResponse)
+        unison.local.v1.Local.GetPairingQrResponseOrBuilder {
+      // Construct using unison.local.v1.Local.GetPairingQrResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Code of the open window, absent when no window is open.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+       */
+      @java.lang.Override
+      public boolean hasQr() {
+        return instance.hasQr();
+      }
+      /**
+       * <pre>
+       * Code of the open window, absent when no window is open.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.PairingQr getQr() {
+        return instance.getQr();
+      }
+      /**
+       * <pre>
+       * Code of the open window, absent when no window is open.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+       */
+      public Builder setQr(unison.local.v1.Local.PairingQr value) {
+        copyOnWrite();
+        instance.setQr(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Code of the open window, absent when no window is open.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+       */
+      public Builder setQr(
+          unison.local.v1.Local.PairingQr.Builder builderForValue) {
+        copyOnWrite();
+        instance.setQr(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Code of the open window, absent when no window is open.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+       */
+      public Builder mergeQr(unison.local.v1.Local.PairingQr value) {
+        copyOnWrite();
+        instance.mergeQr(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Code of the open window, absent when no window is open.
+       * </pre>
+       *
+       * <code>.unison.local.v1.PairingQr qr = 1 [json_name = "qr"];</code>
+       */
+      public Builder clearQr() {  copyOnWrite();
+        instance.clearQr();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetPairingQrResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetPairingQrResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "qr_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetPairingQrResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetPairingQrResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetPairingQrResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetPairingQrResponse)
+    private static final unison.local.v1.Local.GetPairingQrResponse DEFAULT_INSTANCE;
+    static {
+      GetPairingQrResponse defaultInstance = new GetPairingQrResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetPairingQrResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetPairingQrResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetPairingQrResponse> PARSER;
+
+    public static com.google.protobuf.Parser<GetPairingQrResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ScanPairingQrRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ScanPairingQrRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The uri.
+     */
+    java.lang.String getUri();
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The bytes for uri.
+     */
+    com.google.protobuf.ByteString
+        getUriBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ScanPairingQrRequest}
+   */
+  public  static final class ScanPairingQrRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ScanPairingQrRequest, ScanPairingQrRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ScanPairingQrRequest)
+      ScanPairingQrRequestOrBuilder {
+    private ScanPairingQrRequest() {
+      uri_ = "";
+    }
+    public static final int URI_FIELD_NUMBER = 1;
+    private java.lang.String uri_;
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The uri.
+     */
+    @java.lang.Override
+    public java.lang.String getUri() {
+      return uri_;
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @return The bytes for uri.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getUriBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(uri_);
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @param value The uri to set.
+     */
+    private void setUri(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      uri_ = value;
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     */
+    private void clearUri() {
+
+      uri_ = getDefaultInstance().getUri();
+    }
+    /**
+     * <pre>
+     * Text of the code.
+     * </pre>
+     *
+     * <code>string uri = 1 [json_name = "uri"];</code>
+     * @param value The bytes for uri to set.
+     */
+    private void setUriBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      uri_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ScanPairingQrRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ScanPairingQrRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ScanPairingQrRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ScanPairingQrRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ScanPairingQrRequest)
+        unison.local.v1.Local.ScanPairingQrRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ScanPairingQrRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @return The uri.
+       */
+      @java.lang.Override
+      public java.lang.String getUri() {
+        return instance.getUri();
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @return The bytes for uri.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getUriBytes() {
+        return instance.getUriBytes();
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @param value The uri to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUri(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setUri(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUri() {
+        copyOnWrite();
+        instance.clearUri();
+        return this;
+      }
+      /**
+       * <pre>
+       * Text of the code.
+       * </pre>
+       *
+       * <code>string uri = 1 [json_name = "uri"];</code>
+       * @param value The bytes for uri to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUriBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setUriBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ScanPairingQrRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ScanPairingQrRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "uri_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ScanPairingQrRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ScanPairingQrRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ScanPairingQrRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ScanPairingQrRequest)
+    private static final unison.local.v1.Local.ScanPairingQrRequest DEFAULT_INSTANCE;
+    static {
+      ScanPairingQrRequest defaultInstance = new ScanPairingQrRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ScanPairingQrRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ScanPairingQrRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ScanPairingQrRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ScanPairingQrResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ScanPairingQrResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ScanPairingQrResponse}
+   */
+  public  static final class ScanPairingQrResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ScanPairingQrResponse, ScanPairingQrResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ScanPairingQrResponse)
+      ScanPairingQrResponseOrBuilder {
+    private ScanPairingQrResponse() {
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ScanPairingQrResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ScanPairingQrResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ScanPairingQrResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ScanPairingQrResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ScanPairingQrResponse)
+        unison.local.v1.Local.ScanPairingQrResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ScanPairingQrResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ScanPairingQrResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ScanPairingQrResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ScanPairingQrResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ScanPairingQrResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ScanPairingQrResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ScanPairingQrResponse)
+    private static final unison.local.v1.Local.ScanPairingQrResponse DEFAULT_INSTANCE;
+    static {
+      ScanPairingQrResponse defaultInstance = new ScanPairingQrResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ScanPairingQrResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ScanPairingQrResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ScanPairingQrResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ScanPairingQrResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }
@@ -29615,6 +31702,2463 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<RejectTransferResponse> PARSER;
 
     public static com.google.protobuf.Parser<RejectTransferResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ShareRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ShareRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    java.lang.String getDeviceId();
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdBytes();
+
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     * @return The deviceName.
+     */
+    java.lang.String getDeviceName();
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     * @return The bytes for deviceName.
+     */
+    com.google.protobuf.ByteString
+        getDeviceNameBytes();
+
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    java.util.List<unison.local.v1.Local.TransferFile> 
+        getFilesList();
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    unison.local.v1.Local.TransferFile getFiles(int index);
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    int getFilesCount();
+
+    /**
+     * <pre>
+     * Size of all files in bytes.
+     * </pre>
+     *
+     * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+     * @return The totalBytes.
+     */
+    long getTotalBytes();
+
+    /**
+     * <pre>
+     * Time the request arrived, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+     * @return The createdAtUnixMs.
+     */
+    long getCreatedAtUnixMs();
+
+    /**
+     * <pre>
+     * Time the request stops waiting for a decision, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+     * @return The expiresAtUnixMs.
+     */
+    long getExpiresAtUnixMs();
+  }
+  /**
+   * <pre>
+   * An incoming file transfer request of a Friends device. Nothing is written to
+   * the disk until it is accepted.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.ShareRequest}
+   */
+  public  static final class ShareRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ShareRequest, ShareRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ShareRequest)
+      ShareRequestOrBuilder {
+    private ShareRequest() {
+      id_ = "";
+      deviceId_ = "";
+      deviceName_ = "";
+      files_ = emptyProtobufList();
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static final int DEVICE_ID_FIELD_NUMBER = 2;
+    private java.lang.String deviceId_;
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceId() {
+      return deviceId_;
+    }
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceId_);
+    }
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @param value The deviceId to set.
+     */
+    private void setDeviceId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceId_ = value;
+    }
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     */
+    private void clearDeviceId() {
+
+      deviceId_ = getDefaultInstance().getDeviceId();
+    }
+    /**
+     * <pre>
+     * Device ID of the sender in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 2 [json_name = "deviceId"];</code>
+     * @param value The bytes for deviceId to set.
+     */
+    private void setDeviceIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceId_ = value.toStringUtf8();
+
+    }
+
+    public static final int DEVICE_NAME_FIELD_NUMBER = 3;
+    private java.lang.String deviceName_;
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     * @return The deviceName.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceName() {
+      return deviceName_;
+    }
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     * @return The bytes for deviceName.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceNameBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceName_);
+    }
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     * @param value The deviceName to set.
+     */
+    private void setDeviceName(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceName_ = value;
+    }
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     */
+    private void clearDeviceName() {
+
+      deviceName_ = getDefaultInstance().getDeviceName();
+    }
+    /**
+     * <code>string device_name = 3 [json_name = "deviceName"];</code>
+     * @param value The bytes for deviceName to set.
+     */
+    private void setDeviceNameBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceName_ = value.toStringUtf8();
+
+    }
+
+    public static final int FILES_FIELD_NUMBER = 4;
+    private com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.TransferFile> files_;
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    @java.lang.Override
+    public java.util.List<unison.local.v1.Local.TransferFile> getFilesList() {
+      return files_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    public java.util.List<? extends unison.local.v1.Local.TransferFileOrBuilder> 
+        getFilesOrBuilderList() {
+      return files_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    @java.lang.Override
+    public int getFilesCount() {
+      return files_.size();
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.TransferFile getFiles(int index) {
+      return files_.get(index);
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    public unison.local.v1.Local.TransferFileOrBuilder getFilesOrBuilder(
+        int index) {
+      return files_.get(index);
+    }
+    private void ensureFilesIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.TransferFile> tmp = files_;
+      if (!tmp.isModifiable()) {
+        files_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    private void setFiles(
+        int index, unison.local.v1.Local.TransferFile value) {
+      java.util.Objects.requireNonNull(value);
+      ensureFilesIsMutable();
+      files_.set(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    private void addFiles(unison.local.v1.Local.TransferFile value) {
+      java.util.Objects.requireNonNull(value);
+      ensureFilesIsMutable();
+      files_.add(value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    private void addFiles(
+        int index, unison.local.v1.Local.TransferFile value) {
+      java.util.Objects.requireNonNull(value);
+      ensureFilesIsMutable();
+      files_.add(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    private void addAllFiles(
+        java.lang.Iterable<? extends unison.local.v1.Local.TransferFile> values) {
+      ensureFilesIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, files_);
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    private void clearFiles() {
+      files_ = emptyProtobufList();
+    }
+    /**
+     * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+     */
+    private void removeFiles(int index) {
+      ensureFilesIsMutable();
+      files_.remove(index);
+    }
+
+    public static final int TOTAL_BYTES_FIELD_NUMBER = 5;
+    private long totalBytes_;
+    /**
+     * <pre>
+     * Size of all files in bytes.
+     * </pre>
+     *
+     * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+     * @return The totalBytes.
+     */
+    @java.lang.Override
+    public long getTotalBytes() {
+      return totalBytes_;
+    }
+    /**
+     * <pre>
+     * Size of all files in bytes.
+     * </pre>
+     *
+     * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+     * @param value The totalBytes to set.
+     */
+    private void setTotalBytes(long value) {
+      
+      totalBytes_ = value;
+    }
+    /**
+     * <pre>
+     * Size of all files in bytes.
+     * </pre>
+     *
+     * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+     */
+    private void clearTotalBytes() {
+
+      totalBytes_ = 0L;
+    }
+
+    public static final int CREATED_AT_UNIX_MS_FIELD_NUMBER = 6;
+    private long createdAtUnixMs_;
+    /**
+     * <pre>
+     * Time the request arrived, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+     * @return The createdAtUnixMs.
+     */
+    @java.lang.Override
+    public long getCreatedAtUnixMs() {
+      return createdAtUnixMs_;
+    }
+    /**
+     * <pre>
+     * Time the request arrived, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+     * @param value The createdAtUnixMs to set.
+     */
+    private void setCreatedAtUnixMs(long value) {
+      
+      createdAtUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * Time the request arrived, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+     */
+    private void clearCreatedAtUnixMs() {
+
+      createdAtUnixMs_ = 0L;
+    }
+
+    public static final int EXPIRES_AT_UNIX_MS_FIELD_NUMBER = 7;
+    private long expiresAtUnixMs_;
+    /**
+     * <pre>
+     * Time the request stops waiting for a decision, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+     * @return The expiresAtUnixMs.
+     */
+    @java.lang.Override
+    public long getExpiresAtUnixMs() {
+      return expiresAtUnixMs_;
+    }
+    /**
+     * <pre>
+     * Time the request stops waiting for a decision, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+     * @param value The expiresAtUnixMs to set.
+     */
+    private void setExpiresAtUnixMs(long value) {
+      
+      expiresAtUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * Time the request stops waiting for a decision, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+     */
+    private void clearExpiresAtUnixMs() {
+
+      expiresAtUnixMs_ = 0L;
+    }
+
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ShareRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ShareRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ShareRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ShareRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * An incoming file transfer request of a Friends device. Nothing is written to
+     * the disk until it is accepted.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.ShareRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ShareRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ShareRequest)
+        unison.local.v1.Local.ShareRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ShareRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Device ID of the sender in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @return The deviceId.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceId() {
+        return instance.getDeviceId();
+      }
+      /**
+       * <pre>
+       * Device ID of the sender in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @return The bytes for deviceId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdBytes() {
+        return instance.getDeviceIdBytes();
+      }
+      /**
+       * <pre>
+       * Device ID of the sender in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @param value The deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID of the sender in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceId() {
+        copyOnWrite();
+        instance.clearDeviceId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID of the sender in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 2 [json_name = "deviceId"];</code>
+       * @param value The bytes for deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <code>string device_name = 3 [json_name = "deviceName"];</code>
+       * @return The deviceName.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceName() {
+        return instance.getDeviceName();
+      }
+      /**
+       * <code>string device_name = 3 [json_name = "deviceName"];</code>
+       * @return The bytes for deviceName.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceNameBytes() {
+        return instance.getDeviceNameBytes();
+      }
+      /**
+       * <code>string device_name = 3 [json_name = "deviceName"];</code>
+       * @param value The deviceName to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceName(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceName(value);
+        return this;
+      }
+      /**
+       * <code>string device_name = 3 [json_name = "deviceName"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceName() {
+        copyOnWrite();
+        instance.clearDeviceName();
+        return this;
+      }
+      /**
+       * <code>string device_name = 3 [json_name = "deviceName"];</code>
+       * @param value The bytes for deviceName to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceNameBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceNameBytes(value);
+        return this;
+      }
+
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      @java.lang.Override
+      public java.util.List<unison.local.v1.Local.TransferFile> getFilesList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getFilesList());
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      @java.lang.Override
+      public int getFilesCount() {
+        return instance.getFilesCount();
+      }/**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.TransferFile getFiles(int index) {
+        return instance.getFiles(index);
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder setFiles(
+          int index, unison.local.v1.Local.TransferFile value) {
+        copyOnWrite();
+        instance.setFiles(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder setFiles(
+          int index, unison.local.v1.Local.TransferFile.Builder builderForValue) {
+        copyOnWrite();
+        instance.setFiles(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder addFiles(unison.local.v1.Local.TransferFile value) {
+        copyOnWrite();
+        instance.addFiles(value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder addFiles(
+          int index, unison.local.v1.Local.TransferFile value) {
+        copyOnWrite();
+        instance.addFiles(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder addFiles(
+          unison.local.v1.Local.TransferFile.Builder builderForValue) {
+        copyOnWrite();
+        instance.addFiles(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder addFiles(
+          int index, unison.local.v1.Local.TransferFile.Builder builderForValue) {
+        copyOnWrite();
+        instance.addFiles(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder addAllFiles(
+          java.lang.Iterable<? extends unison.local.v1.Local.TransferFile> values) {
+        copyOnWrite();
+        instance.addAllFiles(values);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder clearFiles() {
+        copyOnWrite();
+        instance.clearFiles();
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.TransferFile files = 4 [json_name = "files"];</code>
+       */
+      public Builder removeFiles(int index) {
+        copyOnWrite();
+        instance.removeFiles(index);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Size of all files in bytes.
+       * </pre>
+       *
+       * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+       * @return The totalBytes.
+       */
+      @java.lang.Override
+      public long getTotalBytes() {
+        return instance.getTotalBytes();
+      }
+      /**
+       * <pre>
+       * Size of all files in bytes.
+       * </pre>
+       *
+       * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+       * @param value The totalBytes to set.
+       * @return This builder for chaining.
+       */
+      public Builder setTotalBytes(long value) {
+        copyOnWrite();
+        instance.setTotalBytes(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Size of all files in bytes.
+       * </pre>
+       *
+       * <code>uint64 total_bytes = 5 [json_name = "totalBytes"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearTotalBytes() {
+        copyOnWrite();
+        instance.clearTotalBytes();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Time the request arrived, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+       * @return The createdAtUnixMs.
+       */
+      @java.lang.Override
+      public long getCreatedAtUnixMs() {
+        return instance.getCreatedAtUnixMs();
+      }
+      /**
+       * <pre>
+       * Time the request arrived, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+       * @param value The createdAtUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setCreatedAtUnixMs(long value) {
+        copyOnWrite();
+        instance.setCreatedAtUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Time the request arrived, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 created_at_unix_ms = 6 [json_name = "createdAtUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearCreatedAtUnixMs() {
+        copyOnWrite();
+        instance.clearCreatedAtUnixMs();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Time the request stops waiting for a decision, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+       * @return The expiresAtUnixMs.
+       */
+      @java.lang.Override
+      public long getExpiresAtUnixMs() {
+        return instance.getExpiresAtUnixMs();
+      }
+      /**
+       * <pre>
+       * Time the request stops waiting for a decision, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+       * @param value The expiresAtUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setExpiresAtUnixMs(long value) {
+        copyOnWrite();
+        instance.setExpiresAtUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Time the request stops waiting for a decision, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 7 [json_name = "expiresAtUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearExpiresAtUnixMs() {
+        copyOnWrite();
+        instance.clearExpiresAtUnixMs();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ShareRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ShareRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+              "deviceId_",
+              "deviceName_",
+              "files_",
+              unison.local.v1.Local.TransferFile.class,
+              "totalBytes_",
+              "createdAtUnixMs_",
+              "expiresAtUnixMs_",
+            };
+            java.lang.String info =
+                "\u0000\u0007\u0000\u0000\u0001\u0007\u0007\u0000\u0001\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\u0208\u0004\u001b\u0005\u0003\u0006\u0002\u0007\u0002";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ShareRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ShareRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ShareRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ShareRequest)
+    private static final unison.local.v1.Local.ShareRequest DEFAULT_INSTANCE;
+    static {
+      ShareRequest defaultInstance = new ShareRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ShareRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ShareRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ShareRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ShareRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ListRequestsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ListRequestsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ListRequestsRequest}
+   */
+  public  static final class ListRequestsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ListRequestsRequest, ListRequestsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ListRequestsRequest)
+      ListRequestsRequestOrBuilder {
+    private ListRequestsRequest() {
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ListRequestsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ListRequestsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListRequestsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ListRequestsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ListRequestsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ListRequestsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ListRequestsRequest)
+        unison.local.v1.Local.ListRequestsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ListRequestsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ListRequestsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ListRequestsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ListRequestsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ListRequestsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ListRequestsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ListRequestsRequest)
+    private static final unison.local.v1.Local.ListRequestsRequest DEFAULT_INSTANCE;
+    static {
+      ListRequestsRequest defaultInstance = new ListRequestsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ListRequestsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ListRequestsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ListRequestsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ListRequestsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ListRequestsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ListRequestsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    java.util.List<unison.local.v1.Local.ShareRequest> 
+        getRequestsList();
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    unison.local.v1.Local.ShareRequest getRequests(int index);
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    int getRequestsCount();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ListRequestsResponse}
+   */
+  public  static final class ListRequestsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ListRequestsResponse, ListRequestsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ListRequestsResponse)
+      ListRequestsResponseOrBuilder {
+    private ListRequestsResponse() {
+      requests_ = emptyProtobufList();
+    }
+    public static final int REQUESTS_FIELD_NUMBER = 1;
+    private com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.ShareRequest> requests_;
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    @java.lang.Override
+    public java.util.List<unison.local.v1.Local.ShareRequest> getRequestsList() {
+      return requests_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    public java.util.List<? extends unison.local.v1.Local.ShareRequestOrBuilder> 
+        getRequestsOrBuilderList() {
+      return requests_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    @java.lang.Override
+    public int getRequestsCount() {
+      return requests_.size();
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.ShareRequest getRequests(int index) {
+      return requests_.get(index);
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    public unison.local.v1.Local.ShareRequestOrBuilder getRequestsOrBuilder(
+        int index) {
+      return requests_.get(index);
+    }
+    private void ensureRequestsIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.ShareRequest> tmp = requests_;
+      if (!tmp.isModifiable()) {
+        requests_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    private void setRequests(
+        int index, unison.local.v1.Local.ShareRequest value) {
+      java.util.Objects.requireNonNull(value);
+      ensureRequestsIsMutable();
+      requests_.set(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    private void addRequests(unison.local.v1.Local.ShareRequest value) {
+      java.util.Objects.requireNonNull(value);
+      ensureRequestsIsMutable();
+      requests_.add(value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    private void addRequests(
+        int index, unison.local.v1.Local.ShareRequest value) {
+      java.util.Objects.requireNonNull(value);
+      ensureRequestsIsMutable();
+      requests_.add(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    private void addAllRequests(
+        java.lang.Iterable<? extends unison.local.v1.Local.ShareRequest> values) {
+      ensureRequestsIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, requests_);
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    private void clearRequests() {
+      requests_ = emptyProtobufList();
+    }
+    /**
+     * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+     */
+    private void removeRequests(int index) {
+      ensureRequestsIsMutable();
+      requests_.remove(index);
+    }
+
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ListRequestsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ListRequestsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListRequestsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ListRequestsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ListRequestsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ListRequestsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ListRequestsResponse)
+        unison.local.v1.Local.ListRequestsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ListRequestsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      @java.lang.Override
+      public java.util.List<unison.local.v1.Local.ShareRequest> getRequestsList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getRequestsList());
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      @java.lang.Override
+      public int getRequestsCount() {
+        return instance.getRequestsCount();
+      }/**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.ShareRequest getRequests(int index) {
+        return instance.getRequests(index);
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder setRequests(
+          int index, unison.local.v1.Local.ShareRequest value) {
+        copyOnWrite();
+        instance.setRequests(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder setRequests(
+          int index, unison.local.v1.Local.ShareRequest.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRequests(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder addRequests(unison.local.v1.Local.ShareRequest value) {
+        copyOnWrite();
+        instance.addRequests(value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder addRequests(
+          int index, unison.local.v1.Local.ShareRequest value) {
+        copyOnWrite();
+        instance.addRequests(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder addRequests(
+          unison.local.v1.Local.ShareRequest.Builder builderForValue) {
+        copyOnWrite();
+        instance.addRequests(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder addRequests(
+          int index, unison.local.v1.Local.ShareRequest.Builder builderForValue) {
+        copyOnWrite();
+        instance.addRequests(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder addAllRequests(
+          java.lang.Iterable<? extends unison.local.v1.Local.ShareRequest> values) {
+        copyOnWrite();
+        instance.addAllRequests(values);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder clearRequests() {
+        copyOnWrite();
+        instance.clearRequests();
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.ShareRequest requests = 1 [json_name = "requests"];</code>
+       */
+      public Builder removeRequests(int index) {
+        copyOnWrite();
+        instance.removeRequests(index);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ListRequestsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ListRequestsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "requests_",
+              unison.local.v1.Local.ShareRequest.class,
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0001\u0000\u0001\u001b";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ListRequestsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ListRequestsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ListRequestsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ListRequestsResponse)
+    private static final unison.local.v1.Local.ListRequestsResponse DEFAULT_INSTANCE;
+    static {
+      ListRequestsResponse defaultInstance = new ListRequestsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ListRequestsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ListRequestsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ListRequestsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ListRequestsResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface DecideRequestRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.DecideRequestRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+
+    /**
+     * <pre>
+     * Accept the files or decline the request.
+     * </pre>
+     *
+     * <code>bool accept = 2 [json_name = "accept"];</code>
+     * @return The accept.
+     */
+    boolean getAccept();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.DecideRequestRequest}
+   */
+  public  static final class DecideRequestRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          DecideRequestRequest, DecideRequestRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.DecideRequestRequest)
+      DecideRequestRequestOrBuilder {
+    private DecideRequestRequest() {
+      id_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * Transfer ID.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static final int ACCEPT_FIELD_NUMBER = 2;
+    private boolean accept_;
+    /**
+     * <pre>
+     * Accept the files or decline the request.
+     * </pre>
+     *
+     * <code>bool accept = 2 [json_name = "accept"];</code>
+     * @return The accept.
+     */
+    @java.lang.Override
+    public boolean getAccept() {
+      return accept_;
+    }
+    /**
+     * <pre>
+     * Accept the files or decline the request.
+     * </pre>
+     *
+     * <code>bool accept = 2 [json_name = "accept"];</code>
+     * @param value The accept to set.
+     */
+    private void setAccept(boolean value) {
+      
+      accept_ = value;
+    }
+    /**
+     * <pre>
+     * Accept the files or decline the request.
+     * </pre>
+     *
+     * <code>bool accept = 2 [json_name = "accept"];</code>
+     */
+    private void clearAccept() {
+
+      accept_ = false;
+    }
+
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.DecideRequestRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.DecideRequestRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DecideRequestRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.DecideRequestRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.DecideRequestRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.DecideRequestRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.DecideRequestRequest)
+        unison.local.v1.Local.DecideRequestRequestOrBuilder {
+      // Construct using unison.local.v1.Local.DecideRequestRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Transfer ID.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Accept the files or decline the request.
+       * </pre>
+       *
+       * <code>bool accept = 2 [json_name = "accept"];</code>
+       * @return The accept.
+       */
+      @java.lang.Override
+      public boolean getAccept() {
+        return instance.getAccept();
+      }
+      /**
+       * <pre>
+       * Accept the files or decline the request.
+       * </pre>
+       *
+       * <code>bool accept = 2 [json_name = "accept"];</code>
+       * @param value The accept to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAccept(boolean value) {
+        copyOnWrite();
+        instance.setAccept(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Accept the files or decline the request.
+       * </pre>
+       *
+       * <code>bool accept = 2 [json_name = "accept"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAccept() {
+        copyOnWrite();
+        instance.clearAccept();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.DecideRequestRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.DecideRequestRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+              "accept_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.DecideRequestRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.DecideRequestRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.DecideRequestRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.DecideRequestRequest)
+    private static final unison.local.v1.Local.DecideRequestRequest DEFAULT_INSTANCE;
+    static {
+      DecideRequestRequest defaultInstance = new DecideRequestRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        DecideRequestRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.DecideRequestRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<DecideRequestRequest> PARSER;
+
+    public static com.google.protobuf.Parser<DecideRequestRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface DecideRequestResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.DecideRequestResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     * @return Whether the request field is set.
+     */
+    boolean hasRequest();
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     * @return The request.
+     */
+    unison.local.v1.Local.ShareRequest getRequest();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.DecideRequestResponse}
+   */
+  public  static final class DecideRequestResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          DecideRequestResponse, DecideRequestResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.DecideRequestResponse)
+      DecideRequestResponseOrBuilder {
+    private DecideRequestResponse() {
+    }
+    private int bitField0_;
+    public static final int REQUEST_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.ShareRequest request_;
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     */
+    @java.lang.Override
+    public boolean hasRequest() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.ShareRequest getRequest() {
+      return request_ == null ? unison.local.v1.Local.ShareRequest.getDefaultInstance() : request_;
+    }
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     */
+    private void setRequest(unison.local.v1.Local.ShareRequest value) {
+      java.util.Objects.requireNonNull(value);
+      request_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeRequest(unison.local.v1.Local.ShareRequest value) {
+      java.util.Objects.requireNonNull(value);
+      if (request_ != null &&
+          request_ != unison.local.v1.Local.ShareRequest.getDefaultInstance()) {
+        request_ =
+          unison.local.v1.Local.ShareRequest.newBuilder(request_).mergeFrom(value).buildPartial();
+      } else {
+        request_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The request after the decision.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+     */
+    private void clearRequest() {
+      request_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.DecideRequestResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.DecideRequestResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.DecideRequestResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.DecideRequestResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.DecideRequestResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.DecideRequestResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.DecideRequestResponse)
+        unison.local.v1.Local.DecideRequestResponseOrBuilder {
+      // Construct using unison.local.v1.Local.DecideRequestResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The request after the decision.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+       */
+      @java.lang.Override
+      public boolean hasRequest() {
+        return instance.hasRequest();
+      }
+      /**
+       * <pre>
+       * The request after the decision.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.ShareRequest getRequest() {
+        return instance.getRequest();
+      }
+      /**
+       * <pre>
+       * The request after the decision.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+       */
+      public Builder setRequest(unison.local.v1.Local.ShareRequest value) {
+        copyOnWrite();
+        instance.setRequest(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The request after the decision.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+       */
+      public Builder setRequest(
+          unison.local.v1.Local.ShareRequest.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRequest(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The request after the decision.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+       */
+      public Builder mergeRequest(unison.local.v1.Local.ShareRequest value) {
+        copyOnWrite();
+        instance.mergeRequest(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The request after the decision.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ShareRequest request = 1 [json_name = "request"];</code>
+       */
+      public Builder clearRequest() {  copyOnWrite();
+        instance.clearRequest();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.DecideRequestResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.DecideRequestResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "request_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.DecideRequestResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.DecideRequestResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.DecideRequestResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.DecideRequestResponse)
+    private static final unison.local.v1.Local.DecideRequestResponse DEFAULT_INSTANCE;
+    static {
+      DecideRequestResponse defaultInstance = new DecideRequestResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        DecideRequestResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.DecideRequestResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<DecideRequestResponse> PARSER;
+
+    public static com.google.protobuf.Parser<DecideRequestResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }

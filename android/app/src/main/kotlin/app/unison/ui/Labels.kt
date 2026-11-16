@@ -25,6 +25,14 @@ fun pathLabel(path: Local.Path): String? = when (path) {
     else -> null
 }
 
+/** Label of the role a device is added as, null when the role is unknown. */
+@Composable
+fun roleLabel(role: Local.Role): String? = when (role) {
+    Local.Role.ROLE_PERSONAL -> stringResource(R.string.pairing_role_personal)
+    Local.Role.ROLE_FRIENDS -> stringResource(R.string.pairing_role_friends)
+    else -> null
+}
+
 /** Label of the network state of this device. */
 @Composable
 fun networkLabel(network: Local.NetworkState?): String = when {

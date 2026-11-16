@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -79,6 +80,60 @@ class AppStateTest {
             Local.ListTransfersResponse.getDefaultInstance()
 
         override suspend fun cancelTransfer(id: String) = Unit
+
+        var window: Local.PairingWindow = Local.PairingWindow.newBuilder()
+            .setOpen(true)
+            .setAddr("192.168.1.5:41234")
+            .setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS)
+            .build()
+        var qr: Local.PairingQr = Local.PairingQr.newBuilder()
+            .setUri("unison://pair?v=1&id=00&fp=00&t=00&a=192.168.1.5:41234&role=personal")
+            .setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS)
+            .build()
+        var candidates: List<Local.PairingCandidate> = emptyList()
+        var scanFailure: Exception? = null
+        var qrCalls = 0
+        val openedRoles = mutableListOf<Local.Role>()
+        val started = mutableListOf<String>()
+        val confirmed = mutableListOf<String>()
+        val rejected = mutableListOf<String>()
+        val scanned = mutableListOf<String>()
+
+        override suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow {
+            openedRoles += role
+            return window
+        }
+
+        override suspend fun extendPairingWindow(): Local.PairingWindow {
+            window = window.toBuilder().setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS).build()
+            return window
+        }
+
+        override suspend fun closePairingWindow() = Unit
+
+        override suspend fun pairingQr(addrs: List<String>): Local.PairingQr {
+            qrCalls++
+            return qr
+        }
+
+        override suspend fun scanPairingQr(uri: String) {
+            scanFailure?.let { throw it }
+            scanned += uri
+        }
+
+        override suspend fun pairingCandidates(): List<Local.PairingCandidate> = candidates
+
+        override suspend fun startPairing(addr: String) {
+            started += addr
+        }
+
+        override suspend fun confirmPairing(deviceId: String) {
+            confirmed += deviceId
+        }
+
+        override suspend fun rejectPairing(deviceId: String) {
+            rejected += deviceId
+        }
     }
 
     private class FakeSaver(private var saved: Int = 1) : HistorySaver {
@@ -337,10 +392,146 @@ class AppStateTest {
         assertTrue(core.historyCalls.size > before)
     }
 
+    @Test
+    fun windowShowsTheRoleTheCodeAndTheCandidates() = runTest {
+        val core = FakeCore()
+        core.candidates = listOf(
+            Local.PairingCandidate.newBuilder().setAddr("192.168.1.7:41234").build(),
+        )
+        val state = appState(core)
+
+        state.setPairingRole(Local.Role.ROLE_FRIENDS)
+        state.openPairingWindow()
+        runCurrent()
+
+        assertEquals(listOf(Local.Role.ROLE_FRIENDS), core.openedRoles)
+        assertEquals("192.168.1.5:41234", state.pairing.value.window?.addr)
+        assertEquals(Local.Role.ROLE_FRIENDS, state.pairing.value.role)
+        assertNotNull(state.pairing.value.qr)
+        assertEquals(listOf("192.168.1.7:41234"), state.pairing.value.candidates.map { it.addr })
+        state.close()
+    }
+
+    @Test
+    fun requestIsConfirmedThroughTheCore() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.openPairingWindow()
+        runCurrent()
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_PAIRING_REQUEST)
+                .setEvent(
+                    Local.Event.newBuilder()
+                        .setKind(Local.EventKind.EVENT_KIND_PAIRING_REQUEST)
+                        .setDeviceId("abcd")
+                        .setName("Mac")
+                        .setRole(Local.Role.ROLE_PERSONAL)
+                        .setPairingMethod(Local.PairingMethod.PAIRING_METHOD_SAS)
+                        .setSas(Local.Sas.newBuilder().setDigits("123456").addEmoji("A").build())
+                        .build(),
+                )
+                .build(),
+        )
+        runCurrent()
+
+        val request = state.pairing.value.request
+        assertEquals("Mac", request?.name)
+        assertEquals("123456", request?.sas?.digits)
+
+        state.confirmPairing()
+        runCurrent()
+
+        assertEquals(listOf("abcd"), core.confirmed)
+        state.close()
+    }
+
+    @Test
+    fun pairedEventShowsTheResultAndReloadsTheCode() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.openPairingWindow()
+        runCurrent()
+        val qrCalls = core.qrCalls
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_PAIRING_PAIRED)
+                .setEvent(
+                    Local.Event.newBuilder()
+                        .setKind(Local.EventKind.EVENT_KIND_PAIRING_PAIRED)
+                        .setDeviceId("abcd")
+                        .setName("Mac")
+                        .setPairingMethod(Local.PairingMethod.PAIRING_METHOD_QR)
+                        .build(),
+                )
+                .build(),
+        )
+        runCurrent()
+
+        val result = state.pairing.value.result
+        assertNotNull(result)
+        assertTrue(result?.paired == true)
+        assertEquals("Mac", result?.name)
+        assertTrue(core.qrCalls > qrCalls)
+        state.close()
+    }
+
+    @Test
+    fun malformedCodeIsReported() = runTest {
+        val core = FakeCore()
+        core.scanFailure = CoreException(CoreException.CODE_INVALID_ARGUMENT, "bad code")
+        val state = appState(core)
+
+        state.scanPairingCode(" nonsense ")
+        runCurrent()
+
+        assertEquals(R.string.pairing_code_invalid, state.pairing.value.failure)
+        assertFalse(state.pairing.value.scanning)
+        state.close()
+    }
+
+    @Test
+    fun scannedCodeWaitsForTheOtherDevice() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.scanPairingCode("unison://pair?v=1")
+        runCurrent()
+
+        assertEquals(listOf("unison://pair?v=1"), core.scanned)
+        assertTrue(state.pairing.value.scanning)
+        state.close()
+    }
+
+    @Test
+    fun closedWindowIsDropped() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.openPairingWindow()
+        runCurrent()
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_PAIRING_CLOSED)
+                .setEvent(Local.Event.newBuilder().setKind(Local.EventKind.EVENT_KIND_PAIRING_CLOSED).build())
+                .build(),
+        )
+        runCurrent()
+
+        assertNull(state.pairing.value.window)
+        assertNull(state.pairing.value.qr)
+        assertTrue(state.pairing.value.candidates.isEmpty())
+        state.close()
+    }
+
     private fun TestScope.appState(core: CoreApi, saver: HistorySaver = FakeSaver()): AppState =
         AppState(core, events, saver, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
 
     private companion object {
+        const val WINDOW_MS = 180_000L
+
         fun sampleStatus(): Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
             .setDeviceName("Pixel")
             .setRunning(true)
