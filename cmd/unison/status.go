@@ -33,6 +33,12 @@ func (a *app) status(ctx context.Context, args []string) error {
 		return a.writeJSON(response.Msg)
 	}
 	a.writeStatus(response.Msg)
+	if !response.Msg.GetRunning() {
+		return nil
+	}
+	if relay, err := client.GetRelay(ctx, connect.NewRequest(&localv1.GetRelayRequest{})); err == nil {
+		a.writeRelayStatus(relay.Msg.GetRelay())
+	}
 	return nil
 }
 

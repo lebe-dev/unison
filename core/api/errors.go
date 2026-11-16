@@ -70,6 +70,7 @@ func codeOf(err error) connect.Code {
 	case errors.Is(err, pairing.ErrInvalidPeer),
 		errors.Is(err, pairing.ErrQR),
 		errors.Is(err, trust.ErrInvalidPeer),
+		errors.Is(err, trust.ErrInvalidSecret),
 		errors.Is(err, clip.ErrUnsupportedContent),
 		errors.Is(err, history.ErrInvalidItem),
 		errors.Is(err, share.ErrNoFiles),

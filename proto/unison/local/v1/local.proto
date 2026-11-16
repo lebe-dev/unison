@@ -184,6 +184,14 @@ service UnisonService {
   // Settings of the daemon.
   rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
   rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
+
+  // Relay access of the Personal group and the state of its client.
+  rpc GetRelay(GetRelayRequest) returns (GetRelayResponse);
+  // Store the relay access of the group. The other Personal devices receive it
+  // with the group data.
+  rpc SetRelay(SetRelayRequest) returns (SetRelayResponse);
+  // Turn the relay off for the whole group.
+  rpc RelayOff(RelayOffRequest) returns (RelayOffResponse);
 }
 
 // Network conditions of the local device.
@@ -752,4 +760,59 @@ message UpdateSettingsRequest {
 
 message UpdateSettingsResponse {
   Settings settings = 1;
+}
+
+// Transport of the connection to the relay.
+enum RelayTransport {
+  RELAY_TRANSPORT_UNSPECIFIED = 0;
+  // No connection.
+  RELAY_TRANSPORT_NONE = 1;
+  // QUIC over UDP.
+  RELAY_TRANSPORT_QUIC = 2;
+  // WebSocket over TLS.
+  RELAY_TRANSPORT_WSS = 3;
+}
+
+// Relay access of the Personal group and the state of the client.
+message Relay {
+  // Address of the relay, host:port or https://host:port. Empty when the relay
+  // is off.
+  string url = 1;
+  // An access token is stored on this device. The token itself is never
+  // returned.
+  bool token_set = 2;
+  // The client is registered on the relay.
+  bool connected = 3;
+  RelayTransport transport = 4;
+  // Time the settings last changed, unix milliseconds.
+  int64 changed_at_unix_ms = 5;
+  // Files travel over the relay only when the user asks for them.
+  bool files_on_request = 6;
+}
+
+message GetRelayRequest {}
+
+message GetRelayResponse {
+  Relay relay = 1;
+}
+
+message SetRelayRequest {
+  // Address of the relay, host:port or https://host:port.
+  string url = 1;
+  // Access token of the group. The stored token is kept when the field is
+  // absent.
+  optional string token = 2;
+  // Change the rule for files over the relay. The stored rule is kept when the
+  // field is absent.
+  optional bool files_on_request = 3;
+}
+
+message SetRelayResponse {
+  Relay relay = 1;
+}
+
+message RelayOffRequest {}
+
+message RelayOffResponse {
+  Relay relay = 1;
 }
