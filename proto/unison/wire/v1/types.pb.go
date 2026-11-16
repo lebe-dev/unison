@@ -230,6 +230,58 @@ func (Source) EnumDescriptor() ([]byte, []int) {
 	return file_unison_wire_v1_types_proto_rawDescGZIP(), []int{3}
 }
 
+// Content a confirmation flag covers.
+type ConfirmationScope int32
+
+const (
+	ConfirmationScope_CONFIRMATION_SCOPE_UNSPECIFIED ConfirmationScope = 0
+	// Clipboard items.
+	ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD ConfirmationScope = 1
+	// File transfers.
+	ConfirmationScope_CONFIRMATION_SCOPE_FILES ConfirmationScope = 2
+)
+
+// Enum value maps for ConfirmationScope.
+var (
+	ConfirmationScope_name = map[int32]string{
+		0: "CONFIRMATION_SCOPE_UNSPECIFIED",
+		1: "CONFIRMATION_SCOPE_CLIPBOARD",
+		2: "CONFIRMATION_SCOPE_FILES",
+	}
+	ConfirmationScope_value = map[string]int32{
+		"CONFIRMATION_SCOPE_UNSPECIFIED": 0,
+		"CONFIRMATION_SCOPE_CLIPBOARD":   1,
+		"CONFIRMATION_SCOPE_FILES":       2,
+	}
+)
+
+func (x ConfirmationScope) Enum() *ConfirmationScope {
+	p := new(ConfirmationScope)
+	*p = x
+	return p
+}
+
+func (x ConfirmationScope) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConfirmationScope) Descriptor() protoreflect.EnumDescriptor {
+	return file_unison_wire_v1_types_proto_enumTypes[4].Descriptor()
+}
+
+func (ConfirmationScope) Type() protoreflect.EnumType {
+	return &file_unison_wire_v1_types_proto_enumTypes[4]
+}
+
+func (x ConfirmationScope) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConfirmationScope.Descriptor instead.
+func (ConfirmationScope) EnumDescriptor() ([]byte, []int) {
+	return file_unison_wire_v1_types_proto_rawDescGZIP(), []int{4}
+}
+
 // One representation of a clip item payload.
 type Representation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -515,13 +567,17 @@ func (x *FileMeta) GetMimeType() string {
 	return ""
 }
 
-// Policy applied to a peer.
+// Confirmation flags the sender applies to what the receiver sends it.
 type PeerPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Do not apply incoming clips automatically.
+	// The sender asks its user before it applies a clipboard item of the
+	// receiver.
 	RequireConfirmation bool `protobuf:"varint,1,opt,name=require_confirmation,json=requireConfirmation,proto3" json:"require_confirmation,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// The sender asks its user before it accepts a file transfer of the
+	// receiver.
+	RequireFileConfirmation bool `protobuf:"varint,2,opt,name=require_file_confirmation,json=requireFileConfirmation,proto3" json:"require_file_confirmation,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *PeerPolicy) Reset() {
@@ -561,6 +617,13 @@ func (x *PeerPolicy) GetRequireConfirmation() bool {
 	return false
 }
 
+func (x *PeerPolicy) GetRequireFileConfirmation() bool {
+	if x != nil {
+		return x.RequireFileConfirmation
+	}
+	return false
+}
+
 var File_unison_wire_v1_types_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_types_proto_rawDesc = "" +
@@ -588,10 +651,11 @@ const file_unison_wire_v1_types_proto_rawDesc = "" +
 	"\x04size\x18\x02 \x01(\x04R\x04size\x12\x16\n" +
 	"\x06blake3\x18\x03 \x01(\fR\x06blake3\x12\"\n" +
 	"\rmtime_unix_ms\x18\x04 \x01(\x03R\vmtimeUnixMs\x12\x1b\n" +
-	"\tmime_type\x18\x05 \x01(\tR\bmimeType\"?\n" +
+	"\tmime_type\x18\x05 \x01(\tR\bmimeType\"{\n" +
 	"\n" +
 	"PeerPolicy\x121\n" +
-	"\x14require_confirmation\x18\x01 \x01(\bR\x13requireConfirmation*A\n" +
+	"\x14require_confirmation\x18\x01 \x01(\bR\x13requireConfirmation\x12:\n" +
+	"\x19require_file_confirmation\x18\x02 \x01(\bR\x17requireFileConfirmation*A\n" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rROLE_PERSONAL\x10\x01\x12\x10\n" +
@@ -613,7 +677,11 @@ const file_unison_wire_v1_types_proto_rawDesc = "" +
 	"\x10SOURCE_CLIPBOARD\x10\x01\x12\x10\n" +
 	"\fSOURCE_SHARE\x10\x02\x12\x0e\n" +
 	"\n" +
-	"SOURCE_CLI\x10\x03B8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
+	"SOURCE_CLI\x10\x03*w\n" +
+	"\x11ConfirmationScope\x12\"\n" +
+	"\x1eCONFIRMATION_SCOPE_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cCONFIRMATION_SCOPE_CLIPBOARD\x10\x01\x12\x1c\n" +
+	"\x18CONFIRMATION_SCOPE_FILES\x10\x02B8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
 
 var (
 	file_unison_wire_v1_types_proto_rawDescOnce sync.Once
@@ -627,21 +695,22 @@ func file_unison_wire_v1_types_proto_rawDescGZIP() []byte {
 	return file_unison_wire_v1_types_proto_rawDescData
 }
 
-var file_unison_wire_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_unison_wire_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_unison_wire_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_unison_wire_v1_types_proto_goTypes = []any{
 	(Role)(0),              // 0: unison.wire.v1.Role
 	(Platform)(0),          // 1: unison.wire.v1.Platform
 	(Kind)(0),              // 2: unison.wire.v1.Kind
 	(Source)(0),            // 3: unison.wire.v1.Source
-	(*Representation)(nil), // 4: unison.wire.v1.Representation
-	(*ClipItem)(nil),       // 5: unison.wire.v1.ClipItem
-	(*FileMeta)(nil),       // 6: unison.wire.v1.FileMeta
-	(*PeerPolicy)(nil),     // 7: unison.wire.v1.PeerPolicy
+	(ConfirmationScope)(0), // 4: unison.wire.v1.ConfirmationScope
+	(*Representation)(nil), // 5: unison.wire.v1.Representation
+	(*ClipItem)(nil),       // 6: unison.wire.v1.ClipItem
+	(*FileMeta)(nil),       // 7: unison.wire.v1.FileMeta
+	(*PeerPolicy)(nil),     // 8: unison.wire.v1.PeerPolicy
 }
 var file_unison_wire_v1_types_proto_depIdxs = []int32{
 	2, // 0: unison.wire.v1.ClipItem.kind:type_name -> unison.wire.v1.Kind
-	4, // 1: unison.wire.v1.ClipItem.representations:type_name -> unison.wire.v1.Representation
+	5, // 1: unison.wire.v1.ClipItem.representations:type_name -> unison.wire.v1.Representation
 	3, // 2: unison.wire.v1.ClipItem.source:type_name -> unison.wire.v1.Source
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
@@ -660,7 +729,7 @@ func file_unison_wire_v1_types_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_wire_v1_types_proto_rawDesc), len(file_unison_wire_v1_types_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,

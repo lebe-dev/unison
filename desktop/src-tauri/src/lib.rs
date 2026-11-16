@@ -1,5 +1,6 @@
 pub mod agent;
 mod daemon;
+mod prompt;
 mod proxy;
 mod tray;
 
@@ -187,7 +188,9 @@ pub fn run() {
             login_item_status,
             set_login_item,
             tray::set_tray_state,
-            tray::pick_files
+            tray::pick_files,
+            prompt::show_prompt,
+            prompt::hide_prompt
         ])
         .on_window_event(|window, event| {
             // The window stays alive in the tray, so the app keeps the daemon

@@ -27,7 +27,6 @@ func clipAnnounce(seq uint64) *wirev1.ControlMessage {
 func TestHelloExchange(t *testing.T) {
 	h := newHarness(t, model.RolePersonal, model.RolePersonal)
 	h.clientCfg.Capabilities = []string{"clip", "blob"}
-	h.clientCfg.RequireConfirmation = true
 	h.serverCfg.Name = "workstation"
 
 	client, server := h.open(nil)
@@ -41,9 +40,6 @@ func TestHelloExchange(t *testing.T) {
 	}
 	if hello.Platform != model.PlatformWindows {
 		t.Fatalf("peer platform = %s, want windows", hello.Platform)
-	}
-	if !server.PeerHello().RequireConfirmation {
-		t.Fatal("peer self policy lost the confirmation flag")
 	}
 	if got := server.PeerHello().Capabilities; len(got) != 2 || got[0] != "clip" || got[1] != "blob" {
 		t.Fatalf("capabilities = %v, want [clip blob]", got)
@@ -65,31 +61,6 @@ func TestHelloExchange(t *testing.T) {
 		if event.Peer != s.DeviceID() {
 			t.Fatalf("opened event peer = %s, want %s", event.Peer, s.DeviceID())
 		}
-	}
-}
-
-// TestHelloRecordsPeerPolicy checks that the confirmation flag the peer
-// announces is stored without touching the local policy for the peer, and that
-// the next hello updates it.
-func TestHelloRecordsPeerPolicy(t *testing.T) {
-	h := newHarness(t, model.RolePersonal, model.RolePersonal)
-	h.clientCfg.RequireConfirmation = true
-
-	_, server := h.open(nil)
-
-	stored := h.serverTrust.peer(t, h.clientID.DeviceID())
-	if !stored.RequireConfirmationRemote {
-		t.Fatal("the announced confirmation flag is not stored")
-	}
-	if stored.RequireConfirmation {
-		t.Fatal("the announced flag changed the local policy for the peer")
-	}
-
-	server.recordPeer(context.Background(), PeerHello{Name: "client", RequireConfirmation: false})
-
-	stored = h.serverTrust.peer(t, h.clientID.DeviceID())
-	if stored.RequireConfirmationRemote {
-		t.Fatal("the next hello did not update the announced flag")
 	}
 }
 

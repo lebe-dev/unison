@@ -108,11 +108,6 @@ func (s *testTrust) SetPlatform(_ context.Context, id model.DeviceID, platform m
 	return s.update(id, func(peer *trust.Peer) { peer.Platform = platform })
 }
 
-// SetRequireConfirmationRemote stores the confirmation flag the peer announced.
-func (s *testTrust) SetRequireConfirmationRemote(_ context.Context, id model.DeviceID, require bool) error {
-	return s.update(id, func(peer *trust.Peer) { peer.RequireConfirmationRemote = require })
-}
-
 // update changes a stored peer.
 func (s *testTrust) update(id model.DeviceID, change func(*trust.Peer)) error {
 	s.mu.Lock()

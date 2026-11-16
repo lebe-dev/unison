@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/store"
@@ -26,9 +25,23 @@ const (
 	rendezvousKeyPrefix = "rendezvous/"
 )
 
-// selfRequireConfirmationKey is the settings key of the local confirmation
-// policy advertised to peers in the handshake.
-const selfRequireConfirmationKey = "trust.self.require_confirmation"
+// Settings keys of the confirmation flags of this device for every peer.
+const (
+	selfRequireConfirmationKey     = "trust.self.require_confirmation"
+	selfRequireFileConfirmationKey = "trust.self.require_file_confirmation"
+)
+
+// selfConfirmationKey returns the settings key of the flag of the scope.
+func selfConfirmationKey(scope Scope) (string, error) {
+	switch scope {
+	case ScopeClipboard:
+		return selfRequireConfirmationKey, nil
+	case ScopeFiles:
+		return selfRequireFileConfirmationKey, nil
+	default:
+		return "", fmt.Errorf("%w: unknown confirmation scope %d", ErrInvalidPeer, scope)
+	}
+}
 
 // DiscoveryKey returns the key shared by the Personal group.
 func (s *Store) DiscoveryKey(ctx context.Context) ([]byte, error) {
@@ -116,23 +129,37 @@ func (s *Store) SetRendezvousKey(ctx context.Context, id model.DeviceID, key []b
 	})
 }
 
-// SelfRequireConfirmation reports whether the local device asks peers to
-// confirm clipboard items before applying them.
-func (s *Store) SelfRequireConfirmation(ctx context.Context) (bool, error) {
-	return s.db.Settings().GetBool(ctx, selfRequireConfirmationKey, false)
+// SelfRequireConfirmation reports whether this device asks its user before it
+// takes the content of the scope from any peer.
+func (s *Store) SelfRequireConfirmation(ctx context.Context, scope Scope) (bool, error) {
+	key, err := selfConfirmationKey(scope)
+	if err != nil {
+		return false, err
+	}
+	return s.db.Settings().GetBool(ctx, key, false)
 }
 
-// SetSelfRequireConfirmation stores the local confirmation policy advertised to
-// peers in the handshake. The change is dated, so a remote policy that was
-// signed earlier does not override the choice of the user.
-func (s *Store) SetSelfRequireConfirmation(ctx context.Context, require bool) error {
-	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
-		settings := store.NewSettings(tx, s.db.Sealer())
-		if err := settings.SetBool(ctx, selfRequireConfirmationKey, require); err != nil {
-			return err
-		}
-		return settings.SetInt(ctx, selfPolicyTsKey, unixMilli(time.Now()))
-	})
+// SelfConfirmations returns the flags of this device for every peer.
+func (s *Store) SelfConfirmations(ctx context.Context) (Confirmations, error) {
+	clipboard, err := s.SelfRequireConfirmation(ctx, ScopeClipboard)
+	if err != nil {
+		return Confirmations{}, err
+	}
+	files, err := s.SelfRequireConfirmation(ctx, ScopeFiles)
+	if err != nil {
+		return Confirmations{}, err
+	}
+	return Confirmations{Clipboard: clipboard, Files: files}, nil
+}
+
+// SetSelfRequireConfirmation stores whether this device asks its user before it
+// takes the content of the scope from any peer.
+func (s *Store) SetSelfRequireConfirmation(ctx context.Context, scope Scope, require bool) error {
+	key, err := selfConfirmationKey(scope)
+	if err != nil {
+		return err
+	}
+	return s.db.Settings().SetBool(ctx, key, require)
 }
 
 // rendezvousKeyName returns the secret name of the rendezvous key of a peer.

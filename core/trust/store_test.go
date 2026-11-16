@@ -110,7 +110,8 @@ func TestAddAndGet(t *testing.T) {
 	peer := testPeer(t, 1, model.RolePersonal)
 	peer.Name = "MacBook"
 	peer.Platform = model.PlatformMacOS
-	peer.RequireConfirmation = true
+	peer.Confirm = Confirmations{Clipboard: true, Files: true}
+	peer.ConfirmRemote = Confirmations{Files: true}
 	peer.IntroducedBy = introducer.Public.DeviceID
 	peer.AddedAt = time.UnixMilli(1_700_000_000_000)
 	peer.LastSeenAt = time.UnixMilli(1_700_000_100_000)
@@ -169,7 +170,7 @@ func TestAddRejectsInvalidPeers(t *testing.T) {
 		{"friends with confirmation", func() Peer {
 			peer := valid
 			peer.Role = model.RoleFriends
-			peer.RequireConfirmation = true
+			peer.Confirm.Files = true
 			return peer
 		}()},
 		{"long name", func() Peer {
@@ -261,7 +262,10 @@ func TestRevocationIsPermanent(t *testing.T) {
 		fn   func() error
 	}{
 		{"rename", func() error { return ts.Rename(ctx, id, "old") }},
-		{"require confirmation", func() error { return ts.SetRequireConfirmation(ctx, id, true) }},
+		{"require confirmation", func() error {
+			_, err := ts.SetRequireConfirmation(ctx, id, ScopeClipboard, true)
+			return err
+		}},
 		{"touch seen", func() error { return ts.TouchSeen(ctx, id, time.Now()) }},
 		{"update addresses", func() error { return ts.UpdateAddrs(ctx, id, []string{"192.168.1.20:5353"}) }},
 	}
@@ -455,33 +459,58 @@ func TestRenameAndConfirmation(t *testing.T) {
 		t.Fatalf("rename unknown peer: got %v, want ErrPeerNotFound", err)
 	}
 
-	if err := ts.SetRequireConfirmation(ctx, id, true); err != nil {
-		t.Fatalf("set confirmation: %v", err)
+	for _, scope := range []Scope{ScopeClipboard, ScopeFiles} {
+		changed, err := ts.SetRequireConfirmation(ctx, id, scope, true)
+		if err != nil {
+			t.Fatalf("set %s confirmation: %v", scope, err)
+		}
+		if !changed {
+			t.Fatalf("setting %s confirmation reports no change", scope)
+		}
+		changed, err = ts.SetRequireConfirmation(ctx, id, scope, true)
+		if err != nil || changed {
+			t.Fatalf("repeating %s confirmation: changed %t, %v", scope, changed, err)
+		}
+		got, err = ts.Get(ctx, id)
+		if err != nil {
+			t.Fatalf("get peer: %v", err)
+		}
+		if !got.Confirm.Get(scope) {
+			t.Fatalf("%s confirmation is not set", scope)
+		}
+		if _, err := ts.SetRequireConfirmation(ctx, id, scope, false); err != nil {
+			t.Fatalf("clear %s confirmation: %v", scope, err)
+		}
+		if _, err := ts.SetRequireConfirmation(ctx, friends.Public.DeviceID, scope, true); !errors.Is(err, ErrInvalidPeer) {
+			t.Fatalf("confirm %s of a friends peer: got %v, want ErrInvalidPeer", scope, err)
+		}
+		if _, err := ts.SetRequireConfirmation(ctx, friends.Public.DeviceID, scope, false); err != nil {
+			t.Fatalf("clear %s confirmation of a friends peer: %v", scope, err)
+		}
+	}
+	if _, err := ts.SetRequireConfirmation(ctx, id, ScopeNone, true); !errors.Is(err, ErrInvalidPeer) {
+		t.Fatalf("confirm without a scope: got %v, want ErrInvalidPeer", err)
+	}
+
+	changed, err := ts.SetRequireConfirmation(ctx, id, ScopeFiles, true)
+	if err != nil || !changed {
+		t.Fatalf("set file confirmation: changed %t, %v", changed, err)
 	}
 	got, err = ts.Get(ctx, id)
 	if err != nil {
 		t.Fatalf("get peer: %v", err)
 	}
-	if !got.RequireConfirmation {
-		t.Fatal("confirmation is not set")
+	if got.Decision(ActionApplyClipboard) != Allow {
+		t.Fatalf("clipboard decision %s with file confirmation, want allow", got.Decision(ActionApplyClipboard))
 	}
-	if got.Decision(ActionApplyClipboard) != Confirm {
-		t.Fatalf("clipboard decision %s, want confirm", got.Decision(ActionApplyClipboard))
-	}
-	if err := ts.SetRequireConfirmation(ctx, id, false); err != nil {
-		t.Fatalf("clear confirmation: %v", err)
-	}
-	if err := ts.SetRequireConfirmation(ctx, friends.Public.DeviceID, true); !errors.Is(err, ErrInvalidPeer) {
-		t.Fatalf("confirm a friends peer: got %v, want ErrInvalidPeer", err)
-	}
-	if err := ts.SetRequireConfirmation(ctx, friends.Public.DeviceID, false); err != nil {
-		t.Fatalf("clear confirmation of a friends peer: %v", err)
+	if got.Decision(ActionReceiveShare) != Confirm {
+		t.Fatalf("share decision %s, want confirm", got.Decision(ActionReceiveShare))
 	}
 }
 
-// TestSetRequireConfirmationRemote checks that the announced flag of a peer is
-// stored separately from the local policy for it.
-func TestSetRequireConfirmationRemote(t *testing.T) {
+// TestSetConfirmRemote checks that the flags a peer reported are stored apart
+// from the flags of this device for it.
+func TestSetConfirmRemote(t *testing.T) {
 	ctx := context.Background()
 	ts := openTestStore(t)
 
@@ -491,39 +520,44 @@ func TestSetRequireConfirmationRemote(t *testing.T) {
 	}
 	id := peer.DeviceID()
 
-	if err := ts.SetRequireConfirmation(ctx, id, true); err != nil {
-		t.Fatalf("set the local policy: %v", err)
+	if _, err := ts.SetRequireConfirmation(ctx, id, ScopeClipboard, true); err != nil {
+		t.Fatalf("set the local flag: %v", err)
 	}
-	if err := ts.SetRequireConfirmationRemote(ctx, id, true); err != nil {
-		t.Fatalf("set the announced flag: %v", err)
+	reported := Confirmations{Files: true}
+	changed, err := ts.SetConfirmRemote(ctx, id, reported)
+	if err != nil || !changed {
+		t.Fatalf("set the reported flags: changed %t, %v", changed, err)
+	}
+	if changed, err := ts.SetConfirmRemote(ctx, id, reported); err != nil || changed {
+		t.Fatalf("repeat the reported flags: changed %t, %v", changed, err)
 	}
 	got, err := ts.Get(ctx, id)
 	if err != nil {
 		t.Fatalf("get peer: %v", err)
 	}
-	if !got.RequireConfirmationRemote {
-		t.Fatal("the announced flag is not stored")
+	if got.ConfirmRemote != reported {
+		t.Fatalf("reported flags %+v, want %+v", got.ConfirmRemote, reported)
 	}
-	if !got.RequireConfirmation {
-		t.Fatal("the announced flag cleared the local policy")
+	if got.Confirm != (Confirmations{Clipboard: true}) {
+		t.Fatalf("the reported flags changed the local ones: %+v", got.Confirm)
 	}
 
-	if err := ts.SetRequireConfirmationRemote(ctx, id, false); err != nil {
-		t.Fatalf("clear the announced flag: %v", err)
+	if _, err := ts.SetConfirmRemote(ctx, id, Confirmations{}); err != nil {
+		t.Fatalf("clear the reported flags: %v", err)
 	}
 	got, err = ts.Get(ctx, id)
 	if err != nil {
 		t.Fatalf("get peer: %v", err)
 	}
-	if got.RequireConfirmationRemote {
-		t.Fatal("the announced flag is still stored")
+	if got.ConfirmRemote.Any() {
+		t.Fatal("the reported flags are still stored")
 	}
-	if !got.RequireConfirmation {
-		t.Fatal("clearing the announced flag changed the local policy")
+	if !got.Confirm.Clipboard {
+		t.Fatal("clearing the reported flags changed the local ones")
 	}
 
-	if err := ts.SetRequireConfirmationRemote(ctx, testPeer(t, 16, model.RolePersonal).DeviceID(), true); !errors.Is(err, ErrPeerNotFound) {
-		t.Fatalf("set the flag of an unknown peer: got %v, want ErrPeerNotFound", err)
+	if _, err := ts.SetConfirmRemote(ctx, testPeer(t, 16, model.RolePersonal).DeviceID(), reported); !errors.Is(err, ErrPeerNotFound) {
+		t.Fatalf("set the flags of an unknown peer: got %v, want ErrPeerNotFound", err)
 	}
 }
 
@@ -696,8 +730,11 @@ func assertPeerEqual(t *testing.T, got, want Peer) {
 	if got.Role != want.Role {
 		t.Errorf("role %s, want %s", got.Role, want.Role)
 	}
-	if got.RequireConfirmation != want.RequireConfirmation {
-		t.Errorf("confirmation %t, want %t", got.RequireConfirmation, want.RequireConfirmation)
+	if got.Confirm != want.Confirm {
+		t.Errorf("confirmation %+v, want %+v", got.Confirm, want.Confirm)
+	}
+	if got.ConfirmRemote != want.ConfirmRemote {
+		t.Errorf("reported confirmation %+v, want %+v", got.ConfirmRemote, want.ConfirmRemote)
 	}
 	if got.IntroducedBy != want.IntroducedBy {
 		t.Errorf("introduced by %s, want %s", got.IntroducedBy, want.IntroducedBy)

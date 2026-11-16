@@ -246,6 +246,7 @@ describe("tray entries", () => {
         $typeName: "unison.local.v1.Settings",
         deviceName: "Mac",
         requireConfirmation: false,
+        requireFileConfirmation: false,
         blobMaxSizeBytes: 0n,
         downloadsDir: "/downloads",
         relayMaxSizeBytes: 0n,

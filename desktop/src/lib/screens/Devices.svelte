@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Role, type Device } from "../api/gen/unison/local/v1/local_pb";
   import { client } from "../api/client";
-  import { confirmation } from "../confirmation.svelte";
+  import { confirmation, type Scope, type Side } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { formatDateTime, formatTime, pathLabel, platformLabel, roleLabel, shortDeviceID } from "../format";
@@ -62,9 +62,30 @@
     }
   }
 
-  async function setConfirmation(device: Device, require: boolean): Promise<void> {
+  /** Switches of the confirmation flags, in the order of the grid. */
+  const flags: { side: Side; scope: Scope }[] = [
+    { side: "local", scope: "clipboard" },
+    { side: "local", scope: "files" },
+    { side: "peer", scope: "clipboard" },
+    { side: "peer", scope: "files" },
+  ];
+
+  /** flagLabel names one switch for a screen reader. */
+  function flagLabel(device: Device, side: Side, scope: Scope): string {
+    const name = device.name || "The device";
+    if (side === "local") {
+      return scope === "clipboard"
+        ? `This device asks before applying the clipboard of ${name}`
+        : `This device asks before accepting files from ${name}`;
+    }
+    return scope === "clipboard"
+      ? `${name} asks before applying the clipboard of this device`
+      : `${name} asks before accepting files from this device`;
+  }
+
+  async function setConfirmation(device: Device, scope: Scope, side: Side, require: boolean): Promise<void> {
     notice = null;
-    const failure = await confirmation.set(device.deviceId, require);
+    const failure = await confirmation.set(device.deviceId, scope, side, require);
     if (!failure) {
       return;
     }
@@ -161,28 +182,36 @@
                 </p>
 
                 {#if device.role === Role.PERSONAL}
-                  <label class="toggle">
-                    <input
-                      type="checkbox"
-                      checked={confirmation.require(device)}
-                      disabled={confirmation.busy.includes(device.deviceId)}
-                      onchange={(event) => void setConfirmation(device, event.currentTarget.checked)}
-                    />
-                    <span>
-                      Ask before applying items from this device
-                      <small>
-                        Its items wait here until you apply them. The device is asked to do the
-                        same with the items it receives.
-                      </small>
-                    </span>
-                  </label>
-                {/if}
-
-                {#if device.peerRequireConfirmation}
-                  <p class="meta muted">
-                    {device.name || "The device"} asks for confirmation before applying what it
-                    receives.
-                  </p>
+                  <div class="confirm" role="group" aria-label="Ask before taking">
+                    <span class="confirm-title">Ask before taking</span>
+                    <span class="confirm-head">Clipboard</span>
+                    <span class="confirm-head">Files</span>
+                    {#each flags as flag (`${flag.side}:${flag.scope}`)}
+                      {#if flag.scope === "clipboard"}
+                        <span class="confirm-row">
+                          {flag.side === "local"
+                            ? `Here, from ${device.name || "the device"}`
+                            : `On ${device.name || "the device"}, from here`}
+                        </span>
+                      {/if}
+                      <input
+                        type="checkbox"
+                        aria-label={flagLabel(device, flag.side, flag.scope)}
+                        title={flagLabel(device, flag.side, flag.scope)}
+                        checked={confirmation.require(device, flag.scope, flag.side)}
+                        disabled={confirmation.isBusy(device.deviceId, flag.scope, flag.side) ||
+                          (flag.side === "peer" && !device.online)}
+                        onchange={(event) =>
+                          void setConfirmation(device, flag.scope, flag.side, event.currentTarget.checked)}
+                      />
+                    {/each}
+                    <small class="confirm-hint muted">
+                      What waits for an answer shows up in a prompt.
+                      {#if !device.online}
+                        The second row changes while {device.name || "the device"} is online.
+                      {/if}
+                    </small>
+                  </div>
                 {/if}
 
                 {#if editing === device.deviceId}
@@ -350,6 +379,39 @@
 
   .meta {
     margin: 0;
+  }
+
+  .confirm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 5rem 5rem;
+    align-items: center;
+    row-gap: 0.35rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    background-color: var(--surface-soft);
+    font-size: 0.8125rem;
+  }
+
+  .confirm-title {
+    font-weight: 600;
+  }
+
+  .confirm-head {
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .confirm input {
+    justify-self: center;
+    accent-color: var(--accent);
+  }
+
+  .confirm input:disabled {
+    cursor: not-allowed;
+  }
+
+  .confirm-hint {
+    grid-column: 1 / -1;
   }
 
   .rename {

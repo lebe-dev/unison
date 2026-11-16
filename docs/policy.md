@@ -58,5 +58,5 @@ unison policy
 
 A change applies to the next item, without restarting the daemon.
 
-The confirmation flag and the role of a device are separate from this table, see
-[Devices and pairing](devices.md).
+The confirmation flags and the role of a device are separate from this table, see
+[Devices and pairing](devices.md#confirmation-flags).

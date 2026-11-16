@@ -68,12 +68,6 @@ type platformRecorder interface {
 	SetPlatform(ctx context.Context, id model.DeviceID, platform model.Platform) error
 }
 
-// policyRecorder is the optional part of Trust that records the confirmation
-// flag a peer announces in Hello.
-type policyRecorder interface {
-	SetRequireConfirmationRemote(ctx context.Context, id model.DeviceID, require bool) error
-}
-
 var _ Trust = (*trust.Store)(nil)
 
 // Handler handles one kind of control message.
@@ -93,8 +87,6 @@ type Config struct {
 	Platform model.Platform
 	// Capabilities are the local features announced in Hello.
 	Capabilities []string
-	// RequireConfirmation is the local clipboard policy announced in Hello.
-	RequireConfirmation bool
 	// Trust is the peer store. It is required.
 	Trust Trust
 	// Clock is the time source of the rate limiter. The system clock is used
@@ -386,13 +378,6 @@ func (s *Session) recordPeer(ctx context.Context, hello PeerHello) {
 		if err := recorder.SetPlatform(ctx, s.peerID, hello.Platform); err != nil {
 			s.log.Warn("session: cannot record the peer platform", "peer", s.peerID, "error", err)
 		}
-	}
-	recorder, ok := s.cfg.Trust.(policyRecorder)
-	if !ok {
-		return
-	}
-	if err := recorder.SetRequireConfirmationRemote(ctx, s.peerID, hello.RequireConfirmation); err != nil {
-		s.log.Warn("session: cannot record the peer confirmation flag", "peer", s.peerID, "error", err)
 	}
 }
 

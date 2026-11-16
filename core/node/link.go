@@ -791,6 +791,7 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 		n.log.Debug("recording the peer as seen failed", "peer", l.id, "error", err)
 	}
 	n.startHistorySync(sess)
+	n.spawn(func() { n.announcePolicy(n.ctx, sess) })
 	if !wasOnline || previousPath != path {
 		n.publish(Event{Kind: EventPeerOnline, Peer: l.id, Name: peer.Name, Role: peer.Role, Platform: peer.Platform, Path: path})
 		state := conn.ConnectionState().TLS
@@ -849,19 +850,13 @@ func (n *Node) peerOffline(l *link, peer trust.Peer, err error) {
 // openSession creates the session, lets the hooks register their handlers and
 // runs the handshake.
 func (n *Node) openSession(ctx context.Context, conn *transport.Conn) (*session.Session, error) {
-	require, err := n.trust.SelfRequireConfirmation(ctx)
-	if err != nil {
-		n.log.Warn("reading the local confirmation policy failed", "error", err)
-	}
-
 	sess, err := session.New(conn, session.Config{
-		Name:                n.Name(),
-		Platform:            n.cfg.Platform,
-		Capabilities:        n.cfg.Capabilities,
-		RequireConfirmation: require,
-		Trust:               n.announcedTrust(),
-		Clock:               n.clock,
-		Logger:              n.log,
+		Name:         n.Name(),
+		Platform:     n.cfg.Platform,
+		Capabilities: n.cfg.Capabilities,
+		Trust:        n.announcedTrust(),
+		Clock:        n.clock,
+		Logger:       n.log,
 	})
 	if err != nil {
 		return nil, err

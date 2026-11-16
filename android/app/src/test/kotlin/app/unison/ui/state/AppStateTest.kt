@@ -40,8 +40,9 @@ class AppStateTest {
         val deleted = mutableListOf<String>()
         val applied = mutableListOf<String>()
         var settings: Local.Settings = Local.Settings.getDefaultInstance()
-        val selfConfirmations = mutableListOf<Boolean>()
-        val confirmations = mutableListOf<Pair<String, Boolean>>()
+        val selfConfirmations = mutableListOf<Pair<Local.ConfirmationScope, Boolean>>()
+        val confirmations = mutableListOf<DeviceConfirmation>()
+        var confirmationFailure: Exception? = null
         val revoked = mutableListOf<String>()
         val renamed = mutableListOf<Pair<String, String>>()
         var requests: List<Local.ShareRequest> = emptyList()
@@ -117,14 +118,24 @@ class AppStateTest {
             return relay
         }
 
-        override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
-            selfConfirmations += require
-            settings = settings.toBuilder().setRequireConfirmation(require).build()
+        override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {
+            selfConfirmations += scope to require
+            settings = when (scope) {
+                Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES ->
+                    settings.toBuilder().setRequireFileConfirmation(require).build()
+                else -> settings.toBuilder().setRequireConfirmation(require).build()
+            }
             return settings
         }
 
-        override suspend fun setDeviceConfirmation(deviceId: String, require: Boolean) {
-            confirmations += deviceId to require
+        override suspend fun setDeviceConfirmation(
+            deviceId: String,
+            scope: Local.ConfirmationScope,
+            side: Local.ConfirmationSide,
+            require: Boolean,
+        ) {
+            confirmationFailure?.let { throw it }
+            confirmations += DeviceConfirmation(deviceId, scope, side, require)
         }
 
         override suspend fun revokeDevice(deviceId: String) {
@@ -559,11 +570,12 @@ class AppStateTest {
         val collector = launch { state.notices.collect { notices += it } }
         runCurrent()
 
-        state.setSelfConfirmation(true)
+        state.setSelfConfirmation(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES, true)
         advanceUntilIdle()
 
-        assertEquals(listOf(true), core.selfConfirmations)
-        assertTrue(state.state.value.requiresConfirmation)
+        assertEquals(listOf(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES to true), core.selfConfirmations)
+        assertTrue(state.state.value.requiresFileConfirmation)
+        assertTrue(!state.state.value.requiresConfirmation)
         assertTrue(R.string.settings_confirmation_saved in notices)
         collector.cancel()
     }
@@ -573,10 +585,115 @@ class AppStateTest {
         val core = FakeCore()
         val state = appState(core)
 
-        state.setDeviceConfirmation("abcd", true)
+        state.setDeviceConfirmation(
+            "abcd",
+            Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES,
+            Local.ConfirmationSide.CONFIRMATION_SIDE_PEER,
+            true,
+        )
         advanceUntilIdle()
 
-        assertEquals(listOf("abcd" to true), core.confirmations)
+        assertEquals(
+            listOf(
+                DeviceConfirmation(
+                    "abcd",
+                    Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES,
+                    Local.ConfirmationSide.CONFIRMATION_SIDE_PEER,
+                    true,
+                ),
+            ),
+            core.confirmations,
+        )
+    }
+
+    @Test
+    fun deviceConfirmationReportsAnOfflineDevice() = runTest {
+        val core = FakeCore()
+        core.confirmationFailure = CoreException(CoreException.CODE_UNAVAILABLE, "peer offline")
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.setDeviceConfirmation(
+            "abcd",
+            Local.ConfirmationScope.CONFIRMATION_SCOPE_CLIPBOARD,
+            Local.ConfirmationSide.CONFIRMATION_SIDE_PEER,
+            true,
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf(R.string.devices_confirmation_offline), notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun deviceUpdateReloadsTheStatus() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val before = core.statusCalls
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setEvent(Local.Event.newBuilder().setKind(Local.EventKind.EVENT_KIND_DEVICE_UPDATED).build())
+                .build(),
+        )
+        advanceUntilIdle()
+
+        assertTrue(core.statusCalls > before)
+        state.close()
+    }
+
+    @Test
+    fun promptsListHeldItemsThenOffers() = runTest {
+        val core = FakeCore()
+        core.requests = listOf(
+            Local.ShareRequest.newBuilder()
+                .setId("newer")
+                .setDeviceName("Pixel")
+                .addFiles(Local.TransferFile.newBuilder().setName("a.txt"))
+                .build(),
+            Local.ShareRequest.newBuilder()
+                .setId("older")
+                .setDeviceName("Pixel")
+                .addFiles(Local.TransferFile.newBuilder().setName("b.txt"))
+                .setTotalBytes(4)
+                .build(),
+        )
+        val held = HeldItems()
+        val state = appState(core, held = held)
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setEvent(
+                    Local.Event.newBuilder()
+                        .setKind(Local.EventKind.EVENT_KIND_CLIP_APPLY)
+                        .setName("MacBook")
+                        .setItem(
+                            Local.ClipItem.newBuilder()
+                                .setId("item")
+                                .setKind(Local.Kind.KIND_TEXT)
+                                .addRepresentations(Local.Representation.newBuilder().setSize(12)),
+                        )
+                        .build(),
+                )
+                .build(),
+        )
+        state.refreshRequests()
+        advanceUntilIdle()
+
+        val prompts = state.prompts.value
+        assertEquals(listOf("item", "older", "newer"), prompts.map { it.id })
+        assertEquals(PendingPrompt.Kind.CLIPBOARD, prompts[0].kind)
+        assertEquals("MacBook", prompts[0].device)
+        assertEquals(12L, prompts[0].sizeBytes)
+        assertEquals(listOf("b.txt"), prompts[1].files)
+
+        state.skipHeldItem("item")
+        advanceUntilIdle()
+
+        assertEquals(listOf("older", "newer"), state.prompts.value.map { it.id })
+        assertTrue(held.ids.value.isEmpty())
+        state.close()
     }
 
     @Test
@@ -879,6 +996,14 @@ class AppStateTest {
         saver = saver,
         scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         held = held,
+    )
+
+    /** One call of setDeviceConfirmation. */
+    data class DeviceConfirmation(
+        val deviceId: String,
+        val scope: Local.ConfirmationScope,
+        val side: Local.ConfirmationSide,
+        val require: Boolean,
     )
 
     private companion object {

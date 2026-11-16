@@ -27,11 +27,23 @@ interface CoreApi {
     /** Turns the relay off for the whole group. */
     suspend fun relayOff(): Local.Relay
 
-    /** Makes this device ask for a confirmation before the clipboard is applied. */
-    suspend fun setSelfConfirmation(require: Boolean): Local.Settings
+    /**
+     * Makes this device ask before it takes the clipboard items or the files of
+     * any device.
+     */
+    suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings
 
-    /** Changes the confirmation flag of a paired device. */
-    suspend fun setDeviceConfirmation(deviceId: String, require: Boolean)
+    /**
+     * Changes one confirmation flag of a paired device: whether this device asks
+     * before it takes what the device sends, or whether the device asks before it
+     * takes what this device sends. The second one needs the device online.
+     */
+    suspend fun setDeviceConfirmation(
+        deviceId: String,
+        scope: Local.ConfirmationScope,
+        side: Local.ConfirmationSide,
+        require: Boolean,
+    )
 
     /** Removes a device from the group; the ID of this device leaves the group. */
     suspend fun revokeDevice(deviceId: String)
@@ -137,14 +149,19 @@ class RunningCore(
         return client.relayOff()
     }
 
-    override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
+    override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {
         ensureRunning()
-        return client.setSelfConfirmation(require)
+        return client.setSelfConfirmation(scope, require)
     }
 
-    override suspend fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+    override suspend fun setDeviceConfirmation(
+        deviceId: String,
+        scope: Local.ConfirmationScope,
+        side: Local.ConfirmationSide,
+        require: Boolean,
+    ) {
         ensureRunning()
-        client.setDeviceConfirmation(deviceId, require)
+        client.setDeviceConfirmation(deviceId, scope, side, require)
     }
 
     override suspend fun revokeDevice(deviceId: String) {

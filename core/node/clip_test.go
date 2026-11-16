@@ -20,6 +20,7 @@ import (
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/core/transport/vnet"
+	"github.com/lebe-dev/unison/core/trust"
 )
 
 // clipNodes starts two paired nodes of the virtual network.
@@ -303,7 +304,7 @@ func TestNodesClipConfirm(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
-	if err := b.Trust().SetRequireConfirmation(ctx, a.DeviceID(), true); err != nil {
+	if _, err := b.Trust().SetRequireConfirmation(ctx, a.DeviceID(), trust.ScopeClipboard, true); err != nil {
 		t.Fatalf("require confirmation: %v", err)
 	}
 

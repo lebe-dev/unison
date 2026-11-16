@@ -122,7 +122,7 @@ class HistoryStore {
     this.notice = null;
     try {
       await client.copyHistoryItem({ id });
-      this.#release(id);
+      this.release(id);
       this.notice = { kind: "info", text: "The item is on the clipboard." };
     } catch (error) {
       this.notice = { kind: "error", text: errorText(error, "The item could not be copied.") };
@@ -137,7 +137,7 @@ class HistoryStore {
     this.notice = null;
     try {
       await client.applyHistoryItem({ id });
-      this.#release(id);
+      this.release(id);
       this.notice = { kind: "info", text: "The item is on the clipboard." };
     } catch (error) {
       this.notice = { kind: "error", text: errorText(error, "The item could not be applied.") };
@@ -192,7 +192,7 @@ class HistoryStore {
     try {
       await client.deleteHistoryItem({ id });
       this.items = this.items.filter((item) => item.item?.id !== id);
-      this.#release(id);
+      this.release(id);
       this.notice = { kind: "info", text: "The item is deleted." };
       void this.refreshRecent();
     } catch (error) {
@@ -246,8 +246,9 @@ class HistoryStore {
     }
   }
 
-  /** #release forgets an item that is no longer held back. */
-  #release(id: string): void {
+  /** release forgets an item that is no longer held back. The item stays in
+   * the history. */
+  release(id: string): void {
     this.held = this.held.filter((current) => current !== id);
   }
 

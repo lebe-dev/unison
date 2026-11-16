@@ -265,9 +265,11 @@ commands:
   devices address <id> <host:port> [--wait 5s]
                               store an address of a paired device and connect
                               to it, for networks where discovery does not work
-  devices confirm <id|self> on|off
-                              hold the clipboard items of a device, or the items
-                              of every device, until they are applied
+  devices confirm <id|self> on|off [--files] [--peer]
+                              ask before taking the clipboard items (or with
+                              --files the file transfers) of a device or of
+                              every device; with --peer the paired device asks
+                              before taking those of this device
   devices revoke <id|self> [--yes]
                               revoke a device or leave the group; the device is
                               cut off and never trusted again

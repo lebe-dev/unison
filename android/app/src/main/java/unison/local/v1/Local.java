@@ -665,6 +665,15 @@ public final class Local {
      * <code>EVENT_KIND_HISTORY = 13;</code>
      */
     EVENT_KIND_HISTORY(13),
+    /**
+     * <pre>
+     * The confirmation flags of a paired device changed, on this device or on
+     * that one.
+     * </pre>
+     *
+     * <code>EVENT_KIND_DEVICE_UPDATED = 14;</code>
+     */
+    EVENT_KIND_DEVICE_UPDATED(14),
     UNRECOGNIZED(-1),
     ;
 
@@ -776,6 +785,15 @@ public final class Local {
      * <code>EVENT_KIND_HISTORY = 13;</code>
      */
     public static final int EVENT_KIND_HISTORY_VALUE = 13;
+    /**
+     * <pre>
+     * The confirmation flags of a paired device changed, on this device or on
+     * that one.
+     * </pre>
+     *
+     * <code>EVENT_KIND_DEVICE_UPDATED = 14;</code>
+     */
+    public static final int EVENT_KIND_DEVICE_UPDATED_VALUE = 14;
 
 
     @java.lang.Override
@@ -812,6 +830,7 @@ public final class Local {
         case 11: return EVENT_KIND_CLIP_APPLY;
         case 12: return EVENT_KIND_TRANSFER;
         case 13: return EVENT_KIND_HISTORY;
+        case 14: return EVENT_KIND_DEVICE_UPDATED;
         default: return null;
       }
     }
@@ -851,6 +870,242 @@ public final class Local {
     }
 
     // @@protoc_insertion_point(enum_scope:unison.local.v1.EventKind)
+  }
+
+  /**
+   * <pre>
+   * Content a confirmation flag covers.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.ConfirmationScope}
+   */
+  public enum ConfirmationScope
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>CONFIRMATION_SCOPE_UNSPECIFIED = 0;</code>
+     */
+    CONFIRMATION_SCOPE_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * Clipboard items.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SCOPE_CLIPBOARD = 1;</code>
+     */
+    CONFIRMATION_SCOPE_CLIPBOARD(1),
+    /**
+     * <pre>
+     * File transfers.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SCOPE_FILES = 2;</code>
+     */
+    CONFIRMATION_SCOPE_FILES(2),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>CONFIRMATION_SCOPE_UNSPECIFIED = 0;</code>
+     */
+    public static final int CONFIRMATION_SCOPE_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * Clipboard items.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SCOPE_CLIPBOARD = 1;</code>
+     */
+    public static final int CONFIRMATION_SCOPE_CLIPBOARD_VALUE = 1;
+    /**
+     * <pre>
+     * File transfers.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SCOPE_FILES = 2;</code>
+     */
+    public static final int CONFIRMATION_SCOPE_FILES_VALUE = 2;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static ConfirmationScope valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static ConfirmationScope forNumber(int value) {
+      switch (value) {
+        case 0: return CONFIRMATION_SCOPE_UNSPECIFIED;
+        case 1: return CONFIRMATION_SCOPE_CLIPBOARD;
+        case 2: return CONFIRMATION_SCOPE_FILES;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<ConfirmationScope>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        ConfirmationScope> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<ConfirmationScope>() {
+            @java.lang.Override
+            public ConfirmationScope findValueByNumber(int number) {
+              return ConfirmationScope.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return ConfirmationScopeVerifier.INSTANCE;
+    }
+
+    private static final class ConfirmationScopeVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new ConfirmationScopeVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return ConfirmationScope.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private ConfirmationScope(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.ConfirmationScope)
+  }
+
+  /**
+   * <pre>
+   * Device that asks its user before it takes the items of the other one.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.ConfirmationSide}
+   */
+  public enum ConfirmationSide
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>CONFIRMATION_SIDE_UNSPECIFIED = 0;</code>
+     */
+    CONFIRMATION_SIDE_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * This device asks before it takes what the paired device sends.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SIDE_LOCAL = 1;</code>
+     */
+    CONFIRMATION_SIDE_LOCAL(1),
+    /**
+     * <pre>
+     * The paired device asks before it takes what this device sends.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SIDE_PEER = 2;</code>
+     */
+    CONFIRMATION_SIDE_PEER(2),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>CONFIRMATION_SIDE_UNSPECIFIED = 0;</code>
+     */
+    public static final int CONFIRMATION_SIDE_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * This device asks before it takes what the paired device sends.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SIDE_LOCAL = 1;</code>
+     */
+    public static final int CONFIRMATION_SIDE_LOCAL_VALUE = 1;
+    /**
+     * <pre>
+     * The paired device asks before it takes what this device sends.
+     * </pre>
+     *
+     * <code>CONFIRMATION_SIDE_PEER = 2;</code>
+     */
+    public static final int CONFIRMATION_SIDE_PEER_VALUE = 2;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static ConfirmationSide valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static ConfirmationSide forNumber(int value) {
+      switch (value) {
+        case 0: return CONFIRMATION_SIDE_UNSPECIFIED;
+        case 1: return CONFIRMATION_SIDE_LOCAL;
+        case 2: return CONFIRMATION_SIDE_PEER;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<ConfirmationSide>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        ConfirmationSide> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<ConfirmationSide>() {
+            @java.lang.Override
+            public ConfirmationSide findValueByNumber(int number) {
+              return ConfirmationSide.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return ConfirmationSideVerifier.INSTANCE;
+    }
+
+    private static final class ConfirmationSideVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new ConfirmationSideVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return ConfirmationSide.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private ConfirmationSide(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.ConfirmationSide)
   }
 
   /**
@@ -2358,7 +2613,7 @@ public final class Local {
 
     /**
      * <pre>
-     * The local policy for the device: its items are held for confirmation.
+     * This device asks before it applies a clipboard item of the device.
      * </pre>
      *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -2394,8 +2649,8 @@ public final class Local {
 
     /**
      * <pre>
-     * The flag the device announced in the last hello: it holds the items it
-     * receives for confirmation.
+     * The device asks before it applies a clipboard item of this device, as it
+     * reported last.
      * </pre>
      *
      * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -2424,6 +2679,27 @@ public final class Local {
      */
     com.google.protobuf.ByteString
         getIntroducedByBytes();
+
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of the device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+     * @return The requireFileConfirmation.
+     */
+    boolean getRequireFileConfirmation();
+
+    /**
+     * <pre>
+     * The device asks before it accepts a file transfer of this device, as it
+     * reported last.
+     * </pre>
+     *
+     * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+     * @return The peerRequireFileConfirmation.
+     */
+    boolean getPeerRequireFileConfirmation();
   }
   /**
    * <pre>
@@ -2715,7 +2991,7 @@ public final class Local {
     private boolean requireConfirmation_;
     /**
      * <pre>
-     * The local policy for the device: its items are held for confirmation.
+     * This device asks before it applies a clipboard item of the device.
      * </pre>
      *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -2727,7 +3003,7 @@ public final class Local {
     }
     /**
      * <pre>
-     * The local policy for the device: its items are held for confirmation.
+     * This device asks before it applies a clipboard item of the device.
      * </pre>
      *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -2739,7 +3015,7 @@ public final class Local {
     }
     /**
      * <pre>
-     * The local policy for the device: its items are held for confirmation.
+     * This device asks before it applies a clipboard item of the device.
      * </pre>
      *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -2855,8 +3131,8 @@ public final class Local {
     private boolean peerRequireConfirmation_;
     /**
      * <pre>
-     * The flag the device announced in the last hello: it holds the items it
-     * receives for confirmation.
+     * The device asks before it applies a clipboard item of this device, as it
+     * reported last.
      * </pre>
      *
      * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -2868,8 +3144,8 @@ public final class Local {
     }
     /**
      * <pre>
-     * The flag the device announced in the last hello: it holds the items it
-     * receives for confirmation.
+     * The device asks before it applies a clipboard item of this device, as it
+     * reported last.
      * </pre>
      *
      * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -2881,8 +3157,8 @@ public final class Local {
     }
     /**
      * <pre>
-     * The flag the device announced in the last hello: it holds the items it
-     * receives for confirmation.
+     * The device asks before it applies a clipboard item of this device, as it
+     * reported last.
      * </pre>
      *
      * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -2962,6 +3238,85 @@ public final class Local {
       checkByteStringIsUtf8(value);
       introducedBy_ = value.toStringUtf8();
 
+    }
+
+    public static final int REQUIRE_FILE_CONFIRMATION_FIELD_NUMBER = 14;
+    private boolean requireFileConfirmation_;
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of the device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+     * @return The requireFileConfirmation.
+     */
+    @java.lang.Override
+    public boolean getRequireFileConfirmation() {
+      return requireFileConfirmation_;
+    }
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of the device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+     * @param value The requireFileConfirmation to set.
+     */
+    private void setRequireFileConfirmation(boolean value) {
+      
+      requireFileConfirmation_ = value;
+    }
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of the device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+     */
+    private void clearRequireFileConfirmation() {
+
+      requireFileConfirmation_ = false;
+    }
+
+    public static final int PEER_REQUIRE_FILE_CONFIRMATION_FIELD_NUMBER = 15;
+    private boolean peerRequireFileConfirmation_;
+    /**
+     * <pre>
+     * The device asks before it accepts a file transfer of this device, as it
+     * reported last.
+     * </pre>
+     *
+     * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+     * @return The peerRequireFileConfirmation.
+     */
+    @java.lang.Override
+    public boolean getPeerRequireFileConfirmation() {
+      return peerRequireFileConfirmation_;
+    }
+    /**
+     * <pre>
+     * The device asks before it accepts a file transfer of this device, as it
+     * reported last.
+     * </pre>
+     *
+     * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+     * @param value The peerRequireFileConfirmation to set.
+     */
+    private void setPeerRequireFileConfirmation(boolean value) {
+      
+      peerRequireFileConfirmation_ = value;
+    }
+    /**
+     * <pre>
+     * The device asks before it accepts a file transfer of this device, as it
+     * reported last.
+     * </pre>
+     *
+     * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+     */
+    private void clearPeerRequireFileConfirmation() {
+
+      peerRequireFileConfirmation_ = false;
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -3354,7 +3709,7 @@ public final class Local {
 
       /**
        * <pre>
-       * The local policy for the device: its items are held for confirmation.
+       * This device asks before it applies a clipboard item of the device.
        * </pre>
        *
        * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -3366,7 +3721,7 @@ public final class Local {
       }
       /**
        * <pre>
-       * The local policy for the device: its items are held for confirmation.
+       * This device asks before it applies a clipboard item of the device.
        * </pre>
        *
        * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -3380,7 +3735,7 @@ public final class Local {
       }
       /**
        * <pre>
-       * The local policy for the device: its items are held for confirmation.
+       * This device asks before it applies a clipboard item of the device.
        * </pre>
        *
        * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
@@ -3502,8 +3857,8 @@ public final class Local {
 
       /**
        * <pre>
-       * The flag the device announced in the last hello: it holds the items it
-       * receives for confirmation.
+       * The device asks before it applies a clipboard item of this device, as it
+       * reported last.
        * </pre>
        *
        * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -3515,8 +3870,8 @@ public final class Local {
       }
       /**
        * <pre>
-       * The flag the device announced in the last hello: it holds the items it
-       * receives for confirmation.
+       * The device asks before it applies a clipboard item of this device, as it
+       * reported last.
        * </pre>
        *
        * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -3530,8 +3885,8 @@ public final class Local {
       }
       /**
        * <pre>
-       * The flag the device announced in the last hello: it holds the items it
-       * receives for confirmation.
+       * The device asks before it applies a clipboard item of this device, as it
+       * reported last.
        * </pre>
        *
        * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
@@ -3617,6 +3972,89 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * This device asks before it accepts a file transfer of the device.
+       * </pre>
+       *
+       * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+       * @return The requireFileConfirmation.
+       */
+      @java.lang.Override
+      public boolean getRequireFileConfirmation() {
+        return instance.getRequireFileConfirmation();
+      }
+      /**
+       * <pre>
+       * This device asks before it accepts a file transfer of the device.
+       * </pre>
+       *
+       * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+       * @param value The requireFileConfirmation to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRequireFileConfirmation(boolean value) {
+        copyOnWrite();
+        instance.setRequireFileConfirmation(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * This device asks before it accepts a file transfer of the device.
+       * </pre>
+       *
+       * <code>bool require_file_confirmation = 14 [json_name = "requireFileConfirmation"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRequireFileConfirmation() {
+        copyOnWrite();
+        instance.clearRequireFileConfirmation();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The device asks before it accepts a file transfer of this device, as it
+       * reported last.
+       * </pre>
+       *
+       * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+       * @return The peerRequireFileConfirmation.
+       */
+      @java.lang.Override
+      public boolean getPeerRequireFileConfirmation() {
+        return instance.getPeerRequireFileConfirmation();
+      }
+      /**
+       * <pre>
+       * The device asks before it accepts a file transfer of this device, as it
+       * reported last.
+       * </pre>
+       *
+       * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+       * @param value The peerRequireFileConfirmation to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPeerRequireFileConfirmation(boolean value) {
+        copyOnWrite();
+        instance.setPeerRequireFileConfirmation(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device asks before it accepts a file transfer of this device, as it
+       * reported last.
+       * </pre>
+       *
+       * <code>bool peer_require_file_confirmation = 15 [json_name = "peerRequireFileConfirmation"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPeerRequireFileConfirmation() {
+        copyOnWrite();
+        instance.clearPeerRequireFileConfirmation();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -3645,11 +4083,13 @@ public final class Local {
               "lastSeenAtUnixMs_",
               "peerRequireConfirmation_",
               "introducedBy_",
+              "requireFileConfirmation_",
+              "peerRequireFileConfirmation_",
             };
             java.lang.String info =
-                "\u0000\f\u0000\u0000\u0001\r\f\u0000\u0000\u0000\u0001\u0208\u0002\u0208\u0003\f" +
-                "\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007\r\u0208" +
-                "";
+                "\u0000\u000e\u0000\u0000\u0001\u000f\u000e\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
+                "\r\u0208\u000e\u0007\u000f\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -12255,7 +12695,7 @@ java.lang.String defaultValue) {
 
     /**
      * <pre>
-     * The local device asks the peers to confirm the items that arrive from it.
+     * This device asks before it applies a clipboard item of any device.
      * </pre>
      *
      * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -12408,6 +12848,16 @@ java.lang.String defaultValue) {
      * @return The historyTtlFilesSeconds.
      */
     long getHistoryTtlFilesSeconds();
+
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of any device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+     * @return The requireFileConfirmation.
+     */
+    boolean getRequireFileConfirmation();
   }
   /**
    * <pre>
@@ -12497,7 +12947,7 @@ java.lang.String defaultValue) {
     private boolean requireConfirmation_;
     /**
      * <pre>
-     * The local device asks the peers to confirm the items that arrive from it.
+     * This device asks before it applies a clipboard item of any device.
      * </pre>
      *
      * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -12509,7 +12959,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * The local device asks the peers to confirm the items that arrive from it.
+     * This device asks before it applies a clipboard item of any device.
      * </pre>
      *
      * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -12521,7 +12971,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * The local device asks the peers to confirm the items that arrive from it.
+     * This device asks before it applies a clipboard item of any device.
      * </pre>
      *
      * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -13056,6 +13506,44 @@ java.lang.String defaultValue) {
       historyTtlFilesSeconds_ = 0L;
     }
 
+    public static final int REQUIRE_FILE_CONFIRMATION_FIELD_NUMBER = 13;
+    private boolean requireFileConfirmation_;
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of any device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+     * @return The requireFileConfirmation.
+     */
+    @java.lang.Override
+    public boolean getRequireFileConfirmation() {
+      return requireFileConfirmation_;
+    }
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of any device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+     * @param value The requireFileConfirmation to set.
+     */
+    private void setRequireFileConfirmation(boolean value) {
+      
+      requireFileConfirmation_ = value;
+    }
+    /**
+     * <pre>
+     * This device asks before it accepts a file transfer of any device.
+     * </pre>
+     *
+     * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+     */
+    private void clearRequireFileConfirmation() {
+
+      requireFileConfirmation_ = false;
+    }
+
     public static unison.local.v1.Local.Settings parseFrom(
         java.nio.ByteBuffer data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -13228,7 +13716,7 @@ java.lang.String defaultValue) {
 
       /**
        * <pre>
-       * The local device asks the peers to confirm the items that arrive from it.
+       * This device asks before it applies a clipboard item of any device.
        * </pre>
        *
        * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -13240,7 +13728,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * The local device asks the peers to confirm the items that arrive from it.
+       * This device asks before it applies a clipboard item of any device.
        * </pre>
        *
        * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -13254,7 +13742,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * The local device asks the peers to confirm the items that arrive from it.
+       * This device asks before it applies a clipboard item of any device.
        * </pre>
        *
        * <code>bool require_confirmation = 2 [json_name = "requireConfirmation"];</code>
@@ -13819,6 +14307,46 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * This device asks before it accepts a file transfer of any device.
+       * </pre>
+       *
+       * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+       * @return The requireFileConfirmation.
+       */
+      @java.lang.Override
+      public boolean getRequireFileConfirmation() {
+        return instance.getRequireFileConfirmation();
+      }
+      /**
+       * <pre>
+       * This device asks before it accepts a file transfer of any device.
+       * </pre>
+       *
+       * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+       * @param value The requireFileConfirmation to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRequireFileConfirmation(boolean value) {
+        copyOnWrite();
+        instance.setRequireFileConfirmation(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * This device asks before it accepts a file transfer of any device.
+       * </pre>
+       *
+       * <code>bool require_file_confirmation = 13 [json_name = "requireFileConfirmation"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRequireFileConfirmation() {
+        copyOnWrite();
+        instance.clearRequireFileConfirmation();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -13848,11 +14376,12 @@ java.lang.String defaultValue) {
               "historyTtlTextSeconds_",
               "historyTtlImageSeconds_",
               "historyTtlFilesSeconds_",
+              "requireFileConfirmation_",
             };
             java.lang.String info =
-                "\u0000\f\u0000\u0001\u0001\f\f\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0002" +
+                "\u0000\r\u0000\u0001\u0001\r\r\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0002" +
                 "\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b\u1009\u0003" +
-                "\t\u0002\n\u0002\u000b\u0002\f\u0002";
+                "\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -18226,13 +18755,54 @@ java.lang.String defaultValue) {
 
     /**
      * <pre>
-     * Change the confirmation flag of this device instead of a paired one.
+     * Change the flag of this device for every paired device. The side is not
+     * used then.
      * </pre>
      *
      * <code>bool self = 3 [json_name = "self"];</code>
      * @return The self.
      */
     boolean getSelf();
+
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     * @return The enum numeric value on the wire for scope.
+     */
+    int getScopeValue();
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     * @return The scope.
+     */
+    unison.local.v1.Local.ConfirmationScope getScope();
+
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     * @return The enum numeric value on the wire for side.
+     */
+    int getSideValue();
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     * @return The side.
+     */
+    unison.local.v1.Local.ConfirmationSide getSide();
   }
   /**
    * Protobuf type {@code unison.local.v1.SetDeviceConfirmationRequest}
@@ -18342,7 +18912,8 @@ java.lang.String defaultValue) {
     private boolean self_;
     /**
      * <pre>
-     * Change the confirmation flag of this device instead of a paired one.
+     * Change the flag of this device for every paired device. The side is not
+     * used then.
      * </pre>
      *
      * <code>bool self = 3 [json_name = "self"];</code>
@@ -18354,7 +18925,8 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Change the confirmation flag of this device instead of a paired one.
+     * Change the flag of this device for every paired device. The side is not
+     * used then.
      * </pre>
      *
      * <code>bool self = 3 [json_name = "self"];</code>
@@ -18366,7 +18938,8 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Change the confirmation flag of this device instead of a paired one.
+     * Change the flag of this device for every paired device. The side is not
+     * used then.
      * </pre>
      *
      * <code>bool self = 3 [json_name = "self"];</code>
@@ -18374,6 +18947,137 @@ java.lang.String defaultValue) {
     private void clearSelf() {
 
       self_ = false;
+    }
+
+    public static final int SCOPE_FIELD_NUMBER = 4;
+    private int scope_;
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     * @return The enum numeric value on the wire for scope.
+     */
+    @java.lang.Override
+    public int getScopeValue() {
+      return scope_;
+    }
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     * @return The scope.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.ConfirmationScope getScope() {
+      unison.local.v1.Local.ConfirmationScope result = unison.local.v1.Local.ConfirmationScope.forNumber(scope_);
+      return result == null ? unison.local.v1.Local.ConfirmationScope.UNRECOGNIZED : result;
+    }
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     * @param value The enum numeric value on the wire for scope to set.
+     */
+    private void setScopeValue(int value) {
+        scope_ = value;
+    }
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     * @param value The scope to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setScope(unison.local.v1.Local.ConfirmationScope value) {
+      scope_ = value.getNumber();
+
+    }
+    /**
+     * <pre>
+     * Content the flag covers.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+     */
+    private void clearScope() {
+
+      scope_ = 0;
+    }
+
+    public static final int SIDE_FIELD_NUMBER = 5;
+    private int side_;
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     * @return The enum numeric value on the wire for side.
+     */
+    @java.lang.Override
+    public int getSideValue() {
+      return side_;
+    }
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     * @return The side.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.ConfirmationSide getSide() {
+      unison.local.v1.Local.ConfirmationSide result = unison.local.v1.Local.ConfirmationSide.forNumber(side_);
+      return result == null ? unison.local.v1.Local.ConfirmationSide.UNRECOGNIZED : result;
+    }
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     * @param value The enum numeric value on the wire for side to set.
+     */
+    private void setSideValue(int value) {
+        side_ = value;
+    }
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     * @param value The side to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setSide(unison.local.v1.Local.ConfirmationSide value) {
+      side_ = value.getNumber();
+
+    }
+    /**
+     * <pre>
+     * Device that asks. The flag of the paired device is changed over the
+     * session with it, so the device has to be online.
+     * </pre>
+     *
+     * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+     */
+    private void clearSide() {
+
+      side_ = 0;
     }
 
     public static unison.local.v1.Local.SetDeviceConfirmationRequest parseFrom(
@@ -18572,7 +19276,8 @@ java.lang.String defaultValue) {
 
       /**
        * <pre>
-       * Change the confirmation flag of this device instead of a paired one.
+       * Change the flag of this device for every paired device. The side is not
+       * used then.
        * </pre>
        *
        * <code>bool self = 3 [json_name = "self"];</code>
@@ -18584,7 +19289,8 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Change the confirmation flag of this device instead of a paired one.
+       * Change the flag of this device for every paired device. The side is not
+       * used then.
        * </pre>
        *
        * <code>bool self = 3 [json_name = "self"];</code>
@@ -18598,7 +19304,8 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Change the confirmation flag of this device instead of a paired one.
+       * Change the flag of this device for every paired device. The side is not
+       * used then.
        * </pre>
        *
        * <code>bool self = 3 [json_name = "self"];</code>
@@ -18607,6 +19314,145 @@ java.lang.String defaultValue) {
       public Builder clearSelf() {
         copyOnWrite();
         instance.clearSelf();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Content the flag covers.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+       * @return The enum numeric value on the wire for scope.
+       */
+      @java.lang.Override
+      public int getScopeValue() {
+        return instance.getScopeValue();
+      }
+      /**
+       * <pre>
+       * Content the flag covers.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+       * @param value The scope to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setScopeValue(int value) {
+        copyOnWrite();
+        instance.setScopeValue(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Content the flag covers.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+       * @return The scope.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.ConfirmationScope getScope() {
+        return instance.getScope();
+      }
+      /**
+       * <pre>
+       * Content the flag covers.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+       * @param value The enum numeric value on the wire for scope to set.
+       * @return This builder for chaining.
+       */
+      public Builder setScope(unison.local.v1.Local.ConfirmationScope value) {
+        copyOnWrite();
+        instance.setScope(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Content the flag covers.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationScope scope = 4 [json_name = "scope"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearScope() {
+        copyOnWrite();
+        instance.clearScope();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Device that asks. The flag of the paired device is changed over the
+       * session with it, so the device has to be online.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+       * @return The enum numeric value on the wire for side.
+       */
+      @java.lang.Override
+      public int getSideValue() {
+        return instance.getSideValue();
+      }
+      /**
+       * <pre>
+       * Device that asks. The flag of the paired device is changed over the
+       * session with it, so the device has to be online.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+       * @param value The side to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setSideValue(int value) {
+        copyOnWrite();
+        instance.setSideValue(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device that asks. The flag of the paired device is changed over the
+       * session with it, so the device has to be online.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+       * @return The side.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.ConfirmationSide getSide() {
+        return instance.getSide();
+      }
+      /**
+       * <pre>
+       * Device that asks. The flag of the paired device is changed over the
+       * session with it, so the device has to be online.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+       * @param value The enum numeric value on the wire for side to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSide(unison.local.v1.Local.ConfirmationSide value) {
+        copyOnWrite();
+        instance.setSide(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device that asks. The flag of the paired device is changed over the
+       * session with it, so the device has to be online.
+       * </pre>
+       *
+       * <code>.unison.local.v1.ConfirmationSide side = 5 [json_name = "side"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSide() {
+        copyOnWrite();
+        instance.clearSide();
         return this;
       }
 
@@ -18629,10 +19475,12 @@ java.lang.String defaultValue) {
               "deviceId_",
               "require_",
               "self_",
+              "scope_",
+              "side_",
             };
             java.lang.String info =
-                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
-                "\u0003\u0007";
+                "\u0000\u0005\u0000\u0000\u0001\u0005\u0005\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0003\u0007\u0004\f\u0005\f";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -41208,6 +42056,17 @@ java.lang.String defaultValue) {
      * @return The resetHistoryTtl.
      */
     boolean getResetHistoryTtl();
+
+    /**
+     * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+     * @return Whether the requireFileConfirmation field is set.
+     */
+    boolean hasRequireFileConfirmation();
+    /**
+     * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+     * @return The requireFileConfirmation.
+     */
+    boolean getRequireFileConfirmation();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -41877,6 +42736,40 @@ java.lang.String defaultValue) {
     private void clearResetHistoryTtl() {
 
       resetHistoryTtl_ = false;
+    }
+
+    public static final int REQUIRE_FILE_CONFIRMATION_FIELD_NUMBER = 15;
+    private boolean requireFileConfirmation_;
+    /**
+     * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+     * @return Whether the requireFileConfirmation field is set.
+     */
+    @java.lang.Override
+    public boolean hasRequireFileConfirmation() {
+      return ((bitField0_ & 0x00001000) != 0);
+    }
+    /**
+     * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+     * @return The requireFileConfirmation.
+     */
+    @java.lang.Override
+    public boolean getRequireFileConfirmation() {
+      return requireFileConfirmation_;
+    }
+    /**
+     * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+     * @param value The requireFileConfirmation to set.
+     */
+    private void setRequireFileConfirmation(boolean value) {
+      bitField0_ |= 0x00001000;
+      requireFileConfirmation_ = value;
+    }
+    /**
+     * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+     */
+    private void clearRequireFileConfirmation() {
+      bitField0_ = (bitField0_ & ~0x00001000);
+      requireFileConfirmation_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -42658,6 +43551,42 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+       * @return Whether the requireFileConfirmation field is set.
+       */
+      @java.lang.Override
+      public boolean hasRequireFileConfirmation() {
+        return instance.hasRequireFileConfirmation();
+      }
+      /**
+       * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+       * @return The requireFileConfirmation.
+       */
+      @java.lang.Override
+      public boolean getRequireFileConfirmation() {
+        return instance.getRequireFileConfirmation();
+      }
+      /**
+       * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+       * @param value The requireFileConfirmation to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRequireFileConfirmation(boolean value) {
+        copyOnWrite();
+        instance.setRequireFileConfirmation(value);
+        return this;
+      }
+      /**
+       * <code>optional bool require_file_confirmation = 15 [json_name = "requireFileConfirmation"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRequireFileConfirmation() {
+        copyOnWrite();
+        instance.clearRequireFileConfirmation();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -42689,12 +43618,13 @@ java.lang.String defaultValue) {
               "historyTtlImageSeconds_",
               "historyTtlFilesSeconds_",
               "resetHistoryTtl_",
+              "requireFileConfirmation_",
             };
             java.lang.String info =
-                "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
                 "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
                 "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
-                "\u000b\u000e\u0007";
+                "\u000b\u000e\u0007\u000f\u1007\f";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

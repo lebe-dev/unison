@@ -14,8 +14,9 @@ import (
 )
 
 // handleOffer decides what happens to an offer of a peer. A Personal peer is
-// accepted at once, a Friends peer waits for the local decision and a peer the
-// matrix refuses gets a rejection. The payloads are downloaded only after the
+// accepted at once unless this device asks before it takes the files of the
+// peer or of every device; a Friends peer always waits for the local decision
+// and a peer the matrix refuses gets a rejection. The payloads are downloaded only after the
 // offer is accepted.
 func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *wirev1.ShareOffer) error {
 	peer := sess.DeviceID()
@@ -50,6 +51,9 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 	}
 
 	decision := record.Decision(trust.ActionReceiveShare)
+	if decision == trust.Allow && s.holdAll != nil && s.holdAll(ctx) {
+		decision = trust.Confirm
+	}
 	if decision == trust.Allow {
 		if err := s.checkOffer(ctx, files); err != nil {
 			s.log.Warn("refused an offer", "peer", peer, "error", err)

@@ -549,16 +549,19 @@ func (x *Revocation) GetMldsaSig() []byte {
 	return nil
 }
 
-// Signed change of the policy of the target device.
+// Signed request of the issuer that the target device asks its user before it
+// takes what the issuer sends in the scope.
 type SetPeerPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Device ID of the target device, 32 bytes.
 	Target              []byte `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	RequireConfirmation bool   `protobuf:"varint,2,opt,name=require_confirmation,json=requireConfirmation,proto3" json:"require_confirmation,omitempty"`
 	// Signing time, unix milliseconds.
-	TsUnixMs      int64  `protobuf:"varint,3,opt,name=ts_unix_ms,json=tsUnixMs,proto3" json:"ts_unix_ms,omitempty"`
-	Ed25519Sig    []byte `protobuf:"bytes,4,opt,name=ed25519_sig,json=ed25519Sig,proto3" json:"ed25519_sig,omitempty"`
-	MldsaSig      []byte `protobuf:"bytes,5,opt,name=mldsa_sig,json=mldsaSig,proto3" json:"mldsa_sig,omitempty"`
+	TsUnixMs   int64  `protobuf:"varint,3,opt,name=ts_unix_ms,json=tsUnixMs,proto3" json:"ts_unix_ms,omitempty"`
+	Ed25519Sig []byte `protobuf:"bytes,4,opt,name=ed25519_sig,json=ed25519Sig,proto3" json:"ed25519_sig,omitempty"`
+	MldsaSig   []byte `protobuf:"bytes,5,opt,name=mldsa_sig,json=mldsaSig,proto3" json:"mldsa_sig,omitempty"`
+	// Content the flag covers.
+	Scope         ConfirmationScope `protobuf:"varint,6,opt,name=scope,proto3,enum=unison.wire.v1.ConfirmationScope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -628,6 +631,13 @@ func (x *SetPeerPolicy) GetMldsaSig() []byte {
 	return nil
 }
 
+func (x *SetPeerPolicy) GetScope() ConfirmationScope {
+	if x != nil {
+		return x.Scope
+	}
+	return ConfirmationScope_CONFIRMATION_SCOPE_UNSPECIFIED
+}
+
 var File_unison_wire_v1_trust_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_trust_proto_rawDesc = "" +
@@ -678,7 +688,7 @@ const file_unison_wire_v1_trust_proto_rawDesc = "" +
 	"ts_unix_ms\x18\x03 \x01(\x03R\btsUnixMs\x12\x1f\n" +
 	"\ved25519_sig\x18\x04 \x01(\fR\n" +
 	"ed25519Sig\x12\x1b\n" +
-	"\tmldsa_sig\x18\x05 \x01(\fR\bmldsaSig\"\xb6\x01\n" +
+	"\tmldsa_sig\x18\x05 \x01(\fR\bmldsaSig\"\xef\x01\n" +
 	"\rSetPeerPolicy\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\fR\x06target\x121\n" +
 	"\x14require_confirmation\x18\x02 \x01(\bR\x13requireConfirmation\x12\x1c\n" +
@@ -686,7 +696,8 @@ const file_unison_wire_v1_trust_proto_rawDesc = "" +
 	"ts_unix_ms\x18\x03 \x01(\x03R\btsUnixMs\x12\x1f\n" +
 	"\ved25519_sig\x18\x04 \x01(\fR\n" +
 	"ed25519Sig\x12\x1b\n" +
-	"\tmldsa_sig\x18\x05 \x01(\fR\bmldsaSigB8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
+	"\tmldsa_sig\x18\x05 \x01(\fR\bmldsaSig\x127\n" +
+	"\x05scope\x18\x06 \x01(\x0e2!.unison.wire.v1.ConfirmationScopeR\x05scopeB8Z6github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1b\x06proto3"
 
 var (
 	file_unison_wire_v1_trust_proto_rawDescOnce sync.Once
@@ -712,20 +723,22 @@ var file_unison_wire_v1_trust_proto_goTypes = []any{
 	(*SetPeerPolicy)(nil),    // 7: unison.wire.v1.SetPeerPolicy
 	(Role)(0),                // 8: unison.wire.v1.Role
 	(Platform)(0),            // 9: unison.wire.v1.Platform
+	(ConfirmationScope)(0),   // 10: unison.wire.v1.ConfirmationScope
 }
 var file_unison_wire_v1_trust_proto_depIdxs = []int32{
-	8, // 0: unison.wire.v1.Introduction.role:type_name -> unison.wire.v1.Role
-	9, // 1: unison.wire.v1.Introduction.platform:type_name -> unison.wire.v1.Platform
-	1, // 2: unison.wire.v1.GossipDigest.introductions:type_name -> unison.wire.v1.IntroductionHead
-	2, // 3: unison.wire.v1.GossipDigest.revocations:type_name -> unison.wire.v1.RevocationHead
-	0, // 4: unison.wire.v1.GossipRecords.introductions:type_name -> unison.wire.v1.Introduction
-	5, // 5: unison.wire.v1.GossipRecords.group:type_name -> unison.wire.v1.GroupData
-	6, // 6: unison.wire.v1.GossipRecords.revocations:type_name -> unison.wire.v1.Revocation
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	8,  // 0: unison.wire.v1.Introduction.role:type_name -> unison.wire.v1.Role
+	9,  // 1: unison.wire.v1.Introduction.platform:type_name -> unison.wire.v1.Platform
+	1,  // 2: unison.wire.v1.GossipDigest.introductions:type_name -> unison.wire.v1.IntroductionHead
+	2,  // 3: unison.wire.v1.GossipDigest.revocations:type_name -> unison.wire.v1.RevocationHead
+	0,  // 4: unison.wire.v1.GossipRecords.introductions:type_name -> unison.wire.v1.Introduction
+	5,  // 5: unison.wire.v1.GossipRecords.group:type_name -> unison.wire.v1.GroupData
+	6,  // 6: unison.wire.v1.GossipRecords.revocations:type_name -> unison.wire.v1.Revocation
+	10, // 7: unison.wire.v1.SetPeerPolicy.scope:type_name -> unison.wire.v1.ConfirmationScope
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_unison_wire_v1_trust_proto_init() }

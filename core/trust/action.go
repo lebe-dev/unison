@@ -85,6 +85,9 @@ func (d Decision) String() string {
 
 // matrixRow holds the outcome of one action for every peer column.
 type matrixRow struct {
+	// scope is the confirmation flag that moves a Personal peer to the
+	// personalConfirmation column. An action without a scope ignores the flags.
+	scope                Scope
 	personal             Decision
 	personalConfirmation Decision
 	friends              Decision
@@ -93,11 +96,11 @@ type matrixRow struct {
 // matrix holds the outcome of every action. An action missing here is denied.
 var matrix = map[Action]matrixRow{
 	ActionReceiveClipAnnounce: {personal: Allow, personalConfirmation: Allow, friends: Deny},
-	ActionApplyClipboard:      {personal: Allow, personalConfirmation: Confirm, friends: Deny},
+	ActionApplyClipboard:      {scope: ScopeClipboard, personal: Allow, personalConfirmation: Confirm, friends: Deny},
 	ActionSyncHistory:         {personal: Allow, personalConfirmation: Allow, friends: Deny},
 	ActionFetchBlob:           {personal: Allow, personalConfirmation: Allow, friends: Deny},
-	ActionReceiveShare:        {personal: Allow, personalConfirmation: Allow, friends: Confirm},
-	ActionReceiveFiles:        {personal: Allow, personalConfirmation: Allow, friends: Confirm},
+	ActionReceiveShare:        {scope: ScopeFiles, personal: Allow, personalConfirmation: Confirm, friends: Confirm},
+	ActionReceiveFiles:        {scope: ScopeFiles, personal: Allow, personalConfirmation: Confirm, friends: Confirm},
 	ActionIntroduce:           {personal: Allow, personalConfirmation: Allow, friends: Deny},
 	ActionRevoke:              {personal: Allow, personalConfirmation: Allow, friends: Deny},
 	ActionSetRemotePolicy:     {personal: Allow, personalConfirmation: Allow, friends: Deny},
@@ -123,7 +126,7 @@ func (p Peer) Decision(action Action) Decision {
 
 	switch p.Role {
 	case model.RolePersonal:
-		if p.RequireConfirmation {
+		if p.Confirm.Get(row.scope) {
 			return row.personalConfirmation
 		}
 		return row.personal

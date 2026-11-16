@@ -6,6 +6,7 @@
     <string name="channel_transfers">Transfers</string>
     <string name="channel_requests">Requests</string>
     <string name="channel_clipboard">Clipboard</string>
+    <string name="channel_confirmations">Questions to answer</string>
     <string name="service_starting">Starting</string>
     <string name="service_failed">Core stopped</string>
     <string name="service_status">%1$s, %2$s</string>
@@ -60,10 +61,19 @@
     <string name="device_detail">%1$s, %2$s</string>
     <string name="device_online">Online</string>
     <string name="device_offline">Offline</string>
-    <string name="devices_confirmation">Ask before applying its items</string>
+    <string name="devices_confirmation">Ask before taking</string>
+    <string name="devices_confirmation_clipboard">Clipboard</string>
+    <string name="devices_confirmation_files">Files</string>
+    <string name="devices_confirmation_here">Here, from %1$s</string>
+    <string name="devices_confirmation_there">On %1$s, from here</string>
+    <string name="devices_confirmation_offline_hint">The second row changes while %1$s is online.</string>
+    <string name="devices_confirmation_offline">The device is offline. Its own setting changes only while it is online.</string>
+    <string name="devices_confirm_local_clipboard">This device asks before applying the clipboard of %1$s</string>
+    <string name="devices_confirm_local_files">This device asks before accepting files from %1$s</string>
+    <string name="devices_confirm_peer_clipboard">%1$s asks before applying the clipboard of this device</string>
+    <string name="devices_confirm_peer_files">%1$s asks before accepting files from this device</string>
     <string name="devices_confirmation_saved">Confirmation setting saved</string>
     <string name="devices_confirmation_failed">Cannot change the confirmation setting</string>
-    <string name="devices_peer_confirmation">Asks for confirmation before applying what it receives</string>
     <string name="devices_remove_title">Remove %1$s?</string>
     <string name="devices_remove_body">The device loses access to this one for good and cannot pair again until you add it. The other devices learn about the removal when they meet.</string>
     <string name="devices_removed">Device removed</string>
@@ -91,8 +101,10 @@
     <string name="settings_name_failed">Cannot save the device name</string>
     <string name="settings_section_service">Service mode</string>
     <string name="settings_section_confirmation">Confirmation</string>
-    <string name="settings_confirmation">Ask before applying</string>
-    <string name="settings_confirmation_hint">Keeps the clipboard of other devices until you apply it from the history.</string>
+    <string name="settings_confirmation">Ask before applying the clipboard of any device</string>
+    <string name="settings_confirmation_hint">Items wait in the history and a question asks whether to apply them. Each device can also ask on its own on the Devices screen.</string>
+    <string name="settings_file_confirmation">Ask before accepting files from any device</string>
+    <string name="settings_file_confirmation_hint">Nothing is downloaded until you accept the files.</string>
     <string name="settings_confirmation_saved">Confirmation setting saved</string>
     <string name="settings_confirmation_failed">Cannot change the confirmation setting</string>
     <string name="relay_title">Relay</string>
@@ -214,7 +226,7 @@
     <string name="clipboard_apply_failed">Cannot apply the clipboard</string>
 
     <string name="requests_empty">No requests</string>
-    <string name="requests_empty_body">File offers from friends wait here until you answer them.</string>
+    <string name="requests_empty_body">File offers from friends, and from the devices you ask about, wait here until you answer them.</string>
     <plurals name="request_files">
         <item quantity="one">%1$d file - %2$s</item>
         <item quantity="other">%1$d files - %2$s</item>
@@ -258,6 +270,18 @@
     <string name="kind_files">File</string>
     <string name="action_copy">Copy</string>
     <string name="action_apply">Apply</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_later">Later</string>
+    <string name="prompt_clipboard_title">Clipboard from %1$s</string>
+    <string name="prompt_files_title">Files from %1$s</string>
+    <string name="prompt_clipboard_question">Apply this %1$s to the clipboard?</string>
+    <string name="prompt_files_question">Accept %1$s?</string>
+    <string name="prompt_position">1 of %1$d</string>
+    <string name="prompt_unknown_device">A device</string>
+    <plurals name="prompt_files_count">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
     <string name="action_accept">Accept</string>
     <string name="action_decline">Decline</string>
     <string name="action_remove">Remove</string>

@@ -64,7 +64,7 @@ fun SettingsScreen(
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
     onRefreshRelay: () -> Unit,
-    onSelfConfirmationChange: (Boolean) -> Unit,
+    onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
@@ -101,7 +101,8 @@ fun SettingsScreen(
             onRefresh = onRefreshRelay,
         )
         Confirmation(
-            require = state.requiresConfirmation,
+            clipboard = state.requiresConfirmation,
+            files = state.requiresFileConfirmation,
             onChange = onSelfConfirmationChange,
         )
         Group(onLeave = { leaving = true })
@@ -245,29 +246,57 @@ private fun About(state: CoreState) {
     )
 }
 
-/** Confirmation of the clipboard items that arrive on this device. */
+/** Confirmation of the clipboard items and the files of every device. */
 @Composable
-private fun Confirmation(require: Boolean, onChange: (Boolean) -> Unit) {
+private fun Confirmation(
+    clipboard: Boolean,
+    files: Boolean,
+    onChange: (Local.ConfirmationScope, Boolean) -> Unit,
+) {
     SectionTitle(text = stringResource(R.string.settings_section_confirmation))
+    ConfirmationSwitch(
+        title = stringResource(R.string.settings_confirmation),
+        hint = stringResource(R.string.settings_confirmation_hint),
+        checked = clipboard,
+        tag = CONFIRMATION_TAG,
+        onChange = { onChange(Local.ConfirmationScope.CONFIRMATION_SCOPE_CLIPBOARD, it) },
+    )
+    ConfirmationSwitch(
+        title = stringResource(R.string.settings_file_confirmation),
+        hint = stringResource(R.string.settings_file_confirmation_hint),
+        checked = files,
+        tag = FILE_CONFIRMATION_TAG,
+        onChange = { onChange(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES, it) },
+    )
+}
+
+/** One switch of the confirmation section. */
+@Composable
+private fun ConfirmationSwitch(
+    title: String,
+    hint: String,
+    checked: Boolean,
+    tag: String,
+    onChange: (Boolean) -> Unit,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = stringResource(R.string.settings_confirmation),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text = stringResource(R.string.settings_confirmation_hint),
+                text = hint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Switch(
-            checked = require,
+            checked = checked,
             onCheckedChange = onChange,
-            modifier = Modifier.testTag(CONFIRMATION_TAG),
+            modifier = Modifier.testTag(tag),
         )
     }
 }
@@ -306,8 +335,11 @@ private fun OperatingMode.hint(): Int = when (this) {
     OperatingMode.APP_OPEN -> R.string.mode_app_open_hint
 }
 
-/** Tag of the switch of the confirmation of this device. */
+/** Tag of the switch of the clipboard confirmation of this device. */
 internal const val CONFIRMATION_TAG = "settings.confirmation"
+
+/** Tag of the switch of the files confirmation of this device. */
+internal const val FILE_CONFIRMATION_TAG = "settings.confirmation.files"
 
 /** Tag of the button that saves the device name. */
 internal const val NAME_SAVE_TAG = "settings.name.save"

@@ -21,9 +21,6 @@ type PeerHello struct {
 	Name string
 	// Platform is the operating system of the peer.
 	Platform model.Platform
-	// RequireConfirmation reports that the peer does not apply clipboard items
-	// without a prompt.
-	RequireConfirmation bool
 }
 
 // parseHello validates a Hello message and returns the announced information.
@@ -33,10 +30,6 @@ func parseHello(msg *wirev1.Hello) (PeerHello, error) {
 		Name:     msg.GetName(),
 		Platform: protoconv.PlatformFromProto(msg.GetPlatform()),
 	}
-	if policy := msg.GetSelfPolicy(); policy != nil {
-		hello.RequireConfirmation = policy.GetRequireConfirmation()
-	}
-
 	if err := validateName(hello.Name); err != nil {
 		return hello, err
 	}
@@ -60,7 +53,6 @@ func (s *Session) localHello() *wirev1.ControlMessage {
 		Capabilities:    slices.Clone(s.cfg.Capabilities),
 		Name:            s.cfg.Name,
 		Platform:        protoconv.PlatformToProto(s.cfg.Platform),
-		SelfPolicy:      &wirev1.PeerPolicy{RequireConfirmation: s.cfg.RequireConfirmation},
 	}
 	return &wirev1.ControlMessage{Body: &wirev1.ControlMessage_Hello{Hello: hello}}
 }

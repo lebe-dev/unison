@@ -31,9 +31,14 @@ class CoreException(val code: Int, message: String) : Exception(message) {
     val isInvalidArgument: Boolean
         get() = code == CODE_INVALID_ARGUMENT
 
+    /** The device the request needs is not reachable. */
+    val isUnavailable: Boolean
+        get() = code == CODE_UNAVAILABLE
+
     companion object {
         const val CODE_INVALID_ARGUMENT = 3
         const val CODE_FAILED_PRECONDITION = 9
+        const val CODE_UNAVAILABLE = 14
     }
 }
 
@@ -184,11 +189,14 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.relay
     }
 
-    /** Makes this device ask for a confirmation before the clipboard is applied. */
-    override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
-        val request = Local.UpdateSettingsRequest.newBuilder()
-            .setRequireConfirmation(require)
-            .build()
+    /** Makes this device ask before it takes the content of the scope from any device. */
+    override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {
+        val builder = Local.UpdateSettingsRequest.newBuilder()
+        when (scope) {
+            Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES -> builder.setRequireFileConfirmation(require)
+            else -> builder.setRequireConfirmation(require)
+        }
+        val request = builder.build()
         val response = call(
             method = "UpdateSettings",
             request = request,
@@ -197,10 +205,17 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.settings
     }
 
-    /** Changes the confirmation flag of a paired device. */
-    override suspend fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+    /** Changes one confirmation flag of a paired device. */
+    override suspend fun setDeviceConfirmation(
+        deviceId: String,
+        scope: Local.ConfirmationScope,
+        side: Local.ConfirmationSide,
+        require: Boolean,
+    ) {
         val request = Local.SetDeviceConfirmationRequest.newBuilder()
             .setDeviceId(deviceId)
+            .setScope(scope)
+            .setSide(side)
             .setRequire(require)
             .build()
         call(

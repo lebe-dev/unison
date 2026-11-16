@@ -50,29 +50,29 @@ group uses a relay.
 unison devices                       # the same as unison devices ls
 unison devices address <id> <host:port> --wait 10s
 unison devices rename <id|self> <name>
-unison devices confirm <id|self> on
-unison devices confirm <id|self> off
+unison devices confirm [--files] [--peer] <id|self> on|off
 unison devices revoke <id|self> [--yes]
 ```
 
 ```
-FINGERPRINT          NAME     ROLE      PLATFORM  STATE       CONFIRM  PEER ASKS
-W5MF-NWIT-4C6K-P7KR  MacBook  personal  macos     online lan  on       yes
-QK3A-7T2M-VX5E-J9BD  Phone    personal  android   offline     off      no
+FINGERPRINT          NAME     ROLE      PLATFORM  STATE       ASK CLIP  ASK FILES  PEER ASKS CLIP  PEER ASKS FILES
+W5MF-NWIT-4C6K-P7KR  MacBook  personal  macos     online lan  on        off        no              yes
+QK3A-7T2M-VX5E-J9BD  Phone    personal  android   offline     off       on         no              no
 ```
 
-`STATE` is `online lan`, `online relay` or `offline`. `CONFIRM` is the local policy for the device:
-its items wait for you here instead of being applied at once. `PEER ASKS` is what the device
-announced in its last hello: it holds the items it receives. The second value appears after the
-device connects, because a device reports its flag when a session starts.
+`STATE` is `online lan`, `online relay` or `offline`. `ASK CLIP` and `ASK FILES` are the flags of
+this device for the device: its clipboard items or its files wait for you here instead of being
+taken at once. `PEER ASKS CLIP` and `PEER ASKS FILES` are the flags of the device for this one, as it
+reported them last; a device reports them when a session opens and after every change.
 
 `devices address` stores an address of a paired device and waits for the connection; `--wait 0s`
 returns at once. `devices rename <id>` changes the name of a paired device on this device, and
 `devices rename self` changes the name this device announces; see
-[Devices and pairing](devices.md#renaming). `devices confirm self on` makes this device hold the
-items that arrive for you, and `devices confirm <id> on` asks another device to do that and holds
-the items of that device here; see
-[Devices and pairing](devices.md#the-confirmation-flag). `devices revoke` asks for a confirmation
+[Devices and pairing](devices.md#renaming). `devices confirm self on` makes this device ask
+before it applies the clipboard of any device, and `devices confirm <id> on` before it applies the
+clipboard of one device. `--files` changes the flag of the files instead, and `--peer` changes the
+flag of the device for this one, which needs the device online; see
+[Devices and pairing](devices.md#confirmation-flags). `devices revoke` asks for a confirmation
 unless `--yes` is given, and `devices revoke self` leaves the group.
 
 ## pair

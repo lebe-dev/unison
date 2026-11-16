@@ -243,10 +243,15 @@ func (s *Store) SetAnnouncedName(ctx context.Context, id model.DeviceID, name st
 	})
 }
 
-// SetRequireConfirmation sets the confirmation flag of a Personal peer. The
-// flag cannot be enabled for a Friends peer.
-func (s *Store) SetRequireConfirmation(ctx context.Context, id model.DeviceID, require bool) error {
-	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+// SetRequireConfirmation sets a confirmation flag of this device for a
+// Personal peer. It reports whether the flag changed. A flag cannot be enabled
+// for a Friends peer.
+func (s *Store) SetRequireConfirmation(ctx context.Context, id model.DeviceID, scope Scope, require bool) (bool, error) {
+	if !scope.Valid() {
+		return false, fmt.Errorf("%w: unknown confirmation scope %d", ErrInvalidPeer, scope)
+	}
+	changed := false
+	err := s.db.WithTx(ctx, func(tx *sql.Tx) error {
 		peer, err := s.activePeer(ctx, tx, id)
 		if err != nil {
 			return err
@@ -254,26 +259,34 @@ func (s *Store) SetRequireConfirmation(ctx context.Context, id model.DeviceID, r
 		if require && peer.Role != model.RolePersonal {
 			return fmt.Errorf("%w: confirmation applies to personal peers only", ErrInvalidPeer)
 		}
-		peer.RequireConfirmation = require
+		if peer.Confirm.Get(scope) == require {
+			return nil
+		}
+		peer.Confirm = peer.Confirm.With(scope, require)
+		changed = true
 		return s.writeProfile(ctx, tx, peer)
 	})
+	return changed, err
 }
 
-// SetRequireConfirmationRemote records the confirmation flag a peer announced in
-// its hello. The local policy for the peer stays unchanged: the peer owns the
-// flag and this device only shows it.
-func (s *Store) SetRequireConfirmationRemote(ctx context.Context, id model.DeviceID, require bool) error {
-	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+// SetConfirmRemote records the confirmation flags the peer reported for this
+// device. It reports whether they changed. The flags of this device for the
+// peer stay unchanged: the peer owns these and this device only shows them.
+func (s *Store) SetConfirmRemote(ctx context.Context, id model.DeviceID, flags Confirmations) (bool, error) {
+	changed := false
+	err := s.db.WithTx(ctx, func(tx *sql.Tx) error {
 		peer, err := s.activePeer(ctx, tx, id)
 		if err != nil {
 			return err
 		}
-		if peer.RequireConfirmationRemote == require {
+		if peer.ConfirmRemote == flags {
 			return nil
 		}
-		peer.RequireConfirmationRemote = require
+		peer.ConfirmRemote = flags
+		changed = true
 		return s.writeProfile(ctx, tx, peer)
 	})
+	return changed, err
 }
 
 // SetPlatform records the operating system a peer announced in its hello.
@@ -431,17 +444,23 @@ func scanPeer(scanner rowScanner, sealer *store.Sealer) (Peer, error) {
 	}
 
 	peer := Peer{
-		Public:                    public,
-		Name:                      profile.Name,
-		NameLocal:                 profile.NameLocal,
-		Platform:                  model.Platform(profile.Platform),
-		Role:                      model.Role(role),
-		RequireConfirmation:       profile.RequireConfirmation,
-		RequireConfirmationRemote: profile.RequireConfirmationRemote,
-		AddedAt:                   timeFromMilli(addedAt),
-		LastSeenAt:                timeFromMilli(lastSeenAt),
-		LastAddrs:                 addrs,
-		Revoked:                   revoked,
+		Public:    public,
+		Name:      profile.Name,
+		NameLocal: profile.NameLocal,
+		Platform:  model.Platform(profile.Platform),
+		Role:      model.Role(role),
+		Confirm: Confirmations{
+			Clipboard: profile.RequireConfirmation,
+			Files:     profile.RequireFileConfirmation,
+		},
+		ConfirmRemote: Confirmations{
+			Clipboard: profile.RequireConfirmationRemote,
+			Files:     profile.RequireFileConfirmationRemote,
+		},
+		AddedAt:    timeFromMilli(addedAt),
+		LastSeenAt: timeFromMilli(lastSeenAt),
+		LastAddrs:  addrs,
+		Revoked:    revoked,
 	}
 	if profile.IntroducedBy != "" {
 		peer.IntroducedBy, err = model.ParseDeviceID(profile.IntroducedBy)
@@ -513,18 +532,23 @@ type peerProfile struct {
 	Platform                  uint8  `json:"platform"`
 	RequireConfirmation       bool   `json:"require_confirmation"`
 	RequireConfirmationRemote bool   `json:"require_confirmation_remote,omitempty"`
-	IntroducedBy              string `json:"introduced_by,omitempty"`
+	RequireFileConfirmation   bool   `json:"require_file_confirmation,omitempty"`
+	// RequireFileConfirmationRemote is the files flag the peer reported.
+	RequireFileConfirmationRemote bool   `json:"require_file_confirmation_remote,omitempty"`
+	IntroducedBy                  string `json:"introduced_by,omitempty"`
 }
 
 // sealPeerProfile encodes and seals the profile of the peer.
 func sealPeerProfile(sealer *store.Sealer, peer Peer) ([]byte, error) {
 	profile := peerProfile{
-		Version:                   profileVersion,
-		Name:                      peer.Name,
-		NameLocal:                 peer.NameLocal,
-		Platform:                  uint8(peer.Platform),
-		RequireConfirmation:       peer.RequireConfirmation,
-		RequireConfirmationRemote: peer.RequireConfirmationRemote,
+		Version:                       profileVersion,
+		Name:                          peer.Name,
+		NameLocal:                     peer.NameLocal,
+		Platform:                      uint8(peer.Platform),
+		RequireConfirmation:           peer.Confirm.Clipboard,
+		RequireConfirmationRemote:     peer.ConfirmRemote.Clipboard,
+		RequireFileConfirmation:       peer.Confirm.Files,
+		RequireFileConfirmationRemote: peer.ConfirmRemote.Files,
 	}
 	if !peer.IntroducedBy.IsZero() {
 		profile.IntroducedBy = peer.IntroducedBy.String()

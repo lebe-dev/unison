@@ -205,7 +205,11 @@ class DaemonStore {
             continue;
           }
           this.#record(event);
-          if (event.kind === EventKind.PEER_ONLINE || event.kind === EventKind.PEER_OFFLINE) {
+          if (
+            event.kind === EventKind.PEER_ONLINE ||
+            event.kind === EventKind.PEER_OFFLINE ||
+            event.kind === EventKind.DEVICE_UPDATED
+          ) {
             void this.refresh();
           }
         }

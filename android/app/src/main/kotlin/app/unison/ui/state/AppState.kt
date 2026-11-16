@@ -21,9 +21,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -67,6 +70,20 @@ class AppState(
     /** One-off messages for the snackbar, as string resources. */
     val notices: SharedFlow<Int> = mutableNotices.asSharedFlow()
 
+    /** Held clipboard items by ID, in the order they arrived. */
+    private val heldPrompts = MutableStateFlow<Map<String, PendingPrompt>>(emptyMap())
+
+    /**
+     * Questions that wait for the user, oldest first: the held clipboard items
+     * and then the file offers. An item applied or an offer answered anywhere
+     * leaves the list.
+     */
+    val prompts: StateFlow<List<PendingPrompt>> =
+        combine(heldPrompts, held.ids, mutableRequests) { clips, ids, offers ->
+            clips.values.filter { it.id in ids } +
+                offers.requests.asReversed().map(PendingPrompt::files)
+        }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
     private var load: Job? = null
     private var loadHistory: Job? = null
     private var loadRequests: Job? = null
@@ -87,7 +104,7 @@ class AppState(
                     refreshRequests()
                 }
                 if (event.isHeld()) {
-                    held.add(event.event.item.id)
+                    rememberHeld(event.event)
                 }
                 onPairingEvent(event)
             }
@@ -249,22 +266,41 @@ class AppState(
         }
     }
 
-    /** Makes a paired device, or this device, ask for a confirmation on arrival. */
-    fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+    /**
+     * Changes one confirmation flag of a paired device: whether this device asks
+     * before it takes what the device sends ([Local.ConfirmationSide.CONFIRMATION_SIDE_LOCAL]),
+     * or whether the device asks before it takes what this device sends.
+     */
+    fun setDeviceConfirmation(
+        deviceId: String,
+        scope: Local.ConfirmationScope,
+        side: Local.ConfirmationSide,
+        require: Boolean,
+    ) {
         if (deviceId.isEmpty()) {
             return
         }
-        scope.launch {
+        this.scope.launch {
             try {
-                core.setDeviceConfirmation(deviceId, require)
+                core.setDeviceConfirmation(deviceId, scope, side, require)
                 mutableNotices.tryEmit(R.string.devices_confirmation_saved)
                 refresh()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                mutableNotices.tryEmit(R.string.devices_confirmation_failed)
+                val offline = side == Local.ConfirmationSide.CONFIRMATION_SIDE_PEER &&
+                    (e as? CoreException)?.isUnavailable == true
+                mutableNotices.tryEmit(
+                    if (offline) R.string.devices_confirmation_offline else R.string.devices_confirmation_failed,
+                )
             }
         }
+    }
+
+    /** Lets a held clipboard item go without applying it; it stays in the history. */
+    fun skipHeldItem(itemId: String) {
+        held.remove(itemId)
+        heldPrompts.update { it - itemId }
     }
 
     /** Renames a paired device; the name stays on this device. */
@@ -368,10 +404,11 @@ class AppState(
         }
     }
 
-    /** Makes this device ask for a confirmation before the clipboard is applied. */
-    fun setSelfConfirmation(require: Boolean) {        scope.launch {
+    /** Makes this device ask before it takes the content of [scope] from any device. */
+    fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean) {
+        this.scope.launch {
             try {
-                val settings = core.setSelfConfirmation(require)
+                val settings = core.setSelfConfirmation(scope, require)
                 mutableState.update { it.copy(settings = settings) }
                 mutableNotices.tryEmit(R.string.settings_confirmation_saved)
                 refresh()
@@ -803,13 +840,26 @@ class AppState(
         }
     }
 
+    /** Remembers a held clipboard item, so a dialog can ask about it. */
+    private fun rememberHeld(event: Local.Event) {
+        val item = event.item
+        if (item.id.isEmpty()) {
+            return
+        }
+        val device = event.name.ifEmpty {
+            mutableState.value.status?.devicesList?.firstOrNull { it.deviceId == event.deviceId }?.name.orEmpty()
+        }
+        heldPrompts.update { it + (item.id to PendingPrompt.clipboard(item, device)) }
+        held.add(item.id)
+    }
+
     /** Events that change the list of devices in the status. */
     private fun Mobile.Event.changesDevices(): Boolean = when (type) {
         Mobile.EventType.EVENT_TYPE_PEER_ONLINE,
         Mobile.EventType.EVENT_TYPE_PEER_OFFLINE,
         Mobile.EventType.EVENT_TYPE_PAIRING_PAIRED,
         -> true
-        else -> false
+        else -> hasEvent() && event.kind == Local.EventKind.EVENT_KIND_DEVICE_UPDATED
     }
 
     /** Events that change the entries of the history. */

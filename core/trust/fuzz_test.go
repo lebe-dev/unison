@@ -80,6 +80,7 @@ func FuzzSetPeerPolicy(f *testing.F) {
 	seed := &wirev1.SetPeerPolicy{
 		Target:              make([]byte, 32),
 		RequireConfirmation: true,
+		Scope:               wirev1.ConfirmationScope_CONFIRMATION_SCOPE_FILES,
 		TsUnixMs:            1763000000000,
 	}
 	seed.Target[0] = 1

@@ -81,8 +81,21 @@ message FileMeta {
   string mime_type = 5;
 }
 
-// Policy applied to a peer.
+// Content a confirmation flag covers.
+enum ConfirmationScope {
+  CONFIRMATION_SCOPE_UNSPECIFIED = 0;
+  // Clipboard items.
+  CONFIRMATION_SCOPE_CLIPBOARD = 1;
+  // File transfers.
+  CONFIRMATION_SCOPE_FILES = 2;
+}
+
+// Confirmation flags the sender applies to what the receiver sends it.
 message PeerPolicy {
-  // Do not apply incoming clips automatically.
+  // The sender asks its user before it applies a clipboard item of the
+  // receiver.
   bool require_confirmation = 1;
+  // The sender asks its user before it accepts a file transfer of the
+  // receiver.
+  bool require_file_confirmation = 2;
 }

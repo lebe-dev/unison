@@ -41,6 +41,7 @@
 
   let name = $state("");
   let requireConfirmation = $state(false);
+  let requireFileConfirmation = $state(false);
   let policy = $state<PolicyTable | null>(null);
   let ttl = $state<HistoryTTL | null>(null);
   let ttlDrafts = $state<Record<TTLKind, string>>({ text: "", image: "", files: "" });
@@ -117,6 +118,7 @@
       const response = await client.getSettings({});
       name = response.settings?.deviceName ?? "";
       requireConfirmation = response.settings?.requireConfirmation ?? false;
+      requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
       policy = policyFromSettings(response.settings);
       showTTL(ttlFromSettings(response.settings));
       loaded = true;
@@ -148,19 +150,31 @@
     }
   }
 
-  async function setConfirmation(value: boolean): Promise<void> {
-    const previous = requireConfirmation;
-    requireConfirmation = value;
+  /**
+   * setConfirmation changes a flag of this device for every device: the
+   * clipboard items or the file transfers of any device wait for the user.
+   */
+  async function setConfirmation(scope: "clipboard" | "files", value: boolean): Promise<void> {
+    const previous = { clipboard: requireConfirmation, files: requireFileConfirmation };
+    if (scope === "clipboard") {
+      requireConfirmation = value;
+    } else {
+      requireFileConfirmation = value;
+    }
     busy = true;
     notice = null;
     try {
-      const response = await client.updateSettings({ requireConfirmation: value });
-      requireConfirmation = response.settings?.requireConfirmation ?? value;
+      const response = await client.updateSettings(
+        scope === "clipboard" ? { requireConfirmation: value } : { requireFileConfirmation: value },
+      );
+      requireConfirmation = response.settings?.requireConfirmation ?? requireConfirmation;
+      requireFileConfirmation = response.settings?.requireFileConfirmation ?? requireFileConfirmation;
     } catch (error) {
-      requireConfirmation = previous;
+      requireConfirmation = previous.clipboard;
+      requireFileConfirmation = previous.files;
       notice = {
         kind: "error",
-        text: errorText(error, "The confirmation flag could not be changed."),
+        text: errorText(error, "The confirmation setting could not be changed."),
       };
     } finally {
       busy = false;
@@ -378,12 +392,29 @@
           type="checkbox"
           checked={requireConfirmation}
           disabled={busy || !loaded}
-          onchange={(event) => void setConfirmation(event.currentTarget.checked)}
+          onchange={(event) => void setConfirmation("clipboard", event.currentTarget.checked)}
         />
         <span>
-          Hold incoming items for confirmation
+          Ask before applying the clipboard of any device
           <small>
-            Items from other devices wait in the history until you apply them.
+            Items wait in the history and a prompt asks whether to apply them. Each device
+            can also ask on its own on the Devices screen.
+          </small>
+        </span>
+      </label>
+
+      <label class="toggle">
+        <input
+          type="checkbox"
+          checked={requireFileConfirmation}
+          disabled={busy || !loaded}
+          onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
+        />
+        <span>
+          Ask before accepting files from any device
+          <small>
+            Nothing is downloaded until you accept the files in the prompt or on the Requests
+            screen.
           </small>
         </span>
       </label>

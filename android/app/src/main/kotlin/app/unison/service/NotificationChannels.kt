@@ -10,11 +10,15 @@ object NotificationChannels {
     /** Progress of outgoing and incoming transfers. */
     const val TRANSFERS = "transfers"
 
-    /** Requests from Friends that wait for a decision. */
+    /** File offers that wait for a decision. */
     const val REQUESTS = "requests"
 
     /** Incoming clipboard items. */
     const val CLIPBOARD = "clipboard"
+
+    /** Clipboard items that wait for the user to apply them. The channel pops up,
+     * so a held item does not stay unnoticed in the shade. */
+    const val CONFIRMATIONS = "confirmations"
 
     /** The persistent notification of the service. */
     const val SERVICE = "service"
@@ -42,6 +46,14 @@ object NotificationChannels {
             NotificationChannel(
                 REQUESTS,
                 context.getString(R.string.channel_requests),
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CONFIRMATIONS,
+                context.getString(R.string.channel_confirmations),
                 NotificationManager.IMPORTANCE_HIGH,
             ),
         )

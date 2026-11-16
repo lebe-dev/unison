@@ -79,10 +79,11 @@ func (s *Service) RevokeDevice(ctx context.Context, req *connect.Request[localv1
 	return connect.NewResponse(&localv1.RevokeDeviceResponse{}), nil
 }
 
-// SetDeviceConfirmation sets the confirmation flag of this device or of a
-// paired device. The flag of a paired device is changed by that device, so the
-// request travels there as a signed policy; the local policy for the peer is
-// recorded at the same time.
+// SetDeviceConfirmation sets a confirmation flag. The flag of this device
+// covers every paired device. For a paired device the request names the side
+// that asks: this device changes its own flag at once, and the flag of the
+// paired device travels there as a signed request, so the device has to be
+// online.
 func (s *Service) SetDeviceConfirmation(ctx context.Context, req *connect.Request[localv1.SetDeviceConfirmationRequest]) (*connect.Response[localv1.SetDeviceConfirmationResponse], error) {
 	if err := s.requireRunning(); err != nil {
 		return nil, errorOf(err)
@@ -91,10 +92,42 @@ func (s *Service) SetDeviceConfirmation(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, errorOf(err)
 	}
-	if err := s.node.SetPeerRequireConfirmation(ctx, id, req.Msg.GetRequire()); err != nil {
+	scope, err := confirmationScope(req.Msg.GetScope())
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	require := req.Msg.GetRequire()
+	if id == s.node.DeviceID() {
+		if err := s.node.SetConfirmation(ctx, id, scope, require); err != nil {
+			return nil, errorOf(err)
+		}
+		return connect.NewResponse(&localv1.SetDeviceConfirmationResponse{}), nil
+	}
+
+	switch req.Msg.GetSide() {
+	case localv1.ConfirmationSide_CONFIRMATION_SIDE_LOCAL:
+		err = s.node.SetConfirmation(ctx, id, scope, require)
+	case localv1.ConfirmationSide_CONFIRMATION_SIDE_PEER:
+		err = s.node.RequestPeerConfirmation(ctx, id, scope, require)
+	default:
+		err = fmt.Errorf("%w: no confirmation side", trust.ErrInvalidPeer)
+	}
+	if err != nil {
 		return nil, errorOf(err)
 	}
 	return connect.NewResponse(&localv1.SetDeviceConfirmationResponse{}), nil
+}
+
+// confirmationScope converts the scope of a request.
+func confirmationScope(scope localv1.ConfirmationScope) (trust.Scope, error) {
+	switch scope {
+	case localv1.ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD:
+		return trust.ScopeClipboard, nil
+	case localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES:
+		return trust.ScopeFiles, nil
+	default:
+		return trust.ScopeNone, fmt.Errorf("%w: no confirmation scope", trust.ErrInvalidPeer)
+	}
 }
 
 // SetPeerAddress stores an address of a paired device that the user entered and

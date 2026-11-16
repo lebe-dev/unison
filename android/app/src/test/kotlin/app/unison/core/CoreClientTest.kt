@@ -103,12 +103,32 @@ class CoreClientTest {
     fun peerConfirmationSendsTheFlag() = runBlocking {
         val transport = FakeTransport { null }
 
-        CoreClient(transport).setDeviceConfirmation("abcd", require = true)
+        CoreClient(transport).setDeviceConfirmation(
+            deviceId = "abcd",
+            scope = Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES,
+            side = Local.ConfirmationSide.CONFIRMATION_SIDE_PEER,
+            require = true,
+        )
 
         assertEquals("SetDeviceConfirmation", transport.lastRequest?.method)
         val request = Local.SetDeviceConfirmationRequest.parseFrom(transport.lastRequest?.payload)
         assertEquals("abcd", request.deviceId)
         assertTrue(request.require)
+        assertEquals(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES, request.scope)
+        assertEquals(Local.ConfirmationSide.CONFIRMATION_SIDE_PEER, request.side)
+    }
+
+    @Test
+    fun selfFileConfirmationUpdatesTheSettings() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).setSelfConfirmation(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES, require = true)
+
+        assertEquals("UpdateSettings", transport.lastRequest?.method)
+        val request = Local.UpdateSettingsRequest.parseFrom(transport.lastRequest?.payload)
+        assertTrue(request.hasRequireFileConfirmation())
+        assertTrue(request.requireFileConfirmation)
+        assertTrue(!request.hasRequireConfirmation())
     }
 
     @Test

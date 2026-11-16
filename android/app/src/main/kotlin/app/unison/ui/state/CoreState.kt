@@ -24,9 +24,13 @@ data class CoreState(
     val failure: CoreFailure? = null,
 ) {
 
-    /** This device asks for a confirmation before the clipboard is applied. */
+    /** This device asks before it applies the clipboard of any device. */
     val requiresConfirmation: Boolean
         get() = settings?.requireConfirmation == true
+
+    /** This device asks before it accepts files from any device. */
+    val requiresFileConfirmation: Boolean
+        get() = settings?.requireFileConfirmation == true
 
     /** Paired devices of [role], the online ones first. */
     fun devices(role: Local.Role): List<Local.Device> =

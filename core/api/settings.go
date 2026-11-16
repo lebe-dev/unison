@@ -12,6 +12,7 @@ import (
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/share"
+	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -46,7 +47,12 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 		}
 	}
 	if value := req.Msg.RequireConfirmation; value != nil {
-		if err := s.node.Trust().SetSelfRequireConfirmation(ctx, *value); err != nil {
+		if err := s.node.SetConfirmation(ctx, s.node.DeviceID(), trust.ScopeClipboard, *value); err != nil {
+			return nil, errorOf(err)
+		}
+	}
+	if value := req.Msg.RequireFileConfirmation; value != nil {
+		if err := s.node.SetConfirmation(ctx, s.node.DeviceID(), trust.ScopeFiles, *value); err != nil {
 			return nil, errorOf(err)
 		}
 	}
@@ -92,7 +98,7 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		return nil, err
 	}
 
-	require, err := s.node.Trust().SelfRequireConfirmation(ctx)
+	self, err := s.node.Trust().SelfConfirmations(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,10 +114,11 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		dir = share.DefaultDownloadsDir()
 	}
 	settings := &localv1.Settings{
-		DeviceName:          stored,
-		RequireConfirmation: require,
-		BlobMaxSizeBytes:    limit,
-		DownloadsDir:        dir,
+		DeviceName:              stored,
+		RequireConfirmation:     self.Clipboard,
+		RequireFileConfirmation: self.Files,
+		BlobMaxSizeBytes:        limit,
+		DownloadsDir:            dir,
 	}
 	fillPolicy(settings, s.node.Policy().Config())
 	fillHistoryTTLs(settings, s.node.TTLs())

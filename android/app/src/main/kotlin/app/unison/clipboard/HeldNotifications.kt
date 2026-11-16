@@ -21,7 +21,7 @@ object HeldNotifications {
     /** Identifier of the notification of one held item. */
     fun idOf(itemId: String): Int = BASE_ID + (itemId.hashCode() and ID_MASK)
 
-    /** Quiet notification of an item with the apply action. */
+    /** Notification of an item with the apply action. It pops up like a request. */
     fun held(context: Context, item: Local.ClipItem, device: String): Notification {
         val intent = Intent(context, UnisonService::class.java)
             .setAction(UnisonService.ACTION_APPLY_ITEM)
@@ -33,15 +33,15 @@ object HeldNotifications {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        return NotificationCompat.Builder(context, NotificationChannels.CLIPBOARD)
+        return NotificationCompat.Builder(context, NotificationChannels.CONFIRMATIONS)
             .setSmallIcon(R.drawable.ic_stat_unison)
             .setContentTitle(device.ifBlank { context.getString(R.string.app_name) })
             .setContentText(context.getString(R.string.clipboard_held_body))
             .setContentIntent(openHistory(context))
             .addAction(0, context.getString(R.string.action_apply), apply)
-            .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setSilent(true)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
             .setShowWhen(false)
             .build()
     }

@@ -17,12 +17,13 @@ import (
 // PolicySignatureType is the signature type of a peer policy.
 const PolicySignatureType = "peer-policy"
 
-// policyVersion is the version of the signed policy message.
-const policyVersion = 1
+// policyVersion is the version of the signed policy message. Version 2 added
+// the scope; a version 1 policy does not verify any more.
+const policyVersion = 2
 
-// selfPolicyTsKey is the settings key of the signing time of the last applied
-// policy of the local device.
-const selfPolicyTsKey = "trust.self.policy_ts"
+// policyTsKeyPrefix starts the settings key of the signing time of the last
+// policy applied from one issuer.
+const policyTsKeyPrefix = "trust.policy_ts."
 
 // ErrForeignPolicy reports a policy that targets another device.
 var ErrForeignPolicy = errors.New("trust: policy for another device")
@@ -30,13 +31,15 @@ var ErrForeignPolicy = errors.New("trust: policy for another device")
 // ErrPolicyReplay reports a policy that is not newer than the applied one.
 var ErrPolicyReplay = errors.New("trust: peer policy is not newer")
 
-// SetPeerPolicy is a signed statement of a Personal device that the target
-// device does not apply clipboard items without a prompt. The issuer is the
-// device that signed the statement.
+// SetPeerPolicy is a signed request of a Personal device that the target device
+// asks its user before it takes what the issuer sends in the scope. The issuer
+// is the device that signed the request.
 type SetPeerPolicy struct {
 	// Target is the device the policy applies to.
 	Target model.DeviceID
-	// RequireConfirmation is the new state of the confirmation flag.
+	// Scope is the content the flag covers.
+	Scope Scope
+	// RequireConfirmation is the new state of the flag.
 	RequireConfirmation bool
 	// SignedAt is the signing time.
 	SignedAt time.Time
@@ -44,13 +47,15 @@ type SetPeerPolicy struct {
 	Signature identity.Signature
 }
 
-// NewSetPeerPolicy signs a change of the confirmation flag of target.
-func NewSetPeerPolicy(local *identity.Identity, target model.DeviceID, require bool, at time.Time) (SetPeerPolicy, error) {
+// NewSetPeerPolicy signs a change of a confirmation flag of target for the
+// local device.
+func NewSetPeerPolicy(local *identity.Identity, target model.DeviceID, scope Scope, require bool, at time.Time) (SetPeerPolicy, error) {
 	if local == nil {
 		return SetPeerPolicy{}, errors.New("trust: nil identity")
 	}
 	policy := SetPeerPolicy{
 		Target:              target,
+		Scope:               scope,
 		RequireConfirmation: require,
 		SignedAt:            at,
 	}
@@ -69,6 +74,9 @@ func NewSetPeerPolicy(local *identity.Identity, target model.DeviceID, require b
 func (p SetPeerPolicy) Validate() error {
 	if p.Target.IsZero() {
 		return fmt.Errorf("%w: policy without a target", ErrInvalidPeer)
+	}
+	if !p.Scope.Valid() {
+		return fmt.Errorf("%w: policy without a scope", ErrInvalidPeer)
 	}
 	if p.SignedAt.IsZero() {
 		return fmt.Errorf("%w: policy without a time", ErrInvalidPeer)
@@ -91,6 +99,7 @@ func (p SetPeerPolicy) Verify(issuer identity.PublicIdentity) error {
 func (p SetPeerPolicy) Proto() *wirev1.SetPeerPolicy {
 	return &wirev1.SetPeerPolicy{
 		Target:              p.Target.Bytes(),
+		Scope:               p.Scope.Proto(),
 		RequireConfirmation: p.RequireConfirmation,
 		TsUnixMs:            unixMilli(p.SignedAt),
 		Ed25519Sig:          p.Signature.Ed25519,
@@ -107,8 +116,13 @@ func SetPeerPolicyFromProto(message *wirev1.SetPeerPolicy) (SetPeerPolicy, error
 	if err != nil {
 		return SetPeerPolicy{}, fmt.Errorf("%w: %w", ErrInvalidPeer, err)
 	}
+	scope, err := ScopeFromProto(message.GetScope())
+	if err != nil {
+		return SetPeerPolicy{}, err
+	}
 	policy := SetPeerPolicy{
 		Target:              target,
+		Scope:               scope,
 		RequireConfirmation: message.GetRequireConfirmation(),
 		SignedAt:            timeFromMilli(message.GetTsUnixMs()),
 		Signature: identity.Signature{
@@ -125,10 +139,11 @@ func SetPeerPolicyFromProto(message *wirev1.SetPeerPolicy) (SetPeerPolicy, error
 // message returns the bytes the issuer signs. The encoding is explicit, so a
 // policy keeps its meaning when the wire message gains fields.
 func (p SetPeerPolicy) message(issuer model.DeviceID) []byte {
-	message := make([]byte, 0, 1+32+32+1+8)
+	message := make([]byte, 0, 1+32+32+1+1+8)
 	message = append(message, policyVersion)
 	message = append(message, issuer.Bytes()...)
 	message = append(message, p.Target.Bytes()...)
+	message = append(message, byte(p.Scope))
 	if p.RequireConfirmation {
 		message = append(message, 1)
 	} else {
@@ -137,12 +152,12 @@ func (p SetPeerPolicy) message(issuer model.DeviceID) []byte {
 	return binary.BigEndian.AppendUint64(message, uint64(unixMilli(p.SignedAt)))
 }
 
-// ApplySetPeerPolicy applies the policy of a Personal peer to the local device.
-// It reports whether the flag changed.
+// ApplySetPeerPolicy applies the policy of a Personal peer: the flag of the
+// local device for the issuer. It reports whether the flag changed.
 //
 // Every check fails closed: the policy has to target the local device, come from
 // a stored non-revoked Personal peer, carry a valid signature and be newer than
-// the last applied policy.
+// the last policy applied from the same issuer.
 func (s *Store) ApplySetPeerPolicy(ctx context.Context, local, from model.DeviceID, policy SetPeerPolicy) (bool, error) {
 	if local.IsZero() || from.IsZero() {
 		return false, fmt.Errorf("%w: empty device id", ErrInvalidPeer)
@@ -174,25 +189,23 @@ func (s *Store) ApplySetPeerPolicy(ctx context.Context, local, from model.Device
 		}
 
 		settings := store.NewSettings(tx, s.db.Sealer())
-		applied, err := settings.GetInt(ctx, selfPolicyTsKey, 0)
+		tsKey := policyTsKeyPrefix + from.String()
+		applied, err := settings.GetInt(ctx, tsKey, 0)
 		if err != nil {
 			return err
 		}
 		if unixMilli(policy.SignedAt) <= applied {
 			return fmt.Errorf("%w: signed at %d, applied at %d", ErrPolicyReplay, unixMilli(policy.SignedAt), applied)
 		}
-		current, err := settings.GetBool(ctx, selfRequireConfirmationKey, false)
-		if err != nil {
+		if err := settings.SetInt(ctx, tsKey, unixMilli(policy.SignedAt)); err != nil {
 			return err
 		}
-		if err := settings.SetBool(ctx, selfRequireConfirmationKey, policy.RequireConfirmation); err != nil {
-			return err
+		if issuer.Confirm.Get(policy.Scope) == policy.RequireConfirmation {
+			return nil
 		}
-		if err := settings.SetInt(ctx, selfPolicyTsKey, unixMilli(policy.SignedAt)); err != nil {
-			return err
-		}
-		changed = current != policy.RequireConfirmation
-		return nil
+		issuer.Confirm = issuer.Confirm.With(policy.Scope, policy.RequireConfirmation)
+		changed = true
+		return s.writeProfile(ctx, tx, issuer)
 	})
 	if err != nil {
 		return false, err

@@ -94,7 +94,7 @@ func (n *Node) openPolicy(ctx context.Context, db *store.Store) (*policy.Decider
 			if err != nil {
 				return policy.Peer{}, err
 			}
-			return policy.Peer{Role: peer.Role, RequireConfirmation: peer.RequireConfirmation}, nil
+			return policy.Peer{Role: peer.Role, RequireConfirmation: peer.Confirm.Clipboard}, nil
 		},
 		Network: func(context.Context) model.NetworkState {
 			return n.Network()

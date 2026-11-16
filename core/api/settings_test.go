@@ -50,9 +50,10 @@ func TestUpdateSettings(t *testing.T) {
 	ctx := callTimeout(t)
 
 	response, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
-		DeviceName:          ptr("two"),
-		RequireConfirmation: ptr(true),
-		BlobMaxSizeBytes:    ptr(int64(1 << 20)),
+		DeviceName:              ptr("two"),
+		RequireConfirmation:     ptr(true),
+		RequireFileConfirmation: ptr(true),
+		BlobMaxSizeBytes:        ptr(int64(1 << 20)),
 	}))
 	if err != nil {
 		t.Fatalf("update settings: %v", err)
@@ -64,6 +65,9 @@ func TestUpdateSettings(t *testing.T) {
 	}
 	if !settings.GetRequireConfirmation() {
 		t.Error("the device does not ask for confirmation")
+	}
+	if !settings.GetRequireFileConfirmation() {
+		t.Error("the device does not ask before it accepts files")
 	}
 	if settings.GetBlobMaxSizeBytes() != 1<<20 {
 		t.Errorf("blob limit is %d, want %d", settings.GetBlobMaxSizeBytes(), int64(1<<20))

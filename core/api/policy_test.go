@@ -28,8 +28,16 @@ func TestSetDeviceConfirmationSelf(t *testing.T) {
 	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
 		Self:    true,
 		Require: true,
+		Scope:   localv1.ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD,
 	})); err != nil {
 		t.Fatalf("set the local flag: %v", err)
+	}
+	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
+		Self:    true,
+		Require: true,
+		Scope:   localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES,
+	})); err != nil {
+		t.Fatalf("set the local files flag: %v", err)
 	}
 	settings, err := client.GetSettings(ctx, connect.NewRequest(&localv1.GetSettingsRequest{}))
 	if err != nil {
@@ -38,14 +46,18 @@ func TestSetDeviceConfirmationSelf(t *testing.T) {
 	if !settings.Msg.GetSettings().GetRequireConfirmation() {
 		t.Fatal("the local confirmation flag is off")
 	}
+	if !settings.Msg.GetSettings().GetRequireFileConfirmation() {
+		t.Fatal("the local files flag is off")
+	}
 
 	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
 		Self:    true,
 		Require: false,
+		Scope:   localv1.ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD,
 	})); err != nil {
 		t.Fatalf("clear the local flag: %v", err)
 	}
-	require, err := n.Trust().SelfRequireConfirmation(ctx)
+	require, err := n.Trust().SelfRequireConfirmation(ctx, trust.ScopeClipboard)
 	if err != nil {
 		t.Fatalf("read the flag: %v", err)
 	}
@@ -80,8 +92,20 @@ func TestSetDeviceConfirmationOfflinePeer(t *testing.T) {
 	_, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
 		DeviceId: peer.DeviceID().String(),
 		Require:  true,
+		Scope:    localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES,
+		Side:     localv1.ConfirmationSide_CONFIRMATION_SIDE_PEER,
 	}))
 	requireCode(t, err, connect.CodeUnavailable)
+
+	// The flag of this device needs no session with the device.
+	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
+		DeviceId: peer.DeviceID().String(),
+		Require:  true,
+		Scope:    localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES,
+		Side:     localv1.ConfirmationSide_CONFIRMATION_SIDE_LOCAL,
+	})); err != nil {
+		t.Fatalf("set the local flag of an offline device: %v", err)
+	}
 
 	_, err = client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
 		DeviceId: model.DeviceID{}.String(),

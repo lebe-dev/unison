@@ -92,12 +92,14 @@ class SettingsScreenTest {
 
     @Test
     fun selfConfirmationIsOffered() {
-        var require: Boolean? = null
-        setContent(onSelfConfirmationChange = { require = it })
+        var changed: Pair<Local.ConfirmationScope, Boolean>? = null
+        setContent(onSelfConfirmationChange = { scope, require -> changed = scope to require })
 
         compose.onNodeWithTag(CONFIRMATION_TAG).performScrollTo().performClick()
+        assertEquals(Local.ConfirmationScope.CONFIRMATION_SCOPE_CLIPBOARD to true, changed)
 
-        assertEquals(true, require)
+        compose.onNodeWithTag(FILE_CONFIRMATION_TAG).performScrollTo().performClick()
+        assertEquals(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES to true, changed)
     }
 
     @Test
@@ -166,7 +168,7 @@ class SettingsScreenTest {
         onRefreshRelay: () -> Unit = {},
         onTtlSave: (Local.Kind, Long) -> Unit = { _, _ -> },
         onTtlReset: () -> Unit = {},
-        onSelfConfirmationChange: (Boolean) -> Unit = {},
+        onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit = { _, _ -> },
         onLeaveGroup: () -> Unit = {},
     ) {
         compose.setContent {

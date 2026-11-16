@@ -86,7 +86,8 @@ message Revocation {
   bytes mldsa_sig = 5;
 }
 
-// Signed change of the policy of the target device.
+// Signed request of the issuer that the target device asks its user before it
+// takes what the issuer sends in the scope.
 message SetPeerPolicy {
   // Device ID of the target device, 32 bytes.
   bytes target = 1;
@@ -95,4 +96,6 @@ message SetPeerPolicy {
   int64 ts_unix_ms = 3;
   bytes ed25519_sig = 4;
   bytes mldsa_sig = 5;
+  // Content the flag covers.
+  ConfirmationScope scope = 6;
 }

@@ -71,6 +71,27 @@ enum EventKind {
   EVENT_KIND_TRANSFER = 12;
   // The history changed: an entry was recorded, deleted or expired.
   EVENT_KIND_HISTORY = 13;
+  // The confirmation flags of a paired device changed, on this device or on
+  // that one.
+  EVENT_KIND_DEVICE_UPDATED = 14;
+}
+
+// Content a confirmation flag covers.
+enum ConfirmationScope {
+  CONFIRMATION_SCOPE_UNSPECIFIED = 0;
+  // Clipboard items.
+  CONFIRMATION_SCOPE_CLIPBOARD = 1;
+  // File transfers.
+  CONFIRMATION_SCOPE_FILES = 2;
+}
+
+// Device that asks its user before it takes the items of the other one.
+enum ConfirmationSide {
+  CONFIRMATION_SIDE_UNSPECIFIED = 0;
+  // This device asks before it takes what the paired device sends.
+  CONFIRMATION_SIDE_LOCAL = 1;
+  // The paired device asks before it takes what this device sends.
+  CONFIRMATION_SIDE_PEER = 2;
 }
 
 // Pause mode requested by the client.
@@ -216,19 +237,24 @@ message Device {
   Platform platform = 4;
   bool online = 5;
   Path path = 6;
-  // The local policy for the device: its items are held for confirmation.
+  // This device asks before it applies a clipboard item of the device.
   bool require_confirmation = 7;
   bool revoked = 8;
   // Time the device was added, unix milliseconds.
   int64 added_at_unix_ms = 9;
   // Time the device was last reachable, unix milliseconds.
   int64 last_seen_at_unix_ms = 10;
-  // The flag the device announced in the last hello: it holds the items it
-  // receives for confirmation.
+  // The device asks before it applies a clipboard item of this device, as it
+  // reported last.
   bool peer_require_confirmation = 11;
   // Device that introduced this one to the group, in lowercase hex. Empty for
   // a device that was paired directly.
   string introduced_by = 13;
+  // This device asks before it accepts a file transfer of the device.
+  bool require_file_confirmation = 14;
+  // The device asks before it accepts a file transfer of this device, as it
+  // reported last.
+  bool peer_require_file_confirmation = 15;
 }
 
 // State of the clipboard pause.
@@ -383,7 +409,7 @@ message PolicyRow {
 message Settings {
   // Device name announced to peers. Applied at the next start.
   string device_name = 1;
-  // The local device asks the peers to confirm the items that arrive from it.
+  // This device asks before it applies a clipboard item of any device.
   bool require_confirmation = 2;
   // Blob store limit in bytes.
   int64 blob_max_size_bytes = 3;
@@ -405,6 +431,8 @@ message Settings {
   int64 history_ttl_image_seconds = 11;
   // Lifetime of a file item of the history, in seconds.
   int64 history_ttl_files_seconds = 12;
+  // This device asks before it accepts a file transfer of any device.
+  bool require_file_confirmation = 13;
 }
 
 message GetStatusRequest {}
@@ -464,8 +492,14 @@ message SetDeviceConfirmationRequest {
   // Device ID in lowercase hex. Empty when self is set.
   string device_id = 1;
   bool require = 2;
-  // Change the confirmation flag of this device instead of a paired one.
+  // Change the flag of this device for every paired device. The side is not
+  // used then.
   bool self = 3;
+  // Content the flag covers.
+  ConfirmationScope scope = 4;
+  // Device that asks. The flag of the paired device is changed over the
+  // session with it, so the device has to be online.
+  ConfirmationSide side = 5;
 }
 
 message SetDeviceConfirmationResponse {}
@@ -787,6 +821,7 @@ message UpdateSettingsRequest {
   // Remove the stored history lifetimes and return to the defaults. Lifetimes
   // given in the same request are stored on top of the defaults.
   bool reset_history_ttl = 14;
+  optional bool require_file_confirmation = 15;
 }
 
 message UpdateSettingsResponse {

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -32,6 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.clipboard.ClipboardDraft
@@ -55,7 +59,7 @@ fun DevicesScreen(
     onRefresh: () -> Unit,
     onSendClipboard: (ClipboardDraft) -> Unit,
     onDismissClipboard: () -> Unit,
-    onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onSetConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onRename: (Local.Device, String) -> Unit,
     onRevoke: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
@@ -219,7 +223,7 @@ private fun DeviceSection(
     title: String,
     empty: String,
     devices: List<Local.Device>,
-    onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onSetConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
 ) {
@@ -251,7 +255,7 @@ private fun DeviceSection(
 @Composable
 private fun DeviceRow(
     device: Local.Device,
-    onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onSetConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
 ) {
@@ -305,31 +309,7 @@ private fun DeviceRow(
         }
 
         if (device.role == Local.Role.ROLE_PERSONAL) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.devices_confirmation),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = device.requireConfirmation,
-                    onCheckedChange = { onSetConfirmation(device, it) },
-                )
-            }
-        }
-
-        if (device.peerRequireConfirmation) {
-            Text(
-                text = stringResource(R.string.devices_peer_confirmation),
-                modifier = Modifier.padding(top = 2.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            ConfirmationFlags(device = device, onSet = onSetConfirmation)
         }
 
         Row(
@@ -348,6 +328,117 @@ private fun DeviceRow(
         }
     }
 }
+
+/**
+ * The four confirmation flags of a Personal device: this device and the device
+ * each ask, or not, before they take the clipboard and the files of the other.
+ * The flags of the device change only while it is online.
+ */
+@Composable
+private fun ConfirmationFlags(
+    device: Local.Device,
+    onSet: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
+) {
+    val name = device.name.ifBlank { stringResource(R.string.prompt_unknown_device) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.devices_confirmation),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+            )
+            FlagHeader(text = stringResource(R.string.devices_confirmation_clipboard))
+            FlagHeader(text = stringResource(R.string.devices_confirmation_files))
+        }
+        FlagRow(
+            label = stringResource(R.string.devices_confirmation_here, name),
+            clipboard = device.requireConfirmation,
+            files = device.requireFileConfirmation,
+            clipboardDescription = stringResource(R.string.devices_confirm_local_clipboard, name),
+            filesDescription = stringResource(R.string.devices_confirm_local_files, name),
+            enabled = true,
+            onChange = { scope, require ->
+                onSet(device, scope, Local.ConfirmationSide.CONFIRMATION_SIDE_LOCAL, require)
+            },
+        )
+        FlagRow(
+            label = stringResource(R.string.devices_confirmation_there, name),
+            clipboard = device.peerRequireConfirmation,
+            files = device.peerRequireFileConfirmation,
+            clipboardDescription = stringResource(R.string.devices_confirm_peer_clipboard, name),
+            filesDescription = stringResource(R.string.devices_confirm_peer_files, name),
+            enabled = device.online,
+            onChange = { scope, require ->
+                onSet(device, scope, Local.ConfirmationSide.CONFIRMATION_SIDE_PEER, require)
+            },
+        )
+        if (!device.online) {
+            Text(
+                text = stringResource(R.string.devices_confirmation_offline_hint, name),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Column title of the confirmation flags. */
+@Composable
+private fun FlagHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.width(FLAG_COLUMN),
+    )
+}
+
+/** One side of the confirmation flags: the clipboard and the files switch. */
+@Composable
+private fun FlagRow(
+    label: String,
+    clipboard: Boolean,
+    files: Boolean,
+    clipboardDescription: String,
+    filesDescription: String,
+    enabled: Boolean,
+    onChange: (Local.ConfirmationScope, Boolean) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Box(modifier = Modifier.width(FLAG_COLUMN), contentAlignment = Alignment.Center) {
+            Switch(
+                checked = clipboard,
+                enabled = enabled,
+                onCheckedChange = { onChange(Local.ConfirmationScope.CONFIRMATION_SCOPE_CLIPBOARD, it) },
+                modifier = Modifier.semantics { contentDescription = clipboardDescription },
+            )
+        }
+        Box(modifier = Modifier.width(FLAG_COLUMN), contentAlignment = Alignment.Center) {
+            Switch(
+                checked = files,
+                enabled = enabled,
+                onCheckedChange = { onChange(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES, it) },
+                modifier = Modifier.semantics { contentDescription = filesDescription },
+            )
+        }
+    }
+}
+
+/** Width of one switch column of the confirmation flags. */
+private val FLAG_COLUMN = 72.dp
 
 /** Offer to send the clipboard that changed since the last synchronization. */
 @Composable

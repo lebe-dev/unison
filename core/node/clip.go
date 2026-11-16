@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/model/protoconv"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/session"
+	"github.com/lebe-dev/unison/core/trust"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -122,7 +123,7 @@ type policyPlanner struct {
 	decider *policy.Decider
 	// self reports whether the local device holds incoming items for
 	// confirmation.
-	self func(ctx context.Context) bool
+	self func(ctx context.Context, scope trust.Scope) bool
 }
 
 // Plan returns the outcome for an item announced by a peer. An item the policy
@@ -133,7 +134,7 @@ func (p policyPlanner) Plan(ctx context.Context, from model.DeviceID, item model
 	if err != nil {
 		return clip.Outcome{}, err
 	}
-	if p.self != nil && result.Action == policy.ActionAutoApply && p.self(ctx) {
+	if p.self != nil && result.Action == policy.ActionAutoApply && p.self(ctx, trust.ScopeClipboard) {
 		return clip.Outcome{Action: clip.ActionConfirm}, nil
 	}
 	return clip.Outcome{Action: actionOf(result.Action), Eager: result.Eager}, nil

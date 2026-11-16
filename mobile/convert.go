@@ -102,6 +102,8 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_TRANSFER
 	case node.EventHistory:
 		return localv1.EventKind_EVENT_KIND_HISTORY
+	case node.EventDeviceUpdated:
+		return localv1.EventKind_EVENT_KIND_DEVICE_UPDATED
 	case node.EventPeerIncompatible:
 		return localv1.EventKind_EVENT_KIND_PEER_INCOMPATIBLE
 	case node.EventPairingCandidate:

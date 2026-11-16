@@ -13,7 +13,7 @@ import app.unison.service.UnisonService
 import app.unison.ui.Destination
 import unison.local.v1.Local
 
-/** Notifications about file offers of Friends that wait for an answer. */
+/** Notifications about file offers that wait for an answer. */
 object RequestNotifications {
 
     /** Identifier of the result notification, reused for every answer. */

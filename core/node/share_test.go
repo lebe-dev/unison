@@ -237,6 +237,76 @@ func TestShareFriendWaitsForDecision(t *testing.T) {
 	waitTransfer(t, a, ids[0], share.StateDone)
 }
 
+// TestSharePersonalFileConfirmation checks that the files flag of a device
+// holds the offers of a Personal device until the user accepts them, and that
+// the clipboard flag does not.
+func TestSharePersonalFileConfirmation(t *testing.T) {
+	a, b := shareNodes(t, 53000, model.RolePersonal)
+	events := b.subscribe(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := b.SetConfirmation(ctx, a.DeviceID(), trust.ScopeClipboard, true); err != nil {
+		t.Fatalf("set the clipboard flag: %v", err)
+	}
+	path, _ := shareFile(t, "free.bin", 1<<10)
+	if _, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()}); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	waitIncoming(t, b, a.DeviceID(), share.StateDone)
+
+	if err := b.SetConfirmation(ctx, a.DeviceID(), trust.ScopeFiles, true); err != nil {
+		t.Fatalf("set the files flag: %v", err)
+	}
+	path, data := shareFile(t, "held.bin", 1<<20)
+	ids, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	pending := waitIncoming(t, b, a.DeviceID(), share.StatePending)
+	if pending.Files[0].Name != "held.bin" {
+		t.Fatalf("the offer holds %q", pending.Files[0].Name)
+	}
+	waitEvent(t, events, EventTransfer, a.DeviceID())
+	if requests := b.Share().Requests(); len(requests) != 1 || requests[0].ID != pending.ID {
+		t.Fatalf("the requests are %+v, want the held offer", requests)
+	}
+
+	if err := b.Share().Accept(ctx, pending.ID); err != nil {
+		t.Fatalf("accept: %v", err)
+	}
+	done := waitTransfer(t, b, pending.ID, share.StateDone)
+	if got := readSaved(t, b, filepath.Base(done.Paths[0])); !bytes.Equal(got, data) {
+		t.Fatalf("the saved file differs from the source (%d bytes)", len(got))
+	}
+	waitTransfer(t, a, ids[0], share.StateDone)
+}
+
+// TestSharePersonalSelfFileConfirmation checks that the files flag for every
+// device holds the offers of a Personal device.
+func TestSharePersonalSelfFileConfirmation(t *testing.T) {
+	a, b := shareNodes(t, 53500, model.RolePersonal)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := b.SetConfirmation(ctx, b.DeviceID(), trust.ScopeFiles, true); err != nil {
+		t.Fatalf("set the files flag for every device: %v", err)
+	}
+	path, _ := shareFile(t, "held.bin", 1<<10)
+	ids, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	pending := waitIncoming(t, b, a.DeviceID(), share.StatePending)
+	if err := b.Share().Reject(ctx, pending.ID); err != nil {
+		t.Fatalf("reject: %v", err)
+	}
+	waitTransfer(t, a, ids[0], share.StateDeclined)
+	if names := downloads(t, b); len(names) != 0 {
+		t.Fatalf("a rejected offer wrote %v", names)
+	}
+}
+
 // TestShareFriendRejects checks that a rejected offer leaves nothing on the
 // disk and reaches its final state on both sides.
 func TestShareFriendRejects(t *testing.T) {

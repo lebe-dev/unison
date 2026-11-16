@@ -8,18 +8,18 @@ import (
 
 func TestDecisionMatrix(t *testing.T) {
 	tests := []struct {
-		action                          Action
-		personal, confirmation, friends Decision
+		action                              Action
+		personal, clipboard, files, friends Decision
 	}{
-		{ActionReceiveClipAnnounce, Allow, Allow, Deny},
-		{ActionApplyClipboard, Allow, Confirm, Deny},
-		{ActionSyncHistory, Allow, Allow, Deny},
-		{ActionFetchBlob, Allow, Allow, Deny},
-		{ActionReceiveShare, Allow, Allow, Confirm},
-		{ActionReceiveFiles, Allow, Allow, Confirm},
-		{ActionIntroduce, Allow, Allow, Deny},
-		{ActionRevoke, Allow, Allow, Deny},
-		{ActionSetRemotePolicy, Allow, Allow, Deny},
+		{ActionReceiveClipAnnounce, Allow, Allow, Allow, Deny},
+		{ActionApplyClipboard, Allow, Confirm, Allow, Deny},
+		{ActionSyncHistory, Allow, Allow, Allow, Deny},
+		{ActionFetchBlob, Allow, Allow, Allow, Deny},
+		{ActionReceiveShare, Allow, Allow, Confirm, Confirm},
+		{ActionReceiveFiles, Allow, Allow, Confirm, Confirm},
+		{ActionIntroduce, Allow, Allow, Allow, Deny},
+		{ActionRevoke, Allow, Allow, Allow, Deny},
+		{ActionSetRemotePolicy, Allow, Allow, Allow, Deny},
 	}
 
 	for _, test := range tests {
@@ -30,7 +30,8 @@ func TestDecisionMatrix(t *testing.T) {
 				want Decision
 			}{
 				{"personal", Peer{Role: model.RolePersonal}, test.personal},
-				{"personal with confirmation", Peer{Role: model.RolePersonal, RequireConfirmation: true}, test.confirmation},
+				{"personal with clipboard confirmation", Peer{Role: model.RolePersonal, Confirm: Confirmations{Clipboard: true}}, test.clipboard},
+				{"personal with file confirmation", Peer{Role: model.RolePersonal, Confirm: Confirmations{Files: true}}, test.files},
 				{"friends", Peer{Role: model.RoleFriends}, test.friends},
 			}
 
@@ -91,7 +92,7 @@ func TestDecisionFailsClosed(t *testing.T) {
 		}
 	}
 
-	friends := Peer{Role: model.RoleFriends, RequireConfirmation: true}
+	friends := Peer{Role: model.RoleFriends, Confirm: Confirmations{Clipboard: true, Files: true}}
 	if friends.Allowed(ActionSyncHistory) {
 		t.Error("a friends peer is allowed to sync history")
 	}

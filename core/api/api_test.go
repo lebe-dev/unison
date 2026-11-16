@@ -144,8 +144,8 @@ func TestGetStatusDevices(t *testing.T) {
 	}
 }
 
-// TestGetStatusConfirmationFlags checks that the local policy for a device and
-// the flag the device announced are reported separately.
+// TestGetStatusConfirmationFlags checks that the flags of this device for a
+// device and the flags the device reported are reported separately.
 func TestGetStatusConfirmationFlags(t *testing.T) {
 	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 450)
 	n.start(t)
@@ -154,11 +154,11 @@ func TestGetStatusConfirmationFlags(t *testing.T) {
 	if err := n.AddPeer(t.Context(), peer); err != nil {
 		t.Fatalf("add peer: %v", err)
 	}
-	if err := n.Trust().SetRequireConfirmation(t.Context(), peer.DeviceID(), true); err != nil {
-		t.Fatalf("set the local policy: %v", err)
+	if _, err := n.Trust().SetRequireConfirmation(t.Context(), peer.DeviceID(), trust.ScopeClipboard, true); err != nil {
+		t.Fatalf("set the local flag: %v", err)
 	}
-	if err := n.Trust().SetRequireConfirmationRemote(t.Context(), peer.DeviceID(), true); err != nil {
-		t.Fatalf("set the announced flag: %v", err)
+	if _, err := n.Trust().SetConfirmRemote(t.Context(), peer.DeviceID(), trust.Confirmations{Files: true}); err != nil {
+		t.Fatalf("set the reported flags: %v", err)
 	}
 
 	client := newClient(t, n.Node, api.Options{DeviceName: n.name})
@@ -171,32 +171,19 @@ func TestGetStatusConfirmationFlags(t *testing.T) {
 		t.Fatalf("status reports %d devices, want one", len(devices))
 	}
 	device := devices[0]
-	if !device.GetRequireConfirmation() {
-		t.Error("the local policy is not reported")
+	if !device.GetRequireConfirmation() || device.GetRequireFileConfirmation() {
+		t.Errorf("the local flags are clipboard %t, files %t, want clipboard only",
+			device.GetRequireConfirmation(), device.GetRequireFileConfirmation())
 	}
-	if !device.GetPeerRequireConfirmation() {
-		t.Error("the announced flag is not reported")
-	}
-
-	if err := n.Trust().SetRequireConfirmation(t.Context(), peer.DeviceID(), false); err != nil {
-		t.Fatalf("clear the local policy: %v", err)
-	}
-	response, err = client.GetStatus(callTimeout(t), connect.NewRequest(&localv1.GetStatusRequest{}))
-	if err != nil {
-		t.Fatalf("get status: %v", err)
-	}
-	device = response.Msg.GetDevices()[0]
-	if device.GetRequireConfirmation() {
-		t.Error("the local policy is still reported")
-	}
-	if !device.GetPeerRequireConfirmation() {
-		t.Error("clearing the local policy changed the announced flag")
+	if device.GetPeerRequireConfirmation() || !device.GetPeerRequireFileConfirmation() {
+		t.Errorf("the reported flags are clipboard %t, files %t, want files only",
+			device.GetPeerRequireConfirmation(), device.GetPeerRequireFileConfirmation())
 	}
 }
 
-// TestSetDeviceConfirmationPeerKeepsLocalPolicy checks that asking a device to
-// hold its items also records the local policy for it.
-func TestSetDeviceConfirmationPeerKeepsLocalPolicy(t *testing.T) {
+// TestSetDeviceConfirmationSides checks that a request changes the flag of the
+// side it names: this device or the paired one.
+func TestSetDeviceConfirmationSides(t *testing.T) {
 	network := vnet.NewNetwork()
 	bus := fake.NewBus()
 	one := newNode(t, network, bus, 460)
@@ -212,19 +199,48 @@ func TestSetDeviceConfirmationPeerKeepsLocalPolicy(t *testing.T) {
 	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
 		DeviceId: two.DeviceID().String(),
 		Require:  true,
+		Scope:    localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES,
+		Side:     localv1.ConfirmationSide_CONFIRMATION_SIDE_LOCAL,
 	})); err != nil {
-		t.Fatalf("set the flag of the peer: %v", err)
+		t.Fatalf("set the local flag: %v", err)
 	}
-
 	peer, err := one.Trust().Get(ctx, two.DeviceID())
 	if err != nil {
 		t.Fatalf("read the peer: %v", err)
 	}
-	if !peer.RequireConfirmation {
-		t.Error("the local policy for the peer is off")
+	if peer.Confirm != (trust.Confirmations{Files: true}) {
+		t.Errorf("the local flags are %+v, want files only", peer.Confirm)
 	}
-	if peer.RequireConfirmationRemote {
-		t.Error("asking the peer changed the flag it announced")
+
+	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
+		DeviceId: two.DeviceID().String(),
+		Require:  true,
+		Scope:    localv1.ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD,
+		Side:     localv1.ConfirmationSide_CONFIRMATION_SIDE_PEER,
+	})); err != nil {
+		t.Fatalf("set the flag of the peer: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		record, err := two.Trust().Get(ctx, one.DeviceID())
+		if err != nil {
+			t.Fatalf("read the peer: %v", err)
+		}
+		if record.Confirm.Clipboard {
+			break
+		}
+		if !time.Now().Before(deadline) {
+			t.Fatal("the paired device did not change its flag")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	for _, request := range []*localv1.SetDeviceConfirmationRequest{
+		{DeviceId: two.DeviceID().String(), Require: true, Side: localv1.ConfirmationSide_CONFIRMATION_SIDE_LOCAL},
+		{DeviceId: two.DeviceID().String(), Require: true, Scope: localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES},
+	} {
+		_, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(request))
+		requireCode(t, err, connect.CodeInvalidArgument)
 	}
 }
 
@@ -311,7 +327,11 @@ func TestDevicesUnknown(t *testing.T) {
 	_, err := client.RevokeDevice(ctx, connect.NewRequest(&localv1.RevokeDeviceRequest{DeviceId: id}))
 	requireCode(t, err, connect.CodeNotFound)
 
-	_, err = client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{DeviceId: id}))
+	_, err = client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
+		DeviceId: id,
+		Scope:    localv1.ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD,
+		Side:     localv1.ConfirmationSide_CONFIRMATION_SIDE_LOCAL,
+	}))
 	requireCode(t, err, connect.CodeNotFound)
 }
 

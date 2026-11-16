@@ -114,8 +114,9 @@ to the others again.
 
 ## Holding items until you apply them
 
-A device with the confirmation flag does not apply incoming items. They are recorded in the history
-and marked as waiting for you, and the app shows a quiet notification. The item is written to the
-clipboard when you press `Apply` in the history or in the notification, and only then.
+A device that asks before it applies the clipboard of another device does not apply its items. They
+are recorded in the history and marked as waiting for you, and the app asks at once: a small window
+on macOS, a notification and a dialog on Android. The item is written to the clipboard when you
+press `Apply` there or in the history, and only then. `Skip` leaves it in the history.
 
-The flag is described under [Devices and pairing](devices.md#the-confirmation-flag).
+The flags are described under [Devices and pairing](devices.md#confirmation-flags).

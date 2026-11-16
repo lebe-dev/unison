@@ -9,6 +9,8 @@
   import { notifications } from "./lib/notifications.svelte";
   import { notify } from "./lib/notify";
   import { pairing } from "./lib/pairing.svelte";
+  import { PromptHost } from "./lib/prompt/host";
+  import { prompts } from "./lib/prompts.svelte";
   import { requests } from "./lib/requests.svelte";
   import AddDevice from "./lib/screens/AddDevice.svelte";
   import Devices from "./lib/screens/Devices.svelte";
@@ -34,12 +36,21 @@
   let active = $state<SectionID>("devices");
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
   let unlistenTray: UnlistenFn | null = null;
+  // The prompt window asks the questions that wait for the user, so a held
+  // item or an offer does not stay unnoticed while this window is hidden.
+  const promptHost = new PromptHost((answer) => void prompts.answer(answer.id, answer.action));
+
+  $effect(() => {
+    promptHost.sync($state.snapshot(prompts.queue));
+  });
 
   onMount(() => {
     pairing.start();
     history.start();
     transfers.start();
     requests.start();
+    prompts.start();
+    void promptHost.start();
     // A notification shows its buttons while the shell listens to them, so the
     // events of the daemon start after the subscription.
     void notifications.start().then(() => daemon.start());
@@ -53,6 +64,8 @@
     history.stop();
     transfers.stop();
     requests.stop();
+    prompts.stop();
+    promptHost.stop();
     notifications.stop();
     daemon.stop();
     void unlistenTray?.();

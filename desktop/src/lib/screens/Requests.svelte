@@ -43,8 +43,8 @@
   <div class="requests">
     <div class="toolbar">
       <p class="muted">
-        Files that Friends offer wait here until you answer. Nothing is written to this device
-        before you accept.
+        Files that Friends offer, and files of the devices you ask about, wait here until you
+        answer. Nothing is written to this device before you accept.
       </p>
       <button
         class="button ghost small"

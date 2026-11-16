@@ -13,6 +13,7 @@ const LABELS: Record<number, string> = {
   [EventKind.CLIP_DOWNLOAD]: "Item waiting for download",
   [EventKind.CLIP_APPLY]: "Item waiting for confirmation",
   [EventKind.TRANSFER]: "Transfer updated",
+  [EventKind.DEVICE_UPDATED]: "Device settings changed",
 };
 
 /** eventKindLabel returns a short English label of a daemon event. */

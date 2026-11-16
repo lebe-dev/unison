@@ -48,6 +48,9 @@ const (
 	// EventHistory reports a change of the history: an entry was recorded,
 	// deleted or expired, whoever produced it.
 	EventHistory
+	// EventDeviceUpdated reports changed confirmation flags of a paired
+	// device, on this device or on that one.
+	EventDeviceUpdated
 )
 
 // String returns the name of the event kind.
@@ -79,6 +82,8 @@ func (k EventKind) String() string {
 		return "transfer"
 	case EventHistory:
 		return "history"
+	case EventDeviceUpdated:
+		return "device-updated"
 	default:
 		return "unknown"
 	}

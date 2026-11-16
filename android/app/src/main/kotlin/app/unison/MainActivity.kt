@@ -36,6 +36,7 @@ import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
 import app.unison.ui.Destination
+import app.unison.ui.PromptAnswer
 import app.unison.ui.UnisonRoot
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
@@ -96,6 +97,7 @@ class MainActivity : ComponentActivity() {
                 val pairing by appState.pairing.collectAsState()
                 val requests by appState.requests.collectAsState()
                 val held by HeldItems.shared.ids.collectAsState()
+                val prompts by appState.prompts.collectAsState()
                 if (onboarded) {
                     UnisonRoot(
                         state = state,
@@ -103,6 +105,15 @@ class MainActivity : ComponentActivity() {
                         pairing = pairing,
                         requests = requests,
                         held = held,
+                        prompts = prompts,
+                        onAnswerPrompt = { prompt, answer ->
+                            when (answer) {
+                                PromptAnswer.APPLY -> appState.applyHistoryItem(prompt.id)
+                                PromptAnswer.SKIP -> appState.skipHeldItem(prompt.id)
+                                PromptAnswer.ACCEPT -> appState.decideRequest(prompt.id, accept = true)
+                                PromptAnswer.DECLINE -> appState.decideRequest(prompt.id, accept = false)
+                            }
+                        },
                         deviceName = deviceName,
                         operatingMode = operatingMode,
                         policy = policy,
@@ -126,8 +137,8 @@ class MainActivity : ComponentActivity() {
                         onRefreshRelay = appState::refreshRelay,
                         onSelfConfirmationChange = appState::setSelfConfirmation,
                         onLeaveGroup = appState::leaveGroup,
-                        onSetDeviceConfirmation = { device, require ->
-                            appState.setDeviceConfirmation(device.deviceId, require)
+                        onSetDeviceConfirmation = { device, scope, side, require ->
+                            appState.setDeviceConfirmation(device.deviceId, scope, side, require)
                         },
                         onRenameDevice = { device, name -> appState.renameDevice(device.deviceId, name) },
                         onRevokeDevice = { device -> appState.revokeDevice(device.deviceId) },

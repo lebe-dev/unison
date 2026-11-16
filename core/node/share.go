@@ -6,6 +6,7 @@ import (
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/store"
+	"github.com/lebe-dev/unison/core/trust"
 )
 
 // shareEvents publishes the file transfer events.
@@ -36,7 +37,10 @@ func (n *Node) openShare(db *store.Store) error {
 		Events:     shareEvents{node: n},
 		Clock:      n.clock,
 		PendingTTL: n.cfg.SharePendingTTL,
-		Logger:     n.log,
+		HoldAll: func(ctx context.Context) bool {
+			return n.selfRequireConfirmation(ctx, trust.ScopeFiles)
+		},
+		Logger: n.log,
 	})
 	if err != nil {
 		return err

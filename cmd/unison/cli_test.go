@@ -10,6 +10,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
@@ -211,7 +212,7 @@ func TestDevicesRenameSelf(t *testing.T) {
 	}
 }
 
-// TestDevicesConfirmSelf checks the confirmation flag of the local device.
+// TestDevicesConfirmSelf checks the confirmation flags of the local device.
 func TestDevicesConfirmSelf(t *testing.T) {
 	network, bus := newNetwork(t)
 	device := newDevice(t, network, bus, 320, api.Options{})
@@ -221,30 +222,38 @@ func TestDevicesConfirmSelf(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("devices confirm exited with %d, stderr %q", code, stderr)
 	}
-	if !strings.Contains(stdout, "confirmation for self is on") {
+	if !strings.Contains(stdout, "clipboard confirmation for every device is on") {
 		t.Errorf("the command does not report the flag:\n%s", stdout)
 	}
-	require, err := device.Trust().SelfRequireConfirmation(t.Context())
-	if err != nil {
-		t.Fatalf("read the flag: %v", err)
+	code, stdout, stderr = runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", "--files", "self", "on")
+	if code != exitOK {
+		t.Fatalf("devices confirm --files exited with %d, stderr %q", code, stderr)
 	}
-	if !require {
-		t.Fatal("the confirmation flag is off")
+	if !strings.Contains(stdout, "files confirmation for every device is on") {
+		t.Errorf("the command does not report the files flag:\n%s", stdout)
+	}
+	flags, err := device.Trust().SelfConfirmations(t.Context())
+	if err != nil {
+		t.Fatalf("read the flags: %v", err)
+	}
+	if flags != (trust.Confirmations{Clipboard: true, Files: true}) {
+		t.Fatalf("the flags are %+v, want both on", flags)
 	}
 
 	if code, _, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", "self", "off"); code != exitOK {
 		t.Fatalf("devices confirm off exited with %d, stderr %q", code, stderr)
 	}
-	require, err = device.Trust().SelfRequireConfirmation(t.Context())
+	flags, err = device.Trust().SelfConfirmations(t.Context())
 	if err != nil {
-		t.Fatalf("read the flag: %v", err)
+		t.Fatalf("read the flags: %v", err)
 	}
-	if require {
-		t.Fatal("the confirmation flag is on")
+	if flags != (trust.Confirmations{Files: true}) {
+		t.Fatalf("the flags are %+v, want only files", flags)
 	}
 }
 
-// TestDevicesConfirmPeer checks the flag of a paired device.
+// TestDevicesConfirmPeer checks both flags of a pair: the one of this device
+// and the one of the paired device.
 func TestDevicesConfirmPeer(t *testing.T) {
 	network, bus := newNetwork(t)
 	device := newDevice(t, network, bus, 330, api.Options{})
@@ -255,25 +264,40 @@ func TestDevicesConfirmPeer(t *testing.T) {
 	other.pair(t, device)
 	waitOnline(t, device, other)
 
-	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", other.name, "on")
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", "--files", other.name, "on")
 	if code != exitOK {
 		t.Fatalf("devices confirm exited with %d, stderr %q", code, stderr)
 	}
 	if !strings.Contains(stdout, fingerprintOf(other.DeviceID().String())) {
 		t.Errorf("the command does not report the device:\n%s", stdout)
 	}
+	waitFlags(t, device, other.DeviceID(), func(peer trust.Peer) bool { return peer.Confirm.Files })
+	waitFlags(t, other, device.DeviceID(), func(peer trust.Peer) bool { return peer.ConfirmRemote.Files })
+
+	code, _, stderr = runCommand(t, "", "--endpoint", device.endpoint, "devices", "confirm", "--peer", other.name, "on")
+	if code != exitOK {
+		t.Fatalf("devices confirm --peer exited with %d, stderr %q", code, stderr)
+	}
+	waitFlags(t, other, device.DeviceID(), func(peer trust.Peer) bool { return peer.Confirm.Clipboard })
+	waitFlags(t, device, other.DeviceID(), func(peer trust.Peer) bool { return peer.ConfirmRemote.Clipboard })
+}
+
+// waitFlags waits until the record of a peer on the device satisfies ok.
+func waitFlags(t *testing.T, d *testDevice, peer model.DeviceID, ok func(trust.Peer) bool) {
+	t.Helper()
+
 	deadline := time.Now().Add(testTimeout)
 	for time.Now().Before(deadline) {
-		require, err := other.Trust().SelfRequireConfirmation(t.Context())
+		record, err := d.Trust().Get(t.Context(), peer)
 		if err != nil {
-			t.Fatalf("read the flag: %v", err)
+			t.Fatalf("read the peer: %v", err)
 		}
-		if require {
+		if ok(record) {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("the paired device did not receive the flag")
+	t.Fatalf("the flags of %s did not change within %v", peer, testTimeout)
 }
 
 // TestDevicesConfirmUsage checks the arguments of the command.
@@ -286,6 +310,7 @@ func TestDevicesConfirmUsage(t *testing.T) {
 		{"devices", "confirm"},
 		{"devices", "confirm", "self"},
 		{"devices", "confirm", "self", "maybe"},
+		{"devices", "confirm", "--peer", "self", "on"},
 	} {
 		code, _, stderr := runCommand(t, "", append([]string{"--endpoint", device.endpoint}, args...)...)
 		if code != exitFailure {

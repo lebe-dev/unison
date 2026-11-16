@@ -54,7 +54,7 @@ func (a *app) writeEventJSON(event *localv1.Event) error {
 // writeTable writes the devices as a table.
 func (a *app) writeTable(devices []*localv1.Device) error {
 	rows := make([][]string, 0, len(devices)+1)
-	rows = append(rows, []string{"FINGERPRINT", "NAME", "ROLE", "PLATFORM", "STATE", "CONFIRM", "PEER ASKS"})
+	rows = append(rows, []string{"FINGERPRINT", "NAME", "ROLE", "PLATFORM", "STATE", "ASK CLIP", "ASK FILES", "PEER ASKS CLIP", "PEER ASKS FILES"})
 	for _, device := range devices {
 		rows = append(rows, []string{
 			fingerprintOf(device.GetDeviceId()),
@@ -63,7 +63,9 @@ func (a *app) writeTable(devices []*localv1.Device) error {
 			platformText(device.GetPlatform()),
 			deviceState(device),
 			onOff(device.GetRequireConfirmation()),
+			onOff(device.GetRequireFileConfirmation()),
 			yesNo(device.GetPeerRequireConfirmation()),
+			yesNo(device.GetPeerRequireFileConfirmation()),
 		})
 	}
 	return a.writeRows(rows)

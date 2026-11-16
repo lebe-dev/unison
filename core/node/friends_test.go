@@ -202,7 +202,11 @@ func TestFriendsForbiddenMessages(t *testing.T) {
 			send: func(ctx context.Context, sess *session.Session, _ model.DeviceID) error {
 				return sess.Send(ctx, &wirev1.ControlMessage{
 					Body: &wirev1.ControlMessage_SetPeerPolicy{
-						SetPeerPolicy: &wirev1.SetPeerPolicy{RequireConfirmation: true, TsUnixMs: time.Now().UnixMilli()},
+						SetPeerPolicy: &wirev1.SetPeerPolicy{
+							RequireConfirmation: true,
+							Scope:               wirev1.ConfirmationScope_CONFIRMATION_SCOPE_FILES,
+							TsUnixMs:            time.Now().UnixMilli(),
+						},
 					},
 				})
 			},
@@ -211,8 +215,27 @@ func TestFriendsForbiddenMessages(t *testing.T) {
 				if err != nil {
 					t.Fatalf("read the peer: %v", err)
 				}
-				if peer.RequireConfirmation {
+				if peer.Confirm.Any() {
 					t.Fatal("the peer changed the confirmation flag")
+				}
+			},
+		},
+		{
+			name: "peer policy",
+			send: func(ctx context.Context, sess *session.Session, _ model.DeviceID) error {
+				return sess.Send(ctx, &wirev1.ControlMessage{
+					Body: &wirev1.ControlMessage_PeerPolicy{
+						PeerPolicy: &wirev1.PeerPolicy{RequireConfirmation: true, RequireFileConfirmation: true},
+					},
+				})
+			},
+			check: func(t *testing.T, receiver, sender *testNode) {
+				peer, err := receiver.Trust().Get(context.Background(), sender.DeviceID())
+				if err != nil {
+					t.Fatalf("read the peer: %v", err)
+				}
+				if peer.ConfirmRemote.Any() {
+					t.Fatal("the peer reported confirmation flags")
 				}
 			},
 		},

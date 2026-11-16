@@ -123,27 +123,44 @@ Friends devices. A session that is already open stays until it ends.
 The Android app has no switch for the search yet, so a Friends device cannot open a session with
 Android: the pairing works and the device is listed, but nothing is exchanged.
 
-## The confirmation flag
+## Confirmation flags
 
-A device can hold the items that arrive instead of applying them. Such an item goes to the history,
-waiting for you, and is applied only when you say so; see
-[Clipboard and history](clipboard.md#holding-items-until-you-apply-them). The flag belongs to the
-device that receives, so it covers everything that arrives there, not just the items of one device.
+A device can ask before it takes what another Personal device sends, instead of taking it at once.
+The flags are separate for the clipboard and for files, and for each direction of a pair, so every
+Personal device has four of them on its card:
 
-Turn it on for this device in the settings, or from another Personal device:
+| Row | Clipboard | Files |
+| --- | --- | --- |
+| Here, from the device | this device asks before it applies a clipboard item of the device | this device asks before it accepts files from the device |
+| On the device, from here | the device asks before it applies a clipboard item of this device | the device asks before it accepts files from this device |
+
+A held clipboard item goes to the history, waiting for you, and is applied only when you say so;
+see [Clipboard and history](clipboard.md#holding-items-until-you-apply-them). A held file offer
+waits in `Requests` exactly like the offer of a Friends device: nothing is downloaded until you
+accept it, and it expires after ten minutes. Friends always ask, so their cards have no flags.
+
+Either device of a pair can change any of the four flags. A flag belongs to the device that asks,
+so a flag of the other device travels there as a signed request, and that device changes it itself;
+it has to be online for that. After every change, and whenever a session opens, a device reports its
+flags for the other one, so both cards show the same state.
+
+Settings also have two flags for every device: ask before applying the clipboard of any device, and
+ask before accepting files from any device. They add to the flags of the pairs: a device asks when
+either one is on. They stay on the device and are not shown to the others.
+
+When something waits for an answer, the app asks at once. The macOS app opens a small window above
+the others with the buttons to apply or skip the item, or to accept or decline the files; `Later`
+puts the window away until the next question. The Android app pops up a notification with the same
+buttons and asks again in a dialog while it is open.
+
+From the command line:
 
 ```sh
-unison devices confirm self on
-unison devices confirm <id> on
+unison devices confirm self on                # clipboard of every device
+unison devices confirm --files self on        # files of every device
+unison devices confirm <id> on                # this device asks about the clipboard of <id>
+unison devices confirm --files --peer <id> on # <id> asks about the files of this device
 ```
-
-The second form sends a signed request to that device, which changes its own flag; the device has
-to be online. The request also sets the local policy for that device: its items wait for you here,
-while the device holds what it receives. The switch in the device card is that local policy.
-
-A device reports its own flag when a session starts, so this device keeps a copy of what the other
-one announced and shows it under the switch, as a line of its own. The line appears after the
-device connects or reconnects, and only the device itself changes it.
 
 ## Revocation
 

@@ -127,17 +127,19 @@ func networkToProto(state model.NetworkState) *localv1.NetworkState {
 // deviceToProto converts a stored peer and its live state.
 func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 	device := &localv1.Device{
-		DeviceId:                peer.DeviceID().String(),
-		Name:                    peer.Name,
-		Role:                    roleToProto(peer.Role),
-		Platform:                platformToProto(peer.Platform),
-		Online:                  state.Online,
-		Path:                    pathToProto(state.Path),
-		RequireConfirmation:     peer.RequireConfirmation,
-		PeerRequireConfirmation: peer.RequireConfirmationRemote,
-		Revoked:                 peer.Revoked,
-		AddedAtUnixMs:           unixMilli(peer.AddedAt),
-		LastSeenAtUnixMs:        unixMilli(peer.LastSeenAt),
+		DeviceId:                    peer.DeviceID().String(),
+		Name:                        peer.Name,
+		Role:                        roleToProto(peer.Role),
+		Platform:                    platformToProto(peer.Platform),
+		Online:                      state.Online,
+		Path:                        pathToProto(state.Path),
+		RequireConfirmation:         peer.Confirm.Clipboard,
+		RequireFileConfirmation:     peer.Confirm.Files,
+		PeerRequireConfirmation:     peer.ConfirmRemote.Clipboard,
+		PeerRequireFileConfirmation: peer.ConfirmRemote.Files,
+		Revoked:                     peer.Revoked,
+		AddedAtUnixMs:               unixMilli(peer.AddedAt),
+		LastSeenAtUnixMs:            unixMilli(peer.LastSeenAt),
 	}
 	if !peer.IntroducedBy.IsZero() {
 		device.IntroducedBy = peer.IntroducedBy.String()
@@ -213,6 +215,8 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_PAIRING_CLOSED
 	case node.EventTransfer:
 		return localv1.EventKind_EVENT_KIND_TRANSFER
+	case node.EventDeviceUpdated:
+		return localv1.EventKind_EVENT_KIND_DEVICE_UPDATED
 	default:
 		return localv1.EventKind_EVENT_KIND_UNSPECIFIED
 	}

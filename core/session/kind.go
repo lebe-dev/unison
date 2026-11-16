@@ -36,7 +36,8 @@ const (
 	KindIntroduction
 	// KindRevocation revokes a device.
 	KindRevocation
-	// KindSetPeerPolicy changes the clipboard policy of a device.
+	// KindSetPeerPolicy asks a device to change its confirmation flag for the
+	// sender.
 	KindSetPeerPolicy
 	// KindGossipDigest reports the trust state of a device.
 	KindGossipDigest
@@ -46,6 +47,9 @@ const (
 	KindShareCancel
 	// KindShareResult reports the final outcome of a share transfer.
 	KindShareResult
+	// KindPeerPolicy reports the confirmation flags of the sender for the
+	// receiver.
+	KindPeerPolicy
 )
 
 // String returns the name of the kind.
@@ -83,6 +87,8 @@ func (k Kind) String() string {
 		return "share-cancel"
 	case KindShareResult:
 		return "share-result"
+	case KindPeerPolicy:
+		return "peer-policy"
 	default:
 		return "unknown"
 	}
@@ -127,6 +133,8 @@ func kindOf(msg *wirev1.ControlMessage) (Kind, error) {
 		return KindShareCancel, nil
 	case *wirev1.ControlMessage_ShareResult:
 		return KindShareResult, nil
+	case *wirev1.ControlMessage_PeerPolicy:
+		return KindPeerPolicy, nil
 	default:
 		return KindUnknown, fmt.Errorf("%w: payload %T", ErrUnknownKind, msg.GetBody())
 	}
@@ -155,7 +163,7 @@ func actionOf(kind Kind) (trust.Action, error) {
 		return trust.ActionIntroduce, nil
 	case KindRevocation:
 		return trust.ActionRevoke, nil
-	case KindSetPeerPolicy:
+	case KindSetPeerPolicy, KindPeerPolicy:
 		return trust.ActionSetRemotePolicy, nil
 	case KindGossipDigest, KindGossipRecords:
 		return trust.ActionIntroduce, nil

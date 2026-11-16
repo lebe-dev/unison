@@ -42,13 +42,13 @@ type Peer struct {
 	Platform model.Platform
 	// Role is the trust role assigned at pairing.
 	Role model.Role
-	// RequireConfirmation marks a Personal device whose clipboard items are not
-	// applied without user confirmation. The flag is the local policy for the
-	// peer and only this device changes it.
-	RequireConfirmation bool
-	// RequireConfirmationRemote is the confirmation flag the peer announced in
-	// its last hello. The peer changes it; this device only records it.
-	RequireConfirmationRemote bool
+	// Confirm are the flags of this device for the peer: what this device holds
+	// until the user takes it. This device changes them, on its own or at the
+	// signed request of the peer.
+	Confirm Confirmations
+	// ConfirmRemote are the flags of the peer for this device, as the peer
+	// reported them last. The peer owns them; this device only records them.
+	ConfirmRemote Confirmations
 	// IntroducedBy is the Personal device that introduced this peer, or the zero
 	// device ID when the peer was paired directly.
 	IntroducedBy model.DeviceID
@@ -81,7 +81,7 @@ func (p Peer) Validate() error {
 	if p.Role != model.RolePersonal && p.Role != model.RoleFriends {
 		return fmt.Errorf("%w: unknown role %d", ErrInvalidPeer, p.Role)
 	}
-	if p.RequireConfirmation && p.Role != model.RolePersonal {
+	if p.Confirm.Any() && p.Role != model.RolePersonal {
 		return fmt.Errorf("%w: confirmation applies to personal peers only", ErrInvalidPeer)
 	}
 	if !p.IntroducedBy.IsZero() && p.IntroducedBy == p.Public.DeviceID {

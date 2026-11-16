@@ -2,6 +2,11 @@ package app.unison.ui.screens
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -69,7 +74,8 @@ class DevicesScreenTest {
                     onRefresh = { retried = true },
                     onSendClipboard = {},
                     onDismissClipboard = {},
-                    onSetConfirmation = { _, _ -> },
+                    onSetConfirmation = { _, _, _, _ -> },
+                    onRename = { _, _ -> },
                     onRevoke = {},
                 )
             }
@@ -93,7 +99,8 @@ class DevicesScreenTest {
                     onRefresh = {},
                     onSendClipboard = { sent = it },
                     onDismissClipboard = {},
-                    onSetConfirmation = { _, _ -> },
+                    onSetConfirmation = { _, _, _, _ -> },
+                    onRename = { _, _ -> },
                     onRevoke = {},
                 )
             }
@@ -115,7 +122,7 @@ class DevicesScreenTest {
                 .addDevices(device("Friend", Local.Role.ROLE_FRIENDS, Local.Path.PATH_RELAY, online = true))
                 .build(),
         )
-        var changed: Pair<Local.Device, Boolean>? = null
+        var changed: Triple<Local.ConfirmationScope, Local.ConfirmationSide, Boolean>? = null
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 DevicesScreen(
@@ -124,28 +131,34 @@ class DevicesScreenTest {
                     onRefresh = {},
                     onSendClipboard = {},
                     onDismissClipboard = {},
-                    onSetConfirmation = { device, require -> changed = device to require },
+                    onSetConfirmation = { _, scope, side, require -> changed = Triple(scope, side, require) },
+                    onRename = { _, _ -> },
                     onRevoke = {},
                 )
             }
         }
 
-        compose.onAllNodesWithText("Ask before applying its items").assertCountEquals(1)
-        compose.onAllNodes(isToggleable()).assertCountEquals(1)
-        compose.onAllNodes(isToggleable())[0].performClick()
+        compose.onAllNodes(isToggleable()).assertCountEquals(4)
+        compose.onNodeWithContentDescription("Mac asks before accepting files from this device").performClick()
 
-        assertEquals("Mac", changed?.first?.name)
-        assertEquals(true, changed?.second)
+        assertEquals(
+            Triple(
+                Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES,
+                Local.ConfirmationSide.CONFIRMATION_SIDE_PEER,
+                true,
+            ),
+            changed,
+        )
     }
 
     @Test
-    fun theAnnouncedConfirmationOfADeviceIsShown() {
+    fun theReportedConfirmationOfADeviceIsShown() {
         val state = CoreState(
             loading = false,
             status = Local.GetStatusResponse.newBuilder()
                 .setDeviceName("Pixel")
                 .addDevices(
-                    device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true).toBuilder()
+                    device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = false).toBuilder()
                         .setPeerRequireConfirmation(true)
                         .build(),
                 )
@@ -153,8 +166,12 @@ class DevicesScreenTest {
         )
         setContent(state)
 
-        compose.onAllNodesWithText("Asks for confirmation before applying what it receives")
-            .assertCountEquals(1)
+        compose.onNodeWithContentDescription("Mac asks before applying the clipboard of this device")
+            .assertIsOn()
+            .assertIsNotEnabled()
+        compose.onNodeWithContentDescription("This device asks before accepting files from Mac")
+            .assertIsOff()
+            .assertIsEnabled()
     }
 
     @Test
@@ -175,7 +192,8 @@ class DevicesScreenTest {
                     onRefresh = {},
                     onSendClipboard = {},
                     onDismissClipboard = {},
-                    onSetConfirmation = { _, _ -> },
+                    onSetConfirmation = { _, _, _, _ -> },
+                    onRename = { _, _ -> },
                     onRevoke = { removed = it },
                 )
             }
@@ -199,7 +217,8 @@ class DevicesScreenTest {
                     onRefresh = {},
                     onSendClipboard = {},
                     onDismissClipboard = {},
-                    onSetConfirmation = { _, _ -> },
+                    onSetConfirmation = { _, _, _, _ -> },
+                    onRename = { _, _ -> },
                     onRevoke = {},
                 )
             }

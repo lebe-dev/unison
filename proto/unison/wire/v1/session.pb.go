@@ -168,7 +168,6 @@ type Hello struct {
 	Capabilities    []string               `protobuf:"bytes,2,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
 	Name            string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Platform        Platform               `protobuf:"varint,4,opt,name=platform,proto3,enum=unison.wire.v1.Platform" json:"platform,omitempty"`
-	SelfPolicy      *PeerPolicy            `protobuf:"bytes,5,opt,name=self_policy,json=selfPolicy,proto3" json:"self_policy,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -229,13 +228,6 @@ func (x *Hello) GetPlatform() Platform {
 		return x.Platform
 	}
 	return Platform_PLATFORM_UNSPECIFIED
-}
-
-func (x *Hello) GetSelfPolicy() *PeerPolicy {
-	if x != nil {
-		return x.SelfPolicy
-	}
-	return nil
 }
 
 // Hybrid signature over the transcript up to this message.
@@ -304,6 +296,7 @@ type ControlMessage struct {
 	//	*ControlMessage_GossipRecords
 	//	*ControlMessage_ShareCancel
 	//	*ControlMessage_ShareResult
+	//	*ControlMessage_PeerPolicy
 	Body          isControlMessage_Body `protobuf_oneof:"body"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -490,6 +483,15 @@ func (x *ControlMessage) GetShareResult() *ShareResult {
 	return nil
 }
 
+func (x *ControlMessage) GetPeerPolicy() *PeerPolicy {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_PeerPolicy); ok {
+			return x.PeerPolicy
+		}
+	}
+	return nil
+}
+
 type isControlMessage_Body interface {
 	isControlMessage_Body()
 }
@@ -558,6 +560,12 @@ type ControlMessage_ShareResult struct {
 	ShareResult *ShareResult `protobuf:"bytes,16,opt,name=share_result,json=shareResult,proto3,oneof"`
 }
 
+type ControlMessage_PeerPolicy struct {
+	// Confirmation flags of the sender for the receiver, sent when a session
+	// opens and whenever they change.
+	PeerPolicy *PeerPolicy `protobuf:"bytes,17,opt,name=peer_policy,json=peerPolicy,proto3,oneof"`
+}
+
 func (*ControlMessage_Hello) isControlMessage_Body() {}
 
 func (*ControlMessage_AuthProof) isControlMessage_Body() {}
@@ -590,6 +598,8 @@ func (*ControlMessage_ShareCancel) isControlMessage_Body() {}
 
 func (*ControlMessage_ShareResult) isControlMessage_Body() {}
 
+func (*ControlMessage_PeerPolicy) isControlMessage_Body() {}
+
 var File_unison_wire_v1_session_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_session_proto_rawDesc = "" +
@@ -602,16 +612,14 @@ const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\x04hash\x18\x03 \x01(\fR\x04hash\x12\x16\n" +
 	"\x06chunks\x18\x04 \x01(\rR\x06chunks\x12,\n" +
 	"\x04file\x18\x05 \x01(\v2\x18.unison.wire.v1.FileMetaR\x04file\x12!\n" +
-	"\fpayload_type\x18\x06 \x01(\tR\vpayloadType\"\xdd\x01\n" +
+	"\fpayload_type\x18\x06 \x01(\tR\vpayloadType\"\xb3\x01\n" +
 	"\x05Hello\x12)\n" +
 	"\x10protocol_version\x18\x01 \x01(\rR\x0fprotocolVersion\x12\"\n" +
 	"\fcapabilities\x18\x02 \x03(\tR\fcapabilities\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x124\n" +
-	"\bplatform\x18\x04 \x01(\x0e2\x18.unison.wire.v1.PlatformR\bplatform\x12;\n" +
-	"\vself_policy\x18\x05 \x01(\v2\x1a.unison.wire.v1.PeerPolicyR\n" +
-	"selfPolicy\"(\n" +
+	"\bplatform\x18\x04 \x01(\x0e2\x18.unison.wire.v1.PlatformR\bplatformJ\x04\b\x05\x10\x06R\vself_policy\"(\n" +
 	"\tAuthProof\x12\x1b\n" +
-	"\tmldsa_sig\x18\x01 \x01(\fR\bmldsaSig\"\xb1\b\n" +
+	"\tmldsa_sig\x18\x01 \x01(\fR\bmldsaSig\"\xf0\b\n" +
 	"\x0eControlMessage\x12-\n" +
 	"\x05hello\x18\x01 \x01(\v2\x15.unison.wire.v1.HelloH\x00R\x05hello\x12:\n" +
 	"\n" +
@@ -633,7 +641,9 @@ const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\rgossip_digest\x18\r \x01(\v2\x1c.unison.wire.v1.GossipDigestH\x00R\fgossipDigest\x12F\n" +
 	"\x0egossip_records\x18\x0e \x01(\v2\x1d.unison.wire.v1.GossipRecordsH\x00R\rgossipRecords\x12@\n" +
 	"\fshare_cancel\x18\x0f \x01(\v2\x1b.unison.wire.v1.ShareCancelH\x00R\vshareCancel\x12@\n" +
-	"\fshare_result\x18\x10 \x01(\v2\x1b.unison.wire.v1.ShareResultH\x00R\vshareResultB\x06\n" +
+	"\fshare_result\x18\x10 \x01(\v2\x1b.unison.wire.v1.ShareResultH\x00R\vshareResult\x12=\n" +
+	"\vpeer_policy\x18\x11 \x01(\v2\x1a.unison.wire.v1.PeerPolicyH\x00R\n" +
+	"peerPolicyB\x06\n" +
 	"\x04body*\\\n" +
 	"\n" +
 	"StreamKind\x12\x1b\n" +
@@ -663,43 +673,43 @@ var file_unison_wire_v1_session_proto_goTypes = []any{
 	(*ControlMessage)(nil), // 4: unison.wire.v1.ControlMessage
 	(*FileMeta)(nil),       // 5: unison.wire.v1.FileMeta
 	(Platform)(0),          // 6: unison.wire.v1.Platform
-	(*PeerPolicy)(nil),     // 7: unison.wire.v1.PeerPolicy
-	(*ClipAnnounce)(nil),   // 8: unison.wire.v1.ClipAnnounce
-	(*HistorySync)(nil),    // 9: unison.wire.v1.HistorySync
-	(*HistoryBatch)(nil),   // 10: unison.wire.v1.HistoryBatch
-	(*HaveBlob)(nil),       // 11: unison.wire.v1.HaveBlob
-	(*HaveBlobResp)(nil),   // 12: unison.wire.v1.HaveBlobResp
-	(*ShareOffer)(nil),     // 13: unison.wire.v1.ShareOffer
-	(*ShareDecision)(nil),  // 14: unison.wire.v1.ShareDecision
-	(*Introduction)(nil),   // 15: unison.wire.v1.Introduction
-	(*Revocation)(nil),     // 16: unison.wire.v1.Revocation
-	(*SetPeerPolicy)(nil),  // 17: unison.wire.v1.SetPeerPolicy
-	(*GossipDigest)(nil),   // 18: unison.wire.v1.GossipDigest
-	(*GossipRecords)(nil),  // 19: unison.wire.v1.GossipRecords
-	(*ShareCancel)(nil),    // 20: unison.wire.v1.ShareCancel
-	(*ShareResult)(nil),    // 21: unison.wire.v1.ShareResult
+	(*ClipAnnounce)(nil),   // 7: unison.wire.v1.ClipAnnounce
+	(*HistorySync)(nil),    // 8: unison.wire.v1.HistorySync
+	(*HistoryBatch)(nil),   // 9: unison.wire.v1.HistoryBatch
+	(*HaveBlob)(nil),       // 10: unison.wire.v1.HaveBlob
+	(*HaveBlobResp)(nil),   // 11: unison.wire.v1.HaveBlobResp
+	(*ShareOffer)(nil),     // 12: unison.wire.v1.ShareOffer
+	(*ShareDecision)(nil),  // 13: unison.wire.v1.ShareDecision
+	(*Introduction)(nil),   // 14: unison.wire.v1.Introduction
+	(*Revocation)(nil),     // 15: unison.wire.v1.Revocation
+	(*SetPeerPolicy)(nil),  // 16: unison.wire.v1.SetPeerPolicy
+	(*GossipDigest)(nil),   // 17: unison.wire.v1.GossipDigest
+	(*GossipRecords)(nil),  // 18: unison.wire.v1.GossipRecords
+	(*ShareCancel)(nil),    // 19: unison.wire.v1.ShareCancel
+	(*ShareResult)(nil),    // 20: unison.wire.v1.ShareResult
+	(*PeerPolicy)(nil),     // 21: unison.wire.v1.PeerPolicy
 }
 var file_unison_wire_v1_session_proto_depIdxs = []int32{
 	0,  // 0: unison.wire.v1.StreamHeader.kind:type_name -> unison.wire.v1.StreamKind
 	5,  // 1: unison.wire.v1.StreamHeader.file:type_name -> unison.wire.v1.FileMeta
 	6,  // 2: unison.wire.v1.Hello.platform:type_name -> unison.wire.v1.Platform
-	7,  // 3: unison.wire.v1.Hello.self_policy:type_name -> unison.wire.v1.PeerPolicy
-	2,  // 4: unison.wire.v1.ControlMessage.hello:type_name -> unison.wire.v1.Hello
-	3,  // 5: unison.wire.v1.ControlMessage.auth_proof:type_name -> unison.wire.v1.AuthProof
-	8,  // 6: unison.wire.v1.ControlMessage.clip_announce:type_name -> unison.wire.v1.ClipAnnounce
-	9,  // 7: unison.wire.v1.ControlMessage.history_sync:type_name -> unison.wire.v1.HistorySync
-	10, // 8: unison.wire.v1.ControlMessage.history_batch:type_name -> unison.wire.v1.HistoryBatch
-	11, // 9: unison.wire.v1.ControlMessage.have_blob:type_name -> unison.wire.v1.HaveBlob
-	12, // 10: unison.wire.v1.ControlMessage.have_blob_resp:type_name -> unison.wire.v1.HaveBlobResp
-	13, // 11: unison.wire.v1.ControlMessage.share_offer:type_name -> unison.wire.v1.ShareOffer
-	14, // 12: unison.wire.v1.ControlMessage.share_decision:type_name -> unison.wire.v1.ShareDecision
-	15, // 13: unison.wire.v1.ControlMessage.introduction:type_name -> unison.wire.v1.Introduction
-	16, // 14: unison.wire.v1.ControlMessage.revocation:type_name -> unison.wire.v1.Revocation
-	17, // 15: unison.wire.v1.ControlMessage.set_peer_policy:type_name -> unison.wire.v1.SetPeerPolicy
-	18, // 16: unison.wire.v1.ControlMessage.gossip_digest:type_name -> unison.wire.v1.GossipDigest
-	19, // 17: unison.wire.v1.ControlMessage.gossip_records:type_name -> unison.wire.v1.GossipRecords
-	20, // 18: unison.wire.v1.ControlMessage.share_cancel:type_name -> unison.wire.v1.ShareCancel
-	21, // 19: unison.wire.v1.ControlMessage.share_result:type_name -> unison.wire.v1.ShareResult
+	2,  // 3: unison.wire.v1.ControlMessage.hello:type_name -> unison.wire.v1.Hello
+	3,  // 4: unison.wire.v1.ControlMessage.auth_proof:type_name -> unison.wire.v1.AuthProof
+	7,  // 5: unison.wire.v1.ControlMessage.clip_announce:type_name -> unison.wire.v1.ClipAnnounce
+	8,  // 6: unison.wire.v1.ControlMessage.history_sync:type_name -> unison.wire.v1.HistorySync
+	9,  // 7: unison.wire.v1.ControlMessage.history_batch:type_name -> unison.wire.v1.HistoryBatch
+	10, // 8: unison.wire.v1.ControlMessage.have_blob:type_name -> unison.wire.v1.HaveBlob
+	11, // 9: unison.wire.v1.ControlMessage.have_blob_resp:type_name -> unison.wire.v1.HaveBlobResp
+	12, // 10: unison.wire.v1.ControlMessage.share_offer:type_name -> unison.wire.v1.ShareOffer
+	13, // 11: unison.wire.v1.ControlMessage.share_decision:type_name -> unison.wire.v1.ShareDecision
+	14, // 12: unison.wire.v1.ControlMessage.introduction:type_name -> unison.wire.v1.Introduction
+	15, // 13: unison.wire.v1.ControlMessage.revocation:type_name -> unison.wire.v1.Revocation
+	16, // 14: unison.wire.v1.ControlMessage.set_peer_policy:type_name -> unison.wire.v1.SetPeerPolicy
+	17, // 15: unison.wire.v1.ControlMessage.gossip_digest:type_name -> unison.wire.v1.GossipDigest
+	18, // 16: unison.wire.v1.ControlMessage.gossip_records:type_name -> unison.wire.v1.GossipRecords
+	19, // 17: unison.wire.v1.ControlMessage.share_cancel:type_name -> unison.wire.v1.ShareCancel
+	20, // 18: unison.wire.v1.ControlMessage.share_result:type_name -> unison.wire.v1.ShareResult
+	21, // 19: unison.wire.v1.ControlMessage.peer_policy:type_name -> unison.wire.v1.PeerPolicy
 	20, // [20:20] is the sub-list for method output_type
 	20, // [20:20] is the sub-list for method input_type
 	20, // [20:20] is the sub-list for extension type_name
@@ -733,6 +743,7 @@ func file_unison_wire_v1_session_proto_init() {
 		(*ControlMessage_GossipRecords)(nil),
 		(*ControlMessage_ShareCancel)(nil),
 		(*ControlMessage_ShareResult)(nil),
+		(*ControlMessage_PeerPolicy)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

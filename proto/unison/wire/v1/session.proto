@@ -37,7 +37,10 @@ message Hello {
   repeated string capabilities = 2;
   string name = 3;
   Platform platform = 4;
-  PeerPolicy self_policy = 5;
+  // The confirmation flags travel in PeerPolicy after the handshake, when the
+  // peer is known.
+  reserved 5;
+  reserved "self_policy";
 }
 
 // Hybrid signature over the transcript up to this message.
@@ -64,5 +67,8 @@ message ControlMessage {
     GossipRecords gossip_records = 14;
     ShareCancel share_cancel = 15;
     ShareResult share_result = 16;
+    // Confirmation flags of the sender for the receiver, sent when a session
+    // opens and whenever they change.
+    PeerPolicy peer_policy = 17;
   }
 }

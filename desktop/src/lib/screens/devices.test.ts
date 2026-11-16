@@ -3,6 +3,8 @@ import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import {
+  ConfirmationScope,
+  ConfirmationSide,
   DeviceSchema,
   GetStatusResponseSchema,
   Platform,
@@ -48,46 +50,86 @@ beforeEach(() => {
 });
 
 describe("devices screen", () => {
-  it("offers the confirmation flag to Personal devices only", () => {
+  it("offers the four confirmation flags to Personal devices only", () => {
     render(Devices);
 
-    expect(screen.getByRole("checkbox", { name: /Ask before applying items from this device/ })).toBeTruthy();
-    expect(screen.getAllByRole("checkbox")).toHaveLength(1);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(4);
+    expect(screen.getByRole("checkbox", { name: "This device asks before applying the clipboard of MacBook" })).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "This device asks before accepting files from MacBook" })).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "MacBook asks before applying the clipboard of this device" })).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" })).toBeTruthy();
   });
 
-  it("asks a Personal device to hold incoming items", async () => {
+  it("changes the files flag of this device", async () => {
     render(Devices);
-    const toggle = screen.getByRole("checkbox", { name: /Ask before applying items from this device/ });
+    const toggle = screen.getByRole("checkbox", { name: "This device asks before accepting files from MacBook" });
 
     await fireEvent.click(toggle);
 
     expect(setDeviceConfirmation).toHaveBeenCalledWith({
       deviceId: "device-1",
       require: true,
+      scope: ConfirmationScope.FILES,
+      side: ConfirmationSide.LOCAL,
     });
-    expect((toggle as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("asks the paired device to change its clipboard flag", async () => {
+    render(Devices);
+
+    await fireEvent.click(
+      screen.getByRole("checkbox", { name: "MacBook asks before applying the clipboard of this device" }),
+    );
+
+    expect(setDeviceConfirmation).toHaveBeenCalledWith({
+      deviceId: "device-1",
+      require: true,
+      scope: ConfirmationScope.CLIPBOARD,
+      side: ConfirmationSide.PEER,
+    });
   });
 
   it("reports a device that cannot be reached", async () => {
     setDeviceConfirmation.mockRejectedValue(new ConnectError("peer offline", Code.Unavailable));
 
     render(Devices);
-    await fireEvent.click(screen.getByRole("checkbox", { name: /Ask before applying items from this device/ }));
+    await fireEvent.click(
+      screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" }),
+    );
 
     expect(await screen.findByText(/The device is offline/)).toBeTruthy();
   });
 
-  it("shows the confirmation the device announced", () => {
+  it("shows the flags the device reported", () => {
     daemon.status = create(GetStatusResponseSchema, {
       running: true,
       deviceId: "self",
       deviceName: "This Mac",
-      devices: [personal("device-1", { peerRequireConfirmation: true })],
+      devices: [personal("device-1", { peerRequireFileConfirmation: true })],
     });
 
     render(Devices);
 
-    expect(screen.getByText(/MacBook asks for confirmation/)).toBeTruthy();
+    const files = screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" });
+    const clipboard = screen.getByRole("checkbox", { name: "MacBook asks before applying the clipboard of this device" });
+    expect((files as HTMLInputElement).checked).toBe(true);
+    expect((clipboard as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("keeps the flags of an offline device read only", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { online: false })],
+    });
+
+    render(Devices);
+
+    const peer = screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" });
+    const local = screen.getByRole("checkbox", { name: "This device asks before accepting files from MacBook" });
+    expect((peer as HTMLInputElement).disabled).toBe(true);
+    expect((local as HTMLInputElement).disabled).toBe(false);
   });
 
   it("revokes a device only after a confirmation", async () => {
@@ -111,7 +153,10 @@ describe("devices screen", () => {
   });
 });
 
-function personal(id: string, fields: { peerRequireConfirmation?: boolean } = {}) {
+function personal(
+  id: string,
+  fields: { peerRequireConfirmation?: boolean; peerRequireFileConfirmation?: boolean; online?: boolean } = {},
+) {
   return create(DeviceSchema, {
     deviceId: id,
     name: "MacBook",

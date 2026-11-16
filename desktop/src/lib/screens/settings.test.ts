@@ -262,6 +262,31 @@ describe("settings screen", () => {
     expect(await screen.findByText(/announced to the paired devices/)).toBeTruthy();
   });
 
+  it("asks before taking files from every device", async () => {
+    getSettings.mockResolvedValue(
+      create(GetSettingsResponseSchema, {
+        settings: { ...settings(), requireConfirmation: true },
+      }),
+    );
+    updateSettings.mockResolvedValue(
+      create(UpdateSettingsResponseSchema, {
+        settings: { ...settings(), requireConfirmation: true, requireFileConfirmation: true },
+      }),
+    );
+    render(Settings);
+
+    const clipboard = await screen.findByRole("checkbox", { name: /Ask before applying the clipboard/ });
+    const files = screen.getByRole("checkbox", { name: /Ask before accepting files/ });
+    await screen.findByDisplayValue("This Mac");
+    expect((clipboard as HTMLInputElement).checked).toBe(true);
+    expect((files as HTMLInputElement).checked).toBe(false);
+
+    await fireEvent.click(files);
+
+    expect(updateSettings).toHaveBeenCalledWith({ requireFileConfirmation: true });
+    expect((files as HTMLInputElement).checked).toBe(true);
+  });
+
   it("refuses an empty device name", async () => {
     render(Settings);
 

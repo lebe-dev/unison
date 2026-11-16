@@ -16,7 +16,6 @@ func FuzzParseHello(f *testing.F) {
 		Capabilities:    []string{"clip.image", "share"},
 		Name:            "workstation",
 		Platform:        wirev1.Platform_PLATFORM_MACOS,
-		SelfPolicy:      &wirev1.PeerPolicy{RequireConfirmation: true},
 	}
 	if data, err := proto.Marshal(seed); err == nil {
 		f.Add(data)

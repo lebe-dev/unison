@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/trust"
 )
 
 // waitTransferState waits until the table of the transfers reports the state of
@@ -141,7 +142,7 @@ func TestHistoryApply(t *testing.T) {
 	other.pair(t, device)
 	waitOnline(t, device, other)
 
-	if err := other.Trust().SetSelfRequireConfirmation(t.Context(), true); err != nil {
+	if err := other.Trust().SetSelfRequireConfirmation(t.Context(), trust.ScopeClipboard, true); err != nil {
 		t.Fatalf("set the confirmation flag: %v", err)
 	}
 	device.emit(t, "held item")

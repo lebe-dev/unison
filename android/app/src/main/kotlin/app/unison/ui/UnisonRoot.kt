@@ -34,6 +34,7 @@ import app.unison.ui.screens.SettingsScreen
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.HistoryState
 import app.unison.ui.state.PairingState
+import app.unison.ui.state.PendingPrompt
 import app.unison.ui.state.RequestsState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +48,8 @@ fun UnisonRoot(
     pairing: PairingState,
     requests: RequestsState,
     held: Set<String>,
+    prompts: List<PendingPrompt>,
+    onAnswerPrompt: (PendingPrompt, PromptAnswer) -> Unit,
     deviceName: String,
     operatingMode: OperatingMode,
     policy: PolicyConfig,
@@ -68,9 +71,9 @@ fun UnisonRoot(
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
     onRefreshRelay: () -> Unit,
-    onSelfConfirmationChange: (Boolean) -> Unit,
+    onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
-    onSetDeviceConfirmation: (Local.Device, Boolean) -> Unit,
+    onSetDeviceConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onRenameDevice: (Local.Device, String) -> Unit,
     onRevokeDevice: (Local.Device) -> Unit,
     onRefreshHistory: () -> Unit,
@@ -201,6 +204,8 @@ fun UnisonRoot(
             )
         }
     }
+
+    PromptDialog(prompts = prompts, onAnswer = onAnswerPrompt)
 }
 
 /** Icon of a destination with the number of requests that wait for an answer. */

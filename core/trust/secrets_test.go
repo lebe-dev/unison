@@ -136,34 +136,38 @@ func TestSelfRequireConfirmation(t *testing.T) {
 	ctx := context.Background()
 	ts := openTestStore(t)
 
-	require, err := ts.SelfRequireConfirmation(ctx)
+	flags, err := ts.SelfConfirmations(ctx)
 	if err != nil {
-		t.Fatalf("read the default policy: %v", err)
+		t.Fatalf("read the default flags: %v", err)
 	}
-	if require {
+	if flags.Any() {
 		t.Fatal("confirmation is on by default")
 	}
 
-	if err := ts.SetSelfRequireConfirmation(ctx, true); err != nil {
-		t.Fatalf("set policy: %v", err)
+	for _, scope := range []Scope{ScopeClipboard, ScopeFiles} {
+		if err := ts.SetSelfRequireConfirmation(ctx, scope, true); err != nil {
+			t.Fatalf("set %s: %v", scope, err)
+		}
+		require, err := ts.SelfRequireConfirmation(ctx, scope)
+		if err != nil {
+			t.Fatalf("read %s: %v", scope, err)
+		}
+		if !require {
+			t.Fatalf("%s confirmation is not stored", scope)
+		}
 	}
-	require, err = ts.SelfRequireConfirmation(ctx)
+	if err := ts.SetSelfRequireConfirmation(ctx, ScopeClipboard, false); err != nil {
+		t.Fatalf("clear clipboard: %v", err)
+	}
+	flags, err = ts.SelfConfirmations(ctx)
 	if err != nil {
-		t.Fatalf("read policy: %v", err)
+		t.Fatalf("read the flags: %v", err)
 	}
-	if !require {
-		t.Fatal("confirmation is not stored")
+	if flags != (Confirmations{Files: true}) {
+		t.Fatalf("flags %+v, want only files", flags)
 	}
-
-	if err := ts.SetSelfRequireConfirmation(ctx, false); err != nil {
-		t.Fatalf("clear policy: %v", err)
-	}
-	require, err = ts.SelfRequireConfirmation(ctx)
-	if err != nil {
-		t.Fatalf("read cleared policy: %v", err)
-	}
-	if require {
-		t.Fatal("confirmation is not cleared")
+	if err := ts.SetSelfRequireConfirmation(ctx, ScopeNone, true); !errors.Is(err, ErrInvalidPeer) {
+		t.Fatalf("set without a scope: got %v, want ErrInvalidPeer", err)
 	}
 }
 

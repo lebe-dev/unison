@@ -130,10 +130,13 @@ func (a *app) renameTarget(ctx context.Context, client localv1connect.UnisonServ
 	return device.GetDeviceId(), false, nil
 }
 
-// devicesConfirm sets the confirmation flag of this device or of a paired
-// device. A paired device changes its own flag, so the request travels there.
+// devicesConfirm sets a confirmation flag: of this device for every device, of
+// this device for a paired one, or with --peer of the paired device for this
+// one. A paired device changes its own flag, so that request travels there.
 func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices confirm")
+	files := flags.Bool("files", false, "the flag of the file transfers instead of the clipboard")
+	peer := flags.Bool("peer", false, "change the flag of the paired device for this device")
 	positional, err := parseCommand(flags, args)
 	if err != nil {
 		return err
@@ -158,8 +161,19 @@ func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	request := &localv1.SetDeviceConfirmationRequest{Require: require}
-	label := "self"
+	scope, scopeText := localv1.ConfirmationScope_CONFIRMATION_SCOPE_CLIPBOARD, "clipboard"
+	if *files {
+		scope, scopeText = localv1.ConfirmationScope_CONFIRMATION_SCOPE_FILES, "files"
+	}
+	side := localv1.ConfirmationSide_CONFIRMATION_SIDE_LOCAL
+	if *peer {
+		if reference == "self" {
+			return a.usageError("--peer needs a paired device, not self")
+		}
+		side = localv1.ConfirmationSide_CONFIRMATION_SIDE_PEER
+	}
+	request := &localv1.SetDeviceConfirmationRequest{Require: require, Scope: scope, Side: side}
+	label := "every device"
 	if reference != "self" {
 		devices, err := a.devicesOf(ctx, client)
 		if err != nil {
@@ -171,6 +185,9 @@ func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 		}
 		request.DeviceId = device.GetDeviceId()
 		label = fingerprintOf(device.GetDeviceId())
+		if *peer {
+			label = "this device on " + label
+		}
 	} else {
 		request.Self = true
 	}
@@ -181,7 +198,7 @@ func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 	if a.json {
 		return a.writeJSON(&localv1.SetDeviceConfirmationResponse{})
 	}
-	a.info("confirmation for %s is %s", label, state)
+	a.info("%s confirmation for %s is %s", scopeText, label, state)
 	return nil
 }
 

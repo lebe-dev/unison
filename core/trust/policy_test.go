@@ -21,7 +21,7 @@ func TestSetPeerPolicyRoundTrip(t *testing.T) {
 	local, issuer := policyPeers(t)
 	at := time.UnixMilli(1_700_000_000_000)
 
-	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, at)
+	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, true, at)
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestSetPeerPolicyRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decode policy: %v", err)
 	}
-	if decoded.Target != policy.Target || decoded.RequireConfirmation != policy.RequireConfirmation {
+	if decoded.Target != policy.Target || decoded.Scope != policy.Scope || decoded.RequireConfirmation != policy.RequireConfirmation {
 		t.Fatal("the decoded policy differs")
 	}
 	if !decoded.SignedAt.Equal(policy.SignedAt) {
@@ -49,7 +49,7 @@ func TestSetPeerPolicyRoundTrip(t *testing.T) {
 
 func TestSetPeerPolicyFromProtoRejectsTampering(t *testing.T) {
 	local, issuer := policyPeers(t)
-	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), false, time.UnixMilli(1_700_000_000_000))
+	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, false, time.UnixMilli(1_700_000_000_000))
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -64,6 +64,22 @@ func TestSetPeerPolicyFromProtoRejectsTampering(t *testing.T) {
 		t.Fatal("a changed flag verifies")
 	}
 
+	message = policy.Proto()
+	message.Scope = ScopeFiles.Proto()
+	decoded, err = SetPeerPolicyFromProto(message)
+	if err != nil {
+		t.Fatalf("decode policy: %v", err)
+	}
+	if err := decoded.Verify(issuer.Public()); err == nil {
+		t.Fatal("a changed scope verifies")
+	}
+
+	message = policy.Proto()
+	message.Scope = 0
+	if _, err := SetPeerPolicyFromProto(message); !errors.Is(err, ErrInvalidPeer) {
+		t.Fatalf("policy without a scope error %v, want %v", err, ErrInvalidPeer)
+	}
+
 	if _, err := SetPeerPolicyFromProto(nil); !errors.Is(err, ErrInvalidPeer) {
 		t.Fatalf("empty policy error %v, want %v", err, ErrInvalidPeer)
 	}
@@ -76,7 +92,7 @@ func TestApplySetPeerPolicy(t *testing.T) {
 	addTestPeer(t, ts, issuer, model.RolePersonal)
 
 	at := time.Now().Add(-time.Minute).Truncate(time.Millisecond)
-	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, at)
+	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, true, at)
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -87,15 +103,14 @@ func TestApplySetPeerPolicy(t *testing.T) {
 	if !changed {
 		t.Fatal("the flag did not change")
 	}
-	require, err := ts.SelfRequireConfirmation(ctx)
-	if err != nil {
-		t.Fatalf("read the flag: %v", err)
+	if got := peerConfirm(t, ts, issuer.DeviceID()); got != (Confirmations{Clipboard: true}) {
+		t.Fatalf("flags for the issuer %+v, want clipboard only", got)
 	}
-	if !require {
-		t.Fatal("the confirmation flag is off")
+	if self, err := ts.SelfConfirmations(ctx); err != nil || self.Any() {
+		t.Fatalf("the policy changed the flags for every device: %+v, %v", self, err)
 	}
 
-	again, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, at.Add(time.Second))
+	again, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, true, at.Add(time.Second))
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -115,7 +130,7 @@ func TestApplySetPeerPolicyRejectsOld(t *testing.T) {
 	addTestPeer(t, ts, issuer, model.RolePersonal)
 
 	at := time.Now().Add(-time.Minute)
-	newest, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, at)
+	newest, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, true, at)
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -123,15 +138,15 @@ func TestApplySetPeerPolicyRejectsOld(t *testing.T) {
 		t.Fatalf("apply policy: %v", err)
 	}
 
-	replay, err := NewSetPeerPolicy(issuer, local.DeviceID(), false, at.Add(-time.Second))
+	replay, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, false, at.Add(-time.Second))
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
 	if _, err := ts.ApplySetPeerPolicy(ctx, local.DeviceID(), issuer.DeviceID(), replay); !errors.Is(err, ErrPolicyReplay) {
 		t.Fatalf("replay error %v, want %v", err, ErrPolicyReplay)
 	}
-	if require, err := ts.SelfRequireConfirmation(ctx); err != nil || !require {
-		t.Fatalf("the replay changed the flag: %t, %v", require, err)
+	if got := peerConfirm(t, ts, issuer.DeviceID()); !got.Clipboard {
+		t.Fatal("the replay changed the flag")
 	}
 }
 
@@ -141,7 +156,7 @@ func TestApplySetPeerPolicyRejectsOtherTarget(t *testing.T) {
 	local, issuer := policyPeers(t)
 	addTestPeer(t, ts, issuer, model.RolePersonal)
 
-	policy, err := NewSetPeerPolicy(issuer, testIdentity(t, 4).DeviceID(), true, time.Now())
+	policy, err := NewSetPeerPolicy(issuer, testIdentity(t, 4).DeviceID(), ScopeClipboard, true, time.Now())
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -156,15 +171,15 @@ func TestApplySetPeerPolicyRejectsFriendsIssuer(t *testing.T) {
 	local, issuer := policyPeers(t)
 	addTestPeer(t, ts, issuer, model.RoleFriends)
 
-	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, time.Now())
+	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, true, time.Now())
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
 	if _, err := ts.ApplySetPeerPolicy(ctx, local.DeviceID(), issuer.DeviceID(), policy); !errors.Is(err, ErrInvalidPeer) {
 		t.Fatalf("friend issuer error %v, want %v", err, ErrInvalidPeer)
 	}
-	if require, err := ts.SelfRequireConfirmation(ctx); err != nil || require {
-		t.Fatalf("a friend changed the flag: %t, %v", require, err)
+	if got := peerConfirm(t, ts, issuer.DeviceID()); got.Any() {
+		t.Fatalf("a friend changed the flag: %+v", got)
 	}
 }
 
@@ -173,7 +188,7 @@ func TestApplySetPeerPolicyRejectsUnknownIssuer(t *testing.T) {
 	ts := openTestStore(t)
 	local, issuer := policyPeers(t)
 
-	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, time.Now())
+	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeClipboard, true, time.Now())
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
@@ -182,20 +197,50 @@ func TestApplySetPeerPolicyRejectsUnknownIssuer(t *testing.T) {
 	}
 }
 
-func TestSetSelfRequireConfirmationDatesTheChoice(t *testing.T) {
+func TestApplySetPeerPolicyScopesAndIssuers(t *testing.T) {
 	ctx := context.Background()
 	ts := openTestStore(t)
 	local, issuer := policyPeers(t)
+	other := testIdentity(t, 5)
 	addTestPeer(t, ts, issuer, model.RolePersonal)
+	addTestPeer(t, ts, other, model.RolePersonal)
 
-	policy, err := NewSetPeerPolicy(issuer, local.DeviceID(), true, time.Now().Add(-time.Hour))
+	at := time.Now().Add(-time.Minute).Truncate(time.Millisecond)
+	files, err := NewSetPeerPolicy(issuer, local.DeviceID(), ScopeFiles, true, at)
 	if err != nil {
 		t.Fatalf("create policy: %v", err)
 	}
-	if err := ts.SetSelfRequireConfirmation(ctx, false); err != nil {
-		t.Fatalf("set the flag: %v", err)
+	if _, err := ts.ApplySetPeerPolicy(ctx, local.DeviceID(), issuer.DeviceID(), files); err != nil {
+		t.Fatalf("apply the files policy: %v", err)
 	}
-	if _, err := ts.ApplySetPeerPolicy(ctx, local.DeviceID(), issuer.DeviceID(), policy); !errors.Is(err, ErrPolicyReplay) {
-		t.Fatalf("policy older than the local choice error %v, want %v", err, ErrPolicyReplay)
+	if got := peerConfirm(t, ts, issuer.DeviceID()); got != (Confirmations{Files: true}) {
+		t.Fatalf("flags for the issuer %+v, want files only", got)
 	}
+	if got := peerConfirm(t, ts, other.DeviceID()); got.Any() {
+		t.Fatalf("the policy changed the flags of another device: %+v", got)
+	}
+
+	// Each issuer has a clock of its own, so an older time of another issuer
+	// is not a replay.
+	older, err := NewSetPeerPolicy(other, local.DeviceID(), ScopeClipboard, true, at.Add(-time.Second))
+	if err != nil {
+		t.Fatalf("create policy: %v", err)
+	}
+	if _, err := ts.ApplySetPeerPolicy(ctx, local.DeviceID(), other.DeviceID(), older); err != nil {
+		t.Fatalf("apply the policy of another issuer: %v", err)
+	}
+	if got := peerConfirm(t, ts, other.DeviceID()); got != (Confirmations{Clipboard: true}) {
+		t.Fatalf("flags for the other issuer %+v, want clipboard only", got)
+	}
+}
+
+// peerConfirm returns the flags of the store for a peer.
+func peerConfirm(t *testing.T, ts *Store, id model.DeviceID) Confirmations {
+	t.Helper()
+
+	peer, err := ts.Get(context.Background(), id)
+	if err != nil {
+		t.Fatalf("get peer: %v", err)
+	}
+	return peer.Confirm
 }
