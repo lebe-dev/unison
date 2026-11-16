@@ -86,15 +86,23 @@ type testDevice struct {
 func newDevice(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, opts api.Options) *testDevice {
 	t.Helper()
 
+	return newDeviceIn(t, network, bus, base, t.TempDir(), fake.NewKeystore(), opts)
+}
+
+// newDeviceIn creates a device in the given data directory and keystore, so a
+// test can create the device again with the same identity and history.
+func newDeviceIn(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, dataDir string, keystore ports.Keystore, opts api.Options) *testDevice {
+	t.Helper()
+
 	name := "device-" + strconv.Itoa(base)
 	clipboard := fake.NewClipboard()
 	clock := fake.NewClock(time.Now())
 	downloads := t.TempDir()
 	created, err := node.New(node.Config{
-		DataDir:        t.TempDir(),
+		DataDir:        dataDir,
 		Name:           name,
 		Platform:       model.PlatformMacOS,
-		Keystore:       fake.NewKeystore(),
+		Keystore:       keystore,
 		Clipboard:      clipboard,
 		Discovery:      bus.Discovery(),
 		Clock:          clock,

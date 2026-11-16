@@ -238,6 +238,28 @@ func TestPairWithCode(t *testing.T) {
 	}
 }
 
+// TestPairShowsDeviceOnce checks that a device is one line of the candidate list,
+// shown by the port of its pairing window because its name is unknown before the
+// pair.
+func TestPairShowsDeviceOnce(t *testing.T) {
+	network, bus := newNetwork(t)
+	one := newDevice(t, network, bus, 770, api.Options{})
+	two := newDevice(t, network, bus, 780, api.Options{})
+	one.start(t)
+	two.start(t)
+
+	window := startSession(t, "--endpoint", one.endpoint, "pair")
+	window.waitOutput(t, window.stdout, "pairing window open")
+
+	other := startSession(t, "--endpoint", two.endpoint, "pair")
+	output := other.waitOutput(t, other.stdout, "port ")
+	for _, want := range []string{"found 1 device", " 1. port ", "1 address", "has no name until it is paired"} {
+		if !strings.Contains(output, want) {
+			t.Errorf("the list has no %q:\n%s", want, output)
+		}
+	}
+}
+
 // qrOf returns the pairing code of the output of pair.
 func qrOf(t *testing.T, output string) string {
 	t.Helper()

@@ -55,6 +55,26 @@ written to a log.
 `unison pair` prints the code of the window in the terminal next to the short code flow, and the
 Add device screen of the app shows the same code.
 
+The list of devices that are open for pairing shows one line per device, named by the port of its
+window. A device has no name and no fingerprint before the pair, and one device is listed once even
+when it is reachable over IPv4 and IPv6.
+
+## Manual addresses
+
+Discovery is the usual way to find a device, but it can be unavailable: some networks block
+multicast, and a daemon started from a terminal may not be allowed to announce itself. A paired
+device can then be reached by an address that the user enters:
+
+```sh
+unison status                        # prints the addresses of this device
+unison devices address <id> <host:port>
+```
+
+The address is stored with the device, tried before the discovered and cached ones, and the command
+waits a few seconds for the connection; the daemon keeps trying after that. It survives a restart,
+so two devices are reachable again after both sides restarted. An IPv6 address is written in
+brackets.
+
 ## Group discovery
 
 The Personal devices of one person recognise each other by a tag in their local network

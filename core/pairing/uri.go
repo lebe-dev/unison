@@ -297,11 +297,11 @@ func isLowerHex(s string, n int) bool {
 	return true
 }
 
-// localAddresses returns the addresses of the local interfaces with the given
+// LocalAddresses returns the addresses of the local interfaces with the given
 // port, IPv4 first. Loopback addresses are used only when the device has no
-// other unicast address, and link-local addresses are skipped: they need a zone
-// that a pairing code cannot carry.
-func localAddresses(port int) ([]string, error) {
+// other unicast address, and link-local addresses are skipped because they need
+// a zone.
+func LocalAddresses(port int) ([]string, error) {
 	if port <= 0 || port > 65535 {
 		return nil, fmt.Errorf("pairing: port %d", port)
 	}

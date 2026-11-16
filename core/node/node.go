@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"net/netip"
 	"strconv"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/identity"
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/relay"
@@ -385,6 +387,25 @@ func (n *Node) Addr() net.Addr {
 		return nil
 	}
 	return n.listener.Addr()
+}
+
+// ListenAddrs returns the addresses of the main listener that a peer can reach.
+// A listener bound to a specific address is returned as is; a wildcard listener
+// is replaced by the addresses of the local interfaces.
+func (n *Node) ListenAddrs() []string {
+	addr := n.Addr()
+	if addr == nil {
+		return nil
+	}
+	if parsed, err := netip.ParseAddrPort(addr.String()); err == nil && !parsed.Addr().IsUnspecified() {
+		return []string{parsed.String()}
+	}
+	addrs, err := pairing.LocalAddresses(portOf(addr))
+	if err != nil || len(addrs) == 0 {
+		// An interface list may be unavailable, for example in a mobile app.
+		return []string{addr.String()}
+	}
+	return addrs
 }
 
 // Store returns the database of the node. It is nil before Start.

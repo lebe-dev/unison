@@ -61,6 +61,38 @@ func (s *Service) SetDeviceConfirmation(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(&localv1.SetDeviceConfirmationResponse{}), nil
 }
 
+// SetPeerAddress stores an address of a paired device that the user entered and
+// connects to it. The address is tried before the discovered and cached ones,
+// so a device is reachable on a network where discovery does not work.
+func (s *Service) SetPeerAddress(ctx context.Context, req *connect.Request[localv1.SetPeerAddressRequest]) (*connect.Response[localv1.SetPeerAddressResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	id, idErr := deviceID(req.Msg.GetDeviceId())
+	if idErr != nil {
+		return nil, idErr
+	}
+	addr, addrErr := addrPort(req.Msg.GetAddr())
+	if addrErr != nil {
+		return nil, addrErr
+	}
+	peer, err := s.node.Trust().Get(ctx, id)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	if peer.Revoked {
+		return nil, errorOf(trust.ErrPeerRevoked)
+	}
+	if err := s.node.SetPeerAddress(ctx, id, addr); err != nil {
+		return nil, errorOf(err)
+	}
+	state, err := s.node.Peer(ctx, id)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.SetPeerAddressResponse{Device: deviceToProto(peer, state)}), nil
+}
+
 // confirmationTarget returns the device whose flag the request changes. The
 // local device is the target when self is set.
 func confirmationTarget(local model.DeviceID, req *localv1.SetDeviceConfirmationRequest) (model.DeviceID, error) {
