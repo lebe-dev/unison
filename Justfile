@@ -40,12 +40,12 @@ build-unisond-host:
     CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond ./cmd/unisond
 
 # Run the daemon of the default data directory, with its log on stderr.
-run-daemon *args:
-    CGO_ENABLED={{daemon_cgo}} go run -ldflags "{{ldflags}}" ./cmd/unisond --log-stderr {{args}}
+run-daemon *args: build-unisond-host
+    bin/unisond --log-stderr {{args}}
 
 # Run a second daemon next to the first one, for pairing on a single machine.
-run-daemon-2 *args:
-    CGO_ENABLED={{daemon_cgo}} go run -ldflags "{{ldflags}}" ./cmd/unisond --log-stderr --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
+run-daemon-2 *args: build-unisond-host
+    bin/unisond --log-stderr --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
 
 # Run the unit tests.
 test:
@@ -97,7 +97,38 @@ test-integration:
 
 # Run the Keychain integration tests against the real login Keychain.
 test-keychain:
-    CGO_ENABLED=1 go test -tags keychaintest ./platform/darwin/keystore/
+    mkdir -p bin
+    CGO_ENABLED=1 go test -c -tags keychaintest -o bin/keystore.test ./platform/darwin/keystore/
+    ./bin/keystore.test -test.count=1
+
+# Delete the Keychain items of the dev, test and per-directory hash services.
+keychain-reset:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    removed=0
+    while IFS=$'\t' read -r service account; do
+        case "$service" in
+            app.unison.dev.*|app.unison.test.*) ;;
+            app.unison.*)
+                suffix=${service#app.unison.}
+                [[ $suffix =~ ^[0-9a-f]{8}$ ]] || continue
+                ;;
+            *) continue ;;
+        esac
+        if security delete-generic-password -s "$service" -a "$account" >/dev/null 2>&1; then
+            removed=$((removed + 1))
+        fi
+    done < <(security dump-keychain 2>/dev/null | awk '
+        /^class:/ { service = ""; account = "" }
+        /"acct"<blob>=/ { account = $0; sub(/.*"acct"<blob>=/, "", account); sub(/^"/, "", account); sub(/"$/, "", account) }
+        /"svce"<blob>=/ {
+            service = $0
+            sub(/.*"svce"<blob>=/, "", service)
+            sub(/^"/, "", service)
+            sub(/"$/, "", service)
+            if (account != "") print service "\t" account
+        }')
+    echo "removed $removed keychain items"
 
 # Run the pasteboard integration tests against the real pasteboard.
 test-pasteboard:
