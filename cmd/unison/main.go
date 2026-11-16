@@ -119,6 +119,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.requests(ctx, rest)
 	case "pause":
 		err = a.pause(ctx, rest)
+	case "policy":
+		err = a.policy(ctx, rest)
 	case "help":
 		a.usage(a.stdout)
 		return exitOK
@@ -234,6 +236,8 @@ commands:
   requests accept <id>        accept a request and receive its files
   requests decline <id>       decline a request
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
+  policy                      show what arrives by itself on every kind of
+                              network
 
 <id> is a unique prefix of the fingerprint or the id of a device, or its
 name. The status command prints the addresses of this device; the address of a
