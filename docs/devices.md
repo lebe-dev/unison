@@ -49,6 +49,9 @@ written to a log.
 The command line prints the code of its window next to the short code flow, and the Add device
 screen of the app shows the same code. See [Command line](cli.md).
 
+On Android the code can be read by the Scan a code button of the Add screen or by the system
+camera: the camera opens the `unison://pair` link in Unison, which starts the pairing at once.
+
 The command line lists the devices that are open for pairing, one line per device, named by the
 port of its window. A device has no name and no fingerprint before the pairing, and one device is
 listed once even when it is reachable over IPv4 and IPv6.

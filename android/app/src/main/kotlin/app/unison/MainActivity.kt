@@ -28,6 +28,7 @@ import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryTtl
 import app.unison.history.HistoryTtlDefaults
 import app.unison.history.HistoryTtlProto
+import app.unison.pairing.PairingLink
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyDefaults
 import app.unison.policy.PolicyProto
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
     private var pending by mutableStateOf<ClipboardDraft?>(null)
     private val requestedScreen = MutableStateFlow<Destination?>(null)
     private var requestsPoll: Job? = null
+    private var pairingLink: String? = null
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { finishOnboarding() }
@@ -83,6 +85,10 @@ class MainActivity : ComponentActivity() {
         policy = PolicyDefaults.config
         historyTtl = HistoryTtlDefaults.values
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
+        // A recreated activity has already passed the code of its intent to the core.
+        if (savedInstanceState == null) {
+            takePairingLink(intent)
+        }
         setContent {
             UnisonTheme {
                 val state by appState.state.collectAsState()
@@ -178,6 +184,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         requestedScreen.value = Destination.ofScreen(intent.getStringExtra(EXTRA_SCREEN))
+        takePairingLink(intent)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -224,6 +231,25 @@ class MainActivity : ComponentActivity() {
         appState.refreshHistory()
         appState.refreshRequests()
         startRequestsPoll()
+        scanPairingLink()
+    }
+
+    /** Keeps the pairing code of a link, such as one opened by the system camera. */
+    private fun takePairingLink(intent: Intent?) {
+        val code = PairingLink.code(intent?.action, intent?.dataString) ?: return
+        pairingLink = code
+        requestedScreen.value = Destination.ADD
+        scanPairingLink()
+    }
+
+    /** Pairs with the device of a kept link once the first run screen is done. */
+    private fun scanPairingLink() {
+        if (!onboarded) {
+            return
+        }
+        val code = pairingLink ?: return
+        pairingLink = null
+        appState.scanPairingCode(code)
     }
 
     private fun needsNotificationPermission(): Boolean =
