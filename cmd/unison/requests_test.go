@@ -23,6 +23,7 @@ func friendDevices(t *testing.T, base int) (*testDevice, *testDevice) {
 	b := newDevice(t, network, bus, base+1000, api.Options{})
 	a.start(t)
 	b.start(t)
+	enableFriends(t, a, b)
 	addFriend(t, a, b)
 	addFriend(t, b, a)
 

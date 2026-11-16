@@ -231,6 +231,14 @@ type Node struct {
 	pairing    *pairingWindow
 	network    model.NetworkState
 
+	// friendsMu guards the temporary friends discovery mode.
+	friendsMu     sync.Mutex
+	friendsUntil  time.Time
+	friendsCancel context.CancelFunc
+	// friendsSig wakes the friends loop when the mode changes.
+	friendsSig chan struct{}
+	refusals   refusals
+
 	// addrMu serializes the read-modify-write cycles on the cached addresses.
 	addrMu sync.Mutex
 
@@ -285,6 +293,7 @@ func New(cfg Config) (*Node, error) {
 		probing:    make(map[string]struct{}),
 		candidates: make(map[string]candidate),
 		relayKick:  make(chan struct{}, 1),
+		friendsSig: make(chan struct{}, 1),
 		// A device that has not reported its network is treated as online:
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
@@ -484,6 +493,9 @@ func (n *Node) NetworkChanged(state model.NetworkState) {
 	}
 
 	n.advertise(ctx)
+	if n.friendsOn() {
+		n.announceFriends(ctx)
+	}
 	n.relayNetworkChanged()
 	for _, l := range n.linkList() {
 		l.retry()
@@ -624,7 +636,7 @@ func (n *Node) listenListener(ctx context.Context, port int) (*transport.Listene
 	if err != nil {
 		return nil, err
 	}
-	listener, err := transport.NewListener(pc, n.identity, peerVerifier{trust: n.trust}, n.cfg.Transport)
+	listener, err := transport.NewListener(pc, n.identity, peerVerifier{trust: n.trust, friendsOn: n.friendsOn}, n.cfg.Transport)
 	if err != nil {
 		_ = pc.Close()
 		return nil, err
@@ -638,7 +650,7 @@ func (n *Node) listenDialer(ctx context.Context) (*transport.Dialer, error) {
 	if err != nil {
 		return nil, err
 	}
-	dialer, err := transport.NewDialer(pc, n.identity, peerVerifier{trust: n.trust}, n.cfg.Transport)
+	dialer, err := transport.NewDialer(pc, n.identity, peerVerifier{trust: n.trust, friendsOn: n.friendsOn}, n.cfg.Transport)
 	if err != nil {
 		_ = pc.Close()
 		return nil, err
@@ -649,10 +661,12 @@ func (n *Node) listenDialer(ctx context.Context) (*transport.Dialer, error) {
 // run starts the goroutines of the node.
 func (n *Node) run() {
 	ctx := n.ctx
+	n.loadFriendsMode(ctx)
 	n.spawn(func() { n.acceptLoop(ctx) })
 	n.spawn(func() { n.browseLoop(ctx) })
 	n.spawn(func() { n.clipRun(ctx) })
 	n.spawn(func() { n.historyRun(ctx) })
+	n.spawn(func() { n.friendsLoop(ctx) })
 
 	n.advertise(ctx)
 	for _, peer := range n.pairedPeers(ctx) {
@@ -667,6 +681,19 @@ func (n *Node) spawn(fn func()) {
 		defer n.wg.Done()
 		fn()
 	}()
+}
+
+// loadFriendsMode reads the stored friends discovery state before the node
+// accepts connections.
+func (n *Node) loadFriendsMode(ctx context.Context) {
+	until, err := n.trust.FriendsDiscoveryUntil(ctx)
+	if err != nil {
+		n.log.Warn("reading the friends discovery mode failed", "error", err)
+		return
+	}
+	if n.clock.Now().Before(until) {
+		n.setFriendsUntil(until)
+	}
 }
 
 // clipRun keeps the clipboard pipeline running until the node stops.

@@ -194,6 +194,27 @@ func (n *testNode) subscribe(t *testing.T) *Subscriber {
 	return sub
 }
 
+// ctxOf returns a context bounded by the test timeout.
+func ctxOf(t *testing.T) context.Context {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	t.Cleanup(cancel)
+	return ctx
+}
+
+// enableFriends turns the friends discovery mode on, so Friends devices may open
+// sessions with each other.
+func enableFriends(t *testing.T, nodes ...*testNode) {
+	t.Helper()
+
+	for _, n := range nodes {
+		if _, err := n.SetFriendsDiscovery(context.Background(), true); err != nil {
+			t.Fatalf("enable friends discovery: %v", err)
+		}
+	}
+}
+
 // pair stores the other node as a Personal peer. The address is not set: the
 // nodes have to find each other with discovery.
 func (n *testNode) pair(t *testing.T, other *testNode) {

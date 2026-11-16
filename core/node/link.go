@@ -91,6 +91,13 @@ func (l *link) status() (online, blocked bool) {
 	return l.online, l.blocked
 }
 
+// role returns the role of the peer record.
+func (l *link) role() model.Role {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.peer.Role
+}
+
 // clipTarget returns the session to announce clipboard items on and the peer
 // record, or ok false when the peer may not receive them.
 func (l *link) clipTarget() (sess *session.Session, peer trust.Peer, ok bool) {
@@ -408,7 +415,7 @@ func (n *Node) acceptLoop(ctx context.Context) {
 				return
 			}
 			if errors.Is(err, transport.ErrPeerRejected) {
-				n.log.Debug("connection from an untrusted device refused", "error", err)
+				n.countRefusal()
 				continue
 			}
 			n.log.Warn("accepting a connection failed", "error", err)
@@ -532,6 +539,17 @@ func (n *Node) candidateAddrs() []string {
 // probe dials one discovered address when a peer is missing. A device that is
 // not trusted is refused during the handshake.
 func (n *Node) probe(ctx context.Context, addr string) {
+	n.probeAddr(ctx, addr, true)
+}
+
+// probeQuiet dials one discovered address without writing it to the log.
+func (n *Node) probeQuiet(ctx context.Context, addr string) {
+	n.probeAddr(ctx, addr, false)
+}
+
+// probeAddr dials one discovered address. A refusal during the handshake is
+// counted, other failures are logged with the address when logAddr is set.
+func (n *Node) probeAddr(ctx context.Context, addr string, logAddr bool) {
 	if ctx.Err() != nil || !n.needsPeers() {
 		return
 	}
@@ -553,13 +571,27 @@ func (n *Node) probe(ctx context.Context, addr string) {
 
 		conn, err := n.dial(ctx, addr)
 		if err != nil {
-			n.log.Debug("discovered address did not answer", "addr", addr, "error", err)
+			if errors.Is(err, transport.ErrPeerRejected) {
+				n.countRefusal()
+				return
+			}
+			if logAddr {
+				n.log.Debug("discovered address did not answer", "addr", addr, "error", err)
+			}
 			return
 		}
 		if _, err := n.attach(ctx, conn, false); err != nil && !errors.Is(err, errSuperseded) {
-			n.log.Debug("discovered device refused", "addr", addr, "error", err)
+			if logAddr {
+				n.log.Debug("discovered device refused", "addr", addr, "error", err)
+			}
 		}
 	})
+}
+
+// dialAllowed reports whether the link may open a connection. A Friends device
+// is reachable only while the local device looks for friends.
+func (n *Node) dialAllowed(l *link) bool {
+	return l.role() != model.RoleFriends || n.friendsOn()
 }
 
 // needsPeers reports whether a peer is worth dialing: it is offline, or it is
@@ -610,6 +642,13 @@ func (n *Node) runLink(ctx context.Context, l *link) {
 			continue
 		}
 		if blocked {
+			l.endRelay()
+			if !l.wait(ctx, 0) {
+				return
+			}
+			continue
+		}
+		if !n.dialAllowed(l) {
 			l.endRelay()
 			if !l.wait(ctx, 0) {
 				return

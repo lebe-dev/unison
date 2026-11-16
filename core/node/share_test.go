@@ -36,6 +36,9 @@ func shareNodesWith(t *testing.T, base int, role model.Role, tune func(*Config))
 	b := newTestNodeWith(t, network, bus, base+1000, t.TempDir(), fake.NewKeystore(), tune)
 	a.start(t)
 	b.start(t)
+	if role == model.RoleFriends {
+		enableFriends(t, a, b)
+	}
 
 	a.pairAs(t, b, role)
 	b.pairAs(t, a, role)

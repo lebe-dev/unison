@@ -310,7 +310,7 @@ func (n *Node) openRelayPath(ctx context.Context, l *link) (*relayPath, error) {
 	cfg := n.cfg.Transport
 	cfg.PacketSize = size
 
-	verifier := peerVerifier{trust: n.trust}
+	verifier := peerVerifier{trust: n.trust, friendsOn: n.friendsOn}
 	listener, err := shared.Listener(n.identity, verifier, cfg)
 	if err != nil {
 		_ = shared.Close()

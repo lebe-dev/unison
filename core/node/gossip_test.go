@@ -330,6 +330,7 @@ func TestGossipRefusesFriendIntroduction(t *testing.T) {
 	friend := newTestNode(t, network, bus, 51000)
 	a.start(t)
 	friend.start(t)
+	enableFriends(t, a, friend)
 
 	err := a.AddPeer(context.Background(), trust.Peer{
 		Public:   friend.Identity().Public(),
