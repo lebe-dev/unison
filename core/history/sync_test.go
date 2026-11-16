@@ -204,10 +204,13 @@ func TestVectorFromProto(t *testing.T) {
 	if _, err := vectorFromProto(map[string]uint64{"not a device": 1}); err == nil {
 		t.Fatal("an unusable device id was accepted")
 	}
+	if _, err := vectorFromProto(map[string]uint64{model.DeviceID{}.String(): 1}); err == nil {
+		t.Fatal("a vector of an empty device was accepted")
+	}
 
 	large := make(map[string]uint64, maxVectorOrigins+10)
 	for i := range maxVectorOrigins + 10 {
-		large[fmt.Sprintf("%064x", i)] = 1
+		large[fmt.Sprintf("%064x", i+1)] = 1
 	}
 	capped, err := vectorFromProto(large)
 	if err != nil {
