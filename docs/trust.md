@@ -13,6 +13,20 @@ name, its platform, a role and the time it was last reachable.
 
 The roles decide what a device may do; the core checks them for every message it accepts.
 
+## File transfers
+
+A device offers a file with `unison send`, and the receiver downloads it and verifies every chunk. A
+Personal device receives the offer at once. An offer of a Friends device waits for a decision:
+
+```sh
+unison requests
+unison requests accept <id>
+unison requests decline <id>
+```
+
+Nothing of a pending request is written to the disk. An unanswered request expires after ten
+minutes, and one device cannot pile up more than eight requests of another device.
+
 ## Group discovery
 
 The Personal devices of one person recognise each other by a tag in their local network
