@@ -157,4 +157,23 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             parse = { Local.FetchHistoryItemResponse.parseFrom(it) },
         )
     }
+
+    /** Every file transfer of this device, newest first. */
+    override suspend fun listTransfers(): Local.ListTransfersResponse = call(
+        method = "ListTransfers",
+        request = Local.ListTransfersRequest.getDefaultInstance(),
+        parse = { Local.ListTransfersResponse.parseFrom(it) },
+    )
+
+    /** Stops one file transfer. */
+    override suspend fun cancelTransfer(id: String) {
+        val request = Local.CancelTransferRequest.newBuilder()
+            .setId(id)
+            .build()
+        call(
+            method = "CancelTransfer",
+            request = request,
+            parse = { Local.CancelTransferResponse.parseFrom(it) },
+        )
+    }
 }

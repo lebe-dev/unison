@@ -29,6 +29,12 @@ interface CoreApi {
 
     /** Downloads the payloads of one entry into [path]. */
     suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse
+
+    /** Every file transfer of this device, newest first. */
+    suspend fun listTransfers(): Local.ListTransfersResponse
+
+    /** Stops one file transfer. */
+    suspend fun cancelTransfer(id: String)
 }
 
 /** Core that starts the service when it does not answer yet. */
@@ -70,6 +76,16 @@ class RunningCore(
     override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse {
         ensureRunning()
         return client.fetchHistoryItem(id, path)
+    }
+
+    override suspend fun listTransfers(): Local.ListTransfersResponse {
+        ensureRunning()
+        return client.listTransfers()
+    }
+
+    override suspend fun cancelTransfer(id: String) {
+        ensureRunning()
+        client.cancelTransfer(id)
     }
 
     private suspend fun ensureRunning() {

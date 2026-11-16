@@ -74,6 +74,11 @@ class AppStateTest {
 
         override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse =
             Local.FetchHistoryItemResponse.getDefaultInstance()
+
+        override suspend fun listTransfers(): Local.ListTransfersResponse =
+            Local.ListTransfersResponse.getDefaultInstance()
+
+        override suspend fun cancelTransfer(id: String) = Unit
     }
 
     private class FakeSaver(private var saved: Int = 1) : HistorySaver {
