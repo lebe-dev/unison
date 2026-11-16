@@ -275,7 +275,7 @@ func (n *Node) pairingWindowEvent(pw *pairingWindow, event pairing.Event) {
 func (n *Node) pairingEvent(event pairing.Event) {
 	switch event.Kind {
 	case pairing.EventRequest:
-		n.log.Info("pairing request", "peer", event.DeviceID, "role", event.Role,
+		n.log.Info("pairing request", "peer", event.DeviceID, "role", event.Role.String(),
 			"method", event.Method)
 		n.publish(Event{
 			Kind:     EventPairingRequest,
@@ -287,7 +287,7 @@ func (n *Node) pairingEvent(event pairing.Event) {
 			Method:   event.Method,
 		})
 	case pairing.EventPaired:
-		n.log.Info("pairing completed", "peer", event.DeviceID, "role", event.Role,
+		n.log.Info("pairing completed", "peer", event.DeviceID, "role", event.Role.String(),
 			"method", event.Method)
 		n.publish(Event{
 			Kind:     EventPairingPaired,
