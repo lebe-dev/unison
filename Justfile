@@ -9,10 +9,6 @@ export CGO_ENABLED := "0"
 # The daemon reaches the Keychain and the pasteboard through cgo on macOS.
 daemon_cgo := if os() == "macos" { "1" } else { "0" }
 
-# Mach-O UUID and signing identifier of the development build of the daemon.
-dev_daemon_uuid := "4dc5a49dbd7e4abb837b9237af32859f"
-dev_daemon_id := "app.unison.unisond.dev"
-
 # Data directory of the daemon.
 daemon_dir := if os() == "windows" {
     env_var("LOCALAPPDATA") + "/Unison"
@@ -46,70 +42,24 @@ build-unisond-all:
     just build-unisond darwin amd64
     just build-unisond windows amd64
 
-# Build unisond for the host with the Keychain and pasteboard of the platform.
+# Build unisond for the host with the Keychain and pasteboard of the platform. On
+# macOS it is the bundle bin/unisond.app, so the daemon holds its own permissions.
 build-unisond-host:
-    #!/usr/bin/env bash
-    set -eu -o pipefail
-    if [ "{{os()}}" != "macos" ]; then
-        CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond ./cmd/unisond
-        exit 0
-    fi
-    # macOS keeps the local network permission of a command line tool per Mach-O
-    # UUID and the Keychain access per code signature. A fixed UUID and a signature
-    # with a stable identifier keep both across rebuilds.
-    mkdir -p bin
-    tmp="$(mktemp bin/.unisond.XXXXXX)"
-    trap 'rm -f "$tmp"' EXIT
-    CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}} -B 0x{{dev_daemon_uuid}}" -o "$tmp" ./cmd/unisond
-    identity="${UNISON_DEV_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk '/"Apple Development: / { print $2; exit }')}"
-    if [ -z "$identity" ]; then
-        echo "no Apple Development identity found, so the daemon is signed ad-hoc and macOS asks for the Keychain again after each build; set UNISON_DEV_SIGN_IDENTITY to sign it" >&2
-        identity="-"
-    fi
-    codesign --force --sign "$identity" --identifier {{dev_daemon_id}} "$tmp"
-    # The rename keeps the file of a running daemon intact.
-    mv -f "$tmp" bin/unisond
+    {{ if os() == "macos" { "packaging/macos/dev-daemon/build.sh '" + ldflags + "'" } else { "CGO_ENABLED=" + daemon_cgo + " go build -trimpath -ldflags '" + ldflags + "' -o bin/unisond ./cmd/unisond" } }}
 
 # Build and run the daemon of the default data directory, replacing the one that runs.
 run-daemon *args: build-unisond-host
     just stop-daemon "{{daemon_dir}}"
-    exec bin/unisond --log-stderr {{args}}
+    {{ if os() == "macos" { "packaging/macos/dev-daemon/run.sh \"" + daemon_dir + "\"" } else { "exec bin/unisond --log-stderr" } }} {{args}}
 
 # Run a second daemon next to the first one, for pairing on a single machine.
 run-daemon-2 *args: build-unisond-host
     just stop-daemon "{{daemon_second_dir}}"
-    exec bin/unisond --log-stderr --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
+    {{ if os() == "macos" { "packaging/macos/dev-daemon/run.sh \"" + daemon_second_dir + "\"" } else { "exec bin/unisond --log-stderr" } }} --data-dir "{{daemon_second_dir}}" --name unisond-2 --clipboard=none {{args}}
 
 # Stop the daemon that holds the lock of a data directory, and wait for it to exit.
 stop-daemon dir=daemon_dir:
-    #!/usr/bin/env bash
-    set -eu -o pipefail
-    lock="{{dir}}/unisond.lock"
-    if [ ! -e "$lock" ] || ! command -v lsof >/dev/null; then
-        exit 0
-    fi
-    pids="$(lsof -t "$lock" 2>/dev/null || true)"
-    if [ -z "$pids" ]; then
-        exit 0
-    fi
-    for pid in $pids; do
-        echo "stopping the daemon $pid: $(ps -o command= -p "$pid" || true)" >&2
-        kill -TERM "$pid" 2>/dev/null || true
-    done
-    for _ in $(seq 1 50); do
-        alive=""
-        for pid in $pids; do
-            if kill -0 "$pid" 2>/dev/null; then
-                alive="$alive $pid"
-            fi
-        done
-        if [ -z "$alive" ]; then
-            exit 0
-        fi
-        sleep 0.2
-    done
-    echo "the daemon did not stop:$alive" >&2
-    exit 1
+    packaging/macos/dev-daemon/stop.sh "{{dir}}"
 
 # Run the unit tests.
 test:
