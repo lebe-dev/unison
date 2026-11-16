@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -101,7 +100,7 @@ func (a *app) pair(ctx context.Context, args []string) error {
 
 	candidates = a.pairingCandidates(pairCtx, client, candidates)
 	if len(candidates) > 0 {
-		a.showCandidates(candidates)
+		a.showCandidates(groupCandidates(candidates))
 		state = awaitDevice
 	}
 
@@ -115,7 +114,7 @@ func (a *app) pair(ctx context.Context, args []string) error {
 		case <-poll.C:
 			candidates = a.pairingCandidates(pairCtx, client, candidates)
 			if state == awaitNothing && !exchange && len(candidates) > 0 {
-				a.showCandidates(candidates)
+				a.showCandidates(groupCandidates(candidates))
 				state = awaitDevice
 			}
 		case item, ok := <-events:
@@ -137,7 +136,7 @@ func (a *app) pair(ctx context.Context, args []string) error {
 					candidates = append(candidates, addr)
 				}
 				if state == awaitNothing && !exchange {
-					a.showCandidates(candidates)
+					a.showCandidates(groupCandidates(candidates))
 					state = awaitDevice
 				}
 			case localv1.EventKind_EVENT_KIND_PAIRING_REQUEST:
@@ -159,10 +158,10 @@ func (a *app) pair(ctx context.Context, args []string) error {
 			}
 			switch state {
 			case awaitDevice:
-				addr, ok := chooseCandidate(line, candidates)
+				addr, ok := chooseCandidate(line, groupCandidates(candidates))
 				if !ok {
 					a.info("no device %q", strings.TrimSpace(line))
-					a.showCandidates(candidates)
+					a.showCandidates(groupCandidates(candidates))
 					continue
 				}
 				if addr == "" {
@@ -195,7 +194,7 @@ func (a *app) pair(ctx context.Context, args []string) error {
 					a.info("no devices found yet")
 					continue
 				}
-				a.showCandidates(candidates)
+				a.showCandidates(groupCandidates(candidates))
 				state = awaitDevice
 			}
 		}
@@ -335,30 +334,6 @@ func (a *app) pairingCandidates(ctx context.Context, client localv1connect.Uniso
 		}
 	}
 	return known
-}
-
-// showCandidates prints the discovered devices and asks which one to pair with.
-func (a *app) showCandidates(candidates []string) {
-	a.info("found %s:", countText(len(candidates), "device", "devices"))
-	for i, addr := range candidates {
-		a.info("  %d. %s", i+1, addr)
-	}
-	_, _ = fmt.Fprintf(a.stderr, "choose a device [1-%d], Enter to wait for an incoming request: ", len(candidates))
-}
-
-// chooseCandidate returns the address the line selects. An empty line returns
-// an empty address, which means waiting for an incoming request. The second
-// value reports whether the line was understood.
-func chooseCandidate(line string, candidates []string) (string, bool) {
-	line = strings.TrimSpace(line)
-	if line == "" {
-		return "", true
-	}
-	index, err := strconv.Atoi(line)
-	if err != nil || index < 1 || index > len(candidates) {
-		return "", false
-	}
-	return candidates[index-1], true
 }
 
 // showCode prints the short authentication code of an exchange and asks for the

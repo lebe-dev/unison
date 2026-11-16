@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -51,6 +52,9 @@ func (a *app) writeStatus(status *localv1.GetStatusResponse) {
 
 	if !status.GetRunning() {
 		return
+	}
+	if addrs := status.GetAddrs(); len(addrs) > 0 {
+		a.field("address", strings.Join(addrs, ", "))
 	}
 	a.field("network", networkText(status.GetNetwork()))
 	a.field("clipboard", pauseText(status.GetPause()))

@@ -208,6 +208,9 @@ commands:
   status                      show the daemon, the network and the peers
   devices [ls]                list the paired devices
   devices rename <id> <name>  change the name of a paired device
+  devices address <id> <host:port>
+                              store an address of a paired device and connect
+                              to it, for networks where discovery does not work
   devices confirm <id|self> on|off
                               hold the clipboard items of a device, or the items
                               of every device, until they are applied
@@ -233,7 +236,8 @@ commands:
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
 
 <id> is a unique prefix of the fingerprint or the id of a device, or its
-name.
+name. The status command prints the addresses of this device; the address of a
+peer is host:port from that output, with an IPv6 host in brackets.
 
 options:
   --endpoint path  endpoint of the daemon, by default $UNISON_LOCAL_API or the

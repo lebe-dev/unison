@@ -5,7 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 
@@ -32,6 +35,8 @@ func (a *app) devices(ctx context.Context, args []string) error {
 		return a.devicesRename(ctx, rest)
 	case "confirm":
 		return a.devicesConfirm(ctx, rest)
+	case "address":
+		return a.devicesAddress(ctx, rest)
 	case "revoke":
 		return a.devicesRevoke(ctx, rest)
 	default:
@@ -158,6 +163,117 @@ func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 	}
 	a.info("confirmation for %s is %s", label, state)
 	return nil
+}
+
+// addressWait is how long devices address waits for the connection by default.
+const addressWait = 5 * time.Second
+
+// onlinePoll is how often devices address asks for the state of the device.
+const onlinePoll = 100 * time.Millisecond
+
+// devicesAddress stores an address of a paired device that the user entered and
+// waits for the daemon to connect to it. The address is tried before the
+// discovered and cached ones, so it connects devices on a network where
+// discovery does not work.
+func (a *app) devicesAddress(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("devices address")
+	wait := flags.Duration("wait", addressWait, "how long to wait for the connection")
+	if err := parseFlags(flags, args); err != nil {
+		return err
+	}
+	if flags.NArg() != 2 {
+		return a.usageError("devices address needs a device and an address")
+	}
+	reference, value := flags.Arg(0), flags.Arg(1)
+	addr, err := peerAddress(value)
+	if err != nil {
+		return a.usageError("%v", err)
+	}
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	devices, err := a.devicesOf(ctx, client)
+	if err != nil {
+		return err
+	}
+	device, err := resolveDevice(devices, reference)
+	if err != nil {
+		return err
+	}
+
+	request := &localv1.SetPeerAddressRequest{DeviceId: device.GetDeviceId(), Addr: addr}
+	response, err := client.SetPeerAddress(ctx, connect.NewRequest(request))
+	if err != nil {
+		return fmt.Errorf("set the address of the device: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(response.Msg)
+	}
+	a.info("address %s saved for %s", addr, deviceLabel(device.GetDeviceId(), device.GetName()))
+	if *wait <= 0 {
+		return nil
+	}
+	online, err := a.waitOnline(ctx, client, device.GetDeviceId(), *wait)
+	if err != nil {
+		return err
+	}
+	if !online {
+		a.info("the device is not online yet, the daemon keeps trying")
+		return nil
+	}
+	a.info("the device is online")
+	return nil
+}
+
+// waitOnline waits until the daemon reports the device online. The address is
+// stored either way, so a timeout is not an error.
+func (a *app) waitOnline(ctx context.Context, client localv1connect.UnisonServiceClient, id string, limit time.Duration) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, limit)
+	defer cancel()
+
+	ticker := time.NewTicker(onlinePoll)
+	defer ticker.Stop()
+	for {
+		devices, err := a.devicesOf(ctx, client)
+		if err != nil {
+			if ctx.Err() != nil {
+				return false, nil
+			}
+			return false, err
+		}
+		for _, device := range devices {
+			if device.GetDeviceId() == id && device.GetOnline() {
+				return true, nil
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return false, nil
+		case <-ticker.C:
+		}
+	}
+}
+
+// peerAddress validates a host:port address of a paired device. An IPv6 host is
+// written in brackets.
+func peerAddress(value string) (string, error) {
+	addr := strings.TrimSpace(value)
+	if addr == "" {
+		return "", errors.New("the address is empty")
+	}
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", err
+	}
+	if host == "" {
+		return "", errors.New("the address has no host")
+	}
+	if number, err := strconv.Atoi(port); err != nil || number < 1 || number > 65535 {
+		return "", fmt.Errorf("the address %q has no port between 1 and 65535", addr)
+	}
+	return addr, nil
 }
 
 // devicesRevoke revokes a paired device or, with self, leaves the group. Both
