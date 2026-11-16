@@ -260,7 +260,8 @@ the other devices like any other entry. Expiry is decided by the origin device a
 item: the queries skip entries past their expiry and a cleanup every ten minutes removes them, so
 an expired item disappears on every device without a network exchange. The lifetimes are the
 `history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, seven days, three days and
-one day by default.
+one day by default; `UpdateSettings` stores them and `ReloadTTLs` passes them to the pipeline, so a
+change applies to the next captured item without a restart.
 
 When a session with a Personal peer opens, both sides send the version vector of their history in
 `HistorySync`, and `HistoryBatch` answers it with the entries the other side misses, oldest first,

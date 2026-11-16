@@ -36,6 +36,8 @@ const (
 	DefaultFilesTTL = 24 * time.Hour
 	// DefaultCleanupInterval is how often expired entries are removed.
 	DefaultCleanupInterval = 10 * time.Minute
+	// MaxTTL is the longest lifetime a device may set for a kind.
+	MaxTTL = 365 * 24 * time.Hour
 	// DefaultListLimit is the number of items a query returns when it asks for
 	// no particular number.
 	DefaultListLimit = 50

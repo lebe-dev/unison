@@ -1803,8 +1803,14 @@ type Settings struct {
 	DataSaver *PolicyRow `protobuf:"bytes,8,opt,name=data_saver,json=dataSaver,proto3" json:"data_saver,omitempty"`
 	// Largest item fetched eagerly over the relay, in bytes.
 	RelayMaxSizeBytes int64 `protobuf:"varint,9,opt,name=relay_max_size_bytes,json=relayMaxSizeBytes,proto3" json:"relay_max_size_bytes,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Lifetime of a text item of the history, in seconds.
+	HistoryTtlTextSeconds int64 `protobuf:"varint,10,opt,name=history_ttl_text_seconds,json=historyTtlTextSeconds,proto3" json:"history_ttl_text_seconds,omitempty"`
+	// Lifetime of an image item of the history, in seconds.
+	HistoryTtlImageSeconds int64 `protobuf:"varint,11,opt,name=history_ttl_image_seconds,json=historyTtlImageSeconds,proto3" json:"history_ttl_image_seconds,omitempty"`
+	// Lifetime of a file item of the history, in seconds.
+	HistoryTtlFilesSeconds int64 `protobuf:"varint,12,opt,name=history_ttl_files_seconds,json=historyTtlFilesSeconds,proto3" json:"history_ttl_files_seconds,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *Settings) Reset() {
@@ -1896,6 +1902,27 @@ func (x *Settings) GetDataSaver() *PolicyRow {
 func (x *Settings) GetRelayMaxSizeBytes() int64 {
 	if x != nil {
 		return x.RelayMaxSizeBytes
+	}
+	return 0
+}
+
+func (x *Settings) GetHistoryTtlTextSeconds() int64 {
+	if x != nil {
+		return x.HistoryTtlTextSeconds
+	}
+	return 0
+}
+
+func (x *Settings) GetHistoryTtlImageSeconds() int64 {
+	if x != nil {
+		return x.HistoryTtlImageSeconds
+	}
+	return 0
+}
+
+func (x *Settings) GetHistoryTtlFilesSeconds() int64 {
+	if x != nil {
+		return x.HistoryTtlFilesSeconds
 	}
 	return 0
 }
@@ -5360,9 +5387,18 @@ type UpdateSettingsRequest struct {
 	RelayMaxSizeBytes *int64     `protobuf:"varint,9,opt,name=relay_max_size_bytes,json=relayMaxSizeBytes,proto3,oneof" json:"relay_max_size_bytes,omitempty"`
 	// Remove the stored policy overrides and return to the defaults. Rows given
 	// in the same request are stored on top of the defaults.
-	ResetPolicy   bool `protobuf:"varint,10,opt,name=reset_policy,json=resetPolicy,proto3" json:"reset_policy,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ResetPolicy bool `protobuf:"varint,10,opt,name=reset_policy,json=resetPolicy,proto3" json:"reset_policy,omitempty"`
+	// Lifetime of a text item of the history, in seconds.
+	HistoryTtlTextSeconds *int64 `protobuf:"varint,11,opt,name=history_ttl_text_seconds,json=historyTtlTextSeconds,proto3,oneof" json:"history_ttl_text_seconds,omitempty"`
+	// Lifetime of an image item of the history, in seconds.
+	HistoryTtlImageSeconds *int64 `protobuf:"varint,12,opt,name=history_ttl_image_seconds,json=historyTtlImageSeconds,proto3,oneof" json:"history_ttl_image_seconds,omitempty"`
+	// Lifetime of a file item of the history, in seconds.
+	HistoryTtlFilesSeconds *int64 `protobuf:"varint,13,opt,name=history_ttl_files_seconds,json=historyTtlFilesSeconds,proto3,oneof" json:"history_ttl_files_seconds,omitempty"`
+	// Remove the stored history lifetimes and return to the defaults. Lifetimes
+	// given in the same request are stored on top of the defaults.
+	ResetHistoryTtl bool `protobuf:"varint,14,opt,name=reset_history_ttl,json=resetHistoryTtl,proto3" json:"reset_history_ttl,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *UpdateSettingsRequest) Reset() {
@@ -5461,6 +5497,34 @@ func (x *UpdateSettingsRequest) GetRelayMaxSizeBytes() int64 {
 func (x *UpdateSettingsRequest) GetResetPolicy() bool {
 	if x != nil {
 		return x.ResetPolicy
+	}
+	return false
+}
+
+func (x *UpdateSettingsRequest) GetHistoryTtlTextSeconds() int64 {
+	if x != nil && x.HistoryTtlTextSeconds != nil {
+		return *x.HistoryTtlTextSeconds
+	}
+	return 0
+}
+
+func (x *UpdateSettingsRequest) GetHistoryTtlImageSeconds() int64 {
+	if x != nil && x.HistoryTtlImageSeconds != nil {
+		return *x.HistoryTtlImageSeconds
+	}
+	return 0
+}
+
+func (x *UpdateSettingsRequest) GetHistoryTtlFilesSeconds() int64 {
+	if x != nil && x.HistoryTtlFilesSeconds != nil {
+		return *x.HistoryTtlFilesSeconds
+	}
+	return 0
+}
+
+func (x *UpdateSettingsRequest) GetResetHistoryTtl() bool {
+	if x != nil {
+		return x.ResetHistoryTtl
 	}
 	return false
 }
@@ -5968,7 +6032,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x05image\x18\x02 \x01(\v2\x1b.unison.local.v1.PolicyCellR\x05image\x121\n" +
 	"\x05files\x18\x03 \x01(\v2\x1b.unison.local.v1.PolicyCellR\x05files\x12\x19\n" +
 	"\x05relay\x18\x04 \x01(\bH\x00R\x05relay\x88\x01\x01B\b\n" +
-	"\x06_relay\"\xc4\x03\n" +
+	"\x06_relay\"\xf3\x04\n" +
 	"\bSettings\x12\x1f\n" +
 	"\vdevice_name\x18\x01 \x01(\tR\n" +
 	"deviceName\x121\n" +
@@ -5980,7 +6044,11 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\aroaming\x18\a \x01(\v2\x1a.unison.local.v1.PolicyRowR\aroaming\x129\n" +
 	"\n" +
 	"data_saver\x18\b \x01(\v2\x1a.unison.local.v1.PolicyRowR\tdataSaver\x12/\n" +
-	"\x14relay_max_size_bytes\x18\t \x01(\x03R\x11relayMaxSizeBytes\"\x12\n" +
+	"\x14relay_max_size_bytes\x18\t \x01(\x03R\x11relayMaxSizeBytes\x127\n" +
+	"\x18history_ttl_text_seconds\x18\n" +
+	" \x01(\x03R\x15historyTtlTextSeconds\x129\n" +
+	"\x19history_ttl_image_seconds\x18\v \x01(\x03R\x16historyTtlImageSeconds\x129\n" +
+	"\x19history_ttl_files_seconds\x18\f \x01(\x03R\x16historyTtlFilesSeconds\"\x12\n" +
 	"\x10GetStatusRequest\"\x85\x03\n" +
 	"\x11GetStatusResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
@@ -6153,7 +6221,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x05pause\x18\x01 \x01(\v2\x16.unison.local.v1.PauseR\x05pause\"\x14\n" +
 	"\x12GetSettingsRequest\"L\n" +
 	"\x13GetSettingsResponse\x125\n" +
-	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xf9\x04\n" +
+	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xbc\a\n" +
 	"\x15UpdateSettingsRequest\x12$\n" +
 	"\vdevice_name\x18\x01 \x01(\tH\x00R\n" +
 	"deviceName\x88\x01\x01\x126\n" +
@@ -6167,12 +6235,19 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"data_saver\x18\b \x01(\v2\x1a.unison.local.v1.PolicyRowR\tdataSaver\x124\n" +
 	"\x14relay_max_size_bytes\x18\t \x01(\x03H\x04R\x11relayMaxSizeBytes\x88\x01\x01\x12!\n" +
 	"\freset_policy\x18\n" +
-	" \x01(\bR\vresetPolicyB\x0e\n" +
+	" \x01(\bR\vresetPolicy\x12<\n" +
+	"\x18history_ttl_text_seconds\x18\v \x01(\x03H\x05R\x15historyTtlTextSeconds\x88\x01\x01\x12>\n" +
+	"\x19history_ttl_image_seconds\x18\f \x01(\x03H\x06R\x16historyTtlImageSeconds\x88\x01\x01\x12>\n" +
+	"\x19history_ttl_files_seconds\x18\r \x01(\x03H\aR\x16historyTtlFilesSeconds\x88\x01\x01\x12*\n" +
+	"\x11reset_history_ttl\x18\x0e \x01(\bR\x0fresetHistoryTtlB\x0e\n" +
 	"\f_device_nameB\x17\n" +
 	"\x15_require_confirmationB\x16\n" +
 	"\x14_blob_max_size_bytesB\x10\n" +
 	"\x0e_downloads_dirB\x17\n" +
-	"\x15_relay_max_size_bytes\"O\n" +
+	"\x15_relay_max_size_bytesB\x1b\n" +
+	"\x19_history_ttl_text_secondsB\x1c\n" +
+	"\x1a_history_ttl_image_secondsB\x1c\n" +
+	"\x1a_history_ttl_files_seconds\"O\n" +
 	"\x16UpdateSettingsResponse\x125\n" +
 	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xea\x01\n" +
 	"\x05Relay\x12\x10\n" +

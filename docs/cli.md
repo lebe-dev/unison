@@ -192,6 +192,27 @@ relay limit 1.0 MiB
 
 The table is described under [Network policies](policy.md).
 
+## settings
+
+```sh
+unison settings                    # all settings, with the history lifetimes
+unison settings ttl                # the lifetimes only
+unison settings ttl text 30d       # keep text for 30 days
+unison settings ttl files 48h
+unison settings ttl reset          # the three lifetimes back to the defaults
+```
+
+```
+KIND    LIFETIME
+text    7d
+images  3d
+files   1d
+```
+
+The lifetime belongs to the device that captured the item; see
+[Clipboard and history](clipboard.md#history). Days and hours are accepted, from one second up to
+365 days.
+
 ## relay
 
 ```sh

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/lebe-dev/unison/core/model"
@@ -146,8 +147,10 @@ type Pipeline struct {
 	clock     ports.Clock
 	log       *slog.Logger
 	debounce  time.Duration
-	ttls      TTLs
 	echo      *echoGuard
+
+	mu   sync.RWMutex
+	ttls TTLs
 }
 
 // New creates a pipeline. The pipeline does nothing until Run is called and
@@ -208,6 +211,21 @@ func New(opts Options) (*Pipeline, error) {
 	}
 	p.echo = newEchoGuard(p.clock, echoWindow)
 	return p, nil
+}
+
+// SetTTLs changes the lifetimes of captured items, so the next captured item
+// uses them. Items already recorded keep their expiry.
+func (p *Pipeline) SetTTLs(ttls TTLs) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.ttls = ttls.withDefaults()
+}
+
+// TTLs returns the lifetimes of the items the pipeline captures now.
+func (p *Pipeline) TTLs() TTLs {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.ttls
 }
 
 // Run watches the clipboard and creates items until ctx is done. Nothing is
@@ -385,7 +403,7 @@ func (p *Pipeline) newItem(ctx context.Context, kind model.Kind, reps []model.Re
 		Origin:          p.origin,
 		Seq:             seq,
 		CreatedAt:       now,
-		ExpiresAt:       now.Add(p.ttls.For(kind)),
+		ExpiresAt:       now.Add(p.TTLs().For(kind)),
 		Kind:            kind,
 		Representations: reps,
 		Source:          model.SourceClipboard,

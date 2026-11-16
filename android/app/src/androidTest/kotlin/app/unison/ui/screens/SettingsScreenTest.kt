@@ -11,6 +11,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.clipboard.PauseRequest
+import app.unison.history.HistoryTtl
+import app.unison.history.HistoryTtlDefaults
 import app.unison.policy.PolicyDefaults
 import app.unison.service.OperatingMode
 import app.unison.ui.state.CoreState
@@ -98,6 +100,39 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun historyLifetimeIsSaved() {
+        var saved: Pair<Local.Kind, Long>? = null
+        setContent(onTtlSave = { kind, seconds -> saved = kind to seconds })
+
+        compose.onNodeWithTag(ttlTag(Local.Kind.KIND_TEXT)).performTextReplacement("30d")
+        compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_TEXT)).performScrollTo().performClick()
+
+        assertEquals(Local.Kind.KIND_TEXT to 30L * 24 * 60 * 60, saved)
+    }
+
+    @Test
+    fun unusableHistoryLifetimeIsRefused() {
+        var saved: Pair<Local.Kind, Long>? = null
+        setContent(onTtlSave = { kind, seconds -> saved = kind to seconds })
+
+        compose.onNodeWithTag(ttlTag(Local.Kind.KIND_IMAGE)).performTextReplacement("soon")
+        compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_IMAGE)).performScrollTo().performClick()
+
+        compose.onNodeWithText("Use a lifetime like 24h or 7d, up to 365d").assertIsDisplayed()
+        assertEquals(null, saved)
+    }
+
+    @Test
+    fun historyLifetimesCanBeReset() {
+        var reset = false
+        setContent(onTtlReset = { reset = true })
+
+        compose.onNodeWithText("Reset lifetimes").performScrollTo().performClick()
+
+        assertTrue(reset)
+    }
+
+    @Test
     fun leavingTheGroupAsksForConfirmation() {
         var left = false
         setContent(onLeaveGroup = { left = true })
@@ -119,12 +154,15 @@ class SettingsScreenTest {
             .setVersion("0.1.0")
             .build(),
         settings: Local.Settings = Local.Settings.getDefaultInstance(),
+        ttl: HistoryTtl = HistoryTtlDefaults.values,
         onDeviceNameChange: (String) -> Unit = {},
         onOperatingModeChange: (OperatingMode) -> Unit = {},
         onPause: (PauseRequest) -> Unit = {},
         onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit = { _, _, _ -> },
         onRelayOff: () -> Unit = {},
         onRefreshRelay: () -> Unit = {},
+        onTtlSave: (Local.Kind, Long) -> Unit = { _, _ -> },
+        onTtlReset: () -> Unit = {},
         onSelfConfirmationChange: (Boolean) -> Unit = {},
         onLeaveGroup: () -> Unit = {},
     ) {
@@ -135,10 +173,13 @@ class SettingsScreenTest {
                     deviceName = deviceName,
                     operatingMode = operatingMode,
                     policy = PolicyDefaults.config,
+                    ttl = ttl,
                     onDeviceNameChange = onDeviceNameChange,
                     onOperatingModeChange = onOperatingModeChange,
                     onPolicyChange = {},
                     onPolicyReset = {},
+                    onTtlSave = onTtlSave,
+                    onTtlReset = onTtlReset,
                     onPause = onPause,
                     onRelaySave = onRelaySave,
                     onRelayOff = onRelayOff,

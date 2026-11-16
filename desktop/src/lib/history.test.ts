@@ -249,6 +249,9 @@ describe("tray entries", () => {
         blobMaxSizeBytes: 0n,
         downloadsDir: "/downloads",
         relayMaxSizeBytes: 0n,
+        historyTtlTextSeconds: 0n,
+        historyTtlImageSeconds: 0n,
+        historyTtlFilesSeconds: 0n,
       },
     });
 

@@ -73,6 +73,9 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 	if err := s.applyPolicy(ctx, req.Msg); err != nil {
 		return nil, errorOf(err)
 	}
+	if err := s.applyHistoryTTLs(ctx, req.Msg); err != nil {
+		return nil, errorOf(err)
+	}
 
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -117,6 +120,7 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		DownloadsDir:        dir,
 	}
 	fillPolicy(settings, s.node.Policy().Config())
+	fillHistoryTTLs(settings, s.node.TTLs())
 	return settings, nil
 }
 

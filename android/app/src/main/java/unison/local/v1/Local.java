@@ -12066,6 +12066,36 @@ java.lang.String defaultValue) {
      * @return The relayMaxSizeBytes.
      */
     long getRelayMaxSizeBytes();
+
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+     * @return The historyTtlTextSeconds.
+     */
+    long getHistoryTtlTextSeconds();
+
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+     * @return The historyTtlImageSeconds.
+     */
+    long getHistoryTtlImageSeconds();
+
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+     * @return The historyTtlFilesSeconds.
+     */
+    long getHistoryTtlFilesSeconds();
   }
   /**
    * <pre>
@@ -12598,6 +12628,120 @@ java.lang.String defaultValue) {
     private void clearRelayMaxSizeBytes() {
 
       relayMaxSizeBytes_ = 0L;
+    }
+
+    public static final int HISTORY_TTL_TEXT_SECONDS_FIELD_NUMBER = 10;
+    private long historyTtlTextSeconds_;
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+     * @return The historyTtlTextSeconds.
+     */
+    @java.lang.Override
+    public long getHistoryTtlTextSeconds() {
+      return historyTtlTextSeconds_;
+    }
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+     * @param value The historyTtlTextSeconds to set.
+     */
+    private void setHistoryTtlTextSeconds(long value) {
+      
+      historyTtlTextSeconds_ = value;
+    }
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+     */
+    private void clearHistoryTtlTextSeconds() {
+
+      historyTtlTextSeconds_ = 0L;
+    }
+
+    public static final int HISTORY_TTL_IMAGE_SECONDS_FIELD_NUMBER = 11;
+    private long historyTtlImageSeconds_;
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+     * @return The historyTtlImageSeconds.
+     */
+    @java.lang.Override
+    public long getHistoryTtlImageSeconds() {
+      return historyTtlImageSeconds_;
+    }
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+     * @param value The historyTtlImageSeconds to set.
+     */
+    private void setHistoryTtlImageSeconds(long value) {
+      
+      historyTtlImageSeconds_ = value;
+    }
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+     */
+    private void clearHistoryTtlImageSeconds() {
+
+      historyTtlImageSeconds_ = 0L;
+    }
+
+    public static final int HISTORY_TTL_FILES_SECONDS_FIELD_NUMBER = 12;
+    private long historyTtlFilesSeconds_;
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+     * @return The historyTtlFilesSeconds.
+     */
+    @java.lang.Override
+    public long getHistoryTtlFilesSeconds() {
+      return historyTtlFilesSeconds_;
+    }
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+     * @param value The historyTtlFilesSeconds to set.
+     */
+    private void setHistoryTtlFilesSeconds(long value) {
+      
+      historyTtlFilesSeconds_ = value;
+    }
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+     */
+    private void clearHistoryTtlFilesSeconds() {
+
+      historyTtlFilesSeconds_ = 0L;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -13243,6 +13387,126 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+       * @return The historyTtlTextSeconds.
+       */
+      @java.lang.Override
+      public long getHistoryTtlTextSeconds() {
+        return instance.getHistoryTtlTextSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+       * @param value The historyTtlTextSeconds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHistoryTtlTextSeconds(long value) {
+        copyOnWrite();
+        instance.setHistoryTtlTextSeconds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_text_seconds = 10 [json_name = "historyTtlTextSeconds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHistoryTtlTextSeconds() {
+        copyOnWrite();
+        instance.clearHistoryTtlTextSeconds();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+       * @return The historyTtlImageSeconds.
+       */
+      @java.lang.Override
+      public long getHistoryTtlImageSeconds() {
+        return instance.getHistoryTtlImageSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+       * @param value The historyTtlImageSeconds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHistoryTtlImageSeconds(long value) {
+        copyOnWrite();
+        instance.setHistoryTtlImageSeconds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_image_seconds = 11 [json_name = "historyTtlImageSeconds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHistoryTtlImageSeconds() {
+        copyOnWrite();
+        instance.clearHistoryTtlImageSeconds();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+       * @return The historyTtlFilesSeconds.
+       */
+      @java.lang.Override
+      public long getHistoryTtlFilesSeconds() {
+        return instance.getHistoryTtlFilesSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+       * @param value The historyTtlFilesSeconds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHistoryTtlFilesSeconds(long value) {
+        copyOnWrite();
+        instance.setHistoryTtlFilesSeconds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>int64 history_ttl_files_seconds = 12 [json_name = "historyTtlFilesSeconds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHistoryTtlFilesSeconds() {
+        copyOnWrite();
+        instance.clearHistoryTtlFilesSeconds();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -13269,11 +13533,14 @@ java.lang.String defaultValue) {
               "roaming_",
               "dataSaver_",
               "relayMaxSizeBytes_",
+              "historyTtlTextSeconds_",
+              "historyTtlImageSeconds_",
+              "historyTtlFilesSeconds_",
             };
             java.lang.String info =
-                "\u0000\t\u0000\u0001\u0001\t\t\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0002" +
+                "\u0000\f\u0000\u0001\u0001\f\f\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0002" +
                 "\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b\u1009\u0003" +
-                "\t\u0002";
+                "\t\u0002\n\u0002\u000b\u0002\f\u0002";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -40297,6 +40564,74 @@ java.lang.String defaultValue) {
      * @return The resetPolicy.
      */
     boolean getResetPolicy();
+
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+     * @return Whether the historyTtlTextSeconds field is set.
+     */
+    boolean hasHistoryTtlTextSeconds();
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+     * @return The historyTtlTextSeconds.
+     */
+    long getHistoryTtlTextSeconds();
+
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+     * @return Whether the historyTtlImageSeconds field is set.
+     */
+    boolean hasHistoryTtlImageSeconds();
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+     * @return The historyTtlImageSeconds.
+     */
+    long getHistoryTtlImageSeconds();
+
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+     * @return Whether the historyTtlFilesSeconds field is set.
+     */
+    boolean hasHistoryTtlFilesSeconds();
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+     * @return The historyTtlFilesSeconds.
+     */
+    long getHistoryTtlFilesSeconds();
+
+    /**
+     * <pre>
+     * Remove the stored history lifetimes and return to the defaults. Lifetimes
+     * given in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+     * @return The resetHistoryTtl.
+     */
+    boolean getResetHistoryTtl();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -40775,6 +41110,197 @@ java.lang.String defaultValue) {
     private void clearResetPolicy() {
 
       resetPolicy_ = false;
+    }
+
+    public static final int HISTORY_TTL_TEXT_SECONDS_FIELD_NUMBER = 11;
+    private long historyTtlTextSeconds_;
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+     * @return Whether the historyTtlTextSeconds field is set.
+     */
+    @java.lang.Override
+    public boolean hasHistoryTtlTextSeconds() {
+      return ((bitField0_ & 0x00000200) != 0);
+    }
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+     * @return The historyTtlTextSeconds.
+     */
+    @java.lang.Override
+    public long getHistoryTtlTextSeconds() {
+      return historyTtlTextSeconds_;
+    }
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+     * @param value The historyTtlTextSeconds to set.
+     */
+    private void setHistoryTtlTextSeconds(long value) {
+      bitField0_ |= 0x00000200;
+      historyTtlTextSeconds_ = value;
+    }
+    /**
+     * <pre>
+     * Lifetime of a text item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+     */
+    private void clearHistoryTtlTextSeconds() {
+      bitField0_ = (bitField0_ & ~0x00000200);
+      historyTtlTextSeconds_ = 0L;
+    }
+
+    public static final int HISTORY_TTL_IMAGE_SECONDS_FIELD_NUMBER = 12;
+    private long historyTtlImageSeconds_;
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+     * @return Whether the historyTtlImageSeconds field is set.
+     */
+    @java.lang.Override
+    public boolean hasHistoryTtlImageSeconds() {
+      return ((bitField0_ & 0x00000400) != 0);
+    }
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+     * @return The historyTtlImageSeconds.
+     */
+    @java.lang.Override
+    public long getHistoryTtlImageSeconds() {
+      return historyTtlImageSeconds_;
+    }
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+     * @param value The historyTtlImageSeconds to set.
+     */
+    private void setHistoryTtlImageSeconds(long value) {
+      bitField0_ |= 0x00000400;
+      historyTtlImageSeconds_ = value;
+    }
+    /**
+     * <pre>
+     * Lifetime of an image item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+     */
+    private void clearHistoryTtlImageSeconds() {
+      bitField0_ = (bitField0_ & ~0x00000400);
+      historyTtlImageSeconds_ = 0L;
+    }
+
+    public static final int HISTORY_TTL_FILES_SECONDS_FIELD_NUMBER = 13;
+    private long historyTtlFilesSeconds_;
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+     * @return Whether the historyTtlFilesSeconds field is set.
+     */
+    @java.lang.Override
+    public boolean hasHistoryTtlFilesSeconds() {
+      return ((bitField0_ & 0x00000800) != 0);
+    }
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+     * @return The historyTtlFilesSeconds.
+     */
+    @java.lang.Override
+    public long getHistoryTtlFilesSeconds() {
+      return historyTtlFilesSeconds_;
+    }
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+     * @param value The historyTtlFilesSeconds to set.
+     */
+    private void setHistoryTtlFilesSeconds(long value) {
+      bitField0_ |= 0x00000800;
+      historyTtlFilesSeconds_ = value;
+    }
+    /**
+     * <pre>
+     * Lifetime of a file item of the history, in seconds.
+     * </pre>
+     *
+     * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+     */
+    private void clearHistoryTtlFilesSeconds() {
+      bitField0_ = (bitField0_ & ~0x00000800);
+      historyTtlFilesSeconds_ = 0L;
+    }
+
+    public static final int RESET_HISTORY_TTL_FIELD_NUMBER = 14;
+    private boolean resetHistoryTtl_;
+    /**
+     * <pre>
+     * Remove the stored history lifetimes and return to the defaults. Lifetimes
+     * given in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+     * @return The resetHistoryTtl.
+     */
+    @java.lang.Override
+    public boolean getResetHistoryTtl() {
+      return resetHistoryTtl_;
+    }
+    /**
+     * <pre>
+     * Remove the stored history lifetimes and return to the defaults. Lifetimes
+     * given in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+     * @param value The resetHistoryTtl to set.
+     */
+    private void setResetHistoryTtl(boolean value) {
+      
+      resetHistoryTtl_ = value;
+    }
+    /**
+     * <pre>
+     * Remove the stored history lifetimes and return to the defaults. Lifetimes
+     * given in the same request are stored on top of the defaults.
+     * </pre>
+     *
+     * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+     */
+    private void clearResetHistoryTtl() {
+
+      resetHistoryTtl_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -41357,6 +41883,205 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+       * @return Whether the historyTtlTextSeconds field is set.
+       */
+      @java.lang.Override
+      public boolean hasHistoryTtlTextSeconds() {
+        return instance.hasHistoryTtlTextSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+       * @return The historyTtlTextSeconds.
+       */
+      @java.lang.Override
+      public long getHistoryTtlTextSeconds() {
+        return instance.getHistoryTtlTextSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+       * @param value The historyTtlTextSeconds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHistoryTtlTextSeconds(long value) {
+        copyOnWrite();
+        instance.setHistoryTtlTextSeconds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Lifetime of a text item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_text_seconds = 11 [json_name = "historyTtlTextSeconds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHistoryTtlTextSeconds() {
+        copyOnWrite();
+        instance.clearHistoryTtlTextSeconds();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+       * @return Whether the historyTtlImageSeconds field is set.
+       */
+      @java.lang.Override
+      public boolean hasHistoryTtlImageSeconds() {
+        return instance.hasHistoryTtlImageSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+       * @return The historyTtlImageSeconds.
+       */
+      @java.lang.Override
+      public long getHistoryTtlImageSeconds() {
+        return instance.getHistoryTtlImageSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+       * @param value The historyTtlImageSeconds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHistoryTtlImageSeconds(long value) {
+        copyOnWrite();
+        instance.setHistoryTtlImageSeconds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Lifetime of an image item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_image_seconds = 12 [json_name = "historyTtlImageSeconds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHistoryTtlImageSeconds() {
+        copyOnWrite();
+        instance.clearHistoryTtlImageSeconds();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+       * @return Whether the historyTtlFilesSeconds field is set.
+       */
+      @java.lang.Override
+      public boolean hasHistoryTtlFilesSeconds() {
+        return instance.hasHistoryTtlFilesSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+       * @return The historyTtlFilesSeconds.
+       */
+      @java.lang.Override
+      public long getHistoryTtlFilesSeconds() {
+        return instance.getHistoryTtlFilesSeconds();
+      }
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+       * @param value The historyTtlFilesSeconds to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHistoryTtlFilesSeconds(long value) {
+        copyOnWrite();
+        instance.setHistoryTtlFilesSeconds(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Lifetime of a file item of the history, in seconds.
+       * </pre>
+       *
+       * <code>optional int64 history_ttl_files_seconds = 13 [json_name = "historyTtlFilesSeconds"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHistoryTtlFilesSeconds() {
+        copyOnWrite();
+        instance.clearHistoryTtlFilesSeconds();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Remove the stored history lifetimes and return to the defaults. Lifetimes
+       * given in the same request are stored on top of the defaults.
+       * </pre>
+       *
+       * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+       * @return The resetHistoryTtl.
+       */
+      @java.lang.Override
+      public boolean getResetHistoryTtl() {
+        return instance.getResetHistoryTtl();
+      }
+      /**
+       * <pre>
+       * Remove the stored history lifetimes and return to the defaults. Lifetimes
+       * given in the same request are stored on top of the defaults.
+       * </pre>
+       *
+       * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+       * @param value The resetHistoryTtl to set.
+       * @return This builder for chaining.
+       */
+      public Builder setResetHistoryTtl(boolean value) {
+        copyOnWrite();
+        instance.setResetHistoryTtl(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Remove the stored history lifetimes and return to the defaults. Lifetimes
+       * given in the same request are stored on top of the defaults.
+       * </pre>
+       *
+       * <code>bool reset_history_ttl = 14 [json_name = "resetHistoryTtl"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearResetHistoryTtl() {
+        copyOnWrite();
+        instance.clearResetHistoryTtl();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -41384,11 +42109,16 @@ java.lang.String defaultValue) {
               "dataSaver_",
               "relayMaxSizeBytes_",
               "resetPolicy_",
+              "historyTtlTextSeconds_",
+              "historyTtlImageSeconds_",
+              "historyTtlFilesSeconds_",
+              "resetHistoryTtl_",
             };
             java.lang.String info =
-                "\u0000\n\u0000\u0001\u0001\n\n\u0000\u0000\u0000\u0001\u1208\u0000\u0002\u1007\u0001" +
-                "\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005\u0007\u1009" +
-                "\u0006\b\u1009\u0007\t\u1002\b\n\u0007";
+                "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
+                "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
+                "\u000b\u000e\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

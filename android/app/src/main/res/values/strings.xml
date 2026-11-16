@@ -258,6 +258,18 @@
     <string name="action_download">Download</string>
     <string name="action_delete">Delete</string>
 
+    <string name="history_ttl_section">History</string>
+    <string name="history_ttl_hint">How long this device keeps the items it copies. Items that already exist keep their own lifetime.</string>
+    <string name="history_ttl_text">Text</string>
+    <string name="history_ttl_image">Images</string>
+    <string name="history_ttl_files">Files</string>
+    <string name="history_ttl_formats">Use 7d or 24h, up to 365d.</string>
+    <string name="history_ttl_invalid">Use a lifetime like 24h or 7d, up to 365d</string>
+    <string name="history_ttl_saved">Lifetime saved</string>
+    <string name="history_ttl_save_failed">The lifetime could not be saved</string>
+    <string name="history_ttl_reset">Reset lifetimes</string>
+    <string name="history_ttl_reset_done">Lifetimes reset</string>
+
     <string name="policy_section">Network policy</string>
     <string name="policy_now">Now: %1$s</string>
     <string name="policy_hint">Items larger than the limit arrive on request.</string>

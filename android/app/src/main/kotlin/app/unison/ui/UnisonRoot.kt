@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import app.unison.clipboard.ClipboardDraft
 import app.unison.clipboard.PauseRequest
+import app.unison.history.HistoryTtl
 import app.unison.policy.PolicyConfig
 import app.unison.service.OperatingMode
 import app.unison.ui.screens.AddScreen
@@ -49,6 +50,7 @@ fun UnisonRoot(
     deviceName: String,
     operatingMode: OperatingMode,
     policy: PolicyConfig,
+    ttl: HistoryTtl,
     clipboardOffer: ClipboardDraft?,
     notices: Flow<Int>,
     requestedScreen: StateFlow<Destination?>,
@@ -60,6 +62,8 @@ fun UnisonRoot(
     onOperatingModeChange: (OperatingMode) -> Unit,
     onPolicyChange: (PolicyConfig) -> Unit,
     onPolicyReset: () -> Unit,
+    onTtlSave: (Local.Kind, Long) -> Unit,
+    onTtlReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
@@ -177,10 +181,13 @@ fun UnisonRoot(
                 deviceName = deviceName,
                 operatingMode = operatingMode,
                 policy = policy,
+                ttl = ttl,
                 onDeviceNameChange = onDeviceNameChange,
                 onOperatingModeChange = onOperatingModeChange,
                 onPolicyChange = onPolicyChange,
                 onPolicyReset = onPolicyReset,
+                onTtlSave = onTtlSave,
+                onTtlReset = onTtlReset,
                 onPause = onPause,
                 onRelaySave = onRelaySave,
                 onRelayOff = onRelayOff,
