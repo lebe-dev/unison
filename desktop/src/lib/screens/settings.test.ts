@@ -5,8 +5,13 @@ import {
   FriendsDiscoverySchema,
   GetSettingsResponseSchema,
   GetStatusResponseSchema,
+  PolicyAction,
+  PolicyCellSchema,
+  PolicyRowSchema,
   SetFriendsDiscoveryResponseSchema,
   SettingsSchema,
+  UpdateSettingsResponseSchema,
+  type Settings as SettingsMessage,
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
@@ -23,7 +28,31 @@ vi.mock("../api/client", () => ({
 
 const getStatus = vi.mocked(client.getStatus);
 const getSettings = vi.mocked(client.getSettings);
+const updateSettings = vi.mocked(client.updateSettings);
 const setFriendsDiscovery = vi.mocked(client.setFriendsDiscovery);
+
+const megabyte = 1n << 20n;
+
+/** Settings with the default policy table. */
+function settings(): SettingsMessage {
+  const cell = (action: PolicyAction, megabytes: number) =>
+    create(PolicyCellSchema, { action, maxSizeBytes: BigInt(megabytes) * megabyte });
+  const row = (text: PolicyAction, image: PolicyAction, files: PolicyAction, relay: boolean) =>
+    create(PolicyRowSchema, {
+      text: cell(text, 10),
+      image: cell(image, 10),
+      files: cell(files, 10),
+      relay,
+    });
+  return create(SettingsSchema, {
+    deviceName: "This Mac",
+    unmetered: row(PolicyAction.AUTO, PolicyAction.AUTO, PolicyAction.METADATA, true),
+    metered: row(PolicyAction.AUTO, PolicyAction.AUTO, PolicyAction.METADATA, true),
+    roaming: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
+    dataSaver: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
+    relayMaxSizeBytes: megabyte,
+  });
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,10 +64,9 @@ beforeEach(() => {
       friendsDiscovery: create(FriendsDiscoverySchema, {}),
     }),
   );
-  getSettings.mockResolvedValue(
-    create(GetSettingsResponseSchema, {
-      settings: create(SettingsSchema, { deviceName: "This Mac" }),
-    }),
+  getSettings.mockResolvedValue(create(GetSettingsResponseSchema, { settings: settings() }));
+  updateSettings.mockResolvedValue(
+    create(UpdateSettingsResponseSchema, { settings: settings() }),
   );
   setFriendsDiscovery.mockResolvedValue(
     create(SetFriendsDiscoveryResponseSchema, {
@@ -111,5 +139,53 @@ describe("settings screen", () => {
     await fireEvent.click(screen.getByRole("checkbox", { name: /Find friends/ }));
 
     expect(setFriendsDiscovery).toHaveBeenCalledWith({ on: false });
+  });
+
+  it("shows the policy table of the daemon", async () => {
+    render(Settings);
+
+    expect(await screen.findByText("Network policy")).toBeTruthy();
+    expect((screen.getByLabelText("Metered Text action") as HTMLSelectElement).value).toBe(
+      String(PolicyAction.AUTO),
+    );
+    expect((screen.getByLabelText("Metered Text limit") as HTMLInputElement).value).toBe("10");
+    expect((screen.getByLabelText("Roaming Images action") as HTMLSelectElement).value).toBe(
+      String(PolicyAction.METADATA),
+    );
+    expect((screen.getByLabelText("Roaming relay") as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByLabelText("Relay limit") as HTMLInputElement).value).toBe("1");
+  });
+
+  it("saves a new threshold with the whole table", async () => {
+    render(Settings);
+
+    await fireEvent.change(await screen.findByLabelText("Metered Text limit"), {
+      target: { value: "4" },
+    });
+
+    const request = updateSettings.mock.calls.at(-1)?.[0];
+    expect(request?.metered?.text?.maxSizeBytes).toBe(4n * megabyte);
+    expect(request?.unmetered?.text?.action).toBe(PolicyAction.AUTO);
+    expect(request?.roaming?.relay).toBe(false);
+    expect(request?.relayMaxSizeBytes).toBe(megabyte);
+  });
+
+  it("changes the action of a cell", async () => {
+    render(Settings);
+
+    await fireEvent.change(await screen.findByLabelText("Roaming Images action"), {
+      target: { value: String(PolicyAction.AUTO) },
+    });
+
+    const request = updateSettings.mock.calls.at(-1)?.[0];
+    expect(request?.roaming?.image?.action).toBe(PolicyAction.AUTO);
+  });
+
+  it("resets the policy to the defaults", async () => {
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({ resetPolicy: true });
   });
 });

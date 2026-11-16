@@ -4,6 +4,22 @@
   import { errorText } from "../errors";
   import { shortDeviceID } from "../format";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
+  import {
+    actions,
+    bytesOf,
+    conditions,
+    kinds,
+    megabytesOf,
+    policyFromSettings,
+    policyRequest,
+    withCell,
+    withRelay,
+    type PolicyCell,
+    type PolicyCondition,
+    type PolicyKind,
+    type PolicyTable,
+  } from "../policy";
+  import { PolicyAction } from "../api/gen/unison/local/v1/local_pb";
   import type { PauseChoice } from "../tray";
 
   const pauses: { choice: PauseChoice; label: string }[] = [
@@ -15,6 +31,7 @@
 
   let name = $state("");
   let requireConfirmation = $state(false);
+  let policy = $state<PolicyTable | null>(null);
   let login = $state<LoginItem | null>(null);
   let loginLoaded = $state(false);
   let loaded = $state(false);
@@ -88,6 +105,7 @@
       const response = await client.getSettings({});
       name = response.settings?.deviceName ?? "";
       requireConfirmation = response.settings?.requireConfirmation ?? false;
+      policy = policyFromSettings(response.settings);
       loaded = true;
       notice = null;
     } catch (error) {
@@ -139,6 +157,72 @@
     await daemon.setPause(choice);
     if (daemon.error) {
       notice = { kind: "error", text: daemon.error };
+    }
+  }
+
+  async function savePolicy(next: PolicyTable): Promise<void> {
+    const previous = policy;
+    policy = next;
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings(policyRequest(next));
+      policy = policyFromSettings(response.settings) ?? next;
+    } catch (error) {
+      policy = previous;
+      notice = {
+        kind: "error",
+        text: errorText(error, "The network policy could not be saved."),
+      };
+    } finally {
+      busy = false;
+    }
+  }
+
+  function setCell(
+    condition: PolicyCondition,
+    kind: PolicyKind,
+    patch: Partial<PolicyCell>,
+  ): void {
+    if (!policy) {
+      return;
+    }
+    const cell = policy[condition][kind];
+    void savePolicy(withCell(policy, condition, kind, { ...cell, ...patch }));
+  }
+
+  function setSize(condition: PolicyCondition, kind: PolicyKind, megabytes: number): void {
+    setCell(condition, kind, { maxSizeBytes: bytesOf(megabytes) });
+  }
+
+  function setRelay(condition: PolicyCondition, relay: boolean): void {
+    if (!policy) {
+      return;
+    }
+    void savePolicy(withRelay(policy, condition, relay));
+  }
+
+  function setRelayLimit(megabytes: number): void {
+    if (!policy) {
+      return;
+    }
+    void savePolicy({ ...policy, relayMaxSizeBytes: bytesOf(megabytes) });
+  }
+
+  async function resetPolicy(): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings({ resetPolicy: true });
+      policy = policyFromSettings(response.settings);
+      notice = { kind: "info", text: "The network policy is back to its defaults." };
+    } catch (error) {
+      notice = {
+        kind: "error",
+        text: errorText(error, "The network policy could not be reset."),
+      };
+    } finally {
+      busy = false;
     }
   }
 
@@ -284,6 +368,87 @@
       </div>
     </section>
 
+    {#if policy}
+      {@const table = policy}
+      <section class="panel">
+        <h3>Network policy</h3>
+        <p class="muted">
+          What arrives by itself on every kind of network. The limit applies to the items fetched
+          without asking.
+        </p>
+        {#each conditions as condition (condition.key)}
+          <div class="policy">
+            <div class="policy-head">
+              <div>
+                <strong>{condition.label}</strong>
+                <small>{condition.hint}</small>
+              </div>
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  aria-label={`${condition.label} relay`}
+                  checked={table[condition.key].relay}
+                  disabled={busy}
+                  onchange={(event) => setRelay(condition.key, event.currentTarget.checked)}
+                />
+                <span>Relay</span>
+              </label>
+            </div>
+            {#each kinds as kind (kind.key)}
+              {@const cell = table[condition.key][kind.key]}
+              <div class="policy-cell">
+                <span class="policy-kind">{kind.label}</span>
+                <select
+                  value={cell.action}
+                  aria-label={`${condition.label} ${kind.label} action`}
+                  disabled={busy}
+                  onchange={(event) =>
+                    setCell(condition.key, kind.key, {
+                      action: Number(event.currentTarget.value) as PolicyAction,
+                    })}
+                >
+                  {#each actions as action (action.value)}
+                    <option value={action.value}>{action.label}</option>
+                  {/each}
+                </select>
+                <input
+                  class="policy-limit"
+                  type="number"
+                  min="1"
+                  max="102400"
+                  step="1"
+                  aria-label={`${condition.label} ${kind.label} limit`}
+                  value={megabytesOf(cell.maxSizeBytes)}
+                  disabled={busy || cell.action !== PolicyAction.AUTO}
+                  onchange={(event) => setSize(condition.key, kind.key, event.currentTarget.valueAsNumber)}
+                />
+                <span class="muted">MiB</span>
+              </div>
+            {/each}
+          </div>
+        {/each}
+        <div class="inline">
+          <label class="field grow">
+            <span>Relay limit</span>
+            <input
+              type="number"
+              min="1"
+              max="102400"
+              step="1"
+              aria-label="Relay limit"
+              value={megabytesOf(table.relayMaxSizeBytes)}
+              disabled={busy}
+              onchange={(event) => setRelayLimit(event.currentTarget.valueAsNumber)}
+            />
+            <small>Items larger than this are not fetched over the relay.</small>
+          </label>
+          <button class="button" type="button" onclick={() => void resetPolicy()} disabled={busy}>
+            Reset to defaults
+          </button>
+        </div>
+      </section>
+    {/if}
+
     <section class="panel">
       <h3>Startup</h3>
       <label class="toggle">
@@ -329,5 +494,50 @@
 
   .grow {
     flex: 1 1 240px;
+  }
+
+  .policy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border, rgb(128 128 128 / 0.25));
+  }
+
+  .policy-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .policy-head small {
+    display: block;
+    color: var(--muted, inherit);
+    opacity: 0.75;
+  }
+
+  .policy-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .policy-kind {
+    flex: 1 1 120px;
+  }
+
+  .policy-limit {
+    width: 6rem;
+  }
+
+  .settings input[type="number"] {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--foreground);
+    background-color: var(--surface);
   }
 </style>
