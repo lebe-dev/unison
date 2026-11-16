@@ -20,22 +20,20 @@ const historyLimit = 20
 // in.
 const maxItemReference = 1000
 
-// history runs the history subcommands.
+// history runs the history subcommands. Without a subcommand it lists the
+// history, so the type and limit filters work without it.
 func (a *app) history(ctx context.Context, args []string) error {
-	rest := args
-	if len(args) > 0 {
-		switch args[0] {
-		case "fetch":
-			return a.historyFetch(ctx, args[1:])
-		case "apply":
-			return a.historyApply(ctx, args[1:])
-		case "ls":
-		default:
-			return a.usageError("unknown history command %q", args[0])
-		}
-		rest = args[1:]
+	command, rest := subcommand(args, "type", "limit", "o", "output")
+	switch command {
+	case "", "ls":
+		return a.historyList(ctx, rest)
+	case "fetch":
+		return a.historyFetch(ctx, rest)
+	case "apply":
+		return a.historyApply(ctx, rest)
+	default:
+		return a.usageError("unknown history command %q", command)
 	}
-	return a.historyList(ctx, rest)
 }
 
 // historyList prints the entries of the history.

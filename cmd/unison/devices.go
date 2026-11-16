@@ -19,17 +19,9 @@ import (
 // devices runs the device subcommands. Without a subcommand it lists the
 // devices.
 func (a *app) devices(ctx context.Context, args []string) error {
-	flags := a.newFlagSet("devices")
-	if err := parseFlags(flags, args); err != nil {
-		return err
-	}
-	rest := flags.Args()
-	if len(rest) == 0 {
-		return a.devicesList(ctx, rest)
-	}
-	command, rest := rest[0], rest[1:]
+	command, rest := subcommand(args, "wait")
 	switch command {
-	case "ls":
+	case "", "ls":
 		return a.devicesList(ctx, rest)
 	case "rename":
 		return a.devicesRename(ctx, rest)

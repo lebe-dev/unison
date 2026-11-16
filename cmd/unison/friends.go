@@ -12,13 +12,16 @@ import (
 
 // friends runs the subcommands of the search for Friends devices.
 func (a *app) friends(ctx context.Context, args []string) error {
-	if len(args) == 0 {
-		return a.usageError("friends needs a subcommand: search")
-	}
-	command, rest := args[0], args[1:]
+	command, rest := subcommand(args)
 	switch command {
 	case "search":
 		return a.friendsSearch(ctx, rest)
+	case "":
+		flags := a.newFlagSet("friends")
+		if err := parseFlags(flags, rest); err != nil {
+			return err
+		}
+		return a.usageError("friends needs a subcommand: search")
 	default:
 		return a.usageError("unknown friends subcommand %q", command)
 	}

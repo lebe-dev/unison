@@ -16,20 +16,18 @@ import (
 
 // clip runs the clipboard subcommands.
 func (a *app) clip(ctx context.Context, args []string) error {
-	flags := a.newFlagSet("clip")
-	if err := parseFlags(flags, args); err != nil {
-		return err
-	}
-	rest := flags.Args()
-	if len(rest) == 0 {
-		return a.usageError("clip needs a command: get or set")
-	}
-	command, rest := rest[0], rest[1:]
+	command, rest := subcommand(args, "from")
 	switch command {
 	case "get":
 		return a.clipGet(ctx, rest)
 	case "set":
 		return a.clipSet(ctx, rest)
+	case "":
+		flags := a.newFlagSet("clip")
+		if err := parseFlags(flags, rest); err != nil {
+			return err
+		}
+		return a.usageError("clip needs a command: get or set")
 	default:
 		return a.usageError("unknown clip command %q", command)
 	}

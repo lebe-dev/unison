@@ -15,17 +15,9 @@ import (
 // transfers runs the file transfer subcommands. Without a subcommand it lists
 // the transfers.
 func (a *app) transfers(ctx context.Context, args []string) error {
-	flags := a.newFlagSet("transfers")
-	if err := parseFlags(flags, args); err != nil {
-		return err
-	}
-	rest := flags.Args()
-	if len(rest) == 0 {
-		return a.transfersList(ctx, rest)
-	}
-	command, rest := rest[0], rest[1:]
+	command, rest := subcommand(args)
 	switch command {
-	case "ls":
+	case "", "ls":
 		return a.transfersList(ctx, rest)
 	case "cancel":
 		return a.transfersCancel(ctx, rest)

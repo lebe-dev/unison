@@ -15,18 +15,21 @@ import (
 // settings prints the settings of the daemon and changes the lifetimes of the
 // history.
 func (a *app) settings(ctx context.Context, args []string) error {
-	flags := a.newFlagSet("settings")
-	if err := parseFlags(flags, args); err != nil {
-		return err
-	}
-	rest := flags.Args()
-	switch {
-	case len(rest) == 0:
+	command, rest := subcommand(args)
+	switch command {
+	case "":
+		flags := a.newFlagSet("settings")
+		if err := parseFlags(flags, rest); err != nil {
+			return err
+		}
+		if flags.NArg() != 0 {
+			return a.usageError("settings takes no arguments")
+		}
 		return a.showSettings(ctx)
-	case rest[0] == "ttl":
-		return a.settingsTTL(ctx, rest[1:])
+	case "ttl":
+		return a.settingsTTL(ctx, rest)
 	default:
-		return a.usageError("unknown settings command %q", rest[0])
+		return a.usageError("unknown settings command %q", command)
 	}
 }
 
@@ -53,6 +56,12 @@ func (a *app) showSettings(ctx context.Context) error {
 
 // settingsTTL prints or changes the lifetimes of the history.
 func (a *app) settingsTTL(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("settings ttl")
+	if err := parseFlags(flags, args); err != nil {
+		return err
+	}
+	args = flags.Args()
+
 	client, err := a.api()
 	if err != nil {
 		return err

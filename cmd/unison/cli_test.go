@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -630,6 +631,25 @@ func TestPauseInvalid(t *testing.T) {
 		}
 		if !strings.Contains(stderr, "unknown pause") {
 			t.Errorf("%q: the error is not reported:\n%s", argument, stderr)
+		}
+	}
+}
+
+// TestCommonFlagsBeforeSubcommand checks that the common flags work before the
+// subcommand of a command as well as after it.
+func TestCommonFlagsBeforeSubcommand(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 490, api.Options{})
+	device.start(t)
+
+	commands := []string{"devices", "transfers", "requests", "history", "settings", "relay"}
+	for _, command := range commands {
+		code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, command, "--json")
+		if code != exitOK {
+			t.Fatalf("%s --json exited with %d, stderr %q", command, code, stderr)
+		}
+		if !json.Valid([]byte(stdout)) {
+			t.Errorf("%s --json printed no JSON:\n%s", command, stdout)
 		}
 	}
 }

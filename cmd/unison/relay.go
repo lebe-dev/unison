@@ -14,12 +14,9 @@ import (
 // relay runs the subcommands of the relay access. Without a subcommand it shows
 // the state.
 func (a *app) relay(ctx context.Context, args []string) error {
-	if len(args) == 0 {
-		return a.relayStatus(ctx, nil)
-	}
-	command, rest := args[0], args[1:]
+	command, rest := subcommand(args, "token")
 	switch command {
-	case "status":
+	case "", "status":
 		return a.relayStatus(ctx, rest)
 	case "set":
 		return a.relaySet(ctx, rest)
