@@ -25,6 +25,9 @@ import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
 import app.unison.history.HistoryDownloads
+import app.unison.history.HistoryTtl
+import app.unison.history.HistoryTtlDefaults
+import app.unison.history.HistoryTtlProto
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyDefaults
 import app.unison.policy.PolicyProto
@@ -41,6 +44,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import unison.local.v1.Local
 
 /** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
@@ -50,6 +54,7 @@ class MainActivity : ComponentActivity() {
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
     private var policy by mutableStateOf(PolicyDefaults.config)
+    private var historyTtl by mutableStateOf(HistoryTtlDefaults.values)
     private var pending by mutableStateOf<ClipboardDraft?>(null)
     private val requestedScreen = MutableStateFlow<Destination?>(null)
     private var requestsPoll: Job? = null
@@ -76,6 +81,7 @@ class MainActivity : ComponentActivity() {
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
         policy = PolicyDefaults.config
+        historyTtl = HistoryTtlDefaults.values
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
         setContent {
             UnisonTheme {
@@ -94,6 +100,7 @@ class MainActivity : ComponentActivity() {
                         deviceName = deviceName,
                         operatingMode = operatingMode,
                         policy = policy,
+                        ttl = historyTtl,
                         clipboardOffer = pending,
                         notices = appState.notices,
                         requestedScreen = requestedScreen,
@@ -105,6 +112,8 @@ class MainActivity : ComponentActivity() {
                         onOperatingModeChange = ::saveOperatingMode,
                         onPolicyChange = ::savePolicy,
                         onPolicyReset = ::resetPolicy,
+                        onTtlSave = ::saveHistoryTtl,
+                        onTtlReset = ::resetHistoryTtl,
                         onPause = appState::setPause,
                         onRelaySave = appState::setRelay,
                         onRelayOff = appState::relayOff,
@@ -227,25 +236,27 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK) !=
             PackageManager.PERMISSION_GRANTED
 
-    /** Reloads the status, the network policy and the clipboard offer. */
+    /** Reloads the status, the settings and the clipboard offer. */
     private fun refresh() {
         if (!onboarded) {
             return
         }
         appState.refresh()
-        refreshPolicy()
+        refreshSettings()
         refreshPending()
     }
 
-    /** Reloads the policy table of the core. */
-    private fun refreshPolicy() {
+    /** Reloads the policy table and the history lifetimes of the core. */
+    private fun refreshSettings() {
         lifecycleScope.launch {
             try {
-                policy = PolicyProto.table(core.settings())
+                val settings = core.settings()
+                policy = PolicyProto.table(settings)
+                historyTtl = HistoryTtlProto.values(settings)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // The table keeps its last value while the core is unavailable.
+                // The values keep their last state while the core is unavailable.
             }
         }
     }
@@ -293,7 +304,40 @@ class MainActivity : ComponentActivity() {
                 throw e
             } catch (_: Exception) {
                 Toast.makeText(this@MainActivity, R.string.policy_save_failed, Toast.LENGTH_SHORT).show()
-                refreshPolicy()
+                refreshSettings()
+            }
+        }
+    }
+
+    /** Stores the lifetime of one kind of the history. */
+    private fun saveHistoryTtl(kind: Local.Kind, seconds: Long) {
+        lifecycleScope.launch {
+            try {
+                historyTtl = HistoryTtlProto.values(core.setHistoryTtl(kind, seconds))
+                Toast.makeText(this@MainActivity, R.string.history_ttl_saved, Toast.LENGTH_SHORT).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, R.string.history_ttl_save_failed, Toast.LENGTH_SHORT)
+                    .show()
+                refreshSettings()
+            }
+        }
+    }
+
+    /** Puts the default lifetimes back. */
+    private fun resetHistoryTtl() {
+        lifecycleScope.launch {
+            try {
+                historyTtl = HistoryTtlProto.values(core.resetHistoryTtl())
+                Toast.makeText(this@MainActivity, R.string.history_ttl_reset_done, Toast.LENGTH_SHORT)
+                    .show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, R.string.history_ttl_save_failed, Toast.LENGTH_SHORT)
+                    .show()
+                refreshSettings()
             }
         }
     }

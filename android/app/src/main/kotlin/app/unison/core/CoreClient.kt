@@ -1,6 +1,7 @@
 package app.unison.core
 
 import app.unison.core.mobile.Mobile
+import app.unison.history.HistoryTtlProto
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyProto
 import com.google.protobuf.MessageLite
@@ -101,6 +102,26 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         val response = call(
             method = "UpdateSettings",
             request = PolicyProto.reset(),
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Changes the lifetime of the history items of one kind. */
+    suspend fun setHistoryTtl(kind: Local.Kind, seconds: Long): Local.Settings {
+        val response = call(
+            method = "UpdateSettings",
+            request = HistoryTtlProto.request(kind, seconds),
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Drops the stored history lifetimes and returns the defaults. */
+    suspend fun resetHistoryTtl(): Local.Settings {
+        val response = call(
+            method = "UpdateSettings",
+            request = HistoryTtlProto.reset(),
             parse = { Local.UpdateSettingsResponse.parseFrom(it) },
         )
         return response.settings

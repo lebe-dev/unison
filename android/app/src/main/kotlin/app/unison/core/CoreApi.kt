@@ -256,6 +256,18 @@ class RunningCore(
         return client.resetPolicy()
     }
 
+    /** Changes the lifetime of the history items of one kind. */
+    suspend fun setHistoryTtl(kind: Local.Kind, seconds: Long): Local.Settings {
+        ensureRunning()
+        return client.setHistoryTtl(kind, seconds)
+    }
+
+    /** Drops the stored history lifetimes and returns the defaults. */
+    suspend fun resetHistoryTtl(): Local.Settings {
+        ensureRunning()
+        return client.resetHistoryTtl()
+    }
+
     private suspend fun ensureRunning() {
         if (CoreStarter.await(context)) {
             return

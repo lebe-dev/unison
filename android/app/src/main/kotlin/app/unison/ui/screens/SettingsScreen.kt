@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.clipboard.PauseOption
 import app.unison.clipboard.PauseRequest
+import app.unison.history.HistoryTtl
 import app.unison.policy.PolicyConfig
 import app.unison.service.OperatingMode
 import app.unison.ui.ConfirmDialog
@@ -45,17 +46,20 @@ import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
 import unison.local.v1.Local
 
-/** Device name, service mode, network policy and clipboard pause. */
+/** Device name, service mode, network policy, history lifetimes and clipboard pause. */
 @Composable
 fun SettingsScreen(
     state: CoreState,
     deviceName: String,
     operatingMode: OperatingMode,
     policy: PolicyConfig,
+    ttl: HistoryTtl,
     onDeviceNameChange: (String) -> Unit,
     onOperatingModeChange: (OperatingMode) -> Unit,
     onPolicyChange: (PolicyConfig) -> Unit,
     onPolicyReset: () -> Unit,
+    onTtlSave: (Local.Kind, Long) -> Unit,
+    onTtlReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
@@ -88,6 +92,7 @@ fun SettingsScreen(
             onPolicyChange = onPolicyChange,
             onReset = onPolicyReset,
         )
+        HistoryTtlSection(ttl = ttl, onSave = onTtlSave, onReset = onTtlReset)
         Pause(pause = state.status?.pause, onPause = onPause)
         RelaySection(
             relay = state.relay,
