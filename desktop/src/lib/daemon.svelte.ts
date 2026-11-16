@@ -8,6 +8,7 @@ import {
   type GetStatusResponse,
 } from "./api/gen/unison/local/v1/local_pb";
 import { updateTray, type PauseChoice } from "./tray";
+import { daemonStatus, type DaemonStatus } from "./daemonStatus";
 import { shortDeviceID } from "./format";
 
 /** Times of the shell. */
@@ -27,6 +28,8 @@ class DaemonStore {
   status = $state<GetStatusResponse | null>(null);
   /** Reason of the last failure, absent when the daemon answers. */
   error = $state<string | null>(null);
+  /** State of the daemon as the app started it. */
+  startup = $state<DaemonStatus>({ state: "offline", reason: null });
   /** Most recent daemon events, newest first. */
   activity = $state<DaemonEvent[]>([]);
 
@@ -42,6 +45,17 @@ class DaemonStore {
   /** loading reports a first status that has not arrived yet. */
   get loading(): boolean {
     return this.status === null && this.error === null;
+  }
+
+  /** failed reports a daemon that the app could not start. */
+  get failed(): boolean {
+    return !this.connected && this.startup.state === "failed";
+  }
+
+  /** offlineReason explains why the daemon does not answer, absent when it
+   * runs or when the app knows no reason. */
+  get offlineReason(): string | null {
+    return this.failed ? this.startup.reason : null;
   }
 
   get deviceName(): string {
@@ -117,9 +131,11 @@ class DaemonStore {
     try {
       this.status = await client.getStatus({});
       this.error = null;
+      this.startup = { state: "running", reason: null };
     } catch (error) {
       this.status = null;
       this.error = messageOf(error);
+      await this.#loadStart();
     }
     this.#syncTray();
   }
@@ -145,6 +161,17 @@ class DaemonStore {
       this.error = messageOf(error);
     }
     await this.refresh();
+  }
+
+  /** #loadStart reads why the app could not start the daemon. */
+  async #loadStart(): Promise<void> {
+    try {
+      this.startup = await daemonStatus();
+    } catch (error) {
+      // The state of an earlier status stays, because the command is the only
+      // source of the reason and it is missing only outside the app window.
+      console.warn("cannot read the state of the daemon", error);
+    }
   }
 
   #syncTray(): void {
