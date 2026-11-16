@@ -183,6 +183,45 @@ func TestPairQrCodeJSON(t *testing.T) {
 	}
 }
 
+// TestPairWithCode joins the device that shows a code from the command line:
+// the code replaces the discovery, and the showing device confirms the device
+// that joined.
+func TestPairWithCode(t *testing.T) {
+	network, bus := newNetwork(t)
+	showing := newDevice(t, network, bus, 480, api.Options{})
+	joining := newDevice(t, network, bus, 490, api.Options{})
+	showing.start(t)
+	joining.start(t)
+
+	window := startSession(t, "--endpoint", showing.endpoint, "pair")
+	uri := qrOf(t, window.waitOutput(t, window.stdout, "qr: "))
+
+	joined := startSession(t, "--endpoint", joining.endpoint, "pair", "--qr", uri)
+	joined.waitOutput(t, joined.stdout, "waiting for the other device to confirm")
+
+	window.waitOutput(t, window.stderr, "add the device?")
+	window.answer(t, "y")
+
+	if code := joined.wait(t); code != exitOK {
+		t.Fatalf("the joining device exited with %d, stdout %q, stderr %q",
+			code, joined.stdout.String(), joined.stderr.String())
+	}
+	if code := window.wait(t); code != exitOK {
+		t.Fatalf("the showing device exited with %d, stdout %q, stderr %q",
+			code, window.stdout.String(), window.stderr.String())
+	}
+	if !strings.Contains(joined.stdout.String(), "paired with") {
+		t.Errorf("the output does not report the paired device:\n%s", joined.stdout.String())
+	}
+
+	if _, ok := peersOf(t, joining)[showing.DeviceID()]; !ok {
+		t.Error("the joining device did not store the other one")
+	}
+	if _, ok := peersOf(t, showing)[joining.DeviceID()]; !ok {
+		t.Error("the showing device did not store the other one")
+	}
+}
+
 // qrOf returns the pairing code of the output of pair.
 func qrOf(t *testing.T, output string) string {
 	t.Helper()

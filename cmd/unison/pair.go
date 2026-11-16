@@ -42,10 +42,12 @@ type eventItem struct {
 }
 
 // pair opens a pairing window, shows the discovered devices and the short
-// authentication code of an exchange, and confirms it.
+// authentication code of an exchange, and confirms it. With a pairing code it
+// joins the device that shows the code instead.
 func (a *app) pair(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("pair")
 	roleName := flags.String("role", "personal", "role to propose: personal or friends")
+	code := flags.String("qr", "", "pairing code of the device to join")
 	if err := parseFlags(flags, args); err != nil {
 		return err
 	}
@@ -61,6 +63,10 @@ func (a *app) pair(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
+	if *code != "" {
+		return a.joinWithCode(ctx, client, *code)
+	}
+
 	opened, err := client.OpenPairingWindow(ctx, connect.NewRequest(&localv1.OpenPairingWindowRequest{Role: role}))
 	if err != nil {
 		return fmt.Errorf("open the pairing window: %w", err)
@@ -191,6 +197,45 @@ func (a *app) pair(ctx context.Context, args []string) error {
 				}
 				a.showCandidates(candidates)
 				state = awaitDevice
+			}
+		}
+	}
+}
+
+// joinWithCode pairs with the device that shows a pairing code. The code
+// carries the address of that device and a one time token, so the exchange
+// needs no discovery; the device that shows it confirms the new one.
+func (a *app) joinWithCode(ctx context.Context, client localv1connect.UnisonServiceClient, code string) error {
+	events := a.watch(ctx, client)
+	if _, err := client.ScanPairingQr(ctx, connect.NewRequest(&localv1.ScanPairingQrRequest{Uri: code})); err != nil {
+		return fmt.Errorf("use the pairing code: %w", err)
+	}
+	a.info("waiting for the other device to confirm")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("interrupted")
+		case item, ok := <-events:
+			if !ok {
+				return errors.New("the event stream of the daemon ended")
+			}
+			if item.err != nil {
+				return fmt.Errorf("watch the daemon: %w", item.err)
+			}
+			if a.json && pairingKind(item.event.GetKind()) {
+				if err := a.writeEventJSON(item.event); err != nil {
+					return err
+				}
+			}
+			switch item.event.GetKind() {
+			case localv1.EventKind_EVENT_KIND_PAIRING_PAIRED:
+				a.info("paired with %s", deviceLabel(item.event.GetDeviceId(), item.event.GetName()))
+				return nil
+			case localv1.EventKind_EVENT_KIND_PAIRING_FAILED:
+				return fmt.Errorf("pairing failed: %s", item.event.GetError())
+			case localv1.EventKind_EVENT_KIND_PAIRING_CLOSED:
+				return errors.New("the pairing window of the other device closed")
 			}
 		}
 	}

@@ -72,7 +72,7 @@ func (n *Node) RevokePeer(ctx context.Context, id model.DeviceID) error {
 	if rotateErr == nil && peer.Role == model.RolePersonal {
 		n.advertise(nodeCtx)
 	}
-	n.log.Info("device revoked", "peer", id, "role", peer.Role)
+	n.log.Info("device revoked", "peer", id, "role", peer.Role.String())
 	return rotateErr
 }
 

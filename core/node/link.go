@@ -3,6 +3,7 @@ package node
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -745,7 +746,15 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 	n.startHistorySync(sess)
 	if !wasOnline || previousPath != path {
 		n.publish(Event{Kind: EventPeerOnline, Peer: l.id, Name: peer.Name, Role: peer.Role, Platform: peer.Platform, Path: path})
-		n.log.Info("peer online", "peer", l.id, "role", peer.Role, "path", path)
+		state := conn.ConnectionState().TLS
+		n.log.Info("peer online",
+			"peer", l.id,
+			"role", peer.Role.String(),
+			"path", path.String(),
+			"incoming", incoming,
+			"tls", tls.VersionName(state.Version),
+			"key_exchange", state.CurveID.String(),
+		)
 	}
 	if upgrade {
 		l.wake()

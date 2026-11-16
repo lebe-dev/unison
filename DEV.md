@@ -310,7 +310,10 @@ leaves no lock behind, and an endpoint file that nobody serves is removed at sta
 The log is JSON on `<data dir>/logs/unisond.log`, five MiB per file with three rotated files kept.
 `--log-stderr` copies the records to the terminal and `--log-level` takes `debug`, `info`, `warn`
 or `error`. The log names a clipboard item by its identifier, kind, size and MIME types, never by
-its content, and it never carries keys or tokens.
+its content, and it never carries keys or tokens. A peer that comes online is logged with the
+negotiated TLS version and key exchange, so a connection that falls back to a weak key exchange
+shows up in the log. A device that the trust store does not accept is refused during the TLS
+handshake and leaves no session: the refused device reports the handshake error on its side.
 
 `--clipboard=none` starts a daemon without the system clipboard, which is what a second daemon on
 one machine needs: two daemons would otherwise read and write the same pasteboard. The default
@@ -321,13 +324,20 @@ the name stored through the local API is used when the flag is absent. `SIGINT` 
 the daemon: the local API closes, the node stops, and the endpoint disappears. `--version` prints
 the version from the `VERSION` file.
 
+A daemon started from a terminal does not send multicast on the physical interfaces of macOS 27,
+so discovery between two machines needs a daemon that runs from the bundle, which declares the
+service types and holds the local network permission. Pair the devices from the command line with
+`unison pair --qr <code>` when discovery finds nothing: the code carries the address of the other
+device, and the paired devices exchange addresses over their connection.
+
 `cmd/unison` is the command line client of the daemon and speaks that API, so the core can be
 driven without the desktop app. `status` shows the daemon, the network and the peers, `devices`
 lists the paired devices and `devices rename` changes a name, `pair` opens a pairing window, offers
 the devices that are open for pairing and shows the short authentication code the user has to
-compare, `clip get` prints the last clipboard item, `clip set` copies standard input to the
-clipboard, `send` offers a file or standard input to the devices of `--to`, and `pause` pauses or
-resumes the clipboard synchronization for a duration or until it is turned off.
+compare, or joins the device that shows a code with `pair --qr <code>`, `clip get` prints the last
+clipboard item, `clip set` copies standard input to the clipboard, `send` offers a file or standard
+input to the devices of `--to`, and `pause` pauses or resumes the clipboard synchronization for a
+duration or until it is turned off.
 
 A device is addressed by a unique prefix of its fingerprint, a prefix of its device ID or its name.
 Output is plain text by default and JSON with `--json`, which prints the answer in the JSON form of

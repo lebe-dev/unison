@@ -431,6 +431,10 @@ func (s *Session) dispatch(msg *wirev1.ControlMessage) {
 		return
 	}
 	if err := handler(s.ctx, msg); err != nil {
+		if s.ctx.Err() != nil {
+			s.log.Debug("session: handler stopped", "peer", s.peerID, "kind", kind.String(), "error", err)
+			return
+		}
 		s.log.Warn("session: handler failed", "peer", s.peerID, "kind", kind.String(), "error", err)
 	}
 }
@@ -443,6 +447,9 @@ func (s *Session) authorize(action trust.Action, what string) bool {
 	}
 	peer, err := s.cfg.Trust.Get(s.ctx, s.peerID)
 	if err != nil {
+		if s.ctx.Err() != nil {
+			return false
+		}
 		s.log.Warn("session: peer lookup failed", "peer", s.peerID, "error", err)
 		s.shutdown(err, CodeProtocolViolation)
 		return false
@@ -490,14 +497,20 @@ func (s *Session) writeControl(ctx context.Context, msg *wirev1.ControlMessage) 
 	return writeFrame(s.control, msg, MaxControlMessage)
 }
 
-// readFailed ends the session after a control stream read error.
+// readFailed ends the session after a control stream read error. A connection
+// the peer closed is an ordinary end, even when the read of a frame reports it
+// as a stream error.
 func (s *Session) readFailed(err error) {
-	if errors.Is(err, ErrFrame) || errors.Is(err, ErrMessage) {
+	reason := closeReason(err)
+	switch {
+	case reason == nil:
+		s.shutdown(nil, 0)
+	case errors.Is(err, ErrFrame) || errors.Is(err, ErrMessage):
 		s.log.Warn("session: malformed control message", "peer", s.peerID, "error", err)
 		s.shutdown(err, CodeProtocolViolation)
-		return
+	default:
+		s.shutdown(reason, 0)
 	}
-	s.shutdown(closeReason(err), 0)
 }
 
 // violate records a protocol violation of the peer. The offending message is
@@ -563,18 +576,19 @@ func (s *Session) shutdown(err error, code quic.ApplicationErrorCode) {
 // closeReason normalizes a read error into the reason a session ended.
 func closeReason(err error) error {
 	switch {
-	case errors.Is(err, io.EOF), errors.Is(err, context.Canceled), peerClosed(err):
+	case errors.Is(err, io.EOF), errors.Is(err, context.Canceled), cleanClose(err):
 		return nil
 	default:
 		return err
 	}
 }
 
-// peerClosed reports a connection that the peer ended without a protocol error.
-func peerClosed(err error) bool {
+// cleanClose reports a connection that ended with the code of a closed
+// connection, whether the peer ended it or this side did.
+func cleanClose(err error) bool {
 	var appErr *quic.ApplicationError
 	if errors.As(err, &appErr) {
-		return appErr.Remote && appErr.ErrorCode == 0
+		return appErr.ErrorCode == 0
 	}
 	return false
 }
