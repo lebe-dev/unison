@@ -148,7 +148,11 @@ private fun DeviceName(deviceName: String, onDeviceNameChange: (String) -> Unit)
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = { onDeviceNameChange(saved) }, enabled = canSave) {
+        TextButton(
+            onClick = { onDeviceNameChange(saved) },
+            enabled = canSave,
+            modifier = Modifier.testTag(NAME_SAVE_TAG),
+        ) {
             Text(text = stringResource(R.string.action_save))
         }
     }
@@ -304,3 +308,6 @@ private fun OperatingMode.hint(): Int = when (this) {
 
 /** Tag of the switch of the confirmation of this device. */
 internal const val CONFIRMATION_TAG = "settings.confirmation"
+
+/** Tag of the button that saves the device name. */
+internal const val NAME_SAVE_TAG = "settings.name.save"
