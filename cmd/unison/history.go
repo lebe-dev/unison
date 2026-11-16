@@ -24,10 +24,13 @@ const maxItemReference = 1000
 func (a *app) history(ctx context.Context, args []string) error {
 	rest := args
 	if len(args) > 0 {
-		if args[0] == "fetch" {
+		switch args[0] {
+		case "fetch":
 			return a.historyFetch(ctx, args[1:])
-		}
-		if args[0] != "ls" {
+		case "apply":
+			return a.historyApply(ctx, args[1:])
+		case "ls":
+		default:
 			return a.usageError("unknown history command %q", args[0])
 		}
 		rest = args[1:]
@@ -79,6 +82,37 @@ func (a *app) historyList(ctx context.Context, args []string) error {
 		return err
 	}
 	return a.writeHistory(response.Msg.GetItems(), devices)
+}
+
+// historyApply writes one entry to the local clipboard. It is how a user takes
+// an item that a device with the confirmation flag held back.
+func (a *app) historyApply(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("history apply")
+	order, positional := splitFlags(args, map[string]bool{"endpoint": true})
+	if err := parseFlags(flags, append(order, positional...)); err != nil {
+		return err
+	}
+	if flags.NArg() != 1 {
+		return a.usageError("history apply takes one item id")
+	}
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	id, err := resolveItem(ctx, client, flags.Arg(0))
+	if err != nil {
+		return err
+	}
+	response, err := client.ApplyHistoryItem(ctx, connect.NewRequest(&localv1.ApplyHistoryItemRequest{Id: id}))
+	if err != nil {
+		return fmt.Errorf("apply the item: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(response.Msg)
+	}
+	a.info("applied the item to the clipboard")
+	return nil
 }
 
 // historyFetch downloads the payloads of one entry.
