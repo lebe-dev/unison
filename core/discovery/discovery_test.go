@@ -181,9 +181,13 @@ func TestPairingService(t *testing.T) {
 		t.Errorf("pairing candidate version = %q, want %q", c.TXT[txtVersionKey], txtVersion)
 	}
 
+	// Other devices on this machine may advertise the main service on their own
+	// ports, so only a candidate on the pairing port proves a leak.
 	select {
 	case c := <-mainCh:
-		t.Fatalf("main browse delivered pairing candidate %+v", c)
+		if _, gotPort, err := net.SplitHostPort(c.Addr); err == nil && gotPort == strconv.Itoa(port) {
+			t.Fatalf("main browse delivered the pairing candidate %+v", c)
+		}
 	case <-time.After(500 * time.Millisecond):
 	}
 
