@@ -580,6 +580,9 @@ func parseDigest(digest *wirev1.GossipDigest) (digestState, error) {
 		if err != nil {
 			return digestState{}, fmt.Errorf("%w: %w", ErrProtocol, err)
 		}
+		if id.IsZero() {
+			return digestState{}, fmt.Errorf("%w: introduction of an empty device", ErrProtocol)
+		}
 		if head.GetTsUnixMs() <= 0 {
 			return digestState{}, fmt.Errorf("%w: introduction of %s without a time", ErrProtocol, id)
 		}
@@ -591,6 +594,9 @@ func parseDigest(digest *wirev1.GossipDigest) (digestState, error) {
 		id, err := model.DeviceIDFromBytes(head.GetSubject())
 		if err != nil {
 			return digestState{}, fmt.Errorf("%w: %w", ErrProtocol, err)
+		}
+		if id.IsZero() {
+			return digestState{}, fmt.Errorf("%w: revocation of an empty device", ErrProtocol)
 		}
 		if head.GetTsUnixMs() <= 0 {
 			return digestState{}, fmt.Errorf("%w: revocation of %s without a time", ErrProtocol, id)
