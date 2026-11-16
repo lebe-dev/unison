@@ -18,18 +18,25 @@ class BridgeContent(
 ) {
 
     /**
-     * Creates a pipe and writes the content into it on a background thread, so
-     * the binder thread never waits for a download. The write end is closed when
-     * the content ends or the reader does not take it in time.
+     * Looks the item up and creates a pipe whose content is written on a background thread, so
+     * the binder thread never waits for a download. Returns null when the item is unknown or
+     * gone. The write end is closed when the content ends or the reader does not take it in time.
      */
-    fun open(itemId: String, mime: String): ParcelFileDescriptor {
+    suspend fun open(itemId: String, mime: String): ParcelFileDescriptor? {
+        val entry = try {
+            core.item(itemId)
+        } catch (e: Exception) {
+            Log.d(TAG, "cannot look up the item: ${e.message}")
+            null
+        } ?: return null
+
         val pipe = ParcelFileDescriptor.createPipe()
         val read = pipe[0]
         val write = pipe[1]
         val writer = scope.launch(Dispatchers.IO) {
             try {
                 ParcelFileDescriptor.AutoCloseOutputStream(write).use { output ->
-                    stream(itemId, mime, output)
+                    stream(entry, mime, output)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "streaming an item failed: ${e.message}")
@@ -47,12 +54,11 @@ class BridgeContent(
         return read
     }
 
-    private suspend fun stream(itemId: String, mime: String, output: OutputStream) {
-        val name = safeName(itemId)
+    private suspend fun stream(entry: Local.HistoryItem, mime: String, output: OutputStream) {
+        val name = safeName(entry.item.id)
         if (name.isEmpty()) {
             return
         }
-        val entry = core.item(itemId) ?: return
         val representation = representation(entry.item, mime) ?: return
         val inline = representation.inlineBytes
         if (!inline.isEmpty) {

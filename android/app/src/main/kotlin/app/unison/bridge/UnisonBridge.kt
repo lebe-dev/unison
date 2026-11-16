@@ -7,11 +7,13 @@ import android.os.RemoteCallbackList
 import android.os.SystemClock
 import android.util.Log
 import app.unison.core.coreEvents
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -63,38 +65,26 @@ class UnisonBridge(
 
     override fun publishText(payload: ClipPayload?) {
         checkCaller()
-        val item = payload?.let(::textPayload) ?: return
-        submit(item)
+        publishText(payload, null)
     }
 
     override fun publishBinary(meta: ClipPayload?, data: ParcelFileDescriptor?) {
         checkCaller()
-        if (data == null) {
-            return
-        }
-        val mime = meta?.mime?.takeIf { it.isNotEmpty() } ?: DEFAULT_BINARY_MIME
-        scope.launch(Dispatchers.IO) {
-            val guard = scope.launch {
-                delay(READ_TIMEOUT_MS)
-                Log.w(TAG, "the caller did not finish the content in time")
-                data.closeQuietly(TAG)
-            }
-            val bytes = try {
-                ParcelFileDescriptor.AutoCloseInputStream(data).use {
-                    BridgeBinary.read(it, MAX_BINARY_BYTES)
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "reading the content failed: ${e.message}")
-                return@launch
-            } finally {
-                guard.cancel()
-            }
-            if (bytes == null) {
-                Log.w(TAG, "binary content is larger than $MAX_BINARY_BYTES bytes")
-                return@launch
-            }
-            submit(binaryPayload(mime, bytes))
-        }
+        publishBinary(meta, data, null)
+    }
+
+    override fun publishTextWithResult(payload: ClipPayload?, callback: IPublishCallback?) {
+        checkCaller()
+        publishText(payload, callback)
+    }
+
+    override fun publishBinaryWithResult(
+        meta: ClipPayload?,
+        data: ParcelFileDescriptor?,
+        callback: IPublishCallback?,
+    ) {
+        checkCaller()
+        publishBinary(meta, data, callback)
     }
 
     override fun registerListener(listener: IUnisonBridgeListener?) {
@@ -103,9 +93,18 @@ class UnisonBridge(
             return
         }
         listeners.register(listener)
+        // The cached state answers at once; the refreshed one follows once the core is up.
         sendState(listener)
-        scope.launch { refreshAll() }
         startPolling()
+        scope.launch {
+            if (!core.ensureRunning()) {
+                Log.d(TAG, "the core is not available for the listener")
+                return@launch
+            }
+            refreshAll()
+            // Delivered even when nothing changed, so the caller reads the item cache.
+            dispatchState(state)
+        }
     }
 
     override fun unregisterListener(listener: IUnisonBridgeListener?) {
@@ -132,7 +131,13 @@ class UnisonBridge(
         if (itemId.isNullOrEmpty()) {
             return null
         }
-        return content.open(itemId, mime.orEmpty())
+        return runBlocking {
+            if (!core.ensureRunning()) {
+                Log.d(TAG, "the core is not available for an item")
+                return@runBlocking null
+            }
+            content.open(itemId, mime.orEmpty())
+        }
     }
 
     override fun setPaused(untilEpochMs: Long) {
@@ -162,16 +167,119 @@ class UnisonBridge(
         verifier.verify(callerUid())
     }
 
-    private fun submit(payload: MobileProto.ClipPayload) {
-        scope.launch {
-            try {
-                core.submit(payload)
-            } catch (e: Exception) {
-                Log.w(TAG, "submit failed: ${e.message}")
-                return@launch
-            }
-            refreshAfterAction()
+    private fun publishText(source: ClipPayload?, callback: IPublishCallback?) {
+        val payload = source?.let(::textPayload)
+        if (payload == null) {
+            Log.d(TAG, "publish refused: no text")
+            report(callback, BridgeContract.PUBLISH_EMPTY, source?.mime.orEmpty())
+            return
         }
+        val mime = payload.partsList.firstOrNull()?.mimeType.orEmpty()
+        scope.launch {
+            report(callback, codeOf(submit(payload)), mime)
+        }
+    }
+
+    private fun publishBinary(
+        meta: ClipPayload?,
+        data: ParcelFileDescriptor?,
+        callback: IPublishCallback?,
+    ) {
+        val mime = meta?.mime.orEmpty()
+        if (data == null) {
+            Log.d(TAG, "publish refused: no descriptor")
+            report(callback, BridgeContract.PUBLISH_EMPTY, mime)
+            return
+        }
+        if (!BridgeContract.isSupportedMime(mime)) {
+            Log.w(TAG, "publish refused: unsupported type $mime")
+            // Closing the read end makes the write of the caller fail instead of blocking it.
+            data.closeQuietly(TAG)
+            report(callback, BridgeContract.PUBLISH_UNSUPPORTED_TYPE, mime)
+            return
+        }
+        scope.launch(Dispatchers.IO) {
+            val payload = when (val result = readContent(data)) {
+                is ReadResult.Content -> {
+                    if (result.bytes.isEmpty()) {
+                        Log.d(TAG, "publish refused: empty content")
+                        report(callback, BridgeContract.PUBLISH_EMPTY, mime)
+                        return@launch
+                    }
+                    binaryPayload(mime, result.bytes)
+                }
+                ReadResult.TooLarge -> {
+                    Log.w(TAG, "publish refused: content is larger than $MAX_BINARY_BYTES bytes")
+                    report(callback, BridgeContract.PUBLISH_TOO_LARGE, mime)
+                    return@launch
+                }
+                ReadResult.Failed -> {
+                    report(callback, BridgeContract.PUBLISH_READ_FAILED, mime)
+                    return@launch
+                }
+            }
+            report(callback, codeOf(submit(payload)), mime)
+        }
+    }
+
+    /** Reads the pipe with a bound on the size and on the time the caller may take. */
+    private suspend fun readContent(data: ParcelFileDescriptor): ReadResult {
+        val guard = scope.launch {
+            delay(READ_TIMEOUT_MS)
+            Log.w(TAG, "the caller did not finish the content in time")
+            data.closeQuietly(TAG)
+        }
+        return try {
+            val bytes = ParcelFileDescriptor.AutoCloseInputStream(data).use {
+                BridgeBinary.read(it, MAX_BINARY_BYTES)
+            }
+            if (bytes == null) ReadResult.TooLarge else ReadResult.Content(bytes)
+        } catch (e: Exception) {
+            Log.w(TAG, "reading the content failed: ${e.message}")
+            ReadResult.Failed
+        } finally {
+            guard.cancel()
+        }
+    }
+
+    /** Hands the content to the core, refreshes the cache and logs a refusal. */
+    private suspend fun submit(payload: MobileProto.ClipPayload): SubmitOutcome {
+        val outcome = try {
+            core.submit(payload)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "submit failed: ${e.message}")
+            SubmitOutcome.FAILED
+        }
+        when (outcome) {
+            SubmitOutcome.ACCEPTED -> refreshAfterAction()
+            SubmitOutcome.PAUSED -> Log.w(TAG, "publish refused: the synchronization is paused")
+            SubmitOutcome.CORE_UNAVAILABLE -> Log.w(TAG, "publish refused: core unavailable")
+            SubmitOutcome.UNSUPPORTED_TYPE -> Log.w(TAG, "publish refused: unsupported type")
+            SubmitOutcome.FAILED -> Log.w(TAG, "publish failed")
+        }
+        return outcome
+    }
+
+    /** Reports the outcome to the caller; there is no callback in the plain publish methods. */
+    private fun report(callback: IPublishCallback?, code: Int, mime: String) {
+        if (callback == null) {
+            return
+        }
+        try {
+            callback.onPublishResult(PublishResult(code, mime))
+        } catch (e: Exception) {
+            Log.w(TAG, "result delivery failed: ${e.message}")
+        }
+    }
+
+    private fun codeOf(outcome: SubmitOutcome): Int = when (outcome) {
+        SubmitOutcome.ACCEPTED -> BridgeContract.PUBLISH_ACCEPTED
+        SubmitOutcome.PAUSED -> BridgeContract.PUBLISH_PAUSED
+        SubmitOutcome.CORE_UNAVAILABLE -> BridgeContract.PUBLISH_CORE_UNAVAILABLE
+        SubmitOutcome.UNSUPPORTED_TYPE -> BridgeContract.PUBLISH_UNSUPPORTED_TYPE
+        SubmitOutcome.FAILED -> BridgeContract.PUBLISH_FAILED
     }
 
     /** Refreshes the cache after a user action, at most once per interval. */
@@ -380,6 +488,15 @@ class UnisonBridge(
     private fun untilOf(pause: Local.Pause?): Long =
         if (pause != null && pause.paused) pause.untilUnixMs else 0
 
+    /** Content read from a pipe. */
+    private sealed interface ReadResult {
+        class Content(val bytes: ByteArray) : ReadResult
+
+        data object TooLarge : ReadResult
+
+        data object Failed : ReadResult
+    }
+
     private companion object {
         private const val TAG = "UnisonBridge"
 
@@ -406,6 +523,5 @@ class UnisonBridge(
 
         private const val MIME_TEXT_PLAIN = "text/plain"
         private const val MIME_TEXT_HTML = "text/html"
-        private const val DEFAULT_BINARY_MIME = "application/octet-stream"
     }
 }

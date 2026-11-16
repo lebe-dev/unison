@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.ParcelFileDescriptor
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.core.CoreException
 import app.unison.core.coreEvents
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.CoroutineScope
@@ -14,14 +15,17 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import unison.local.v1.Local
 import unison.mobile.v1.Mobile as MobileProto
 
@@ -72,6 +76,8 @@ class UnisonBridgeTest {
                 { foreign.recentRemoteItems(1) },
                 { foreign.openItem("item", "text/plain") },
                 { foreign.setPaused(0) },
+                { foreign.publishTextWithResult(payload(text = "hidden"), null) },
+                { foreign.publishBinaryWithResult(payload(mime = "image/png"), null, null) },
             )
             for (call in calls) {
                 assertThrows(SecurityException::class.java) { call() }
@@ -101,15 +107,11 @@ class UnisonBridgeTest {
     @Test
     fun publishesBinaryThroughThePipe() {
         val data = ByteArray(1024 * 1024 + 1) { (it % 251).toByte() }
-        val pipe = ParcelFileDescriptor.createPipe()
-        val writer = Thread {
-            ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { it.write(data) }
-        }
-        writer.start()
+        val pipe = ByteArrayPipe(data)
 
-        bridge.publishBinary(payload(mime = "image/png", size = data.size.toLong()), pipe[0])
+        bridge.publishBinary(payload(mime = "image/png", size = data.size.toLong()), pipe.readEnd())
         val submitted = core.awaitSubmit()
-        writer.join(WAIT_MS)
+        pipe.join(WAIT_MS)
 
         assertEquals("image/png", submitted.getParts(0).mimeType)
         assertArrayEquals(data, submitted.getParts(0).data.toByteArray())
@@ -130,6 +132,25 @@ class UnisonBridgeTest {
         val limited = core.awaitPause()
         assertEquals(Local.PauseMode.PAUSE_MODE_UNTIL, limited.first)
         assertEquals(until, limited.second)
+    }
+
+    @Test
+    fun registrationStartsTheCore() {
+        core.running = false
+        core.history = listOf(historyItem("a", ORIGIN_PEER, "remote text"))
+        val states = LinkedBlockingQueue<BridgeState>()
+        val listener = listener(states)
+
+        bridge.registerListener(listener)
+        try {
+            val live = awaitState(states) { it.onlinePeers == 1 }
+            assertEquals(1, live.onlinePeers)
+            assertTrue("the core was not started", core.ensureCalls.get() > 0)
+            assertTrue("the core is not running", core.running)
+            assertEquals(listOf("a"), awaitRecent(1).map { it.id })
+        } finally {
+            bridge.unregisterListener(listener)
+        }
     }
 
     @Test
@@ -161,6 +182,85 @@ class UnisonBridgeTest {
             it.readBytes().decodeToString()
         }
         assertEquals("remote text", text)
+    }
+
+    @Test
+    fun opensNoItemForAnUnknownId() {
+        assertNull(bridge.openItem("missing", "text/plain"))
+        assertNull(bridge.openItem("", "text/plain"))
+        assertNull(bridge.openItem(null, null))
+
+        core.running = false
+        core.canStart = false
+        assertNull("the item is not reachable while the core is down", bridge.openItem("a", "text/plain"))
+    }
+
+    @Test
+    fun reportsTheResultOfAPublish() {
+        val results = LinkedBlockingQueue<PublishResult>()
+        val callback = callback(results)
+
+        bridge.publishTextWithResult(payload(text = "hello"), callback)
+        val accepted = awaitResult(results)
+        assertEquals(BridgeContract.PUBLISH_ACCEPTED, accepted.code)
+        assertEquals(MIME_TEXT_PLAIN, accepted.mime)
+
+        core.outcome = SubmitOutcome.PAUSED
+        bridge.publishTextWithResult(payload(text = "hello"), callback)
+        assertEquals(BridgeContract.PUBLISH_PAUSED, awaitResult(results).code)
+
+        core.outcome = SubmitOutcome.FAILED
+        bridge.publishTextWithResult(payload(text = "hello"), callback)
+        assertEquals(BridgeContract.PUBLISH_FAILED, awaitResult(results).code)
+
+        core.outcome = SubmitOutcome.ACCEPTED
+        bridge.publishTextWithResult(payload(), callback)
+        assertEquals(BridgeContract.PUBLISH_EMPTY, awaitResult(results).code)
+    }
+
+    @Test
+    fun reportsAnUnavailableCore() {
+        core.running = false
+        core.canStart = false
+        val results = LinkedBlockingQueue<PublishResult>()
+
+        bridge.publishTextWithResult(payload(text = "hello"), callback(results))
+
+        assertEquals(BridgeContract.PUBLISH_CORE_UNAVAILABLE, awaitResult(results).code)
+    }
+
+    @Test
+    fun refusesAnUnsupportedBinaryType() {
+        val results = LinkedBlockingQueue<PublishResult>()
+        val pipe = ByteArrayPipe(ByteArray(64))
+
+        bridge.publishBinaryWithResult(
+            payload(mime = "application/zip"),
+            pipe.readEnd(),
+            callback(results),
+        )
+
+        val result = awaitResult(results)
+        assertEquals(BridgeContract.PUBLISH_UNSUPPORTED_TYPE, result.code)
+        assertEquals("application/zip", result.mime)
+        assertTrue("the content reached the core", core.submissions.isEmpty())
+    }
+
+    @Test
+    fun reportsTheResultOfABinaryPublish() {
+        val results = LinkedBlockingQueue<PublishResult>()
+        val pipe = ByteArrayPipe("binary".toByteArray())
+
+        bridge.publishBinaryWithResult(
+            payload(mime = "text/plain"),
+            pipe.readEnd(),
+            callback(results),
+        )
+
+        val result = awaitResult(results)
+        assertEquals(BridgeContract.PUBLISH_ACCEPTED, result.code)
+        assertEquals(MIME_TEXT_PLAIN, result.mime)
+        assertEquals("binary", core.awaitSubmit().getParts(0).data.toStringUtf8())
     }
 
     @Test
@@ -232,6 +332,41 @@ class UnisonBridgeTest {
         return bridge.recentRemoteItems(20)
     }
 
+    private fun awaitState(
+        states: LinkedBlockingQueue<BridgeState>,
+        matches: (BridgeState) -> Boolean,
+    ): BridgeState {
+        val deadline = System.currentTimeMillis() + WAIT_MS
+        while (System.currentTimeMillis() < deadline) {
+            val next = states.poll(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                ?: break
+            if (matches(next)) {
+                return next
+            }
+        }
+        throw AssertionError("no matching state was reported")
+    }
+
+    private fun awaitResult(results: LinkedBlockingQueue<PublishResult>): PublishResult =
+        results.poll(WAIT_MS, TimeUnit.MILLISECONDS)
+            ?: throw AssertionError("the publish reported no result")
+
+    private fun listener(states: LinkedBlockingQueue<BridgeState>): IUnisonBridgeListener =
+        object : IUnisonBridgeListener.Stub() {
+            override fun onRemoteItem(summary: ClipSummary?) = Unit
+
+            override fun onStateChanged(state: BridgeState?) {
+                state?.let(states::put)
+            }
+        }
+
+    private fun callback(results: LinkedBlockingQueue<PublishResult>): IPublishCallback =
+        object : IPublishCallback.Stub() {
+            override fun onPublishResult(result: PublishResult?) {
+                result?.let(results::put)
+            }
+        }
+
     private fun payload(
         text: String? = null,
         html: String? = null,
@@ -288,8 +423,18 @@ class UnisonBridgeTest {
     /** Core that records what the bridge asks it to do. */
     private class FakeCore : BridgeCore {
         val submissions = LinkedBlockingQueue<MobileProto.ClipPayload>()
+        val ensureCalls = AtomicInteger()
         private val pauses = LinkedBlockingQueue<Pair<Local.PauseMode, Long>>()
         private val statusCalls = CountDownLatch(1)
+
+        @Volatile
+        var running = true
+
+        @Volatile
+        var canStart = true
+
+        @Volatile
+        var outcome = SubmitOutcome.ACCEPTED
 
         @Volatile
         var status: Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
@@ -312,16 +457,27 @@ class UnisonBridgeTest {
         @Volatile
         var entry: Local.HistoryItem? = null
 
-        override suspend fun ensureRunning(): Boolean = true
+        override suspend fun ensureRunning(): Boolean {
+            ensureCalls.incrementAndGet()
+            if (!running && canStart) {
+                running = true
+            }
+            return running
+        }
 
         override suspend fun status(): Local.GetStatusResponse {
+            checkRunning()
             statusCalls.countDown()
             return status
         }
 
-        override suspend fun pause(): Local.Pause = pause
+        override suspend fun pause(): Local.Pause {
+            checkRunning()
+            return pause
+        }
 
         override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
+            checkRunning()
             pauses.put(mode to untilUnixMs)
             val next = Local.Pause.newBuilder()
                 .setPaused(mode != Local.PauseMode.PAUSE_MODE_OFF)
@@ -332,16 +488,36 @@ class UnisonBridgeTest {
             return next
         }
 
-        override suspend fun history(limit: Int): List<Local.HistoryItem> =
-            history.take(if (limit > 0) limit else history.size)
+        override suspend fun history(limit: Int): List<Local.HistoryItem> {
+            checkRunning()
+            return history.take(if (limit > 0) limit else history.size)
+        }
 
-        override suspend fun item(id: String): Local.HistoryItem? =
-            entry?.takeIf { it.item.id == id }
+        override suspend fun item(id: String): Local.HistoryItem? {
+            checkRunning()
+            return entry?.takeIf { it.item.id == id }
+        }
 
-        override suspend fun fetch(id: String, path: String): List<String> = emptyList()
+        override suspend fun fetch(id: String, path: String): List<String> {
+            checkRunning()
+            return emptyList()
+        }
 
-        override suspend fun submit(payload: MobileProto.ClipPayload) {
+        override suspend fun submit(payload: MobileProto.ClipPayload): SubmitOutcome {
+            if (!running) {
+                return SubmitOutcome.CORE_UNAVAILABLE
+            }
+            if (outcome != SubmitOutcome.ACCEPTED) {
+                return outcome
+            }
             submissions.put(payload)
+            return SubmitOutcome.ACCEPTED
+        }
+
+        private fun checkRunning() {
+            if (!running) {
+                throw CoreException(CoreException.CODE_FAILED_PRECONDITION, "core is not running")
+            }
         }
 
         fun awaitStatus() {
@@ -361,6 +537,25 @@ class UnisonBridgeTest {
         override fun onRemoteItem(summary: ClipSummary?) = Unit
 
         override fun onStateChanged(state: BridgeState?) = Unit
+    }
+
+    /** Pipe plus the thread that writes into it, so a call can take the read end. */
+    private class ByteArrayPipe(private val bytes: ByteArray) {
+        private val pipe = ParcelFileDescriptor.createPipe()
+        private val writer = Thread {
+            try {
+                ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { it.write(bytes) }
+            } catch (e: IOException) {
+                // The app closes the pipe when it refuses the content.
+            }
+        }.apply { start() }
+
+        /** Read end for a call; the write end stays with the writer thread. */
+        fun readEnd(): ParcelFileDescriptor = pipe[0]
+
+        fun join(timeoutMs: Long) {
+            writer.join(timeoutMs)
+        }
     }
 
     private companion object {
