@@ -75,7 +75,7 @@ func createFile(dir, name string) (string, *os.File, error) {
 		}
 		return path, file, nil
 	}
-	return "", nil, fmt.Errorf("share: no free file name for %q", name)
+	return "", nil, fmt.Errorf("share: no free file name after %d attempts", maxDownloadAttempts)
 }
 
 // SafeName returns a file name that is safe to write on every platform: no
