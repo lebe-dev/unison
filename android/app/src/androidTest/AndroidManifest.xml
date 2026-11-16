@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="app.unison.permission.BRIDGE" />
+
+    <queries>
+        <package android:name="app.unison" />
+    </queries>
+
+</manifest>
