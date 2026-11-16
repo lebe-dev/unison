@@ -9,12 +9,13 @@ import unison.mobile.v1.Mobile as MobileProto
 
 /** Transport of one serialized local API call. */
 fun interface CoreTransport {
-    fun call(request: ByteArray): ByteArray
+    /** Returns the response, or null when the core sent an empty one. */
+    fun call(request: ByteArray): ByteArray?
 }
 
 /** The gomobile core as a transport. */
 object MobileTransport : CoreTransport {
-    override fun call(request: ByteArray): ByteArray = Mobile.call(request)
+    override fun call(request: ByteArray): ByteArray? = Mobile.call(request)
 }
 
 /** Failure reported by the core in place of a response. */
@@ -45,7 +46,13 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             .setMethod(method)
             .setPayload(request.toByteString())
             .build()
-        val response = MobileProto.CallResponse.parseFrom(transport.call(call.toByteArray()))
+        // An empty response arrives as a null array, a failed one as a code.
+        val raw = transport.call(call.toByteArray())
+        val response = if (raw == null) {
+            MobileProto.CallResponse.getDefaultInstance()
+        } else {
+            MobileProto.CallResponse.parseFrom(raw)
+        }
         if (response.code != 0) {
             throw CoreException(response.code, response.message)
         }
@@ -94,5 +101,60 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             parse = { Local.SetPauseResponse.parseFrom(it) },
         )
         return response.pause
+    }
+
+    /** Live history entries, newest first. */
+    override suspend fun listHistory(
+        kind: Local.Kind,
+        deviceId: String,
+        limit: Int,
+    ): Local.ListHistoryResponse {
+        val request = Local.ListHistoryRequest.newBuilder()
+            .setKind(kind)
+            .setDeviceId(deviceId)
+            .setLimit(limit)
+            .build()
+        return call(
+            method = "ListHistory",
+            request = request,
+            parse = { Local.ListHistoryResponse.parseFrom(it) },
+        )
+    }
+
+    /** Writes one history entry back to the clipboard. */
+    override suspend fun copyHistoryItem(id: String) {
+        val request = Local.CopyHistoryItemRequest.newBuilder()
+            .setId(id)
+            .build()
+        call(
+            method = "CopyHistoryItem",
+            request = request,
+            parse = { Local.CopyHistoryItemResponse.parseFrom(it) },
+        )
+    }
+
+    /** Deletes one history entry on every device. */
+    override suspend fun deleteHistoryItem(id: String) {
+        val request = Local.DeleteHistoryItemRequest.newBuilder()
+            .setId(id)
+            .build()
+        call(
+            method = "DeleteHistoryItem",
+            request = request,
+            parse = { Local.DeleteHistoryItemResponse.parseFrom(it) },
+        )
+    }
+
+    /** Downloads the payloads of one entry into [path]. */
+    override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse {
+        val request = Local.FetchHistoryItemRequest.newBuilder()
+            .setId(id)
+            .setPath(path)
+            .build()
+        return call(
+            method = "FetchHistoryItem",
+            request = request,
+            parse = { Local.FetchHistoryItemResponse.parseFrom(it) },
+        )
     }
 }

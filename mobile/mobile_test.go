@@ -98,6 +98,75 @@ func TestCallDispatch(t *testing.T) {
 	}
 }
 
+func TestHistoryCalls(t *testing.T) {
+	platform := newFakePlatform()
+	core := startTestCore(t, platform)
+
+	sent := &localv1.SetClipResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "SetClip",
+		Payload: marshal(t, &localv1.SetClipRequest{Text: "hello"}),
+	}), sent)
+	id := sent.GetItem().GetId()
+	if id == "" {
+		t.Fatal("SetClip returned no item id")
+	}
+
+	list := &localv1.ListHistoryResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "ListHistory"}), list)
+	if len(list.GetItems()) != 1 || list.GetItems()[0].GetItem().GetId() != id {
+		t.Fatalf("history %v", list.GetItems())
+	}
+
+	entry := &localv1.GetHistoryItemResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "GetHistoryItem",
+		Payload: marshal(t, &localv1.GetHistoryItemRequest{Id: id}),
+	}), entry)
+	if entry.GetItem().GetItem().GetKind() != localv1.Kind_KIND_TEXT {
+		t.Fatalf("item %v", entry.GetItem())
+	}
+
+	fetched := &localv1.FetchHistoryItemResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "FetchHistoryItem",
+		Payload: marshal(t, &localv1.FetchHistoryItemRequest{Id: id}),
+	}), fetched)
+	if fetched.GetItem().GetItem().GetId() != id {
+		t.Fatalf("fetched item %v", fetched.GetItem())
+	}
+
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "DeleteHistoryItem",
+		Payload: marshal(t, &localv1.DeleteHistoryItemRequest{Id: id}),
+	}), &localv1.DeleteHistoryItemResponse{})
+
+	list = &localv1.ListHistoryResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "ListHistory"}), list)
+	if len(list.GetItems()) != 0 {
+		t.Fatalf("history after delete %v", list.GetItems())
+	}
+
+	response := core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "GetHistoryItem",
+		Payload: marshal(t, &localv1.GetHistoryItemRequest{Id: id}),
+	})
+	if connect.Code(response.GetCode()) != connect.CodeNotFound {
+		t.Fatalf("deleted item returned code %d", response.GetCode())
+	}
+}
+
+func TestClipEventsCarryTheItem(t *testing.T) {
+	item := model.ClipItem{ID: model.ClipID{1}, Kind: model.KindImage}
+
+	for _, kind := range []node.EventKind{node.EventClipboard, node.EventClipDownload, node.EventClipApply} {
+		event := localEventToProto(node.Event{Kind: kind, Item: item})
+		if event.GetItem().GetId() != item.ID.String() {
+			t.Fatalf("%s event carries item %v", kind, event.GetItem())
+		}
+	}
+}
+
 func TestSubmitClipDeliversEvent(t *testing.T) {
 	platform := newFakePlatform()
 	cfg := marshal(t, &mobilev1.Config{DataDir: t.TempDir(), DeviceName: "phone"})

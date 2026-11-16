@@ -165,6 +165,66 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "ListHistory":
+		call, err := requestOf[localv1.ListHistoryRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ListHistory(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "GetHistoryItem":
+		call, err := requestOf[localv1.GetHistoryItemRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.GetHistoryItem(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "DeleteHistoryItem":
+		call, err := requestOf[localv1.DeleteHistoryItemRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.DeleteHistoryItem(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "FetchHistoryItem":
+		call, err := requestOf[localv1.FetchHistoryItemRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.FetchHistoryItem(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "CopyHistoryItem":
+		call, err := requestOf[localv1.CopyHistoryItemRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.CopyHistoryItem(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "ApplyHistoryItem":
+		call, err := requestOf[localv1.ApplyHistoryItemRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ApplyHistoryItem(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "GetPause":
 		call, err := requestOf[localv1.GetPauseRequest](payload)
 		if err != nil {

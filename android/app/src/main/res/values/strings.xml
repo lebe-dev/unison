@@ -93,6 +93,31 @@
 
     <string name="history_empty">History is empty</string>
     <string name="history_empty_body">Copied items appear here.</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_filter_text">Text</string>
+    <string name="history_filter_images">Images</string>
+    <string name="history_filter_files">Files</string>
+    <string name="history_filter_device">Device: %1$s</string>
+    <string name="history_all_devices">All devices</string>
+    <string name="history_item_detail">%1$s - %2$s</string>
+    <string name="history_item_detail_incomplete">%1$s - %2$s - not downloaded yet</string>
+    <string name="history_copied">Copied to the clipboard</string>
+    <string name="history_copy_failed">Cannot copy this item</string>
+    <string name="history_downloaded">Saved to Downloads/Unison</string>
+    <string name="history_downloading">Downloading</string>
+    <string name="history_download_failed">Cannot download this item</string>
+    <string name="history_deleted">Item deleted</string>
+    <string name="history_delete_failed">Cannot delete this item</string>
+    <string name="history_notification_body">%1$s received - download it to use it</string>
+    <string name="history_saved_notification">Saved to Downloads/Unison</string>
+    <string name="history_failed_notification">Download failed</string>
+
+    <string name="kind_text">Text</string>
+    <string name="kind_image">Image</string>
+    <string name="kind_files">File</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_download">Download</string>
+    <string name="action_delete">Delete</string>
 
     <string name="onboarding_title">Welcome to Unison</string>
     <string name="onboarding_body">Unison keeps the clipboard in sync between your devices. Content travels directly between them.</string>

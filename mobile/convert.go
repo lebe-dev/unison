@@ -167,7 +167,8 @@ func localEventToProto(event node.Event) *localv1.Event {
 		ProtocolVersion: event.Version,
 		AtUnixMs:        unixMilli(event.At),
 	}
-	if event.Kind == node.EventClipboard {
+	switch event.Kind {
+	case node.EventClipboard, node.EventClipDownload, node.EventClipApply:
 		out.Item = clipItemToProto(event.Item)
 	}
 	if event.Err != nil {
