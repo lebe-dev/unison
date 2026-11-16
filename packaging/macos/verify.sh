@@ -88,6 +88,7 @@ if [[ "$(codesign -dv --verbose=2 "$app" 2>&1 | sed -n 's/^Authority=//p' | head
     note "signed for distribution"
 else
     note "signed ad-hoc or by a development certificate"
+    note "the login item needs an Apple-issued signature, check it on that build"
 fi
 
 entitlements=$(codesign -d --entitlements :- "$app" 2>/dev/null)
