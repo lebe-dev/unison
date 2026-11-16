@@ -120,7 +120,8 @@ func (a *app) historyFetch(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("history fetch")
 	path := flags.String("o", "", "write the payloads to this path")
 	output := flags.String("output", "", "write the payloads to this path")
-	if err := parseFlags(flags, args); err != nil {
+	order, positional := splitFlags(args, map[string]bool{"o": true, "output": true, "endpoint": true})
+	if err := parseFlags(flags, append(order, positional...)); err != nil {
 		return err
 	}
 	if *path == "" {
