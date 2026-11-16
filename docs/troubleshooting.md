@@ -11,7 +11,8 @@
   screen and its `Open settings` button opens the Local Network pane. The daemon logs the same at
   the warning level. If the warning stays while the switch of `unisond` is on, the switch may
   belong to an earlier build of a daemon that you built yourself: remove the entry with the minus
-  button and start the daemon again to get a new prompt.
+  button and start the daemon again to get a new prompt. A daemon of `just build-unisond-host`
+  keeps one entry across rebuilds, see `DEV.md`.
 - Pairing by code does not need discovery. `unison pair` prints a code, and the other device scans
   it, or joins with `unison pair --qr <code>`. See [Devices and pairing](devices.md#pairing).
 - A paired device can be reached by an address that you enter. `unison status` prints the addresses

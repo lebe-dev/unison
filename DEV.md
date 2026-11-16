@@ -107,6 +107,14 @@ whether a terminal, the desktop app or the login item started it, so the fresh b
 that runs. A daemon of the cross-compiled `just build-unisond-all` targets has no Keychain and exits at startup
 with a message that asks for a build with cgo.
 
+macOS keeps the local network permission of a command line tool per Mach-O UUID and the Keychain
+access per code signature, so every new build of a daemon would ask again. On macOS
+`just build-unisond-host` gives the daemon a fixed UUID and signs it as `app.unison.unisond.dev`
+with the first `Apple Development` identity of the keychain, or with `UNISON_DEV_SIGN_IDENTITY`
+when it is set. Allow the Keychain with `Always Allow` and the local network once, and the later
+builds keep both. Without an identity the daemon is signed ad-hoc and the Keychain asks after each
+build.
+
 The macOS Keychain keystore in `platform/darwin/keystore` uses cgo: it links Security.framework
 and needs a host build to reach the Keychain. Without cgo, for example in a cross-compiled
 binary, its operations return `keystore.ErrUnsupported` and building still works. The package

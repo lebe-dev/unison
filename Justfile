@@ -9,6 +9,10 @@ export CGO_ENABLED := "0"
 # The daemon reaches the Keychain and the pasteboard through cgo on macOS.
 daemon_cgo := if os() == "macos" { "1" } else { "0" }
 
+# Mach-O UUID and signing identifier of the development build of the daemon.
+dev_daemon_uuid := "4dc5a49dbd7e4abb837b9237af32859f"
+dev_daemon_id := "app.unison.unisond.dev"
+
 # Data directory of the daemon.
 daemon_dir := if os() == "windows" {
     env_var("LOCALAPPDATA") + "/Unison"
@@ -44,7 +48,27 @@ build-unisond-all:
 
 # Build unisond for the host with the Keychain and pasteboard of the platform.
 build-unisond-host:
-    CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond ./cmd/unisond
+    #!/usr/bin/env bash
+    set -eu -o pipefail
+    if [ "{{os()}}" != "macos" ]; then
+        CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond ./cmd/unisond
+        exit 0
+    fi
+    # macOS keeps the local network permission of a command line tool per Mach-O
+    # UUID and the Keychain access per code signature. A fixed UUID and a signature
+    # with a stable identifier keep both across rebuilds.
+    mkdir -p bin
+    tmp="$(mktemp bin/.unisond.XXXXXX)"
+    trap 'rm -f "$tmp"' EXIT
+    CGO_ENABLED={{daemon_cgo}} go build -trimpath -ldflags "{{ldflags}} -B 0x{{dev_daemon_uuid}}" -o "$tmp" ./cmd/unisond
+    identity="${UNISON_DEV_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk '/"Apple Development: / { print $2; exit }')}"
+    if [ -z "$identity" ]; then
+        echo "no Apple Development identity found, so the daemon is signed ad-hoc and macOS asks for the Keychain again after each build; set UNISON_DEV_SIGN_IDENTITY to sign it" >&2
+        identity="-"
+    fi
+    codesign --force --sign "$identity" --identifier {{dev_daemon_id}} "$tmp"
+    # The rename keeps the file of a running daemon intact.
+    mv -f "$tmp" bin/unisond
 
 # Build and run the daemon of the default data directory, replacing the one that runs.
 run-daemon *args: build-unisond-host
