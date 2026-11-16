@@ -20,6 +20,8 @@ import app.unison.core.mobile.Mobile
 import app.unison.discovery.NsdDiscovery
 import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryNotifications
+import app.unison.network.NetworkConditions
+import app.unison.network.NetworkMonitor
 import app.unison.share.TransferNotifications
 import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
@@ -31,6 +33,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import unison.local.v1.Local
 import unison.mobile.v1.Mobile as MobileProto
@@ -39,13 +43,16 @@ import unison.mobile.v1.Mobile as MobileProto
 class UnisonService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val client = CoreClient()
-    private var coreStarted = false
+    private val coreMutex = Mutex()
+    private var coreRunning = false
+    private var eventsJob: Job? = null
     private var statusJob: Job? = null
     private var transfersJob: Job? = null
     private val watchedTransfers = mutableSetOf<String>()
     private var transferNames = emptyList<String>()
     private var transfersCanceled = false
     private lateinit var discovery: NsdDiscovery
+    private lateinit var network: NetworkMonitor
     private lateinit var blobs: BlobSink
     private lateinit var downloads: HistoryDownloads
 
@@ -53,6 +60,7 @@ class UnisonService : Service() {
         super.onCreate()
         NotificationChannels.create(this)
         discovery = NsdDiscovery(this)
+        network = NetworkMonitor(this, ::onNetworkConditions)
         blobs = BlobSink(this, scope)
         downloads = HistoryDownloads(this, client)
     }
@@ -77,11 +85,12 @@ class UnisonService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        network.stop()
         scope.cancel()
         discovery.stop()
         NotificationManagerCompat.from(this).cancel(TransferNotifications.ID)
-        if (coreStarted) {
-            coreStarted = false
+        if (coreRunning) {
+            coreRunning = false
             runBlocking(Dispatchers.IO) {
                 try {
                     Mobile.stop()
@@ -102,22 +111,81 @@ class UnisonService : Service() {
         )
     }
 
+    /** Starts the network monitor and the core, as the operating mode allows. */
     private fun startCore() {
-        if (coreStarted) {
+        network.start()
+        applyMode()
+    }
+
+    /** Reports the conditions to the core and starts or stops it as the mode asks. */
+    private fun applyMode(report: Boolean = false) {
+        scope.launch {
+            coreMutex.withLock {
+                if (report && coreRunning) {
+                    reportNetwork()
+                }
+                val mode = UnisonSettings.operatingMode(this@UnisonService)
+                val allowed = mode != OperatingMode.WIFI_ONLY || network.conditions.localNetwork
+                when {
+                    allowed && !coreRunning -> startCoreLocked()
+                    !allowed && coreRunning -> pauseCoreLocked()
+                    !allowed -> show(getString(R.string.service_waiting_wifi))
+                }
+            }
+        }
+    }
+
+    /** Reacts to a change of the network conditions. */
+    private fun onNetworkConditions(conditions: NetworkConditions) {
+        Log.i(TAG, "network state applied: online=${conditions.online} local=${conditions.localNetwork}")
+        applyMode(report = true)
+    }
+
+    /** Starts the core. Runs under the lock of [applyMode]. */
+    private suspend fun startCoreLocked() {
+        val started = withContext(Dispatchers.IO) { startCoreBlocking() }
+        if (!started) {
+            stopSelf()
             return
         }
-        coreStarted = true
+        coreRunning = true
+        reportNetwork()
+        watchEvents()
+        refreshStatus()
+    }
 
-        scope.launch {
-            val started = withContext(Dispatchers.IO) { startCoreBlocking() }
-            if (!started) {
-                stopSelf()
-                return@launch
+    /** Stops the core until the operating mode or the network allows it again. */
+    private suspend fun pauseCoreLocked() {
+        coreRunning = false
+        withContext(Dispatchers.IO) {
+            try {
+                Mobile.stop()
+            } catch (e: Exception) {
+                Log.w(TAG, "core stop failed: ${e.message}")
             }
-            scope.launch {
-                coreEvents.events.collect(::handle)
-            }
-            refreshStatus()
+        }
+        discovery.stop()
+        Log.i(TAG, "core paused until the network allows it")
+        show(getString(R.string.service_waiting_wifi))
+    }
+
+    /** Sends the last known network conditions to the core. */
+    private fun reportNetwork() {
+        val state = network.conditions.toProto()
+        try {
+            Mobile.networkChanged(state.toByteArray())
+        } catch (e: Exception) {
+            Log.w(TAG, "reporting the network failed: ${e.message}")
+        }
+    }
+
+    /** Collects the events of the core once per service. */
+    private fun watchEvents() {
+        if (eventsJob?.isActive == true) {
+            return
+        }
+        eventsJob = scope.launch {
+            coreEvents.events.collect(::handle)
         }
     }
 
@@ -303,6 +371,9 @@ class UnisonService : Service() {
         statusJob?.cancel()
         statusJob = scope.launch {
             val text = statusText()
+            if (!coreRunning) {
+                return@launch
+            }
             show(text)
         }
     }

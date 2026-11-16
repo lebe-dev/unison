@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.clipboard.PauseOption
 import app.unison.clipboard.PauseRequest
+import app.unison.policy.PolicyConfig
 import app.unison.service.OperatingMode
 import app.unison.ui.ErrorCard
 import app.unison.ui.ScreenTitle
@@ -40,14 +41,17 @@ import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
 import unison.local.v1.Local
 
-/** Device name, service mode and clipboard pause. */
+/** Device name, service mode, network policy and clipboard pause. */
 @Composable
 fun SettingsScreen(
     state: CoreState,
     deviceName: String,
     operatingMode: OperatingMode,
+    policy: PolicyConfig,
     onDeviceNameChange: (String) -> Unit,
     onOperatingModeChange: (OperatingMode) -> Unit,
+    onPolicyChange: (PolicyConfig) -> Unit,
+    onPolicyReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
@@ -67,6 +71,12 @@ fun SettingsScreen(
 
         DeviceName(deviceName = deviceName, onDeviceNameChange = onDeviceNameChange)
         ServiceMode(operatingMode = operatingMode, onOperatingModeChange = onOperatingModeChange)
+        PolicySection(
+            policy = policy,
+            network = state.status?.network,
+            onPolicyChange = onPolicyChange,
+            onReset = onPolicyReset,
+        )
         Pause(pause = state.status?.pause, onPause = onPause)
         About(state = state)
         Spacer(modifier = Modifier.height(24.dp))
