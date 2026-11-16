@@ -9,7 +9,7 @@ interface CoreApi {
     /** Version and runtime state of the core. */
     suspend fun status(): Local.GetStatusResponse
 
-    /** Stores the device name used from the next start. */
+    /** Stores the name this device announces to the peers. */
     suspend fun setDeviceName(name: String): Local.Settings
 
     /** Current settings of the core. */
@@ -35,6 +35,9 @@ interface CoreApi {
 
     /** Removes a device from the group; the ID of this device leaves the group. */
     suspend fun revokeDevice(deviceId: String)
+
+    /** Changes the local name of a device, or the name this device announces. */
+    suspend fun renameDevice(deviceId: String, name: String): Local.Device
 
     /** Changes the pause of the clipboard synchronization. */
     suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long = 0): Local.Pause
@@ -147,6 +150,11 @@ class RunningCore(
     override suspend fun revokeDevice(deviceId: String) {
         ensureRunning()
         client.revokeDevice(deviceId)
+    }
+
+    override suspend fun renameDevice(deviceId: String, name: String): Local.Device {
+        ensureRunning()
+        return client.renameDevice(deviceId, name)
     }
 
     override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {

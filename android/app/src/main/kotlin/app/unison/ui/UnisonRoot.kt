@@ -71,6 +71,7 @@ fun UnisonRoot(
     onSelfConfirmationChange: (Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
     onSetDeviceConfirmation: (Local.Device, Boolean) -> Unit,
+    onRenameDevice: (Local.Device, String) -> Unit,
     onRevokeDevice: (Local.Device) -> Unit,
     onRefreshHistory: () -> Unit,
     onHistoryKindChange: (Local.Kind) -> Unit,
@@ -135,6 +136,7 @@ fun UnisonRoot(
                 onSendClipboard = onSendClipboard,
                 onDismissClipboard = onDismissClipboard,
                 onSetConfirmation = onSetDeviceConfirmation,
+                onRename = onRenameDevice,
                 onRevoke = onRevokeDevice,
                 modifier = content,
             )

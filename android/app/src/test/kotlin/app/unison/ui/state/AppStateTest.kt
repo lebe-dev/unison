@@ -43,6 +43,7 @@ class AppStateTest {
         val selfConfirmations = mutableListOf<Boolean>()
         val confirmations = mutableListOf<Pair<String, Boolean>>()
         val revoked = mutableListOf<String>()
+        val renamed = mutableListOf<Pair<String, String>>()
         var requests: List<Local.ShareRequest> = emptyList()
         var requestsFailure: Exception? = null
         val decided = mutableListOf<Pair<String, Boolean>>()
@@ -128,6 +129,11 @@ class AppStateTest {
 
         override suspend fun revokeDevice(deviceId: String) {
             revoked += deviceId
+        }
+
+        override suspend fun renameDevice(deviceId: String, name: String): Local.Device {
+            renamed += deviceId to name
+            return Local.Device.newBuilder().setDeviceId(deviceId).setName(name).build()
         }
 
         override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse =
@@ -582,6 +588,17 @@ class AppStateTest {
         advanceUntilIdle()
 
         assertEquals(listOf("abcd"), core.revoked)
+    }
+
+    @Test
+    fun renameUsesTheDeviceId() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.renameDevice("abcd", "  kitchen  ")
+        advanceUntilIdle()
+
+        assertEquals(listOf("abcd" to "kitchen"), core.renamed)
     }
 
     @Test

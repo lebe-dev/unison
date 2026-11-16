@@ -74,7 +74,7 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         parse = { Local.GetStatusResponse.parseFrom(it) },
     )
 
-    /** Stores the device name used from the next start. */
+    /** Stores the name this device announces to the peers. */
     override suspend fun setDeviceName(name: String): Local.Settings {
         val request = Local.UpdateSettingsRequest.newBuilder()
             .setDeviceName(name)
@@ -220,6 +220,20 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             request = request,
             parse = { Local.RevokeDeviceResponse.parseFrom(it) },
         )
+    }
+
+    /** Changes the local name of a device, or the name this device announces. */
+    override suspend fun renameDevice(deviceId: String, name: String): Local.Device {
+        val request = Local.RenameDeviceRequest.newBuilder()
+            .setDeviceId(deviceId)
+            .setName(name)
+            .build()
+        val response = call(
+            method = "RenameDevice",
+            request = request,
+            parse = { Local.RenameDeviceResponse.parseFrom(it) },
+        )
+        return response.device
     }
 
     /** Changes the pause of the clipboard synchronization. */

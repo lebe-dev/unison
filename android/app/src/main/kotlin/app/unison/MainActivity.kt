@@ -123,6 +123,7 @@ class MainActivity : ComponentActivity() {
                         onSetDeviceConfirmation = { device, require ->
                             appState.setDeviceConfirmation(device.deviceId, require)
                         },
+                        onRenameDevice = { device, name -> appState.renameDevice(device.deviceId, name) },
                         onRevokeDevice = { device -> appState.revokeDevice(device.deviceId) },
                         onRefreshHistory = appState::refreshHistory,
                         onHistoryKindChange = appState::setHistoryKind,
