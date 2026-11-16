@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -62,19 +63,29 @@ func clipText(value string) *connect.Error {
 	return nil
 }
 
-// candidateAddr validates the address of a pairing candidate.
-func candidateAddr(value string) *connect.Error {
+// addrPort validates a host:port address with a numeric port. An IPv6 host is
+// written in brackets.
+func addrPort(value string) (string, *connect.Error) {
+	addr := strings.TrimSpace(value)
 	switch {
-	case value == "":
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("address is empty"))
-	case len(value) > maxAddrLength:
-		return connect.NewError(connect.CodeInvalidArgument,
+	case addr == "":
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.New("address is empty"))
+	case len(addr) > maxAddrLength:
+		return "", connect.NewError(connect.CodeInvalidArgument,
 			fmt.Errorf("address is longer than %d bytes", maxAddrLength))
 	}
-	if _, _, err := net.SplitHostPort(value); err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, err)
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	return nil
+	if host == "" {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.New("address has no host"))
+	}
+	if number, err := strconv.Atoi(port); err != nil || number < 1 || number > 65535 {
+		return "", connect.NewError(connect.CodeInvalidArgument,
+			fmt.Errorf("address %q has no port between 1 and 65535", addr))
+	}
+	return addr, nil
 }
 
 // GetStatus reports the version and the runtime state of the daemon.
@@ -88,6 +99,7 @@ func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetS
 		return connect.NewResponse(status), nil
 	}
 	status.DeviceId = s.node.DeviceID().String()
+	status.Addrs = s.node.ListenAddrs()
 
 	status.Network = networkToProto(s.node.Network())
 

@@ -270,7 +270,7 @@ func (w *Window) codeAddrs(addrs []string) ([]string, error) {
 			return []string{parsed.String()}, nil
 		}
 	}
-	return localAddresses(w.Port())
+	return LocalAddresses(w.Port())
 }
 
 // claimToken takes the token for one exchange. It reports whether token is the

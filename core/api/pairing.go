@@ -64,9 +64,9 @@ func (s *Service) ListPairingCandidates(context.Context, *connect.Request[localv
 // StartSas starts a pairing exchange with a candidate. The exchange runs in the
 // background and reports the SAS with the pairing request event.
 func (s *Service) StartSas(_ context.Context, req *connect.Request[localv1.StartSasRequest]) (*connect.Response[localv1.StartSasResponse], error) {
-	addr := req.Msg.GetAddr()
-	if err := candidateAddr(addr); err != nil {
-		return nil, err
+	addr, addrErr := addrPort(req.Msg.GetAddr())
+	if addrErr != nil {
+		return nil, addrErr
 	}
 	if err := s.node.StartPairing(addr); err != nil {
 		return nil, errorOf(err)

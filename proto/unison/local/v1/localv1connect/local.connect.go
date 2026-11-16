@@ -50,6 +50,9 @@ const (
 	// UnisonServiceSetDeviceConfirmationProcedure is the fully-qualified name of the UnisonService's
 	// SetDeviceConfirmation RPC.
 	UnisonServiceSetDeviceConfirmationProcedure = "/unison.local.v1.UnisonService/SetDeviceConfirmation"
+	// UnisonServiceSetPeerAddressProcedure is the fully-qualified name of the UnisonService's
+	// SetPeerAddress RPC.
+	UnisonServiceSetPeerAddressProcedure = "/unison.local.v1.UnisonService/SetPeerAddress"
 	// UnisonServiceOpenPairingWindowProcedure is the fully-qualified name of the UnisonService's
 	// OpenPairingWindow RPC.
 	UnisonServiceOpenPairingWindowProcedure = "/unison.local.v1.UnisonService/OpenPairingWindow"
@@ -144,6 +147,9 @@ type UnisonServiceClient interface {
 	RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error)
 	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
 	SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error)
+	// Address of a paired device, entered by the user. It is tried before the
+	// discovered and cached ones, for networks where discovery does not work.
+	SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error)
 	// Pairing window and the short authentication string of an exchange.
 	OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error)
 	ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error)
@@ -238,6 +244,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+UnisonServiceSetDeviceConfirmationProcedure,
 			connect.WithSchema(unisonServiceMethods.ByName("SetDeviceConfirmation")),
+			connect.WithClientOptions(opts...),
+		),
+		setPeerAddress: connect.NewClient[v1.SetPeerAddressRequest, v1.SetPeerAddressResponse](
+			httpClient,
+			baseURL+UnisonServiceSetPeerAddressProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetPeerAddress")),
 			connect.WithClientOptions(opts...),
 		),
 		openPairingWindow: connect.NewClient[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse](
@@ -425,6 +437,7 @@ type unisonServiceClient struct {
 	renameDevice          *connect.Client[v1.RenameDeviceRequest, v1.RenameDeviceResponse]
 	revokeDevice          *connect.Client[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse]
 	setDeviceConfirmation *connect.Client[v1.SetDeviceConfirmationRequest, v1.SetDeviceConfirmationResponse]
+	setPeerAddress        *connect.Client[v1.SetPeerAddressRequest, v1.SetPeerAddressResponse]
 	openPairingWindow     *connect.Client[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse]
 	extendPairingWindow   *connect.Client[v1.ExtendPairingWindowRequest, v1.ExtendPairingWindowResponse]
 	closePairingWindow    *connect.Client[v1.ClosePairingWindowRequest, v1.ClosePairingWindowResponse]
@@ -484,6 +497,11 @@ func (c *unisonServiceClient) RevokeDevice(ctx context.Context, req *connect.Req
 // SetDeviceConfirmation calls unison.local.v1.UnisonService.SetDeviceConfirmation.
 func (c *unisonServiceClient) SetDeviceConfirmation(ctx context.Context, req *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error) {
 	return c.setDeviceConfirmation.CallUnary(ctx, req)
+}
+
+// SetPeerAddress calls unison.local.v1.UnisonService.SetPeerAddress.
+func (c *unisonServiceClient) SetPeerAddress(ctx context.Context, req *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error) {
+	return c.setPeerAddress.CallUnary(ctx, req)
 }
 
 // OpenPairingWindow calls unison.local.v1.UnisonService.OpenPairingWindow.
@@ -643,6 +661,9 @@ type UnisonServiceHandler interface {
 	RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error)
 	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
 	SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error)
+	// Address of a paired device, entered by the user. It is tried before the
+	// discovered and cached ones, for networks where discovery does not work.
+	SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error)
 	// Pairing window and the short authentication string of an exchange.
 	OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error)
 	ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error)
@@ -733,6 +754,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		UnisonServiceSetDeviceConfirmationProcedure,
 		svc.SetDeviceConfirmation,
 		connect.WithSchema(unisonServiceMethods.ByName("SetDeviceConfirmation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceSetPeerAddressHandler := connect.NewUnaryHandler(
+		UnisonServiceSetPeerAddressProcedure,
+		svc.SetPeerAddress,
+		connect.WithSchema(unisonServiceMethods.ByName("SetPeerAddress")),
 		connect.WithHandlerOptions(opts...),
 	)
 	unisonServiceOpenPairingWindowHandler := connect.NewUnaryHandler(
@@ -923,6 +950,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceRevokeDeviceHandler.ServeHTTP(w, r)
 		case UnisonServiceSetDeviceConfirmationProcedure:
 			unisonServiceSetDeviceConfirmationHandler.ServeHTTP(w, r)
+		case UnisonServiceSetPeerAddressProcedure:
+			unisonServiceSetPeerAddressHandler.ServeHTTP(w, r)
 		case UnisonServiceOpenPairingWindowProcedure:
 			unisonServiceOpenPairingWindowHandler.ServeHTTP(w, r)
 		case UnisonServiceExtendPairingWindowProcedure:
@@ -1012,6 +1041,10 @@ func (UnimplementedUnisonServiceHandler) RevokeDevice(context.Context, *connect.
 
 func (UnimplementedUnisonServiceHandler) SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetDeviceConfirmation is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetPeerAddress is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error) {

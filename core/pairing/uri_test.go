@@ -207,7 +207,7 @@ func TestParseQRRejects(t *testing.T) {
 
 // TestLocalAddresses checks the interface addresses of a code.
 func TestLocalAddresses(t *testing.T) {
-	addrs, err := localAddresses(41234)
+	addrs, err := LocalAddresses(41234)
 	if err != nil {
 		t.Skipf("the host has no usable address: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestLocalAddresses(t *testing.T) {
 		}
 	}
 
-	if _, err := localAddresses(0); err == nil {
+	if _, err := LocalAddresses(0); err == nil {
 		t.Error("port zero is accepted")
 	}
 }
