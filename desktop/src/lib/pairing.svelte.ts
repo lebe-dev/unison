@@ -2,9 +2,11 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { client } from "./api/client";
 import {
   EventKind,
+  PairingMethod,
   Role,
   type Event as DaemonEvent,
   type PairingCandidate,
+  type PairingQr,
   type PairingWindow,
   type Platform,
   type Sas,
@@ -22,12 +24,15 @@ export interface OpenWindow {
   expiresAt: number;
 }
 
-/** A device that asks to pair and shows a short authentication string. */
+/** A device that asks to pair. */
 export interface PairingRequest {
   deviceID: string;
   name: string;
   platform: Platform;
   role: Role;
+  /** How the exchange was started: a compared code or a scanned square. */
+  method: PairingMethod;
+  /** Short authentication string of a compared code, absent for a scan. */
   sas: Sas | null;
 }
 
@@ -47,6 +52,8 @@ class PairingStore {
   role = $state<Role>(Role.PERSONAL);
   /** Open window, absent when the pairing is off. */
   window = $state<OpenWindow | null>(null);
+  /** Square for another device to scan, absent without an open window. */
+  qr = $state<PairingQr | null>(null);
   /** Devices that are open for pairing. */
   candidates = $state<PairingCandidate[]>([]);
   /** Device that waits for the comparison of the code. */
@@ -97,7 +104,7 @@ class PairingStore {
       this.request = null;
       this.confirmed = false;
       this.dialing = null;
-      await this.refreshCandidates();
+      await Promise.all([this.refreshCandidates(), this.loadQr()]);
     } catch (error) {
       this.error = errorText(error, "The pairing window could not be opened.");
     } finally {
@@ -112,6 +119,7 @@ class PairingStore {
     try {
       const response = await client.extendPairingWindow({});
       this.#applyWindow(response.window);
+      await this.loadQr();
     } catch (error) {
       this.error = errorText(error, "The pairing window could not be extended.");
       if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
@@ -150,6 +158,22 @@ class PairingStore {
       }
     } finally {
       this.#refreshing = false;
+    }
+  }
+
+  /** loadQr reloads the square of the window. A completed pairing spends the
+   * code, so the daemon answers with a new one and the screen has to follow. */
+  async loadQr(): Promise<void> {
+    if (!this.window) {
+      return;
+    }
+    try {
+      const response = await client.getPairingQr({});
+      this.qr = response.qr ?? null;
+    } catch (error) {
+      if (!(error instanceof ConnectError && error.code === Code.Unavailable)) {
+        this.error = errorText(error, "The pairing code could not be loaded.");
+      }
     }
   }
 
@@ -217,6 +241,7 @@ class PairingStore {
           name: event.name,
           platform: event.platform,
           role: event.role,
+          method: event.pairingMethod,
           sas: event.sas ?? null,
         };
         this.confirmed = false;
@@ -233,6 +258,7 @@ class PairingStore {
         };
         void daemon.refresh();
         void this.refreshCandidates();
+        void this.loadQr();
         break;
       case EventKind.PAIRING_FAILED:
         this.request = null;
@@ -271,6 +297,7 @@ class PairingStore {
   /** #closeWindow drops the window state and the polling. */
   #closeWindow(): void {
     this.window = null;
+    this.qr = null;
     this.candidates = [];
     this.#stopCandidates();
     this.#clearExpiry();

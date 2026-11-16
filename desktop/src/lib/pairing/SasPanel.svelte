@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PairingMethod } from "../api/gen/unison/local/v1/local_pb";
   import type { PairingRequest } from "../pairing.svelte";
   import { groupDigits, sasEmoji } from "./countdown";
   import { platformLabel, roleLabel } from "../format";
@@ -20,32 +21,40 @@
     onReject: () => void;
   } = $props();
 
+  const scanned = $derived(request.method === PairingMethod.QR);
   const digits = $derived(request.sas ? groupDigits(request.sas.digits) : "");
   const emoji = $derived(sasEmoji(request.sas?.emoji ?? []));
   const name = $derived(request.name || "A device");
 </script>
 
 <section class="sas" aria-live="polite">
-  <h3>Compare the code</h3>
+  <h3>{scanned ? "A device scanned the square" : "Compare the code"}</h3>
   <p class="lead">
     <strong>{name}</strong>
     <span class="muted">({platformLabel(request.platform)})</span>
     wants to pair as <strong>{roleLabel(request.role)}</strong>.
   </p>
-  <p class="muted">The same code must appear on both devices. Accept only when the code matches.</p>
-
-  <div class="code" aria-label="Short authentication string">
-    {#if digits}
-      <div class="digits mono">{digits}</div>
-      <div class="emoji">
-        {#each emoji as symbol}
-          <span>{symbol}</span>
-        {/each}
-      </div>
-    {:else}
-      <p class="muted">Waiting for the code...</p>
-    {/if}
-  </div>
+  {#if scanned}
+    <p class="muted">
+      The device read the square of this one. Accept only if you started the pairing on it.
+    </p>
+  {:else}
+    <p class="muted">
+      The same code must appear on both devices. Accept only when the code matches.
+    </p>
+    <div class="code" aria-label="Short authentication string">
+      {#if digits}
+        <div class="digits mono">{digits}</div>
+        <div class="emoji">
+          {#each emoji as symbol}
+            <span>{symbol}</span>
+          {/each}
+        </div>
+      {:else}
+        <p class="muted">Waiting for the code...</p>
+      {/if}
+    </div>
+  {/if}
 
   {#if confirmed}
     <p class="notice info">Confirmed. Waiting for the other device to confirm as well.</p>
@@ -53,7 +62,7 @@
 
   <div class="toolbar">
     <button class="button primary" type="button" onclick={onConfirm} disabled={busy || confirmed}>
-      Confirm
+      {scanned ? "Add device" : "Confirm"}
     </button>
     <button class="button danger" type="button" onclick={onReject} disabled={busy}>
       Reject
