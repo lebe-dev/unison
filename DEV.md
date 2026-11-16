@@ -325,9 +325,10 @@ the version from the `VERSION` file.
 driven without the desktop app. `status` shows the daemon, the network and the peers, `devices`
 lists the paired devices and `devices rename` changes a name, `pair` opens a pairing window, offers
 the devices that are open for pairing and shows the short authentication code the user has to
-compare, `clip get` prints the last clipboard item, `clip set` copies standard input to the
-clipboard, `send` offers a file or standard input to the devices of `--to`, and `pause` pauses or
-resumes the clipboard synchronization for a duration or until it is turned off.
+compare, or joins the device that shows a code with `pair --qr <code>`, `clip get` prints the last
+clipboard item, `clip set` copies standard input to the clipboard, `send` offers a file or standard
+input to the devices of `--to`, and `pause` pauses or resumes the clipboard synchronization for a
+duration or until it is turned off.
 
 A device is addressed by a unique prefix of its fingerprint, a prefix of its device ID or its name.
 Output is plain text by default and JSON with `--json`, which prints the answer in the JSON form of
