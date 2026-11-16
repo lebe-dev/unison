@@ -439,6 +439,32 @@ func TestClipGetEmpty(t *testing.T) {
 	}
 }
 
+// TestHistoryFetchFlags checks that the output path may follow the item id.
+func TestHistoryFetchFlags(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 315, api.Options{})
+	device.start(t)
+	device.emit(t, "a fetchable item")
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "history", "ls")
+	if code != exitOK {
+		t.Fatalf("history exited with %d, stderr %q", code, stderr)
+	}
+	lines := strings.Split(strings.TrimSpace(stdout), "\n")
+	if len(lines) < 2 {
+		t.Fatalf("the history lists no items:\n%s", stdout)
+	}
+	id := strings.Fields(lines[1])[0]
+
+	code, stdout, stderr = runCommand(t, "", "--endpoint", device.endpoint, "history", "fetch", id, "-o", t.TempDir())
+	if code != exitOK {
+		t.Fatalf("history fetch exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "saved") {
+		t.Errorf("history fetch printed %q", stdout)
+	}
+}
+
 // TestClipSet checks that the standard input reaches the pipeline.
 func TestClipSet(t *testing.T) {
 	network, bus := newNetwork(t)
