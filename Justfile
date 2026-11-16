@@ -51,6 +51,10 @@ run-daemon-2 *args:
 test:
     go test ./...
 
+# Run the long integration tests of the node harness.
+test-integration:
+    go test -tags integration -timeout 20m ./core/node/nodetest/
+
 # Run the Keychain integration tests against the real login Keychain.
 test-keychain:
     CGO_ENABLED=1 go test -tags keychaintest ./platform/darwin/keystore/
