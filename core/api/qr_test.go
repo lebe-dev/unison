@@ -62,6 +62,21 @@ func TestPairingQr(t *testing.T) {
 		t.Errorf("code addresses = %v, want %s", parsed.Addrs, n.PairingAddr())
 	}
 
+	// A device that cannot list its interfaces passes the addresses itself.
+	given, err := client.GetPairingQr(ctx, connect.NewRequest(&localv1.GetPairingQrRequest{
+		Addrs: []string{"192.0.2.10:41234"},
+	}))
+	if err != nil {
+		t.Fatalf("get the pairing code with addresses: %v", err)
+	}
+	givenCode, err := pairing.ParseQR(given.Msg.GetQr().GetUri())
+	if err != nil {
+		t.Fatalf("parse the code with addresses: %v", err)
+	}
+	if len(givenCode.Addrs) != 1 || givenCode.Addrs[0] != "192.0.2.10:41234" {
+		t.Errorf("code addresses = %v, want the given one", givenCode.Addrs)
+	}
+
 	if _, err := client.ScanPairingQr(ctx, connect.NewRequest(&localv1.ScanPairingQrRequest{})); err == nil {
 		t.Error("an empty code was accepted")
 	} else {

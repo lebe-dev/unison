@@ -13,6 +13,7 @@ import (
 	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
+	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/core/transport/vnet"
@@ -153,6 +154,43 @@ func TestHistoryCalls(t *testing.T) {
 	})
 	if connect.Code(response.GetCode()) != connect.CodeNotFound {
 		t.Fatalf("deleted item returned code %d", response.GetCode())
+	}
+}
+
+func TestPairingQrCalls(t *testing.T) {
+	platform := newFakePlatform()
+	core := startTestCore(t, platform)
+
+	opened := &localv1.OpenPairingWindowResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "OpenPairingWindow",
+		Payload: marshal(t, &localv1.OpenPairingWindowRequest{Role: localv1.Role_ROLE_PERSONAL}),
+	}), opened)
+	if !opened.GetWindow().GetOpen() || opened.GetWindow().GetExpiresAtUnixMs() == 0 {
+		t.Fatalf("window %v", opened.GetWindow())
+	}
+
+	code := &localv1.GetPairingQrResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "GetPairingQr"}), code)
+	if code.GetQr().GetUri() == "" || code.GetQr().GetExpiresAtUnixMs() == 0 {
+		t.Fatal("the open window returned no code")
+	}
+	if _, err := pairing.ParseQR(code.GetQr().GetUri()); err != nil {
+		t.Fatalf("the code does not parse: %v", err)
+	}
+
+	scanned := core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "ScanPairingQr",
+		Payload: marshal(t, &localv1.ScanPairingQrRequest{Uri: "not a pairing code"}),
+	})
+	if connect.Code(scanned.GetCode()) != connect.CodeInvalidArgument {
+		t.Fatalf("bad code returned code %d", scanned.GetCode())
+	}
+
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "ClosePairingWindow"}), &localv1.ClosePairingWindowResponse{})
+	closed := core.call(t.Context(), &mobilev1.CallRequest{Method: "GetPairingQr"})
+	if connect.Code(closed.GetCode()) != connect.CodeFailedPrecondition {
+		t.Fatalf("closed window returned code %d", closed.GetCode())
 	}
 }
 

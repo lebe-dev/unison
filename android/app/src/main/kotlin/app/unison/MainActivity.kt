@@ -19,6 +19,7 @@ import app.unison.clipboard.ClipboardDraft
 import app.unison.clipboard.ClipboardRead
 import app.unison.clipboard.ClipboardReader
 import app.unison.clipboard.ClipboardSender
+import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
 import app.unison.history.HistoryDownloads
@@ -50,7 +51,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        appState = AppState(RunningCore(this), coreEvents.events, HistoryDownloads(this))
+        appState = AppState(
+            core = RunningCore(this),
+            events = coreEvents.events,
+            saver = HistoryDownloads(this),
+            localAddresses = LocalAddresses(this)::ipv4,
+        )
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
@@ -58,10 +64,12 @@ class MainActivity : ComponentActivity() {
             UnisonTheme {
                 val state by appState.state.collectAsState()
                 val history by appState.history.collectAsState()
+                val pairing by appState.pairing.collectAsState()
                 if (onboarded) {
                     UnisonRoot(
                         state = state,
                         history = history,
+                        pairing = pairing,
                         deviceName = deviceName,
                         operatingMode = operatingMode,
                         clipboardOffer = pending,
@@ -78,6 +86,17 @@ class MainActivity : ComponentActivity() {
                         onCopyHistoryItem = { appState.copyHistoryItem(it.item.id) },
                         onDownloadHistoryItem = { appState.downloadHistoryItem(it.item.id) },
                         onDeleteHistoryItem = { appState.deleteHistoryItem(it.item.id) },
+                        onPairingRoleChange = appState::setPairingRole,
+                        onOpenPairingWindow = appState::openPairingWindow,
+                        onExtendPairingWindow = appState::extendPairingWindow,
+                        onClosePairingWindow = appState::closePairingWindow,
+                        onRefreshPairingCandidates = appState::refreshPairingCandidates,
+                        onPairWith = appState::startPairing,
+                        onConfirmPairing = appState::confirmPairing,
+                        onRejectPairing = appState::rejectPairing,
+                        onScanPairingCode = appState::scanPairingCode,
+                        onCancelScan = appState::cancelScan,
+                        onDismissPairingResult = appState::dismissPairingResult,
                     )
                 } else {
                     OnboardingScreen(onEnable = ::enable)

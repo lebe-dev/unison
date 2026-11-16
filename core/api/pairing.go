@@ -99,12 +99,14 @@ func (s *Service) RejectSas(ctx context.Context, req *connect.Request[localv1.Re
 }
 
 // GetPairingQr returns the code of the open pairing window. The code carries a
-// one time token, so it is meant for the screen of this device only.
-func (s *Service) GetPairingQr(context.Context, *connect.Request[localv1.GetPairingQrRequest]) (*connect.Response[localv1.GetPairingQrResponse], error) {
+// one time token, so it is meant for the screen of this device only. The addrs
+// of the request are the addresses of the pairing listener that the scanning
+// device can reach; they replace the addresses of the local interfaces.
+func (s *Service) GetPairingQr(_ context.Context, req *connect.Request[localv1.GetPairingQrRequest]) (*connect.Response[localv1.GetPairingQrResponse], error) {
 	if err := s.requireRunning(); err != nil {
 		return nil, errorOf(err)
 	}
-	code, err := s.node.PairingQR()
+	code, err := s.node.PairingQR(req.Msg.GetAddrs()...)
 	if err != nil {
 		return nil, errorOf(err)
 	}

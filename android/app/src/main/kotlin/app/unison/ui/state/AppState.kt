@@ -5,6 +5,8 @@ import app.unison.R
 import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
+import app.unison.core.qrCodeAddresses
+import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +15,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import unison.local.v1.Local
 import unison.mobile.v1.Mobile
@@ -31,6 +35,7 @@ class AppState(
     events: Flow<Mobile.Event>,
     private val saver: HistorySaver,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+    private val localAddresses: () -> List<String> = { emptyList() },
 ) {
     private val mutableState = MutableStateFlow(CoreState())
 
@@ -42,6 +47,11 @@ class AppState(
     /** What the history screen renders. */
     val history: StateFlow<HistoryState> = mutableHistory.asStateFlow()
 
+    private val mutablePairing = MutableStateFlow(PairingState())
+
+    /** What the add screen renders. */
+    val pairing: StateFlow<PairingState> = mutablePairing.asStateFlow()
+
     private val mutableNotices = MutableSharedFlow<Int>(
         extraBufferCapacity = NOTICE_BUFFER,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
@@ -52,6 +62,9 @@ class AppState(
 
     private var load: Job? = null
     private var loadHistory: Job? = null
+    private var pollCandidates: Job? = null
+    private var closeWindow: Job? = null
+    private var loadingCandidates = false
 
     init {
         scope.launch {
@@ -62,6 +75,7 @@ class AppState(
                 if (event.changesHistory()) {
                     refreshHistory()
                 }
+                onPairingEvent(event)
             }
         }
     }
@@ -184,6 +198,178 @@ class AppState(
         scope.cancel()
     }
 
+    /** Selects the role the next pairing window proposes. */
+    fun setPairingRole(role: Local.Role) {
+        mutablePairing.update { it.copy(role = role) }
+    }
+
+    /** Opens a pairing window and loads its code and the nearby devices. */
+    fun openPairingWindow() {
+        if (mutablePairing.value.busy) {
+            return
+        }
+        mutablePairing.update { it.copy(busy = true, failure = null, result = null) }
+        scope.launch {
+            try {
+                val role = mutablePairing.value.role
+                applyWindow(core.openPairingWindow(role), role)
+                loadPairingQr()
+                loadPairingCandidates()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!replaceOpenWindow()) {
+                    mutablePairing.update { it.copy(failure = R.string.pairing_window_failed) }
+                }
+            } finally {
+                mutablePairing.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Restarts the auto-close timer of the pairing window. */
+    fun extendPairingWindow() {
+        if (mutablePairing.value.window == null || mutablePairing.value.busy) {
+            return
+        }
+        mutablePairing.update { it.copy(busy = true, failure = null) }
+        scope.launch {
+            try {
+                applyWindow(core.extendPairingWindow(), mutablePairing.value.role)
+                loadPairingQr()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutablePairing.update { it.copy(failure = R.string.pairing_extend_failed) }
+                closePairingState()
+            } finally {
+                mutablePairing.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Closes the pairing window and the exchanges in it. */
+    fun closePairingWindow() {
+        if (mutablePairing.value.busy) {
+            return
+        }
+        mutablePairing.update { it.copy(busy = true) }
+        scope.launch {
+            try {
+                core.closePairingWindow()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutablePairing.update { it.copy(failure = R.string.pairing_close_failed) }
+            } finally {
+                closePairingState()
+                mutablePairing.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Reloads the devices that are open for pairing. */
+    fun refreshPairingCandidates() {
+        scope.launch { loadPairingCandidates() }
+    }
+
+    /** Pairs with a discovered candidate, both devices compare a code. */
+    fun startPairing(addr: String) {
+        if (addr.isEmpty() || mutablePairing.value.window == null) {
+            return
+        }
+        mutablePairing.update { it.copy(dialing = addr, failure = null, result = null) }
+        scope.launch {
+            try {
+                core.startPairing(addr)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutablePairing.update { it.copy(dialing = "", failure = R.string.pairing_start_failed) }
+            }
+        }
+    }
+
+    /** Accepts the pairing request that waits for the answer. */
+    fun confirmPairing() {
+        val request = mutablePairing.value.request ?: return
+        if (mutablePairing.value.busy) {
+            return
+        }
+        mutablePairing.update { it.copy(busy = true, failure = null) }
+        scope.launch {
+            try {
+                core.confirmPairing(request.deviceId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutablePairing.update { it.copy(request = null, failure = R.string.pairing_confirm_failed) }
+            } finally {
+                mutablePairing.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Refuses the pairing request that waits for the answer. */
+    fun rejectPairing() {
+        val request = mutablePairing.value.request ?: return
+        if (mutablePairing.value.busy) {
+            return
+        }
+        mutablePairing.update { it.copy(busy = true, failure = null) }
+        scope.launch {
+            try {
+                core.rejectPairing(request.deviceId)
+                mutablePairing.update {
+                    it.copy(
+                        request = null,
+                        result = PairingResult(paired = false, rejected = true),
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutablePairing.update { it.copy(request = null, failure = R.string.pairing_reject_failed) }
+            } finally {
+                mutablePairing.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Pairs with the device of a scanned code. */
+    fun scanPairingCode(uri: String) {
+        val text = uri.trim()
+        if (text.isEmpty() || mutablePairing.value.scanning) {
+            return
+        }
+        mutablePairing.update { it.copy(failure = null, result = null) }
+        scope.launch {
+            try {
+                core.scanPairingQr(text)
+                mutablePairing.update { it.copy(scanning = true) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val failure = if (e is CoreException && e.isInvalidArgument) {
+                    R.string.pairing_code_invalid
+                } else {
+                    R.string.pairing_scan_failed
+                }
+                mutablePairing.update { it.copy(scanning = false, failure = failure) }
+            }
+        }
+    }
+
+    /** Stops waiting for the device of a scanned code. */
+    fun cancelScan() {
+        mutablePairing.update { it.copy(scanning = false) }
+    }
+
+    /** Drops the outcome and the failure of the last exchange. */
+    fun dismissPairingResult() {
+        mutablePairing.update { it.copy(result = null, failure = null) }
+    }
+
     /** Runs one action on an entry and marks it as busy meanwhile. */
     private fun runHistoryAction(itemId: String, @StringRes failure: Int, action: suspend () -> Unit) {
         if (itemId.isEmpty() || itemId in mutableHistory.value.busy) {
@@ -205,6 +391,181 @@ class AppState(
 
     private fun failureOf(e: Exception): CoreFailure =
         if (e is CoreException && e.isNotRunning) CoreFailure.STOPPED else CoreFailure.UNAVAILABLE
+
+    /** Stores an open window and follows its deadline. */
+    private fun applyWindow(window: Local.PairingWindow, role: Local.Role) {
+        if (!window.open) {
+            closePairingState()
+            return
+        }
+        mutablePairing.update { it.copy(window = window, role = role, qr = null, failure = null) }
+        startPairingPoll()
+        scheduleWindowClose(window.expiresAtUnixMs)
+    }
+
+    /** Replaces a window that was left open by an earlier session of the app. */
+    private suspend fun replaceOpenWindow(): Boolean = try {
+        core.closePairingWindow()
+        val role = mutablePairing.value.role
+        applyWindow(core.openPairingWindow(role), role)
+        loadPairingQr()
+        loadPairingCandidates()
+        true
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        false
+    }
+
+    /** Reloads the code of the open window. */
+    private suspend fun loadPairingQr() {
+        val window = mutablePairing.value.window ?: return
+        try {
+            val qr = core.pairingQr(qrCodeAddresses(window.addr, localAddresses()))
+            mutablePairing.update { it.copy(qr = qr) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A window that closed in the core reports itself, its code is not
+            // a failure of the screen.
+            if (e is CoreException && e.isNotRunning) {
+                return
+            }
+            mutablePairing.update { it.copy(failure = R.string.pairing_code_failed) }
+        }
+    }
+
+    /** Reloads the devices that are open for pairing. */
+    private suspend fun loadPairingCandidates() {
+        val window = mutablePairing.value.window ?: return
+        if (loadingCandidates) {
+            return
+        }
+        loadingCandidates = true
+        try {
+            val candidates = withoutOwnService(
+                candidates = core.pairingCandidates(),
+                windowAddr = window.addr,
+                ipv4 = localAddresses(),
+            )
+            mutablePairing.update { it.copy(candidates = candidates) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The window may be closing, the next poll loads the list again.
+        } finally {
+            loadingCandidates = false
+        }
+    }
+
+    /** Polls the candidates while the window is open. */
+    private fun startPairingPoll() {
+        if (pollCandidates != null) {
+            return
+        }
+        pollCandidates = scope.launch {
+            while (isActive) {
+                delay(CANDIDATE_POLL_MS)
+                loadPairingCandidates()
+            }
+        }
+    }
+
+    /** Stops the candidate poll. */
+    private fun stopPairingPoll() {
+        pollCandidates?.cancel()
+        pollCandidates = null
+    }
+
+    /** Drops the window state when its deadline passes. */
+    private fun scheduleWindowClose(expiresAtUnixMs: Long) {
+        closeWindow?.cancel()
+        closeWindow = null
+        if (expiresAtUnixMs <= 0) {
+            return
+        }
+        closeWindow = scope.launch {
+            delay((expiresAtUnixMs - System.currentTimeMillis()).coerceAtLeast(0) + CLOSE_MARGIN_MS)
+            val window = mutablePairing.value.window ?: return@launch
+            if (window.expiresAtUnixMs <= System.currentTimeMillis()) {
+                closePairingState()
+            }
+        }
+    }
+
+    /** Drops the window, its code and the exchanges in it. */
+    private fun closePairingState() {
+        stopPairingPoll()
+        closeWindow?.cancel()
+        closeWindow = null
+        mutablePairing.update {
+            it.copy(
+                window = null,
+                qr = null,
+                candidates = emptyList(),
+                request = null,
+                dialing = "",
+                scanning = false,
+            )
+        }
+    }
+
+    /** Follows the pairing events of the core. */
+    private fun onPairingEvent(event: Mobile.Event) {
+        if (!event.hasEvent()) {
+            return
+        }
+        val payload = event.event
+        when (payload.kind) {
+            Local.EventKind.EVENT_KIND_PAIRING_CANDIDATE -> {
+                if (mutablePairing.value.window != null) {
+                    refreshPairingCandidates()
+                }
+            }
+            Local.EventKind.EVENT_KIND_PAIRING_REQUEST -> mutablePairing.update {
+                it.copy(
+                    request = PairingRequest(
+                        deviceId = payload.deviceId,
+                        name = payload.name,
+                        role = payload.role,
+                        platform = payload.platform,
+                        sas = if (payload.hasSas()) payload.sas else null,
+                        method = payload.pairingMethod,
+                    ),
+                    dialing = "",
+                    scanning = false,
+                    result = null,
+                    failure = null,
+                )
+            }
+            Local.EventKind.EVENT_KIND_PAIRING_PAIRED -> {
+                mutablePairing.update {
+                    it.copy(
+                        request = null,
+                        dialing = "",
+                        scanning = false,
+                        result = PairingResult(paired = true, name = payload.name),
+                        failure = null,
+                    )
+                }
+                mutableNotices.tryEmit(R.string.pairing_paired_notice)
+                scope.launch {
+                    loadPairingQr()
+                    loadPairingCandidates()
+                }
+            }
+            Local.EventKind.EVENT_KIND_PAIRING_FAILED -> mutablePairing.update {
+                it.copy(
+                    request = null,
+                    dialing = "",
+                    scanning = false,
+                    result = PairingResult(paired = false, error = payload.error),
+                )
+            }
+            Local.EventKind.EVENT_KIND_PAIRING_CLOSED -> closePairingState()
+            else -> Unit
+        }
+    }
 
     /** Events that change the list of devices in the status. */
     private fun Mobile.Event.changesDevices(): Boolean = when (type) {
@@ -231,5 +592,11 @@ class AppState(
 
     private companion object {
         const val NOTICE_BUFFER = 4
+
+        /** Interval of the candidate list while the window is open. */
+        const val CANDIDATE_POLL_MS = 2_000L
+
+        /** Time after the deadline before the window state is dropped. */
+        const val CLOSE_MARGIN_MS = 250L
     }
 }

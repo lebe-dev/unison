@@ -35,6 +35,33 @@ interface CoreApi {
 
     /** Stops one file transfer. */
     suspend fun cancelTransfer(id: String)
+
+    /** Opens a pairing window that proposes [role] to the devices it pairs with. */
+    suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow
+
+    /** Restarts the auto-close timer of the pairing window. */
+    suspend fun extendPairingWindow(): Local.PairingWindow
+
+    /** Closes the pairing window. */
+    suspend fun closePairingWindow()
+
+    /** Code of the open pairing window, with [addrs] instead of the local interfaces. */
+    suspend fun pairingQr(addrs: List<String> = emptyList()): Local.PairingQr
+
+    /** Pairs with the device of a pairing code. */
+    suspend fun scanPairingQr(uri: String)
+
+    /** Devices that are open for pairing. */
+    suspend fun pairingCandidates(): List<Local.PairingCandidate>
+
+    /** Starts a pairing exchange with the candidate address. */
+    suspend fun startPairing(addr: String)
+
+    /** Accepts the pairing request of the device. */
+    suspend fun confirmPairing(deviceId: String)
+
+    /** Refuses the pairing request of the device. */
+    suspend fun rejectPairing(deviceId: String)
 }
 
 /** Core that starts the service when it does not answer yet. */
@@ -86,6 +113,51 @@ class RunningCore(
     override suspend fun cancelTransfer(id: String) {
         ensureRunning()
         client.cancelTransfer(id)
+    }
+
+    override suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow {
+        ensureRunning()
+        return client.openPairingWindow(role)
+    }
+
+    override suspend fun extendPairingWindow(): Local.PairingWindow {
+        ensureRunning()
+        return client.extendPairingWindow()
+    }
+
+    override suspend fun closePairingWindow() {
+        ensureRunning()
+        client.closePairingWindow()
+    }
+
+    override suspend fun pairingQr(addrs: List<String>): Local.PairingQr {
+        ensureRunning()
+        return client.pairingQr(addrs)
+    }
+
+    override suspend fun scanPairingQr(uri: String) {
+        ensureRunning()
+        client.scanPairingQr(uri)
+    }
+
+    override suspend fun pairingCandidates(): List<Local.PairingCandidate> {
+        ensureRunning()
+        return client.pairingCandidates()
+    }
+
+    override suspend fun startPairing(addr: String) {
+        ensureRunning()
+        client.startPairing(addr)
+    }
+
+    override suspend fun confirmPairing(deviceId: String) {
+        ensureRunning()
+        client.confirmPairing(deviceId)
+    }
+
+    override suspend fun rejectPairing(deviceId: String) {
+        ensureRunning()
+        client.rejectPairing(deviceId)
     }
 
     private suspend fun ensureRunning() {

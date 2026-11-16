@@ -2841,7 +2841,10 @@ func (*RejectSasResponse) Descriptor() ([]byte, []int) {
 }
 
 type GetPairingQrRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Addresses of this device to put into the code, host:port. A device that
+	// cannot list its own interfaces passes the addresses its platform reports.
+	Addrs         []string `protobuf:"bytes,1,rep,name=addrs,proto3" json:"addrs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2874,6 +2877,13 @@ func (x *GetPairingQrRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetPairingQrRequest.ProtoReflect.Descriptor instead.
 func (*GetPairingQrRequest) Descriptor() ([]byte, []int) {
 	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *GetPairingQrRequest) GetAddrs() []string {
+	if x != nil {
+		return x.Addrs
+	}
+	return nil
 }
 
 type GetPairingQrResponse struct {
@@ -5201,8 +5211,9 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x12ConfirmSasResponse\"/\n" +
 	"\x10RejectSasRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x13\n" +
-	"\x11RejectSasResponse\"\x15\n" +
-	"\x13GetPairingQrRequest\"B\n" +
+	"\x11RejectSasResponse\"+\n" +
+	"\x13GetPairingQrRequest\x12\x14\n" +
+	"\x05addrs\x18\x01 \x03(\tR\x05addrs\"B\n" +
 	"\x14GetPairingQrResponse\x12*\n" +
 	"\x02qr\x18\x01 \x01(\v2\x1a.unison.local.v1.PairingQrR\x02qr\"(\n" +
 	"\x14ScanPairingQrRequest\x12\x10\n" +

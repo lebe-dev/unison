@@ -145,6 +145,26 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "GetPairingQr":
+		call, err := requestOf[localv1.GetPairingQrRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.GetPairingQr(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "ScanPairingQr":
+		call, err := requestOf[localv1.ScanPairingQrRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ScanPairingQr(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "GetClip":
 		call, err := requestOf[localv1.GetClipRequest](payload)
 		if err != nil {

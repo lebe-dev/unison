@@ -28,6 +28,7 @@ import app.unison.ui.screens.HistoryScreen
 import app.unison.ui.screens.SettingsScreen
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.HistoryState
+import app.unison.ui.state.PairingState
 import kotlinx.coroutines.flow.Flow
 import unison.local.v1.Local
 
@@ -36,6 +37,7 @@ import unison.local.v1.Local
 fun UnisonRoot(
     state: CoreState,
     history: HistoryState,
+    pairing: PairingState,
     deviceName: String,
     operatingMode: OperatingMode,
     clipboardOffer: ClipboardDraft?,
@@ -52,6 +54,17 @@ fun UnisonRoot(
     onCopyHistoryItem: (Local.HistoryItem) -> Unit,
     onDownloadHistoryItem: (Local.HistoryItem) -> Unit,
     onDeleteHistoryItem: (Local.HistoryItem) -> Unit,
+    onPairingRoleChange: (Local.Role) -> Unit,
+    onOpenPairingWindow: () -> Unit,
+    onExtendPairingWindow: () -> Unit,
+    onClosePairingWindow: () -> Unit,
+    onRefreshPairingCandidates: () -> Unit,
+    onPairWith: (String) -> Unit,
+    onConfirmPairing: () -> Unit,
+    onRejectPairing: () -> Unit,
+    onScanPairingCode: (String) -> Unit,
+    onCancelScan: () -> Unit,
+    onDismissPairingResult: () -> Unit,
 ) {
     var destination by rememberSaveable { mutableStateOf(Destination.DEFAULT) }
     val snackbar = remember { SnackbarHostState() }
@@ -85,7 +98,21 @@ fun UnisonRoot(
                 onDismissClipboard = onDismissClipboard,
                 modifier = content,
             )
-            Destination.ADD -> AddScreen(modifier = content)
+            Destination.ADD -> AddScreen(
+                state = pairing,
+                onRoleChange = onPairingRoleChange,
+                onOpenWindow = onOpenPairingWindow,
+                onExtendWindow = onExtendPairingWindow,
+                onCloseWindow = onClosePairingWindow,
+                onRefreshCandidates = onRefreshPairingCandidates,
+                onPairWith = onPairWith,
+                onConfirm = onConfirmPairing,
+                onReject = onRejectPairing,
+                onScan = onScanPairingCode,
+                onCancelScan = onCancelScan,
+                onDismissResult = onDismissPairingResult,
+                modifier = content,
+            )
             Destination.HISTORY -> HistoryScreen(
                 history = history,
                 status = state.status,
