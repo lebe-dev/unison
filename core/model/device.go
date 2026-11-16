@@ -4,6 +4,7 @@ import (
 	"encoding/base32"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"strings"
 )
 
@@ -13,6 +14,12 @@ type DeviceID [32]byte
 // String returns the lowercase hex form of the ID.
 func (d DeviceID) String() string {
 	return hex.EncodeToString(d[:])
+}
+
+// LogValue returns the hex form of the ID, so logs carry the ID rather than the
+// bytes of the array.
+func (d DeviceID) LogValue() slog.Value {
+	return slog.StringValue(d.String())
 }
 
 // Bytes returns a copy of the raw ID.
