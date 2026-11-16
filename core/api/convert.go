@@ -213,6 +213,18 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 	}
 }
 
+// pairingMethodToProto converts a pairing method.
+func pairingMethodToProto(method pairing.Method) localv1.PairingMethod {
+	switch method {
+	case pairing.MethodSAS:
+		return localv1.PairingMethod_PAIRING_METHOD_SAS
+	case pairing.MethodQR:
+		return localv1.PairingMethod_PAIRING_METHOD_QR
+	default:
+		return localv1.PairingMethod_PAIRING_METHOD_UNSPECIFIED
+	}
+}
+
 // eventToProto converts a node event.
 func eventToProto(event node.Event) *localv1.Event {
 	out := &localv1.Event{
@@ -225,6 +237,7 @@ func eventToProto(event node.Event) *localv1.Event {
 		Local:           event.Local,
 		Addr:            event.Addr,
 		Sas:             sasToProto(event.SAS),
+		PairingMethod:   pairingMethodToProto(event.Method),
 		ProtocolVersion: event.Version,
 		AtUnixMs:        unixMilli(event.At),
 	}

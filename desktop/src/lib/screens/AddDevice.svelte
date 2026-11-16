@@ -85,7 +85,7 @@
       onSelect={(addr) => void pairing.pairWith(addr)}
     />
 
-    <QrPanel addr={pairing.window.addr} />
+    <QrPanel uri={pairing.qr?.uri ?? ""} />
   </div>
 {:else}
   <div class="start">

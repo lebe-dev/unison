@@ -102,8 +102,11 @@ type Event struct {
 	// Addr is the address of a pairing candidate, set on EventPairingCandidate.
 	Addr string
 	// SAS is the short authentication string to show, set on
-	// EventPairingRequest.
+	// EventPairingRequest of a SAS exchange.
 	SAS pairing.SAS
+	// Method is how a pairing exchange was started, set on the pairing events
+	// of an exchange.
+	Method pairing.Method
 	// Version is the protocol version of the peer, set on
 	// EventPeerIncompatible.
 	Version uint32

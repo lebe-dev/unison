@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { create } from "@bufbuild/protobuf";
-import { Platform, Role, SasSchema } from "../api/gen/unison/local/v1/local_pb";
+import {
+  PairingMethod,
+  Platform,
+  Role,
+  SasSchema,
+} from "../api/gen/unison/local/v1/local_pb";
 import type { PairingRequest } from "../pairing.svelte";
 import SasPanel from "./SasPanel.svelte";
 
@@ -11,6 +16,7 @@ function request(overrides: Partial<PairingRequest> = {}): PairingRequest {
     name: "Pixel 9",
     platform: Platform.ANDROID,
     role: Role.PERSONAL,
+    method: PairingMethod.SAS,
     sas: create(SasSchema, { digits: "123456", emoji: ["🦊", "🌵", "🚀", "🍀"] }),
     ...overrides,
   };
@@ -63,6 +69,22 @@ describe("SasPanel", () => {
 
     expect(screen.getByText(/Waiting for the other device/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Confirm" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("asks to add the device of a scanned square", async () => {
+    const onConfirm = vi.fn();
+    render(SasPanel, {
+      props: {
+        request: request({ method: PairingMethod.QR, sas: null }),
+        onConfirm,
+        onReject: vi.fn(),
+      },
+    });
+
+    expect(screen.getByText(/read the square/)).toBeTruthy();
+    expect(screen.queryByText("123 456")).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Add device" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
   it("keeps working without a code", () => {

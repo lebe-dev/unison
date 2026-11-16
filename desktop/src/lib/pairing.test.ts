@@ -7,6 +7,9 @@ import {
   ListPairingCandidatesResponseSchema,
   OpenPairingWindowResponseSchema,
   PairingCandidateSchema,
+  GetPairingQrResponseSchema,
+  PairingMethod,
+  PairingQrSchema,
   PairingWindowSchema,
   Platform,
   RejectSasResponseSchema,
@@ -22,6 +25,7 @@ vi.mock("./api/client", () => ({
     startSas: vi.fn(),
     confirmSas: vi.fn(),
     rejectSas: vi.fn(),
+    getPairingQr: vi.fn(),
   },
 }));
 
@@ -52,6 +56,7 @@ describe("PairingStore", () => {
     vi.useFakeTimers();
     vi.setSystemTime(START);
     pairing.window = null;
+    pairing.qr = null;
     pairing.candidates = [];
     pairing.request = null;
     pairing.confirmed = false;
@@ -61,6 +66,14 @@ describe("PairingStore", () => {
     pairing.busy = false;
     pairing.role = Role.PERSONAL;
     vi.mocked(client.listPairingCandidates).mockResolvedValue(candidates("192.0.2.6:1234"));
+    vi.mocked(client.getPairingQr).mockResolvedValue(
+      create(GetPairingQrResponseSchema, {
+        qr: create(PairingQrSchema, {
+          uri: "unison://pair?v=1&id=aa&fp=bb&t=cc&a=192.0.2.5:5555&role=personal",
+          expiresAtUnixMs: BigInt(START.getTime() + 180_000),
+        }),
+      }),
+    );
   });
 
   afterEach(() => {
@@ -83,9 +96,28 @@ describe("PairingStore", () => {
     });
     expect(pairing.candidates.map((candidate) => candidate.addr)).toEqual(["192.0.2.6:1234"]);
     expect(client.openPairingWindow).toHaveBeenCalledWith({ role: Role.PERSONAL });
+    expect(client.getPairingQr).toHaveBeenCalledTimes(1);
+    expect(pairing.qr?.uri).toContain("unison://pair?");
 
     await vi.advanceTimersByTimeAsync(2_000);
     expect(client.listPairingCandidates).toHaveBeenCalledTimes(2);
+  });
+
+  it("reloads the code of the window", async () => {
+    mocked.openPairingWindow.mockResolvedValue(window(Date.now() + 180_000));
+
+    await pairing.open();
+    expect(client.getPairingQr).toHaveBeenCalledTimes(1);
+
+    await pairing.loadQr();
+    expect(client.getPairingQr).toHaveBeenCalledTimes(2);
+  });
+
+  it("has no code without a window", async () => {
+    await pairing.loadQr();
+
+    expect(client.getPairingQr).not.toHaveBeenCalled();
+    expect(pairing.qr).toBeNull();
   });
 
   it("closes the window when the deadline passes", async () => {
@@ -156,6 +188,7 @@ describe("PairingStore", () => {
       name: "MacBook",
       platform: Platform.MACOS,
       role: Role.PERSONAL,
+      method: PairingMethod.SAS,
       sas: null,
     };
 

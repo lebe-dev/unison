@@ -51,6 +51,14 @@ run-daemon-2 *args:
 test:
     go test ./...
 
+# Fuzz the parser of the pairing code.
+fuzz-qr time="30s":
+    go test -run '^$' -fuzz '^FuzzParseQR$' -fuzztime {{time}} ./core/pairing/
+
+# Fuzz the parsers for a short while.
+fuzz time="20s":
+    just fuzz-qr {{time}}
+
 # Run the long integration tests of the node harness.
 test-integration:
     go test -tags integration -timeout 20m ./core/node/nodetest/

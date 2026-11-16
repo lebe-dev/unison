@@ -27,6 +27,34 @@ unison requests decline <id>
 Nothing of a pending request is written to the disk. An unanswered request expires after ten
 minutes, and one device cannot pile up more than eight requests of another device.
 
+## Pairing
+
+Two devices are paired from a pairing window. The window is open for three minutes, can be
+extended, and is the only time a device accepts a pairing connection: outside it the pairing
+listener does not exist.
+
+**Short code.** Both devices open the window, one of them picks the other in the list of devices
+that are open for pairing, and both screens show the same six digits and four emoji. A device is
+stored only after both users confirmed the code.
+
+**QR code.** The window of one device also has a code for the camera of another one:
+
+- The code carries the device ID, the fingerprint of the pairing certificate, a random one time
+  token, the addresses of the pairing listener and the role to propose.
+- The scanning device connects to one of the addresses and accepts only the certificate with the
+  fingerprint of the code, so a device between the two cannot take part.
+- It sends the token with a request signed by its identity keys. The showing device checks the
+  token, the signature, the role and the trust store, and then asks its user.
+- The scanning device does not ask: reading the code is its confirmation.
+
+The token belongs to one window, is accepted once and is replaced after a completed pairing. A
+refused or failed exchange gives it back, and a closed window accepts no connection at all. The
+code carries the token, so it is shown on the screen of the device that owns the window and never
+written to a log.
+
+`unison pair` prints the code of the window in the terminal next to the short code flow, and the
+Add device screen of the app shows the same code.
+
 ## Group discovery
 
 The Personal devices of one person recognise each other by a tag in their local network

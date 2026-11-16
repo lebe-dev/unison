@@ -135,6 +135,51 @@ func (n *Node) ExtendPairing() error {
 	return pw.window.Extend()
 }
 
+// PairingQR returns the pairing code of the open window. addrs are the addresses
+// of the pairing listener that the scanning device can reach; a listener bound to
+// a wildcard address is replaced by the addresses of the local interfaces. The
+// code carries a one time token, so it must not be logged or stored.
+func (n *Node) PairingQR(addrs ...string) (pairing.QR, error) {
+	pw := n.pairingWindow()
+	if pw == nil {
+		return pairing.QR{}, ErrPairingClosed
+	}
+	return pw.window.QR(addrs...)
+}
+
+// ScanPairingQR pairs this device with the device of a pairing code. The
+// exchange runs in the background and reports through the events. The scanning
+// device accepted the pair by reading the code, so only the device that showed
+// the code asks its user.
+func (n *Node) ScanPairingQR(uri string) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if _, err := pairing.ParseQR(uri); err != nil {
+		return err
+	}
+
+	opts := pairing.Options{
+		Identity:     n.identity,
+		Trust:        n.trust,
+		Name:         n.cfg.Name,
+		Platform:     n.cfg.Platform,
+		Clock:        n.clock,
+		Logger:       n.log,
+		ListenPacket: n.listenPairing,
+		Config:       n.cfg.Transport,
+	}
+	n.spawn(func() {
+		ctx, cancel := context.WithTimeout(n.ctx, pairing.DefaultRequestTimeout)
+		defer cancel()
+		err := pairing.Scan(ctx, opts, uri, n.pairingEvent)
+		if err != nil && n.ctx.Err() == nil {
+			n.log.Info("pairing code scan failed", "error", err)
+		}
+	})
+	return nil
+}
+
 // PairingCandidates returns the discovered devices that are open for pairing.
 func (n *Node) PairingCandidates() []PairingCandidate {
 	n.mu.Lock()
@@ -202,7 +247,7 @@ func (n *Node) pairingWindow() *pairingWindow {
 // watchPairing forwards the window events until the window closes.
 func (n *Node) watchPairing(pw *pairingWindow, window *pairing.Window) {
 	for event := range window.Events() {
-		n.pairingEvent(pw, event)
+		n.pairingWindowEvent(pw, event)
 	}
 
 	n.mu.Lock()
@@ -213,14 +258,25 @@ func (n *Node) watchPairing(pw *pairingWindow, window *pairing.Window) {
 	pw.cancel()
 }
 
-// pairingEvent publishes one window event.
-func (n *Node) pairingEvent(pw *pairingWindow, event pairing.Event) {
+// pairingWindowEvent publishes one event of the open window.
+func (n *Node) pairingWindowEvent(pw *pairingWindow, event pairing.Event) {
 	switch event.Kind {
 	case pairing.EventCandidate:
 		n.rememberPairingCandidate(pw, event)
 		n.publish(Event{Kind: EventPairingCandidate, Addr: event.Addr})
+	case pairing.EventClosed:
+		n.publish(Event{Kind: EventPairingClosed})
+	default:
+		n.pairingEvent(event)
+	}
+}
+
+// pairingEvent publishes one event of a pairing exchange.
+func (n *Node) pairingEvent(event pairing.Event) {
+	switch event.Kind {
 	case pairing.EventRequest:
-		n.log.Info("pairing request", "peer", event.DeviceID, "role", event.Role)
+		n.log.Info("pairing request", "peer", event.DeviceID, "role", event.Role,
+			"method", event.Method)
 		n.publish(Event{
 			Kind:     EventPairingRequest,
 			Peer:     event.DeviceID,
@@ -228,9 +284,11 @@ func (n *Node) pairingEvent(pw *pairingWindow, event pairing.Event) {
 			Platform: event.Platform,
 			Role:     event.Role,
 			SAS:      event.SAS,
+			Method:   event.Method,
 		})
 	case pairing.EventPaired:
-		n.log.Info("pairing completed", "peer", event.DeviceID, "role", event.Role)
+		n.log.Info("pairing completed", "peer", event.DeviceID, "role", event.Role,
+			"method", event.Method)
 		n.publish(Event{
 			Kind:     EventPairingPaired,
 			Peer:     event.DeviceID,
@@ -238,23 +296,24 @@ func (n *Node) pairingEvent(pw *pairingWindow, event pairing.Event) {
 			Platform: event.Platform,
 			Role:     event.Role,
 			SAS:      event.SAS,
+			Method:   event.Method,
 		})
 		n.syncLinks()
 		if n.gossip != nil {
 			n.gossip.Notify(n.ctx)
 		}
 	case pairing.EventFailed:
-		n.log.Info("pairing exchange failed", "peer", event.DeviceID, "error", event.Err)
+		n.log.Info("pairing exchange failed", "peer", event.DeviceID,
+			"method", event.Method, "error", event.Err)
 		n.publish(Event{
 			Kind:     EventPairingFailed,
 			Peer:     event.DeviceID,
 			Name:     event.Name,
 			Platform: event.Platform,
 			Role:     event.Role,
+			Method:   event.Method,
 			Err:      event.Err,
 		})
-	case pairing.EventClosed:
-		n.publish(Event{Kind: EventPairingClosed})
 	}
 }
 

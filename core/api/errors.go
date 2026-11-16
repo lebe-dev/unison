@@ -54,6 +54,7 @@ func codeOf(err error) connect.Code {
 		return connect.CodeUnimplemented
 	case errors.Is(err, pairing.ErrRejected),
 		errors.Is(err, pairing.ErrPeerRevoked),
+		errors.Is(err, pairing.ErrToken),
 		errors.Is(err, trust.ErrPeerRevoked):
 		return connect.CodePermissionDenied
 	case errors.Is(err, pairing.ErrUnknownRequest),
@@ -67,6 +68,7 @@ func codeOf(err error) connect.Code {
 	case errors.Is(err, trust.ErrPeerExists):
 		return connect.CodeAlreadyExists
 	case errors.Is(err, pairing.ErrInvalidPeer),
+		errors.Is(err, pairing.ErrQR),
 		errors.Is(err, trust.ErrInvalidPeer),
 		errors.Is(err, clip.ErrUnsupportedContent),
 		errors.Is(err, history.ErrInvalidItem),

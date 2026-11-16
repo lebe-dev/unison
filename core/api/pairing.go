@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"connectrpc.com/connect"
 
@@ -95,6 +96,39 @@ func (s *Service) RejectSas(ctx context.Context, req *connect.Request[localv1.Re
 		return nil, errorOf(err)
 	}
 	return connect.NewResponse(&localv1.RejectSasResponse{}), nil
+}
+
+// GetPairingQr returns the code of the open pairing window. The code carries a
+// one time token, so it is meant for the screen of this device only.
+func (s *Service) GetPairingQr(context.Context, *connect.Request[localv1.GetPairingQrRequest]) (*connect.Response[localv1.GetPairingQrResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	code, err := s.node.PairingQR()
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	uri, err := code.URI()
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	deadline, _ := s.node.PairingDeadline()
+	return connect.NewResponse(&localv1.GetPairingQrResponse{
+		Qr: &localv1.PairingQr{Uri: uri, ExpiresAtUnixMs: unixMilli(deadline)},
+	}), nil
+}
+
+// ScanPairingQr pairs this device with the device of a pairing code. The
+// exchange runs in the background and reports through the events.
+func (s *Service) ScanPairingQr(_ context.Context, req *connect.Request[localv1.ScanPairingQrRequest]) (*connect.Response[localv1.ScanPairingQrResponse], error) {
+	uri := strings.TrimSpace(req.Msg.GetUri())
+	if uri == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("the pairing code is empty"))
+	}
+	if err := s.node.ScanPairingQR(uri); err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.ScanPairingQrResponse{}), nil
 }
 
 // window returns the state of the pairing window.

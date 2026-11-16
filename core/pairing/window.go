@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/netip"
 	"strconv"
 	"sync"
 	"time"
@@ -118,17 +119,26 @@ type Window struct {
 	listener *transport.PairingListener
 	events   chan Event
 	extend   chan extendRequest
+	sink     sink
 
 	mu       sync.Mutex
 	deadline time.Time
-	requests map[model.DeviceID]*exchange
-	conns    map[*transport.PairingConn]struct{}
-	closed   bool
+	token    Token
+	// tokenBusy reports that a scanning device holds the token until its
+	// exchange ends.
+	tokenBusy bool
+	requests  map[model.DeviceID]*exchange
+	conns     map[*transport.PairingConn]struct{}
+	closed    bool
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
 	closedCh  chan struct{}
 }
+
+// sink receives the events of a window that has no event channel. The scanning
+// device uses it, because its exchange is not bound to a window of its own.
+type sink func(Event)
 
 // Open opens a pairing window: it binds the pairing listener and announces it on
 // the local network. The listener and the announcement live until Close or the
@@ -169,6 +179,11 @@ func Open(ctx context.Context, opts Options) (*Window, error) {
 		conns:    make(map[*transport.PairingConn]struct{}),
 		closedCh: make(chan struct{}),
 	}
+	token, err := NewToken()
+	if err != nil {
+		return nil, err
+	}
+	w.token = token
 	w.ctx, w.cancel = context.WithCancel(ctx)
 	w.deadline = w.clock.Now().Add(opts.Window)
 
@@ -212,6 +227,86 @@ func (w *Window) Addr() net.Addr {
 // Port returns the port of the pairing listener.
 func (w *Window) Port() int {
 	return portOf(w.listener.Addr())
+}
+
+// QR returns the pairing code of the window. A scanning device connects to one
+// of the addresses of the code, so addrs are the addresses of the pairing
+// listener that the scanning device can reach. When none are given, a listener
+// bound to a specific address is used as is, and a listener bound to a wildcard
+// address is replaced by the addresses of the local interfaces. The code holds
+// a token of the window, so it must not be logged or stored.
+func (w *Window) QR(addrs ...string) (QR, error) {
+	w.mu.Lock()
+	closed, token := w.closed, w.token
+	w.mu.Unlock()
+	if closed {
+		return QR{}, ErrClosed
+	}
+
+	addrs, err := w.codeAddrs(addrs)
+	if err != nil {
+		return QR{}, err
+	}
+	code := QR{
+		DeviceID:    w.opts.Identity.DeviceID(),
+		Fingerprint: w.opts.Identity.CertFingerprint(),
+		Token:       token,
+		Addrs:       addrs,
+		Role:        w.opts.Role,
+	}
+	if _, err := code.URI(); err != nil {
+		return QR{}, err
+	}
+	return code, nil
+}
+
+// codeAddrs returns the addresses to put into the pairing code.
+func (w *Window) codeAddrs(addrs []string) ([]string, error) {
+	if len(addrs) > 0 {
+		return addrs, nil
+	}
+	if addr := w.Addr(); addr != nil {
+		if parsed, err := netip.ParseAddrPort(addr.String()); err == nil && !parsed.Addr().IsUnspecified() {
+			return []string{parsed.String()}, nil
+		}
+	}
+	return localAddresses(w.Port())
+}
+
+// claimToken takes the token for one exchange. It reports whether token is the
+// current one and no other exchange holds it.
+func (w *Window) claimToken(token []byte) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.closed || w.tokenBusy || !w.token.tokenMatches(token) {
+		return false
+	}
+	w.tokenBusy = true
+	return true
+}
+
+// releaseToken gives the token back after a failed exchange, or replaces it
+// after a completed one.
+func (w *Window) releaseToken(used Token, paired bool) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if !paired {
+		// Another window opening replaced the token meanwhile; the one of this
+		// exchange is gone with it.
+		if w.token == used {
+			w.tokenBusy = false
+		}
+		return
+	}
+	token, err := NewToken()
+	if err != nil {
+		// Without a fresh token the window stays usable for the SAS flow only.
+		w.token = Token{}
+		w.tokenBusy = false
+		return
+	}
+	w.token = token
+	w.tokenBusy = false
 }
 
 // Deadline returns when the window closes unless it is extended.
@@ -309,7 +404,7 @@ func (w *Window) Dial(ctx context.Context, addr string) error {
 	defer w.untrack(conn)
 	defer func() { _ = conn.Close() }()
 
-	return w.run(ctx, conn, true)
+	return w.run(ctx, conn, true, flow{method: MethodSAS})
 }
 
 // Close stops the listener, withdraws the announcement and drops every exchange
@@ -393,7 +488,7 @@ func (w *Window) runAccept() {
 		go func() {
 			defer w.untrack(conn)
 			defer func() { _ = conn.Close() }()
-			_ = w.run(w.ctx, conn, false)
+			_ = w.run(w.ctx, conn, false, flow{method: MethodSAS})
 		}()
 	}
 }
@@ -475,6 +570,10 @@ func (w *Window) isClosed() bool {
 
 // emit delivers an event to the UI.
 func (w *Window) emit(ev Event) {
+	if w.sink != nil {
+		w.sink(ev)
+		return
+	}
 	select {
 	case w.events <- ev:
 	case <-w.ctx.Done():

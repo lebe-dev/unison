@@ -6,6 +6,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/trust"
 )
 
@@ -120,4 +121,77 @@ func peersOf(t *testing.T, d *testDevice) map[model.DeviceID]trust.Peer {
 		out[peer.DeviceID()] = peer
 	}
 	return out
+}
+
+// TestPairQrCode checks the code for a phone: the command prints it, a device
+// that scans it asks for the decision of the user and both devices end up
+// paired.
+func TestPairQrCode(t *testing.T) {
+	network, bus := newNetwork(t)
+	showing := newDevice(t, network, bus, 450, api.Options{})
+	scanner := newDevice(t, network, bus, 460, api.Options{})
+	showing.start(t)
+	scanner.start(t)
+
+	session := startSession(t, "--endpoint", showing.endpoint, "pair")
+	output := session.waitOutput(t, session.stdout, "qr: ")
+	uri := qrOf(t, output)
+	code, err := pairing.ParseQR(uri)
+	if err != nil {
+		t.Fatalf("parse the code: %v", err)
+	}
+	if code.DeviceID != showing.DeviceID() {
+		t.Errorf("code device = %s, want %s", code.DeviceID, showing.DeviceID())
+	}
+	if code.Role != model.RolePersonal {
+		t.Errorf("code role = %s, want personal", code.Role)
+	}
+	if !strings.Contains(output, "█") {
+		t.Errorf("the output has no drawing of the code:\n%s", output)
+	}
+
+	if err := scanner.ScanPairingQR(uri); err != nil {
+		t.Fatalf("scan the code: %v", err)
+	}
+	session.waitOutput(t, session.stderr, "add the device?")
+	session.answer(t, "y")
+	if exit := session.wait(t); exit != exitOK {
+		t.Fatalf("the command exited with %d, stderr %q", exit, session.stderr.String())
+	}
+	if !strings.Contains(session.stdout.String(), "paired with") {
+		t.Errorf("the output does not report the paired device:\n%s", session.stdout.String())
+	}
+
+	if _, ok := peersOf(t, showing)[scanner.DeviceID()]; !ok {
+		t.Error("the showing device did not store the other one")
+	}
+	if _, ok := peersOf(t, scanner)[showing.DeviceID()]; !ok {
+		t.Error("the scanning device did not store the other one")
+	}
+}
+
+// TestPairQrCodeJSON checks that the code stays out of the event stream.
+func TestPairQrCodeJSON(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 470, api.Options{})
+	device.start(t)
+
+	session := startSession(t, "--endpoint", device.endpoint, "--json", "pair")
+	session.waitOutput(t, session.stderr, "qr: ")
+	if strings.Contains(session.stdout.String(), "qr: ") {
+		t.Errorf("the code is on the event stream:\n%s", session.stdout.String())
+	}
+}
+
+// qrOf returns the pairing code of the output of pair.
+func qrOf(t *testing.T, output string) string {
+	t.Helper()
+
+	for _, line := range strings.Split(output, "\n") {
+		if uri, ok := strings.CutPrefix(line, "qr: "); ok {
+			return uri
+		}
+	}
+	t.Fatalf("no pairing code in the output %q", output)
+	return ""
 }
