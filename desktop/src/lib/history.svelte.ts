@@ -48,6 +48,8 @@ class HistoryStore {
   downloadsDir = $state("");
   /** Items with a download in flight. */
   downloading = $state<string[]>([]);
+  /** Items that wait for the user to apply them. */
+  held = $state<string[]>([]);
 
   #started = false;
   #unsubscribe: (() => void) | null = null;
@@ -120,9 +122,25 @@ class HistoryStore {
     this.notice = null;
     try {
       await client.copyHistoryItem({ id });
+      this.#release(id);
       this.notice = { kind: "info", text: "The item is on the clipboard." };
     } catch (error) {
       this.notice = { kind: "error", text: errorText(error, "The item could not be copied.") };
+    }
+  }
+
+  /**
+   * apply writes an item that waited for confirmation to the local clipboard.
+   * It is what the notification of a held item and the Apply button do.
+   */
+  async apply(id: string): Promise<void> {
+    this.notice = null;
+    try {
+      await client.applyHistoryItem({ id });
+      this.#release(id);
+      this.notice = { kind: "info", text: "The item is on the clipboard." };
+    } catch (error) {
+      this.notice = { kind: "error", text: errorText(error, "The item could not be applied.") };
     }
   }
 
@@ -174,6 +192,7 @@ class HistoryStore {
     try {
       await client.deleteHistoryItem({ id });
       this.items = this.items.filter((item) => item.item?.id !== id);
+      this.#release(id);
       this.notice = { kind: "info", text: "The item is deleted." };
       void this.refreshRecent();
     } catch (error) {
@@ -212,11 +231,24 @@ class HistoryStore {
         void this.load(true);
         void this.refreshRecent();
         break;
+      case EventKind.CLIP_APPLY:
+        // The item is in the history and waits for the user to apply it.
+        if (event.item && !this.held.includes(event.item.id)) {
+          this.held = [event.item.id, ...this.held];
+        }
+        void this.load(true);
+        void this.refreshRecent();
+        break;
       case EventKind.PEER_ONLINE:
         void this.load(true);
         void this.refreshRecent();
         break;
     }
+  }
+
+  /** #release forgets an item that is no longer held back. */
+  #release(id: string): void {
+    this.held = this.held.filter((current) => current !== id);
   }
 
   /** #replace updates one item of the list after a call. */
