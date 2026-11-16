@@ -42,10 +42,39 @@ func (k EventKind) String() string {
 	}
 }
 
+// Method tells how a pairing exchange was started.
+type Method uint8
+
+// Pairing methods.
+const (
+	// MethodSAS is a pairing that both devices confirm by comparing a short
+	// authentication string.
+	MethodSAS Method = iota + 1
+	// MethodQR is a pairing that starts with the code of one device. The
+	// scanning device accepted by reading the code, so only the device that
+	// shows the code asks its user.
+	MethodQR
+)
+
+// String returns the name of the method.
+func (m Method) String() string {
+	switch m {
+	case MethodSAS:
+		return "sas"
+	case MethodQR:
+		return "qr"
+	default:
+		return "unknown"
+	}
+}
+
 // Event is what the pairing window reports to the UI.
 type Event struct {
 	// Kind is the type of the event.
 	Kind EventKind
+	// Method tells how the exchange was started, set on the events of an
+	// exchange.
+	Method Method
 	// Addr is the candidate address, set on EventCandidate.
 	Addr string
 	// TXT is the candidate service metadata, set on EventCandidate.
