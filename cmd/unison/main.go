@@ -113,6 +113,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.history(ctx, rest)
 	case "send":
 		err = a.send(ctx, rest)
+	case "transfers":
+		err = a.transfers(ctx, rest)
 	case "friends":
 		err = a.friends(ctx, rest)
 	case "requests":
@@ -230,8 +232,11 @@ commands:
   history [ls]                list the clipboard history
   history fetch <id> [-o path]
                               download the payloads of a history item
+  history apply <id>          apply a held history item to the clipboard
   send <path|-> --to <device>...
                               offer a file or standard input to devices
+  transfers [ls]              list the file transfers of this device
+  transfers cancel <id>       cancel a transfer
   friends search [--off]      look for Friends devices for a limited time; both
                               devices have to turn it on
   requests [ls]               list the transfer requests that wait for a decision

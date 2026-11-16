@@ -337,6 +337,34 @@ func TestWindowRepairWithAnotherRole(t *testing.T) {
 	assertPeer(t, bob.trust, alice, model.RolePersonal)
 }
 
+// TestWindowRevokedResponderRefuses checks that a device the responder revoked
+// learns that the pair was refused instead of losing the stream.
+func TestWindowRevokedResponderRefuses(t *testing.T) {
+	network, bus := testNetwork(t)
+	alice := newNode(t, network, bus, 1, 41000)
+	bob := newNode(t, network, bus, 2, 42000)
+
+	pairOnce(t, alice, bob)
+	closeWindows(t, alice, bob)
+	if err := alice.trust.MarkRevoked(context.Background(), bob.deviceID()); err != nil {
+		t.Fatalf("revoke the device: %v", err)
+	}
+
+	alice.open(t, ports.SystemClock, model.RolePersonal)
+	bob.open(t, ports.SystemClock, model.RolePersonal)
+	addr := alice.window.Addr().String()
+	waitCandidate(t, bob.window, addr)
+
+	pairing := dial(bob.window, addr)
+	if err := <-pairing; !errors.Is(err, ErrRejected) {
+		t.Fatalf("pairing error = %v, want %v", err, ErrRejected)
+	}
+	failure := waitEvent(t, alice.window, EventFailed)
+	if !errors.Is(failure.Err, ErrPeerRevoked) {
+		t.Errorf("failure error = %v, want %v", failure.Err, ErrPeerRevoked)
+	}
+}
+
 // TestWindowDialAndConfirmErrors checks the errors of an unknown request and of
 // a closed window.
 func TestWindowDialAndConfirmErrors(t *testing.T) {

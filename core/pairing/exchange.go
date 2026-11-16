@@ -261,6 +261,9 @@ func (w *Window) handshake(ctx context.Context, conn *transport.PairingConn, rea
 	// The identity is not secret and the initiator needs it to learn why the
 	// exchange ends, so the trust checks follow the response.
 	if err := w.checkPeer(ctx, peer); err != nil {
+		// Say that the pair was refused instead of closing the stream under
+		// the initiator.
+		_ = writeMessage(stream, &wirev1.PairDecision{Accepted: false})
 		return peer, fl, err
 	}
 	peer, err = peer.withSAS(conn, w.opts.Identity.Public())

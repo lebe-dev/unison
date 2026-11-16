@@ -197,6 +197,7 @@ func (s *Service) handleDecision(ctx context.Context, peer model.DeviceID, msg *
 	kind := EventAccepted
 	if !msg.GetAccepted() {
 		kind = EventDeclined
+		s.log.Info("the peer declined the offer", "transfer", id, "peer", peer)
 	}
 	s.report(ctx, Event{Kind: kind, Peer: peer, Transfer: snapshot})
 	return nil
