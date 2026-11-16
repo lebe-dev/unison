@@ -57,6 +57,9 @@ fun SettingsScreen(
     onPolicyChange: (PolicyConfig) -> Unit,
     onPolicyReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
+    onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
+    onRelayOff: () -> Unit,
+    onRefreshRelay: () -> Unit,
     onSelfConfirmationChange: (Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
     onRefresh: () -> Unit,
@@ -86,6 +89,12 @@ fun SettingsScreen(
             onReset = onPolicyReset,
         )
         Pause(pause = state.status?.pause, onPause = onPause)
+        RelaySection(
+            relay = state.relay,
+            onSave = onRelaySave,
+            onOff = onRelayOff,
+            onRefresh = onRefreshRelay,
+        )
         Confirmation(
             require = state.requiresConfirmation,
             onChange = onSelfConfirmationChange,

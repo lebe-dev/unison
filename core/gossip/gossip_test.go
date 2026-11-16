@@ -85,6 +85,16 @@ func TestMissingGroupData(t *testing.T) {
 	if group := missingGroupData(trust.GroupData{}, &wirev1.GossipDigest{}); group != nil {
 		t.Fatalf("a device without group data sends %+v", group)
 	}
+
+	// Turning the relay off spreads like any other change.
+	off := trust.GroupData{RelayAt: at.Add(time.Second)}
+	group = missingGroupData(off, &wirev1.GossipDigest{RelayTsUnixMs: at.UnixMilli()})
+	if group == nil || group.GetRelayUrl() != "" || group.GetRelayTsUnixMs() != off.RelayAt.UnixMilli() {
+		t.Fatalf("relay off in %+v", group)
+	}
+	if group := missingGroupData(off, &wirev1.GossipDigest{RelayTsUnixMs: off.RelayAt.UnixMilli()}); group != nil {
+		t.Fatalf("an up to date peer gets %+v", group)
+	}
 }
 
 func TestMissingRevocations(t *testing.T) {

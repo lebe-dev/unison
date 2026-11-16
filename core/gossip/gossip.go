@@ -54,9 +54,9 @@ type Store interface {
 	ApplyRevocation(ctx context.Context, local model.DeviceID, revocation trust.Revocation) (bool, error)
 	// GroupData returns the group data of the local device.
 	GroupData(ctx context.Context) (trust.GroupData, error)
-	// ApplyGroupData stores the newer parts of the group data and reports
-	// whether the discovery key changed.
-	ApplyGroupData(ctx context.Context, data trust.GroupData) (bool, error)
+	// ApplyGroupData stores the newer parts of the group data and reports what
+	// changed.
+	ApplyGroupData(ctx context.Context, data trust.GroupData) (trust.GroupChange, error)
 }
 
 var _ Store = (*trust.Store)(nil)
@@ -74,6 +74,8 @@ type Config struct {
 	OnPeersChanged func(ctx context.Context)
 	// OnDiscoveryKeyChanged runs after the discovery key of the group changed.
 	OnDiscoveryKeyChanged func(ctx context.Context)
+	// OnRelayChanged runs after the relay settings of the group changed.
+	OnRelayChanged func(ctx context.Context)
 	// OnPeerRevoked runs after a revocation cut a device off, so the caller can
 	// close the connection to it.
 	OnPeerRevoked func(ctx context.Context, id model.DeviceID)
@@ -362,21 +364,25 @@ func (s *Service) recordsHandler(sess *session.Session) session.Handler {
 		}
 		s.applyRevocations(ctx, sess, records.GetRevocations())
 
-		changed := false
+		var change trust.GroupChange
 		if group := records.GetGroup(); group != nil {
 			data, err := groupFromProto(group)
 			if err != nil {
 				return err
 			}
-			changed, err = s.cfg.Store.ApplyGroupData(ctx, data)
+			change, err = s.cfg.Store.ApplyGroupData(ctx, data)
 			if err != nil {
 				return fmt.Errorf("gossip: apply group data: %w", err)
 			}
 		}
 
-		if changed && s.cfg.OnDiscoveryKeyChanged != nil {
+		if change.DiscoveryKey && s.cfg.OnDiscoveryKeyChanged != nil {
 			s.log.Info("discovery key changed")
 			s.spawn(s.cfg.OnDiscoveryKeyChanged)
+		}
+		if change.Relay && s.cfg.OnRelayChanged != nil {
+			s.log.Info("relay settings changed")
+			s.spawn(s.cfg.OnRelayChanged)
 		}
 		if added > 0 && s.cfg.OnPeersChanged != nil {
 			s.spawn(s.cfg.OnPeersChanged)
@@ -538,7 +544,7 @@ func missingRevocations(heads []trust.RevocationHead, peerHeads map[model.Device
 // is up to date.
 func missingGroupData(local trust.GroupData, digest *wirev1.GossipDigest) *wirev1.GroupData {
 	discovery := len(local.DiscoveryKey) > 0 && timeToMilli(local.DiscoveryAt) > digest.GetDiscoveryTsUnixMs()
-	relay := !local.Relay.Empty() && timeToMilli(local.RelayAt) > digest.GetRelayTsUnixMs()
+	relay := timeToMilli(local.RelayAt) > digest.GetRelayTsUnixMs()
 	if !discovery && !relay {
 		return nil
 	}

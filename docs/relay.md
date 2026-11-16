@@ -7,8 +7,32 @@ TLS and the post-quantum key exchange inside it. The relay never sees keys or pl
 ## Settings
 
 The relay access belongs to the Personal group: an address and one access token. Both are stored
-once (set them from the settings screen or the CLI) and spread to the other Personal devices with
-the group data, so every device of the group uses the same relay.
+once and spread to the other Personal devices with the group data, so every device of the group uses
+the same relay.
+
+The address is a host and a port, with an optional `https://` or `wss://` scheme:
+
+    relay.example.com:443
+    https://relay.example.com
+
+The token is a secret: the daemon stores it sealed, never logs it and never returns it. Clients only
+learn whether a token is stored. Turning the relay off clears both values for the group.
+
+Ways to set it:
+
+    unison relay set relay.example.com:443 --token <token> [--files-on-request]
+    unison relay off
+    unison relay                  # address, token presence and the transport in use
+
+The desktop settings screen and the Android settings screen do the same over the local API
+(`GetRelay`, `SetRelay`, `RelayOff`). A change made on one device reaches the others over the
+sessions they already have, so a device that is only reachable through the relay picks the change up
+when it meets the group again.
+
+Files are a special case: by default a file travels over the relay only when the user asks for it,
+so file items stay in the history until they are downloaded. The rule is the
+`policy.relay.files_on_request` setting; the relay section of the settings screens and
+`relay set --files-on-request` change it.
 
 ## When the relay is used
 

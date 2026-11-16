@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/trust"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
@@ -88,4 +89,26 @@ func (n *Node) selfRequireConfirmation(ctx context.Context) bool {
 		return true
 	}
 	return require
+}
+
+// RelayFilesOnRequest reports whether files travel over the relay only when the
+// user asks for them.
+func (n *Node) RelayFilesOnRequest() bool {
+	return n.policy.Config().RelayFilesOnRequest
+}
+
+// SetRelayFilesOnRequest changes the rule for files over the relay and applies it
+// without a restart.
+func (n *Node) SetRelayFilesOnRequest(ctx context.Context, on bool) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if err := n.Store().Settings().SetBool(ctx, policy.RelayFilesKey, on); err != nil {
+		return err
+	}
+	cfg := n.policy.Config()
+	cfg.RelayFilesOnRequest = on
+	n.policy.SetConfig(cfg)
+	n.log.Info("relay file rule changed", "files_on_request", on)
+	return nil
 }

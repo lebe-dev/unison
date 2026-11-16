@@ -78,10 +78,9 @@ func setRelay(t *testing.T, n *testNode, url string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
-	if err := n.Trust().SetRelaySettings(ctx, trust.RelaySettings{URL: url, Token: relayTestToken}); err != nil {
+	if err := n.SetRelay(ctx, trust.RelaySettings{URL: url, Token: relayTestToken}); err != nil {
 		t.Fatalf("set relay: %v", err)
 	}
-	n.wakeRelay()
 }
 
 // waitPath waits until the node has a session with the peer over the path.
@@ -209,10 +208,10 @@ func TestRelayPathFallsBackToWebSocket(t *testing.T) {
 	waitPath(t, b, a.DeviceID(), model.PathRelay)
 	settle(t, a, b)
 
-	if status := a.relayStatus(); status.Transport != relay.TransportWebSocket {
+	if status := a.RelayStatus(); status.Transport != relay.TransportWebSocket {
 		t.Fatalf("the device did not fall back to WebSocket: %+v", status)
 	}
-	if status := b.relayStatus(); status.Transport != relay.TransportQUIC {
+	if status := b.RelayStatus(); status.Transport != relay.TransportQUIC {
 		t.Fatalf("unexpected transport of the direct device: %+v", status)
 	}
 
@@ -355,6 +354,100 @@ func randSerial(t *testing.T) *big.Int {
 		t.Fatalf("serial: %v", err)
 	}
 	return serial
+}
+
+func TestRelaySettingsReachTheGroup(t *testing.T) {
+	network := vnet.NewNetwork()
+	bus := fake.NewBus()
+	server := startNodeTestRelay(t)
+
+	trusted := relay.Config{TLS: &tls.Config{InsecureSkipVerify: true}}
+	a := newRelayNode(t, network, bus, 21024, Config{Relay: trusted})
+	b := newRelayNode(t, network, bus, 21028, Config{Relay: trusted})
+
+	a.start(t)
+	b.start(t)
+	a.pair(t, b)
+	b.pair(t, a)
+	waitOnline(t, a, b.DeviceID())
+	waitOnline(t, b, a.DeviceID())
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	settings := trust.RelaySettings{URL: server.url, Token: relayTestToken}
+	if err := a.SetRelay(ctx, settings); err != nil {
+		t.Fatalf("set relay: %v", err)
+	}
+
+	// The group data carries the access to the other device.
+	waitGroupRelay(t, b, settings)
+
+	// The devices leave the local network, so both use the relay they share.
+	a.lookup(b.DeviceID()).close()
+	b.lookup(a.DeviceID()).close()
+	a.sockets.disconnect()
+	b.sockets.disconnect()
+
+	waitPath(t, a, b.DeviceID(), model.PathRelay)
+	waitPath(t, b, a.DeviceID(), model.PathRelay)
+	settle(t, a, b)
+
+	for _, n := range []*testNode{a, b} {
+		if status := n.RelayStatus(); !status.Connected || status.Transport != relay.TransportQUIC {
+			t.Fatalf("%s is not connected over QUIC: %+v", n.DeviceID(), status)
+		}
+	}
+	submitText(t, b, "hello over the shared relay")
+	waitClipboard(t, a.clipboard, "hello over the shared relay")
+
+	// The local network comes back, so both devices move to it.
+	a.sockets.reconnect()
+	b.sockets.reconnect()
+	waitPath(t, a, b.DeviceID(), model.PathLAN)
+	waitPath(t, b, a.DeviceID(), model.PathLAN)
+	settle(t, a, b)
+
+	// Turning the relay off on one device turns it off for the group.
+	if err := a.SetRelay(ctx, trust.RelaySettings{}); err != nil {
+		t.Fatalf("turn the relay off: %v", err)
+	}
+	waitGroupRelay(t, b, trust.RelaySettings{})
+	waitRelayOff(t, a)
+	waitRelayOff(t, b)
+}
+
+// waitRelayOff waits until the relay client of the node is not connected.
+func waitRelayOff(t *testing.T, n *testNode) {
+	t.Helper()
+
+	deadline := time.Now().Add(testTimeout)
+	for time.Now().Before(deadline) {
+		if !n.RelayStatus().Connected {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("the relay client of %s is still connected", n.DeviceID())
+}
+
+// waitGroupRelay waits until the group data of the node carries the relay
+// settings.
+func waitGroupRelay(t *testing.T, n *testNode, want trust.RelaySettings) {
+	t.Helper()
+
+	deadline := time.Now().Add(testTimeout)
+	var data trust.GroupData
+	for time.Now().Before(deadline) {
+		read, err := n.Trust().GroupData(context.Background())
+		if err == nil {
+			data = read
+			if data.Relay == want {
+				return
+			}
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("the group relay of %s is %+v within %v, want %+v", n.DeviceID(), data.Relay, testTimeout, want)
 }
 
 func TestRelayPathReconnects(t *testing.T) {

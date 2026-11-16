@@ -121,6 +121,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.pause(ctx, rest)
 	case "policy":
 		err = a.policy(ctx, rest)
+	case "relay":
+		err = a.relay(ctx, rest)
 	case "help":
 		a.usage(a.stdout)
 		return exitOK
@@ -238,6 +240,11 @@ commands:
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
   policy                      show what arrives by itself on every kind of
                               network
+  relay [status]              show the relay of the group and its connection
+  relay set <url> --token <t> [--files-on-request]
+                              store the relay address and token; the other
+                              Personal devices receive them
+  relay off                   turn the relay off for the group
 
 <id> is a unique prefix of the fingerprint or the id of a device, or its
 name. The status command prints the addresses of this device; the address of a

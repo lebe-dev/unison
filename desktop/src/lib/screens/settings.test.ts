@@ -3,11 +3,13 @@ import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import {
   FriendsDiscoverySchema,
+  GetRelayResponseSchema,
   GetSettingsResponseSchema,
   GetStatusResponseSchema,
   PolicyAction,
   PolicyCellSchema,
   PolicyRowSchema,
+  RelaySchema,
   SetFriendsDiscoveryResponseSchema,
   SettingsSchema,
   UpdateSettingsResponseSchema,
@@ -23,6 +25,9 @@ vi.mock("../api/client", () => ({
     getSettings: vi.fn(),
     updateSettings: vi.fn(),
     setFriendsDiscovery: vi.fn(),
+    getRelay: vi.fn(),
+    setRelay: vi.fn(),
+    relayOff: vi.fn(),
   },
 }));
 
@@ -30,6 +35,7 @@ const getStatus = vi.mocked(client.getStatus);
 const getSettings = vi.mocked(client.getSettings);
 const updateSettings = vi.mocked(client.updateSettings);
 const setFriendsDiscovery = vi.mocked(client.setFriendsDiscovery);
+const getRelay = vi.mocked(client.getRelay);
 
 const megabyte = 1n << 20n;
 
@@ -67,6 +73,9 @@ beforeEach(() => {
   getSettings.mockResolvedValue(create(GetSettingsResponseSchema, { settings: settings() }));
   updateSettings.mockResolvedValue(
     create(UpdateSettingsResponseSchema, { settings: settings() }),
+  );
+  getRelay.mockResolvedValue(
+    create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }),
   );
   setFriendsDiscovery.mockResolvedValue(
     create(SetFriendsDiscoveryResponseSchema, {
@@ -128,6 +137,9 @@ describe("settings screen", () => {
         untilUnixMs: BigInt(Date.now() + 60_000),
       }),
     });
+    getRelay.mockResolvedValue(
+      create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }),
+    );
     setFriendsDiscovery.mockResolvedValue(
       create(SetFriendsDiscoveryResponseSchema, {
         friendsDiscovery: create(FriendsDiscoverySchema, {}),

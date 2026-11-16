@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -153,6 +154,26 @@ func (c Config) endpoints() (endpoints, error) {
 	return ep, nil
 }
 
+// ValidateURL checks a relay address of a client: an optional https or wss
+// scheme, a host and an optional port. A plain host:port address is accepted.
+func ValidateURL(raw string) error {
+	host, port, err := splitRelayURL(raw)
+	if err != nil {
+		return err
+	}
+	if strings.ContainsAny(host, " /\\?#") {
+		return fmt.Errorf("relay: relay address %q: invalid host", raw)
+	}
+	number, err := strconv.Atoi(port)
+	if err != nil {
+		return fmt.Errorf("relay: relay address %q: port %q is not a number", raw, port)
+	}
+	if number < 1 || number > 65535 {
+		return fmt.Errorf("relay: relay address %q: port %d is out of range", raw, number)
+	}
+	return nil
+}
+
 // splitRelayURL returns the host and the port of a relay address.
 func splitRelayURL(raw string) (host, port string, err error) {
 	address := strings.TrimSpace(raw)
@@ -169,6 +190,9 @@ func splitRelayURL(raw string) (host, port string, err error) {
 		}
 		if parsed.RawQuery != "" || (parsed.Path != "" && parsed.Path != "/") {
 			return "", "", fmt.Errorf("relay: relay address %q: no path or query", raw)
+		}
+		if parsed.User != nil || parsed.Fragment != "" {
+			return "", "", fmt.Errorf("relay: relay address %q: no user or fragment", raw)
 		}
 		address = parsed.Host
 	}

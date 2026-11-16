@@ -133,6 +133,12 @@ const (
 	// UnisonServiceUpdateSettingsProcedure is the fully-qualified name of the UnisonService's
 	// UpdateSettings RPC.
 	UnisonServiceUpdateSettingsProcedure = "/unison.local.v1.UnisonService/UpdateSettings"
+	// UnisonServiceGetRelayProcedure is the fully-qualified name of the UnisonService's GetRelay RPC.
+	UnisonServiceGetRelayProcedure = "/unison.local.v1.UnisonService/GetRelay"
+	// UnisonServiceSetRelayProcedure is the fully-qualified name of the UnisonService's SetRelay RPC.
+	UnisonServiceSetRelayProcedure = "/unison.local.v1.UnisonService/SetRelay"
+	// UnisonServiceRelayOffProcedure is the fully-qualified name of the UnisonService's RelayOff RPC.
+	UnisonServiceRelayOffProcedure = "/unison.local.v1.UnisonService/RelayOff"
 )
 
 // UnisonServiceClient is a client for the unison.local.v1.UnisonService service.
@@ -197,6 +203,13 @@ type UnisonServiceClient interface {
 	// Settings of the daemon.
 	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
 	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
+	// Relay access of the Personal group and the state of its client.
+	GetRelay(context.Context, *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error)
+	// Store the relay access of the group. The other Personal devices receive it
+	// with the group data.
+	SetRelay(context.Context, *connect.Request[v1.SetRelayRequest]) (*connect.Response[v1.SetRelayResponse], error)
+	// Turn the relay off for the whole group.
+	RelayOff(context.Context, *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error)
 }
 
 // NewUnisonServiceClient constructs a client for the unison.local.v1.UnisonService service. By
@@ -426,6 +439,24 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("UpdateSettings")),
 			connect.WithClientOptions(opts...),
 		),
+		getRelay: connect.NewClient[v1.GetRelayRequest, v1.GetRelayResponse](
+			httpClient,
+			baseURL+UnisonServiceGetRelayProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetRelay")),
+			connect.WithClientOptions(opts...),
+		),
+		setRelay: connect.NewClient[v1.SetRelayRequest, v1.SetRelayResponse](
+			httpClient,
+			baseURL+UnisonServiceSetRelayProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetRelay")),
+			connect.WithClientOptions(opts...),
+		),
+		relayOff: connect.NewClient[v1.RelayOffRequest, v1.RelayOffResponse](
+			httpClient,
+			baseURL+UnisonServiceRelayOffProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RelayOff")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -467,6 +498,9 @@ type unisonServiceClient struct {
 	setPause              *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
 	getSettings           *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
 	updateSettings        *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
+	getRelay              *connect.Client[v1.GetRelayRequest, v1.GetRelayResponse]
+	setRelay              *connect.Client[v1.SetRelayRequest, v1.SetRelayResponse]
+	relayOff              *connect.Client[v1.RelayOffRequest, v1.RelayOffResponse]
 }
 
 // GetStatus calls unison.local.v1.UnisonService.GetStatus.
@@ -649,6 +683,21 @@ func (c *unisonServiceClient) UpdateSettings(ctx context.Context, req *connect.R
 	return c.updateSettings.CallUnary(ctx, req)
 }
 
+// GetRelay calls unison.local.v1.UnisonService.GetRelay.
+func (c *unisonServiceClient) GetRelay(ctx context.Context, req *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error) {
+	return c.getRelay.CallUnary(ctx, req)
+}
+
+// SetRelay calls unison.local.v1.UnisonService.SetRelay.
+func (c *unisonServiceClient) SetRelay(ctx context.Context, req *connect.Request[v1.SetRelayRequest]) (*connect.Response[v1.SetRelayResponse], error) {
+	return c.setRelay.CallUnary(ctx, req)
+}
+
+// RelayOff calls unison.local.v1.UnisonService.RelayOff.
+func (c *unisonServiceClient) RelayOff(ctx context.Context, req *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error) {
+	return c.relayOff.CallUnary(ctx, req)
+}
+
 // UnisonServiceHandler is an implementation of the unison.local.v1.UnisonService service.
 type UnisonServiceHandler interface {
 	// Version and runtime state of the daemon.
@@ -711,6 +760,13 @@ type UnisonServiceHandler interface {
 	// Settings of the daemon.
 	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
 	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
+	// Relay access of the Personal group and the state of its client.
+	GetRelay(context.Context, *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error)
+	// Store the relay access of the group. The other Personal devices receive it
+	// with the group data.
+	SetRelay(context.Context, *connect.Request[v1.SetRelayRequest]) (*connect.Response[v1.SetRelayResponse], error)
+	// Turn the relay off for the whole group.
+	RelayOff(context.Context, *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error)
 }
 
 // NewUnisonServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -936,6 +992,24 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("UpdateSettings")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceGetRelayHandler := connect.NewUnaryHandler(
+		UnisonServiceGetRelayProcedure,
+		svc.GetRelay,
+		connect.WithSchema(unisonServiceMethods.ByName("GetRelay")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceSetRelayHandler := connect.NewUnaryHandler(
+		UnisonServiceSetRelayProcedure,
+		svc.SetRelay,
+		connect.WithSchema(unisonServiceMethods.ByName("SetRelay")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRelayOffHandler := connect.NewUnaryHandler(
+		UnisonServiceRelayOffProcedure,
+		svc.RelayOff,
+		connect.WithSchema(unisonServiceMethods.ByName("RelayOff")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/unison.local.v1.UnisonService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UnisonServiceGetStatusProcedure:
@@ -1010,6 +1084,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceGetSettingsHandler.ServeHTTP(w, r)
 		case UnisonServiceUpdateSettingsProcedure:
 			unisonServiceUpdateSettingsHandler.ServeHTTP(w, r)
+		case UnisonServiceGetRelayProcedure:
+			unisonServiceGetRelayHandler.ServeHTTP(w, r)
+		case UnisonServiceSetRelayProcedure:
+			unisonServiceSetRelayHandler.ServeHTTP(w, r)
+		case UnisonServiceRelayOffProcedure:
+			unisonServiceRelayOffHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -1161,4 +1241,16 @@ func (UnimplementedUnisonServiceHandler) GetSettings(context.Context, *connect.R
 
 func (UnimplementedUnisonServiceHandler) UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.UpdateSettings is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetRelay(context.Context, *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetRelay is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetRelay(context.Context, *connect.Request[v1.SetRelayRequest]) (*connect.Response[v1.SetRelayResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetRelay is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RelayOff(context.Context, *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RelayOff is not implemented"))
 }

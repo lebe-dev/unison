@@ -65,6 +65,19 @@ func (r RelaySettings) validate() error {
 	return nil
 }
 
+// GroupChange reports the parts of the group data that a call replaced.
+type GroupChange struct {
+	// DiscoveryKey reports a new discovery key.
+	DiscoveryKey bool
+	// Relay reports new relay settings.
+	Relay bool
+}
+
+// Any reports whether a part changed.
+func (c GroupChange) Any() bool {
+	return c.DiscoveryKey || c.Relay
+}
+
 // GroupData is the state of the Personal group that its devices share. Every
 // part carries the time it last changed, so devices settle on the newest value.
 type GroupData struct {
@@ -122,17 +135,17 @@ func (s *Store) GroupData(ctx context.Context) (GroupData, error) {
 }
 
 // ApplyGroupData stores the parts of the group data that are newer than the
-// local ones and reports whether the discovery key changed.
-func (s *Store) ApplyGroupData(ctx context.Context, data GroupData) (bool, error) {
+// local ones and reports what changed.
+func (s *Store) ApplyGroupData(ctx context.Context, data GroupData) (GroupChange, error) {
 	if err := data.validate(); err != nil {
-		return false, err
+		return GroupChange{}, err
 	}
 	limit := time.Now().Add(MaxClockSkew)
 	if data.DiscoveryAt.After(limit) || data.RelayAt.After(limit) {
-		return false, fmt.Errorf("%w: change time is too far ahead", ErrInvalidSecret)
+		return GroupChange{}, fmt.Errorf("%w: change time is too far ahead", ErrInvalidSecret)
 	}
 
-	changed := false
+	var change GroupChange
 	err := s.db.WithTx(ctx, func(tx *sql.Tx) error {
 		settings := store.NewSettings(tx, s.db.Sealer())
 
@@ -145,7 +158,7 @@ func (s *Store) ApplyGroupData(ctx context.Context, data GroupData) (bool, error
 				if err := writeDiscoveryKey(ctx, tx, s.db.Sealer(), data.DiscoveryKey, data.DiscoveryAt); err != nil {
 					return err
 				}
-				changed = true
+				change.DiscoveryKey = true
 			}
 		}
 
@@ -162,12 +175,16 @@ func (s *Store) ApplyGroupData(ctx context.Context, data GroupData) (bool, error
 		if err := settings.SetString(ctx, relayTokenKey, data.Relay.Token); err != nil {
 			return err
 		}
-		return settings.SetInt(ctx, relayVersionKey, unixMilli(data.RelayAt))
+		if err := settings.SetInt(ctx, relayVersionKey, unixMilli(data.RelayAt)); err != nil {
+			return err
+		}
+		change.Relay = true
+		return nil
 	})
 	if err != nil {
-		return false, err
+		return GroupChange{}, err
 	}
-	return changed, nil
+	return change, nil
 }
 
 // SetRelaySettings stores the relay access of the group and marks it as changed

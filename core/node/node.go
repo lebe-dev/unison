@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lebe-dev/unison/core/blob"
@@ -217,6 +218,8 @@ type Node struct {
 	relay       *relay.Dialer
 	relayConfig relay.Config
 	relayCancel context.CancelFunc
+	// relayOn reports stored relay settings of the group.
+	relayOn atomic.Bool
 	// relayKick wakes the links that wait for the relay.
 	relayKick chan struct{}
 
@@ -558,6 +561,7 @@ func (n *Node) open(ctx context.Context) error {
 		Logger:                n.log,
 		OnPeersChanged:        n.gossipPeersChanged,
 		OnDiscoveryKeyChanged: n.gossipGroupChanged,
+		OnRelayChanged:        n.gossipRelayChanged,
 		OnPeerRevoked:         n.handleRevokedPeer,
 		OnSelfRevoked:         n.handleSelfRevoked,
 	})
@@ -565,6 +569,12 @@ func (n *Node) open(ctx context.Context) error {
 		return err
 	}
 	n.gossip = gossipService
+
+	group, err := trustStore.GroupData(ctx)
+	if err != nil {
+		return err
+	}
+	n.relayOn.Store(!group.Relay.Empty())
 
 	port, err := transport.MainPort(ctx, db.Settings())
 	if err != nil {
@@ -838,6 +848,19 @@ func (n *Node) gossipGroupChanged(context.Context) {
 		return
 	}
 	n.advertise(runCtx)
+	n.relaySettingsChanged(runCtx)
+}
+
+// gossipRelayChanged refreshes the relay client after the relay settings of the
+// group changed.
+func (n *Node) gossipRelayChanged(context.Context) {
+	n.mu.Lock()
+	running := n.state == stateRunning && n.ctx != nil
+	runCtx := n.ctx
+	n.mu.Unlock()
+	if !running {
+		return
+	}
 	n.relaySettingsChanged(runCtx)
 }
 

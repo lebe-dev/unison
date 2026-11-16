@@ -21,6 +21,9 @@ const (
 // RelayMaxSizeKey is the settings key of the eager limit over the relay.
 const RelayMaxSizeKey = "policy.relay.max_size"
 
+// RelayFilesKey is the settings key of the rule for files over the relay.
+const RelayFilesKey = "policy.relay.files_on_request"
+
 // Cell is the policy for one content kind under one network condition.
 type Cell struct {
 	// Action is the outcome for an item that arrives without an explicit
@@ -81,6 +84,9 @@ type Config struct {
 	DataSaver Row
 	// RelayMaxSize limits the item fetched eagerly over the relay.
 	RelayMaxSize int64
+	// RelayFilesOnRequest keeps files in the history when they would travel
+	// over the relay, until the user asks for them.
+	RelayFilesOnRequest bool
 }
 
 // Default returns the default configuration of a device: text is applied on
@@ -112,7 +118,8 @@ func Default() Config {
 			Files: Cell{Action: ActionMetadataOnly, MaxSize: DefaultRelayMaxSize},
 			Relay: false,
 		},
-		RelayMaxSize: DefaultRelayMaxSize,
+		RelayMaxSize:        DefaultRelayMaxSize,
+		RelayFilesOnRequest: true,
 	}
 }
 
@@ -245,6 +252,12 @@ func LoadConfig(ctx context.Context, s Settings) (Config, error) {
 		cfg.RelayMaxSize = relayMax
 	}
 
+	filesOnRequest, err := s.GetBool(ctx, RelayFilesKey, cfg.RelayFilesOnRequest)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.RelayFilesOnRequest = filesOnRequest
+
 	if err := cfg.Validate(); err != nil {
 		errs = append(errs, err)
 	}
@@ -263,7 +276,7 @@ func Keys() []string {
 			keys = append(keys, ModeKey(condition, kind), MaxSizeKey(condition, kind))
 		}
 	}
-	keys = append(keys, RelayMaxSizeKey)
+	keys = append(keys, RelayMaxSizeKey, RelayFilesKey)
 	slices.Sort(keys)
 	return keys
 }

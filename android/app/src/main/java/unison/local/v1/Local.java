@@ -1509,6 +1509,141 @@ public final class Local {
     // @@protoc_insertion_point(enum_scope:unison.local.v1.PolicyAction)
   }
 
+  /**
+   * <pre>
+   * Transport of the connection to the relay.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.RelayTransport}
+   */
+  public enum RelayTransport
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>RELAY_TRANSPORT_UNSPECIFIED = 0;</code>
+     */
+    RELAY_TRANSPORT_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * No connection.
+     * </pre>
+     *
+     * <code>RELAY_TRANSPORT_NONE = 1;</code>
+     */
+    RELAY_TRANSPORT_NONE(1),
+    /**
+     * <pre>
+     * QUIC over UDP.
+     * </pre>
+     *
+     * <code>RELAY_TRANSPORT_QUIC = 2;</code>
+     */
+    RELAY_TRANSPORT_QUIC(2),
+    /**
+     * <pre>
+     * WebSocket over TLS.
+     * </pre>
+     *
+     * <code>RELAY_TRANSPORT_WSS = 3;</code>
+     */
+    RELAY_TRANSPORT_WSS(3),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>RELAY_TRANSPORT_UNSPECIFIED = 0;</code>
+     */
+    public static final int RELAY_TRANSPORT_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * No connection.
+     * </pre>
+     *
+     * <code>RELAY_TRANSPORT_NONE = 1;</code>
+     */
+    public static final int RELAY_TRANSPORT_NONE_VALUE = 1;
+    /**
+     * <pre>
+     * QUIC over UDP.
+     * </pre>
+     *
+     * <code>RELAY_TRANSPORT_QUIC = 2;</code>
+     */
+    public static final int RELAY_TRANSPORT_QUIC_VALUE = 2;
+    /**
+     * <pre>
+     * WebSocket over TLS.
+     * </pre>
+     *
+     * <code>RELAY_TRANSPORT_WSS = 3;</code>
+     */
+    public static final int RELAY_TRANSPORT_WSS_VALUE = 3;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static RelayTransport valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static RelayTransport forNumber(int value) {
+      switch (value) {
+        case 0: return RELAY_TRANSPORT_UNSPECIFIED;
+        case 1: return RELAY_TRANSPORT_NONE;
+        case 2: return RELAY_TRANSPORT_QUIC;
+        case 3: return RELAY_TRANSPORT_WSS;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<RelayTransport>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        RelayTransport> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<RelayTransport>() {
+            @java.lang.Override
+            public RelayTransport findValueByNumber(int number) {
+              return RelayTransport.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return RelayTransportVerifier.INSTANCE;
+    }
+
+    private static final class RelayTransportVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new RelayTransportVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return RelayTransport.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private RelayTransport(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.RelayTransport)
+  }
+
   public interface NetworkStateOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.NetworkState)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -41596,6 +41731,2759 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<UpdateSettingsResponse> PARSER;
 
     public static com.google.protobuf.Parser<UpdateSettingsResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RelayOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.Relay)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The url.
+     */
+    java.lang.String getUrl();
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The bytes for url.
+     */
+    com.google.protobuf.ByteString
+        getUrlBytes();
+
+    /**
+     * <pre>
+     * An access token is stored on this device. The token itself is never
+     * returned.
+     * </pre>
+     *
+     * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+     * @return The tokenSet.
+     */
+    boolean getTokenSet();
+
+    /**
+     * <pre>
+     * The client is registered on the relay.
+     * </pre>
+     *
+     * <code>bool connected = 3 [json_name = "connected"];</code>
+     * @return The connected.
+     */
+    boolean getConnected();
+
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     * @return The enum numeric value on the wire for transport.
+     */
+    int getTransportValue();
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     * @return The transport.
+     */
+    unison.local.v1.Local.RelayTransport getTransport();
+
+    /**
+     * <pre>
+     * Time the settings last changed, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+     * @return The changedAtUnixMs.
+     */
+    long getChangedAtUnixMs();
+
+    /**
+     * <pre>
+     * Files travel over the relay only when the user asks for them.
+     * </pre>
+     *
+     * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+     * @return The filesOnRequest.
+     */
+    boolean getFilesOnRequest();
+  }
+  /**
+   * <pre>
+   * Relay access of the Personal group and the state of the client.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.Relay}
+   */
+  public  static final class Relay extends
+      com.google.protobuf.GeneratedMessageLite<
+          Relay, Relay.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.Relay)
+      RelayOrBuilder {
+    private Relay() {
+      url_ = "";
+    }
+    public static final int URL_FIELD_NUMBER = 1;
+    private java.lang.String url_;
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The url.
+     */
+    @java.lang.Override
+    public java.lang.String getUrl() {
+      return url_;
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The bytes for url.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getUrlBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(url_);
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @param value The url to set.
+     */
+    private void setUrl(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      url_ = value;
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     */
+    private void clearUrl() {
+
+      url_ = getDefaultInstance().getUrl();
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port. Empty when the relay
+     * is off.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @param value The bytes for url to set.
+     */
+    private void setUrlBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      url_ = value.toStringUtf8();
+
+    }
+
+    public static final int TOKEN_SET_FIELD_NUMBER = 2;
+    private boolean tokenSet_;
+    /**
+     * <pre>
+     * An access token is stored on this device. The token itself is never
+     * returned.
+     * </pre>
+     *
+     * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+     * @return The tokenSet.
+     */
+    @java.lang.Override
+    public boolean getTokenSet() {
+      return tokenSet_;
+    }
+    /**
+     * <pre>
+     * An access token is stored on this device. The token itself is never
+     * returned.
+     * </pre>
+     *
+     * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+     * @param value The tokenSet to set.
+     */
+    private void setTokenSet(boolean value) {
+      
+      tokenSet_ = value;
+    }
+    /**
+     * <pre>
+     * An access token is stored on this device. The token itself is never
+     * returned.
+     * </pre>
+     *
+     * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+     */
+    private void clearTokenSet() {
+
+      tokenSet_ = false;
+    }
+
+    public static final int CONNECTED_FIELD_NUMBER = 3;
+    private boolean connected_;
+    /**
+     * <pre>
+     * The client is registered on the relay.
+     * </pre>
+     *
+     * <code>bool connected = 3 [json_name = "connected"];</code>
+     * @return The connected.
+     */
+    @java.lang.Override
+    public boolean getConnected() {
+      return connected_;
+    }
+    /**
+     * <pre>
+     * The client is registered on the relay.
+     * </pre>
+     *
+     * <code>bool connected = 3 [json_name = "connected"];</code>
+     * @param value The connected to set.
+     */
+    private void setConnected(boolean value) {
+      
+      connected_ = value;
+    }
+    /**
+     * <pre>
+     * The client is registered on the relay.
+     * </pre>
+     *
+     * <code>bool connected = 3 [json_name = "connected"];</code>
+     */
+    private void clearConnected() {
+
+      connected_ = false;
+    }
+
+    public static final int TRANSPORT_FIELD_NUMBER = 4;
+    private int transport_;
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     * @return The enum numeric value on the wire for transport.
+     */
+    @java.lang.Override
+    public int getTransportValue() {
+      return transport_;
+    }
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     * @return The transport.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.RelayTransport getTransport() {
+      unison.local.v1.Local.RelayTransport result = unison.local.v1.Local.RelayTransport.forNumber(transport_);
+      return result == null ? unison.local.v1.Local.RelayTransport.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     * @param value The enum numeric value on the wire for transport to set.
+     */
+    private void setTransportValue(int value) {
+        transport_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     * @param value The transport to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setTransport(unison.local.v1.Local.RelayTransport value) {
+      transport_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+     */
+    private void clearTransport() {
+
+      transport_ = 0;
+    }
+
+    public static final int CHANGED_AT_UNIX_MS_FIELD_NUMBER = 5;
+    private long changedAtUnixMs_;
+    /**
+     * <pre>
+     * Time the settings last changed, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+     * @return The changedAtUnixMs.
+     */
+    @java.lang.Override
+    public long getChangedAtUnixMs() {
+      return changedAtUnixMs_;
+    }
+    /**
+     * <pre>
+     * Time the settings last changed, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+     * @param value The changedAtUnixMs to set.
+     */
+    private void setChangedAtUnixMs(long value) {
+      
+      changedAtUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * Time the settings last changed, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+     */
+    private void clearChangedAtUnixMs() {
+
+      changedAtUnixMs_ = 0L;
+    }
+
+    public static final int FILES_ON_REQUEST_FIELD_NUMBER = 6;
+    private boolean filesOnRequest_;
+    /**
+     * <pre>
+     * Files travel over the relay only when the user asks for them.
+     * </pre>
+     *
+     * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+     * @return The filesOnRequest.
+     */
+    @java.lang.Override
+    public boolean getFilesOnRequest() {
+      return filesOnRequest_;
+    }
+    /**
+     * <pre>
+     * Files travel over the relay only when the user asks for them.
+     * </pre>
+     *
+     * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+     * @param value The filesOnRequest to set.
+     */
+    private void setFilesOnRequest(boolean value) {
+      
+      filesOnRequest_ = value;
+    }
+    /**
+     * <pre>
+     * Files travel over the relay only when the user asks for them.
+     * </pre>
+     *
+     * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+     */
+    private void clearFilesOnRequest() {
+
+      filesOnRequest_ = false;
+    }
+
+    public static unison.local.v1.Local.Relay parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.Relay parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.Relay parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.Relay parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.Relay prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * Relay access of the Personal group and the state of the client.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.Relay}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.Relay, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.Relay)
+        unison.local.v1.Local.RelayOrBuilder {
+      // Construct using unison.local.v1.Local.Relay.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port. Empty when the relay
+       * is off.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @return The url.
+       */
+      @java.lang.Override
+      public java.lang.String getUrl() {
+        return instance.getUrl();
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port. Empty when the relay
+       * is off.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @return The bytes for url.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getUrlBytes() {
+        return instance.getUrlBytes();
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port. Empty when the relay
+       * is off.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @param value The url to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUrl(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setUrl(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port. Empty when the relay
+       * is off.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUrl() {
+        copyOnWrite();
+        instance.clearUrl();
+        return this;
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port. Empty when the relay
+       * is off.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @param value The bytes for url to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUrlBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setUrlBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * An access token is stored on this device. The token itself is never
+       * returned.
+       * </pre>
+       *
+       * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+       * @return The tokenSet.
+       */
+      @java.lang.Override
+      public boolean getTokenSet() {
+        return instance.getTokenSet();
+      }
+      /**
+       * <pre>
+       * An access token is stored on this device. The token itself is never
+       * returned.
+       * </pre>
+       *
+       * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+       * @param value The tokenSet to set.
+       * @return This builder for chaining.
+       */
+      public Builder setTokenSet(boolean value) {
+        copyOnWrite();
+        instance.setTokenSet(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * An access token is stored on this device. The token itself is never
+       * returned.
+       * </pre>
+       *
+       * <code>bool token_set = 2 [json_name = "tokenSet"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearTokenSet() {
+        copyOnWrite();
+        instance.clearTokenSet();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The client is registered on the relay.
+       * </pre>
+       *
+       * <code>bool connected = 3 [json_name = "connected"];</code>
+       * @return The connected.
+       */
+      @java.lang.Override
+      public boolean getConnected() {
+        return instance.getConnected();
+      }
+      /**
+       * <pre>
+       * The client is registered on the relay.
+       * </pre>
+       *
+       * <code>bool connected = 3 [json_name = "connected"];</code>
+       * @param value The connected to set.
+       * @return This builder for chaining.
+       */
+      public Builder setConnected(boolean value) {
+        copyOnWrite();
+        instance.setConnected(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The client is registered on the relay.
+       * </pre>
+       *
+       * <code>bool connected = 3 [json_name = "connected"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearConnected() {
+        copyOnWrite();
+        instance.clearConnected();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+       * @return The enum numeric value on the wire for transport.
+       */
+      @java.lang.Override
+      public int getTransportValue() {
+        return instance.getTransportValue();
+      }
+      /**
+       * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+       * @param value The transport to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setTransportValue(int value) {
+        copyOnWrite();
+        instance.setTransportValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+       * @return The transport.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.RelayTransport getTransport() {
+        return instance.getTransport();
+      }
+      /**
+       * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+       * @param value The enum numeric value on the wire for transport to set.
+       * @return This builder for chaining.
+       */
+      public Builder setTransport(unison.local.v1.Local.RelayTransport value) {
+        copyOnWrite();
+        instance.setTransport(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.RelayTransport transport = 4 [json_name = "transport"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearTransport() {
+        copyOnWrite();
+        instance.clearTransport();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Time the settings last changed, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+       * @return The changedAtUnixMs.
+       */
+      @java.lang.Override
+      public long getChangedAtUnixMs() {
+        return instance.getChangedAtUnixMs();
+      }
+      /**
+       * <pre>
+       * Time the settings last changed, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+       * @param value The changedAtUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setChangedAtUnixMs(long value) {
+        copyOnWrite();
+        instance.setChangedAtUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Time the settings last changed, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 changed_at_unix_ms = 5 [json_name = "changedAtUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearChangedAtUnixMs() {
+        copyOnWrite();
+        instance.clearChangedAtUnixMs();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Files travel over the relay only when the user asks for them.
+       * </pre>
+       *
+       * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+       * @return The filesOnRequest.
+       */
+      @java.lang.Override
+      public boolean getFilesOnRequest() {
+        return instance.getFilesOnRequest();
+      }
+      /**
+       * <pre>
+       * Files travel over the relay only when the user asks for them.
+       * </pre>
+       *
+       * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+       * @param value The filesOnRequest to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFilesOnRequest(boolean value) {
+        copyOnWrite();
+        instance.setFilesOnRequest(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Files travel over the relay only when the user asks for them.
+       * </pre>
+       *
+       * <code>bool files_on_request = 6 [json_name = "filesOnRequest"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFilesOnRequest() {
+        copyOnWrite();
+        instance.clearFilesOnRequest();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.Relay)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.Relay();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "url_",
+              "tokenSet_",
+              "connected_",
+              "transport_",
+              "changedAtUnixMs_",
+              "filesOnRequest_",
+            };
+            java.lang.String info =
+                "\u0000\u0006\u0000\u0000\u0001\u0006\u0006\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0003\u0007\u0004\f\u0005\u0002\u0006\u0007";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.Relay> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.Relay.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.Relay>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.Relay)
+    private static final unison.local.v1.Local.Relay DEFAULT_INSTANCE;
+    static {
+      Relay defaultInstance = new Relay();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        Relay.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.Relay getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<Relay> PARSER;
+
+    public static com.google.protobuf.Parser<Relay> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetRelayRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetRelayRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetRelayRequest}
+   */
+  public  static final class GetRelayRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetRelayRequest, GetRelayRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetRelayRequest)
+      GetRelayRequestOrBuilder {
+    private GetRelayRequest() {
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetRelayRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetRelayRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetRelayRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetRelayRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetRelayRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetRelayRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetRelayRequest)
+        unison.local.v1.Local.GetRelayRequestOrBuilder {
+      // Construct using unison.local.v1.Local.GetRelayRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetRelayRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetRelayRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetRelayRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetRelayRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetRelayRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetRelayRequest)
+    private static final unison.local.v1.Local.GetRelayRequest DEFAULT_INSTANCE;
+    static {
+      GetRelayRequest defaultInstance = new GetRelayRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetRelayRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetRelayRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetRelayRequest> PARSER;
+
+    public static com.google.protobuf.Parser<GetRelayRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetRelayResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetRelayResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     * @return Whether the relay field is set.
+     */
+    boolean hasRelay();
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     * @return The relay.
+     */
+    unison.local.v1.Local.Relay getRelay();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetRelayResponse}
+   */
+  public  static final class GetRelayResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetRelayResponse, GetRelayResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetRelayResponse)
+      GetRelayResponseOrBuilder {
+    private GetRelayResponse() {
+    }
+    private int bitField0_;
+    public static final int RELAY_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Relay relay_;
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.Override
+    public boolean hasRelay() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Relay getRelay() {
+      return relay_ == null ? unison.local.v1.Local.Relay.getDefaultInstance() : relay_;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    private void setRelay(unison.local.v1.Local.Relay value) {
+      java.util.Objects.requireNonNull(value);
+      relay_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeRelay(unison.local.v1.Local.Relay value) {
+      java.util.Objects.requireNonNull(value);
+      if (relay_ != null &&
+          relay_ != unison.local.v1.Local.Relay.getDefaultInstance()) {
+        relay_ =
+          unison.local.v1.Local.Relay.newBuilder(relay_).mergeFrom(value).buildPartial();
+      } else {
+        relay_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    private void clearRelay() {
+      relay_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetRelayResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetRelayResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetRelayResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetRelayResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetRelayResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetRelayResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetRelayResponse)
+        unison.local.v1.Local.GetRelayResponseOrBuilder {
+      // Construct using unison.local.v1.Local.GetRelayResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      @java.lang.Override
+      public boolean hasRelay() {
+        return instance.hasRelay();
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Relay getRelay() {
+        return instance.getRelay();
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder setRelay(unison.local.v1.Local.Relay value) {
+        copyOnWrite();
+        instance.setRelay(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder setRelay(
+          unison.local.v1.Local.Relay.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRelay(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder mergeRelay(unison.local.v1.Local.Relay value) {
+        copyOnWrite();
+        instance.mergeRelay(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder clearRelay() {  copyOnWrite();
+        instance.clearRelay();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetRelayResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetRelayResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "relay_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetRelayResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetRelayResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetRelayResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetRelayResponse)
+    private static final unison.local.v1.Local.GetRelayResponse DEFAULT_INSTANCE;
+    static {
+      GetRelayResponse defaultInstance = new GetRelayResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetRelayResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetRelayResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetRelayResponse> PARSER;
+
+    public static com.google.protobuf.Parser<GetRelayResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetRelayRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetRelayRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The url.
+     */
+    java.lang.String getUrl();
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The bytes for url.
+     */
+    com.google.protobuf.ByteString
+        getUrlBytes();
+
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @return Whether the token field is set.
+     */
+    boolean hasToken();
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @return The token.
+     */
+    java.lang.String getToken();
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @return The bytes for token.
+     */
+    com.google.protobuf.ByteString
+        getTokenBytes();
+
+    /**
+     * <pre>
+     * Change the rule for files over the relay. The stored rule is kept when the
+     * field is absent.
+     * </pre>
+     *
+     * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+     * @return Whether the filesOnRequest field is set.
+     */
+    boolean hasFilesOnRequest();
+    /**
+     * <pre>
+     * Change the rule for files over the relay. The stored rule is kept when the
+     * field is absent.
+     * </pre>
+     *
+     * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+     * @return The filesOnRequest.
+     */
+    boolean getFilesOnRequest();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetRelayRequest}
+   */
+  public  static final class SetRelayRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetRelayRequest, SetRelayRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetRelayRequest)
+      SetRelayRequestOrBuilder {
+    private SetRelayRequest() {
+      url_ = "";
+      token_ = "";
+    }
+    private int bitField0_;
+    public static final int URL_FIELD_NUMBER = 1;
+    private java.lang.String url_;
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The url.
+     */
+    @java.lang.Override
+    public java.lang.String getUrl() {
+      return url_;
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @return The bytes for url.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getUrlBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(url_);
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @param value The url to set.
+     */
+    private void setUrl(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      url_ = value;
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     */
+    private void clearUrl() {
+
+      url_ = getDefaultInstance().getUrl();
+    }
+    /**
+     * <pre>
+     * Address of the relay, host:port or https://host:port.
+     * </pre>
+     *
+     * <code>string url = 1 [json_name = "url"];</code>
+     * @param value The bytes for url to set.
+     */
+    private void setUrlBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      url_ = value.toStringUtf8();
+
+    }
+
+    public static final int TOKEN_FIELD_NUMBER = 2;
+    private java.lang.String token_;
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @return Whether the token field is set.
+     */
+    @java.lang.Override
+    public boolean hasToken() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @return The token.
+     */
+    @java.lang.Override
+    public java.lang.String getToken() {
+      return token_;
+    }
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @return The bytes for token.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getTokenBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(token_);
+    }
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @param value The token to set.
+     */
+    private void setToken(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      bitField0_ |= 0x00000001;
+      token_ = value;
+    }
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     */
+    private void clearToken() {
+      bitField0_ = (bitField0_ & ~0x00000001);
+      token_ = getDefaultInstance().getToken();
+    }
+    /**
+     * <pre>
+     * Access token of the group. The stored token is kept when the field is
+     * absent.
+     * </pre>
+     *
+     * <code>optional string token = 2 [json_name = "token"];</code>
+     * @param value The bytes for token to set.
+     */
+    private void setTokenBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      token_ = value.toStringUtf8();
+      bitField0_ |= 0x00000001;
+    }
+
+    public static final int FILES_ON_REQUEST_FIELD_NUMBER = 3;
+    private boolean filesOnRequest_;
+    /**
+     * <pre>
+     * Change the rule for files over the relay. The stored rule is kept when the
+     * field is absent.
+     * </pre>
+     *
+     * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+     * @return Whether the filesOnRequest field is set.
+     */
+    @java.lang.Override
+    public boolean hasFilesOnRequest() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <pre>
+     * Change the rule for files over the relay. The stored rule is kept when the
+     * field is absent.
+     * </pre>
+     *
+     * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+     * @return The filesOnRequest.
+     */
+    @java.lang.Override
+    public boolean getFilesOnRequest() {
+      return filesOnRequest_;
+    }
+    /**
+     * <pre>
+     * Change the rule for files over the relay. The stored rule is kept when the
+     * field is absent.
+     * </pre>
+     *
+     * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+     * @param value The filesOnRequest to set.
+     */
+    private void setFilesOnRequest(boolean value) {
+      bitField0_ |= 0x00000002;
+      filesOnRequest_ = value;
+    }
+    /**
+     * <pre>
+     * Change the rule for files over the relay. The stored rule is kept when the
+     * field is absent.
+     * </pre>
+     *
+     * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+     */
+    private void clearFilesOnRequest() {
+      bitField0_ = (bitField0_ & ~0x00000002);
+      filesOnRequest_ = false;
+    }
+
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetRelayRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetRelayRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetRelayRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetRelayRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetRelayRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetRelayRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetRelayRequest)
+        unison.local.v1.Local.SetRelayRequestOrBuilder {
+      // Construct using unison.local.v1.Local.SetRelayRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @return The url.
+       */
+      @java.lang.Override
+      public java.lang.String getUrl() {
+        return instance.getUrl();
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @return The bytes for url.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getUrlBytes() {
+        return instance.getUrlBytes();
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @param value The url to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUrl(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setUrl(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUrl() {
+        copyOnWrite();
+        instance.clearUrl();
+        return this;
+      }
+      /**
+       * <pre>
+       * Address of the relay, host:port or https://host:port.
+       * </pre>
+       *
+       * <code>string url = 1 [json_name = "url"];</code>
+       * @param value The bytes for url to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUrlBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setUrlBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Access token of the group. The stored token is kept when the field is
+       * absent.
+       * </pre>
+       *
+       * <code>optional string token = 2 [json_name = "token"];</code>
+       * @return Whether the token field is set.
+       */
+      @java.lang.Override
+      public boolean hasToken() {
+        return instance.hasToken();
+      }
+      /**
+       * <pre>
+       * Access token of the group. The stored token is kept when the field is
+       * absent.
+       * </pre>
+       *
+       * <code>optional string token = 2 [json_name = "token"];</code>
+       * @return The token.
+       */
+      @java.lang.Override
+      public java.lang.String getToken() {
+        return instance.getToken();
+      }
+      /**
+       * <pre>
+       * Access token of the group. The stored token is kept when the field is
+       * absent.
+       * </pre>
+       *
+       * <code>optional string token = 2 [json_name = "token"];</code>
+       * @return The bytes for token.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getTokenBytes() {
+        return instance.getTokenBytes();
+      }
+      /**
+       * <pre>
+       * Access token of the group. The stored token is kept when the field is
+       * absent.
+       * </pre>
+       *
+       * <code>optional string token = 2 [json_name = "token"];</code>
+       * @param value The token to set.
+       * @return This builder for chaining.
+       */
+      public Builder setToken(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setToken(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Access token of the group. The stored token is kept when the field is
+       * absent.
+       * </pre>
+       *
+       * <code>optional string token = 2 [json_name = "token"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearToken() {
+        copyOnWrite();
+        instance.clearToken();
+        return this;
+      }
+      /**
+       * <pre>
+       * Access token of the group. The stored token is kept when the field is
+       * absent.
+       * </pre>
+       *
+       * <code>optional string token = 2 [json_name = "token"];</code>
+       * @param value The bytes for token to set.
+       * @return This builder for chaining.
+       */
+      public Builder setTokenBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setTokenBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Change the rule for files over the relay. The stored rule is kept when the
+       * field is absent.
+       * </pre>
+       *
+       * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+       * @return Whether the filesOnRequest field is set.
+       */
+      @java.lang.Override
+      public boolean hasFilesOnRequest() {
+        return instance.hasFilesOnRequest();
+      }
+      /**
+       * <pre>
+       * Change the rule for files over the relay. The stored rule is kept when the
+       * field is absent.
+       * </pre>
+       *
+       * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+       * @return The filesOnRequest.
+       */
+      @java.lang.Override
+      public boolean getFilesOnRequest() {
+        return instance.getFilesOnRequest();
+      }
+      /**
+       * <pre>
+       * Change the rule for files over the relay. The stored rule is kept when the
+       * field is absent.
+       * </pre>
+       *
+       * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+       * @param value The filesOnRequest to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFilesOnRequest(boolean value) {
+        copyOnWrite();
+        instance.setFilesOnRequest(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Change the rule for files over the relay. The stored rule is kept when the
+       * field is absent.
+       * </pre>
+       *
+       * <code>optional bool files_on_request = 3 [json_name = "filesOnRequest"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFilesOnRequest() {
+        copyOnWrite();
+        instance.clearFilesOnRequest();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetRelayRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetRelayRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "url_",
+              "token_",
+              "filesOnRequest_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u1208" +
+                "\u0000\u0003\u1007\u0001";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetRelayRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetRelayRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetRelayRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetRelayRequest)
+    private static final unison.local.v1.Local.SetRelayRequest DEFAULT_INSTANCE;
+    static {
+      SetRelayRequest defaultInstance = new SetRelayRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetRelayRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetRelayRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetRelayRequest> PARSER;
+
+    public static com.google.protobuf.Parser<SetRelayRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetRelayResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetRelayResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     * @return Whether the relay field is set.
+     */
+    boolean hasRelay();
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     * @return The relay.
+     */
+    unison.local.v1.Local.Relay getRelay();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetRelayResponse}
+   */
+  public  static final class SetRelayResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetRelayResponse, SetRelayResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetRelayResponse)
+      SetRelayResponseOrBuilder {
+    private SetRelayResponse() {
+    }
+    private int bitField0_;
+    public static final int RELAY_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Relay relay_;
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.Override
+    public boolean hasRelay() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Relay getRelay() {
+      return relay_ == null ? unison.local.v1.Local.Relay.getDefaultInstance() : relay_;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    private void setRelay(unison.local.v1.Local.Relay value) {
+      java.util.Objects.requireNonNull(value);
+      relay_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeRelay(unison.local.v1.Local.Relay value) {
+      java.util.Objects.requireNonNull(value);
+      if (relay_ != null &&
+          relay_ != unison.local.v1.Local.Relay.getDefaultInstance()) {
+        relay_ =
+          unison.local.v1.Local.Relay.newBuilder(relay_).mergeFrom(value).buildPartial();
+      } else {
+        relay_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    private void clearRelay() {
+      relay_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetRelayResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetRelayResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetRelayResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetRelayResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetRelayResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetRelayResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetRelayResponse)
+        unison.local.v1.Local.SetRelayResponseOrBuilder {
+      // Construct using unison.local.v1.Local.SetRelayResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      @java.lang.Override
+      public boolean hasRelay() {
+        return instance.hasRelay();
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Relay getRelay() {
+        return instance.getRelay();
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder setRelay(unison.local.v1.Local.Relay value) {
+        copyOnWrite();
+        instance.setRelay(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder setRelay(
+          unison.local.v1.Local.Relay.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRelay(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder mergeRelay(unison.local.v1.Local.Relay value) {
+        copyOnWrite();
+        instance.mergeRelay(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder clearRelay() {  copyOnWrite();
+        instance.clearRelay();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetRelayResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetRelayResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "relay_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetRelayResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetRelayResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetRelayResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetRelayResponse)
+    private static final unison.local.v1.Local.SetRelayResponse DEFAULT_INSTANCE;
+    static {
+      SetRelayResponse defaultInstance = new SetRelayResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetRelayResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetRelayResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetRelayResponse> PARSER;
+
+    public static com.google.protobuf.Parser<SetRelayResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RelayOffRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.RelayOffRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.RelayOffRequest}
+   */
+  public  static final class RelayOffRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          RelayOffRequest, RelayOffRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.RelayOffRequest)
+      RelayOffRequestOrBuilder {
+    private RelayOffRequest() {
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.RelayOffRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.RelayOffRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RelayOffRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.RelayOffRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.RelayOffRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.RelayOffRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.RelayOffRequest)
+        unison.local.v1.Local.RelayOffRequestOrBuilder {
+      // Construct using unison.local.v1.Local.RelayOffRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.RelayOffRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.RelayOffRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.RelayOffRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.RelayOffRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.RelayOffRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.RelayOffRequest)
+    private static final unison.local.v1.Local.RelayOffRequest DEFAULT_INSTANCE;
+    static {
+      RelayOffRequest defaultInstance = new RelayOffRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        RelayOffRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.RelayOffRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<RelayOffRequest> PARSER;
+
+    public static com.google.protobuf.Parser<RelayOffRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RelayOffResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.RelayOffResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     * @return Whether the relay field is set.
+     */
+    boolean hasRelay();
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     * @return The relay.
+     */
+    unison.local.v1.Local.Relay getRelay();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.RelayOffResponse}
+   */
+  public  static final class RelayOffResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          RelayOffResponse, RelayOffResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.RelayOffResponse)
+      RelayOffResponseOrBuilder {
+    private RelayOffResponse() {
+    }
+    private int bitField0_;
+    public static final int RELAY_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Relay relay_;
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.Override
+    public boolean hasRelay() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Relay getRelay() {
+      return relay_ == null ? unison.local.v1.Local.Relay.getDefaultInstance() : relay_;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    private void setRelay(unison.local.v1.Local.Relay value) {
+      java.util.Objects.requireNonNull(value);
+      relay_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeRelay(unison.local.v1.Local.Relay value) {
+      java.util.Objects.requireNonNull(value);
+      if (relay_ != null &&
+          relay_ != unison.local.v1.Local.Relay.getDefaultInstance()) {
+        relay_ =
+          unison.local.v1.Local.Relay.newBuilder(relay_).mergeFrom(value).buildPartial();
+      } else {
+        relay_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+     */
+    private void clearRelay() {
+      relay_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.RelayOffResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.RelayOffResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RelayOffResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.RelayOffResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.RelayOffResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.RelayOffResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.RelayOffResponse)
+        unison.local.v1.Local.RelayOffResponseOrBuilder {
+      // Construct using unison.local.v1.Local.RelayOffResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      @java.lang.Override
+      public boolean hasRelay() {
+        return instance.hasRelay();
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Relay getRelay() {
+        return instance.getRelay();
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder setRelay(unison.local.v1.Local.Relay value) {
+        copyOnWrite();
+        instance.setRelay(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder setRelay(
+          unison.local.v1.Local.Relay.Builder builderForValue) {
+        copyOnWrite();
+        instance.setRelay(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder mergeRelay(unison.local.v1.Local.Relay value) {
+        copyOnWrite();
+        instance.mergeRelay(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Relay relay = 1 [json_name = "relay"];</code>
+       */
+      public Builder clearRelay() {  copyOnWrite();
+        instance.clearRelay();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.RelayOffResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.RelayOffResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "relay_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.RelayOffResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.RelayOffResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.RelayOffResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.RelayOffResponse)
+    private static final unison.local.v1.Local.RelayOffResponse DEFAULT_INSTANCE;
+    static {
+      RelayOffResponse defaultInstance = new RelayOffResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        RelayOffResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.RelayOffResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<RelayOffResponse> PARSER;
+
+    public static com.google.protobuf.Parser<RelayOffResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }

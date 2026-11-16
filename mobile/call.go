@@ -285,6 +285,36 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "GetRelay":
+		call, err := requestOf[localv1.GetRelayRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.GetRelay(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "SetRelay":
+		call, err := requestOf[localv1.SetRelayRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.SetRelay(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "RelayOff":
+		call, err := requestOf[localv1.RelayOffRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.RelayOff(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "SendFiles":
 		call, err := requestOf[localv1.SendFilesRequest](payload)
 		if err != nil {

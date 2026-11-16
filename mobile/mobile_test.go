@@ -99,6 +99,36 @@ func TestCallDispatch(t *testing.T) {
 	}
 }
 
+func TestRelayCalls(t *testing.T) {
+	platform := newFakePlatform()
+	core := startTestCore(t, platform)
+
+	current := &localv1.GetRelayResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "GetRelay"}), current)
+	if current.GetRelay().GetUrl() != "" || !current.GetRelay().GetFilesOnRequest() {
+		t.Fatalf("relay before the change: %v", current.GetRelay())
+	}
+
+	token := "group-token"
+	saved := &localv1.SetRelayResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method: "SetRelay",
+		Payload: marshal(t, &localv1.SetRelayRequest{
+			Url:   "relay.example.com:443",
+			Token: &token,
+		}),
+	}), saved)
+	if saved.GetRelay().GetUrl() != "relay.example.com:443" || !saved.GetRelay().GetTokenSet() {
+		t.Fatalf("saved relay: %v", saved.GetRelay())
+	}
+
+	off := &localv1.RelayOffResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "RelayOff"}), off)
+	if off.GetRelay().GetUrl() != "" || off.GetRelay().GetTokenSet() {
+		t.Fatalf("relay after off: %v", off.GetRelay())
+	}
+}
+
 func TestHistoryCalls(t *testing.T) {
 	platform := newFakePlatform()
 	core := startTestCore(t, platform)

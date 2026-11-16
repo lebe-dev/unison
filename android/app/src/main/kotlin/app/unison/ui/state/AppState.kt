@@ -102,8 +102,15 @@ class AppState(
             try {
                 val status = core.status()
                 val settings = loadSettings()
+                val relay = loadRelay()
                 mutableState.update {
-                    it.copy(loading = false, status = status, settings = settings ?: it.settings, failure = null)
+                    it.copy(
+                        loading = false,
+                        status = status,
+                        settings = settings ?: it.settings,
+                        relay = relay ?: it.relay,
+                        failure = null,
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -298,9 +305,52 @@ class AppState(
         }
     }
 
-    /** Makes this device ask for a confirmation before the clipboard is applied. */
-    fun setSelfConfirmation(require: Boolean) {
+    /** Reloads the relay access and the state of its client. */
+    fun refreshRelay() {
         scope.launch {
+            try {
+                val relay = core.relay()
+                mutableState.update { it.copy(relay = relay) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // The status line keeps the last known state.
+            }
+        }
+    }
+
+    /** Stores the relay address and token of the group. */
+    fun setRelay(url: String, token: String?, filesOnRequest: Boolean?) {
+        scope.launch {
+            try {
+                val relay = core.setRelay(url.trim(), token?.trim()?.takeIf { it.isNotEmpty() }, filesOnRequest)
+                mutableState.update { it.copy(relay = relay) }
+                mutableNotices.tryEmit(R.string.relay_saved)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.relay_save_failed)
+            }
+        }
+    }
+
+    /** Turns the relay off for the whole group. */
+    fun relayOff() {
+        scope.launch {
+            try {
+                val relay = core.relayOff()
+                mutableState.update { it.copy(relay = relay) }
+                mutableNotices.tryEmit(R.string.relay_off_done)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.relay_off_failed)
+            }
+        }
+    }
+
+    /** Makes this device ask for a confirmation before the clipboard is applied. */
+    fun setSelfConfirmation(require: Boolean) {        scope.launch {
             try {
                 val settings = core.setSelfConfirmation(require)
                 mutableState.update { it.copy(settings = settings) }
@@ -542,6 +592,14 @@ class AppState(
     /** Reads the settings of the core, null when they are not available. */
     private suspend fun loadSettings(): Local.Settings? = try {
         core.settings()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
+    private suspend fun loadRelay(): Local.Relay? = try {
+        core.relay()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

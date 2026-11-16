@@ -170,6 +170,10 @@ func Decide(cfg Config, in Input) Result {
 	}
 
 	relay := ok && in.Network.Online && row.Relay
+	if cfg.RelayFilesOnRequest && in.Kind == model.KindFiles && in.Path == model.PathRelay && in.Source != model.SourceCLI {
+		// Files travel over the relay only when the user asks for them.
+		return Result{Action: ActionMetadataOnly, Relay: relay}
+	}
 	if in.Source == model.SourceCLI {
 		// The local user asked for the item, so it is applied without asking
 		// again; the payload is fetched only while the device is online.
