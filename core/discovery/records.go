@@ -29,6 +29,8 @@ func serviceType(service ports.Service) (string, error) {
 		return "_unison._udp." + dnsDomain, nil
 	case ports.ServicePairing:
 		return "_unison-pair._udp." + dnsDomain, nil
+	case ports.ServiceFriends:
+		return "_unison-friends._udp." + dnsDomain, nil
 	default:
 		return "", fmt.Errorf("%w: %q", ErrUnknownService, service)
 	}
@@ -41,6 +43,9 @@ type recordSet struct {
 	host     string
 	port     int
 	txt      map[string]string
+	// tags are the repeated tag entries of the TXT record. A device that looks
+	// for several Friends devices carries one tag per pair.
+	tags []string
 }
 
 // fqdn returns the fully qualified instance name.
@@ -72,9 +77,12 @@ func (r recordSet) txtRecord(ttl uint32) *dns.TXT {
 	}
 	sort.Strings(keys)
 
-	txt := make([]string, 0, len(keys))
+	txt := make([]string, 0, len(keys)+len(r.tags))
 	for _, k := range keys {
 		txt = append(txt, k+"="+r.txt[k])
+	}
+	for _, tag := range r.tags {
+		txt = append(txt, txtTagKey+"="+tag)
 	}
 	return &dns.TXT{
 		Hdr: uniqueHeader(r.fqdn(), dns.TypeTXT, ttl),
@@ -167,7 +175,8 @@ func addrQuery(name string) *dns.Msg {
 	}
 }
 
-// parseTXT converts TXT strings to a map. Entries without a key are dropped.
+// parseTXT converts TXT strings to a map. Entries without a key are dropped and
+// a repeated key keeps its last value.
 func parseTXT(txt []string) map[string]string {
 	if len(txt) == 0 {
 		return nil
@@ -181,4 +190,18 @@ func parseTXT(txt []string) map[string]string {
 		fields[k] = v
 	}
 	return fields
+}
+
+// parseTags returns every tag of a TXT record. The tag key is repeated when the
+// device looks for several Friends devices.
+func parseTags(txt []string) []string {
+	var tags []string
+	for _, s := range txt {
+		k, v, ok := strings.Cut(s, "=")
+		if !ok || k != txtTagKey || v == "" {
+			continue
+		}
+		tags = append(tags, strings.ToLower(v))
+	}
+	return tags
 }

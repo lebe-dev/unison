@@ -11,6 +11,10 @@ const (
 	ServiceMain Service = "main"
 	// ServicePairing is a node that is open for pairing.
 	ServicePairing Service = "pairing"
+	// ServiceFriends is a node that looks for Friends devices for a limited
+	// time. Its tags come from the keys of the pairs, not from the Personal
+	// group.
+	ServiceFriends Service = "friends"
 )
 
 // Candidate is a discovered service instance.
