@@ -70,6 +70,9 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 			return nil, errorOf(err)
 		}
 	}
+	if err := s.applyPolicy(ctx, req.Msg); err != nil {
+		return nil, errorOf(err)
+	}
 
 	settings, err := s.settings(ctx)
 	if err != nil {
@@ -107,12 +110,14 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 	if dir == "" {
 		dir = share.DefaultDownloadsDir()
 	}
-	return &localv1.Settings{
+	settings := &localv1.Settings{
 		DeviceName:          stored,
 		RequireConfirmation: require,
 		BlobMaxSizeBytes:    limit,
 		DownloadsDir:        dir,
-	}, nil
+	}
+	fillPolicy(settings, s.node.Policy().Config())
+	return settings, nil
 }
 
 // downloadsDir validates the directory of received files.
