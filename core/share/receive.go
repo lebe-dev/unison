@@ -325,7 +325,7 @@ func (s *Service) save(ctx context.Context, id string, file File) error {
 		return err
 	}
 	if info.Size != file.Size {
-		return fmt.Errorf("%w: %q is %d bytes, the offer says %d", ErrInvalidFile, file.Name, info.Size, file.Size)
+		return fmt.Errorf("%w: the blob is %d bytes, the offer says %d", ErrInvalidFile, info.Size, file.Size)
 	}
 
 	reader, err := s.blobs.Open(ctx, file.Hash)
@@ -353,7 +353,7 @@ func (s *Service) save(ctx context.Context, id string, file File) error {
 	peer := rec.transfer.Peer
 	s.mu.Unlock()
 
-	s.log.Info("saved a shared file", "transfer", id, "name", file.Name, "size", file.Size)
+	s.log.Info("saved a shared file", "transfer", id, "mime", file.MIME, "size", file.Size)
 	s.report(ctx, Event{Kind: EventSaved, Peer: peer, Transfer: snapshot, Path: path})
 	return nil
 }
@@ -423,7 +423,7 @@ func (s *Service) fail(ctx context.Context, id string, reason error) {
 	s.dropPartials(ctx, snapshot.Files)
 	if sess != nil {
 		if err := s.send(ctx, sess, resultMessage(id, false, snapshot.Err)); err != nil {
-			s.log.Debug("sending the failure failed", "transfer", id, "error", err)
+			s.log.Debug("sending the failure result failed", "transfer", id, "error", err)
 		}
 	}
 	s.log.Warn("share transfer failed", "transfer", id, "peer", peer, "error", reason)

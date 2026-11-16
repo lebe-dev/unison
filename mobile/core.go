@@ -308,6 +308,6 @@ func (b blobSink) Write(_ context.Context, file share.File, src io.Reader) (path
 	if written != file.Size {
 		return "", fmt.Errorf("mobile: wrote %d bytes of %d", written, file.Size)
 	}
-	b.log.Info("saved a shared file", "name", file.Name, "size", file.Size)
+	b.log.Info("saved a shared file", "mime", file.MIME, "size", file.Size)
 	return file.Name, nil
 }

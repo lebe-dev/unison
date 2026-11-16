@@ -74,7 +74,7 @@ func (s *Store) makeRoom(ctx context.Context, need int64) (int, error) {
 			continue
 		}
 		if err := s.remove(ctx, entry.hash); err != nil {
-			s.log.Warn("evicting blob failed", "hash", hashHex(entry.hash), "err", err)
+			s.log.Warn("evicting blob failed", "hash", hashHex(entry.hash), "error", err)
 			continue
 		}
 		usage -= entry.size

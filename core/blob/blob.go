@@ -213,12 +213,12 @@ func (s *Store) now() time.Time {
 func (s *Store) removeTempFiles() {
 	names, err := filepath.Glob(filepath.Join(s.dir, tempPrefix+"*"))
 	if err != nil {
-		s.log.Warn("listing temporary files failed", "err", err)
+		s.log.Warn("listing temporary files failed", "error", err)
 		return
 	}
 	for _, name := range names {
 		if err := os.Remove(name); err != nil && !errors.Is(err, os.ErrNotExist) {
-			s.log.Warn("removing temporary file failed", "err", err)
+			s.log.Warn("removing temporary file failed", "error", err)
 		}
 	}
 }

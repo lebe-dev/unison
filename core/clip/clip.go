@@ -236,7 +236,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 func (p *Pipeline) recordQueue(ctx context.Context, records <-chan ports.Content) {
 	for content := range records {
 		if err := p.capture(ctx, content); err != nil {
-			p.log.Warn("capture clipboard item failed", "err", err)
+			p.log.Warn("capture clipboard item failed", "error", err)
 		}
 	}
 }
@@ -267,7 +267,7 @@ func (p *Pipeline) consume(ctx context.Context, snapshots <-chan ports.Snapshot,
 			}
 			paused, err := p.pausedAt(ctx)
 			if err != nil {
-				p.log.Warn("read pause state failed", "err", err)
+				p.log.Warn("read pause state failed", "error", err)
 				continue
 			}
 			if paused {
@@ -285,7 +285,7 @@ func (p *Pipeline) consume(ctx context.Context, snapshots <-chan ports.Snapshot,
 				continue
 			}
 			if err := p.capture(ctx, content); err != nil {
-				p.log.Warn("capture clipboard item failed", "err", err)
+				p.log.Warn("capture clipboard item failed", "error", err)
 			}
 		}
 	}

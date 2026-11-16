@@ -41,7 +41,7 @@ func (p *Pipeline) imagePayloads(reps []ports.Representation) []payload {
 	for _, rep := range reps {
 		normalized, err := normalizeImage(rep)
 		if err != nil {
-			p.log.Debug("skipped clipboard image", "mime", rep.MIME, "err", err)
+			p.log.Debug("skipped clipboard image", "mime", rep.MIME, "error", err)
 			continue
 		}
 		payloads = append(payloads, normalized...)
