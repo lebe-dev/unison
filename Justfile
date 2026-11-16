@@ -171,6 +171,10 @@ android-test-ui:
 android-lint:
     ./android/gradlew -p android lintDebug
 
+# Publish the keyboard bridge contract to the Maven local repository and to android/build/maven.
+bridge-publish:
+    ./android/gradlew -p android :bridge-aidl:publish :bridge-aidl:publishToMavenLocal
+
 # Remove build artifacts.
 clean:
     rm -rf bin

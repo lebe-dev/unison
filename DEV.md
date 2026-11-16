@@ -80,6 +80,7 @@ just proto-lint           # lint the protobuf definitions
 just check                # lint, proto lint and tests, run before committing
 just aar                  # bind the Go core into android/core/core.aar
 just android-build        # build the Android debug APK
+just bridge-publish       # publish the keyboard bridge contract to the local Maven repository
 just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64
 just build-unisond-host   # unisond for the host with the Keychain and pasteboard
 just run-daemon           # run the daemon of the default data directory
@@ -406,6 +407,15 @@ the bundle, which is `not-registered` before the first registration and `enabled
 app module depends on as a local file, so the AAR is not committed. The generated Java API
 lives in the `app.unison.core.mobile` package; `android-build` runs `aar` first because the
 app cannot be compiled without it.
+
+The AIDL contract between the app and the keyboard lives in the `android/bridge-aidl` module:
+`IUnisonBridge` and the oneway `IUnisonBridgeListener` of the `app.unison.bridge` package. The
+interfaces are frozen, so new methods are only appended at the end, and a caller reads
+`protocolVersion()` before it uses methods it does not know. `BridgeContract` holds the package,
+the bind action, the service class, the signature permission and the protocol version.
+`just bridge-publish` publishes the module as `app.unison:bridge-aidl:<version>` to
+`~/.m2/repository` and to `android/build/maven`, which the keyboard repository adds as a Maven
+repository; the AAR is not committed.
 
 The version of all binaries comes from the `VERSION` file and is injected at build time, so
 `bin/unisond --version`, `just build` and the core version shown by the app always agree.
