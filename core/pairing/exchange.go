@@ -133,7 +133,8 @@ func (w *Window) exchange(ctx context.Context, conn *transport.PairingConn, init
 	if err != nil {
 		return peerInfo{}, err
 	}
-	defer closeStream(stream)
+	teardown := &streamTeardown{stream: stream}
+	defer teardown.finish()
 	if deadline, ok := ctx.Deadline(); ok {
 		if err := stream.SetDeadline(deadline); err != nil {
 			return peerInfo{}, fmt.Errorf("pairing: set deadline: %w", err)
@@ -184,6 +185,10 @@ func (w *Window) exchange(ctx context.Context, conn *transport.PairingConn, init
 	if err := w.accept(ctx, reader, stream, peer, initiator, fl); err != nil {
 		return peer, err
 	}
+	// A window may close as soon as it reports the pair, and closing the window
+	// closes the connection of the exchange. The peer has to hold the whole
+	// accept frame before the event, so the stream ends first.
+	teardown.finish()
 	if fl.claimed {
 		// The device that showed the code gets a fresh one before the UI hears
 		// about the pair, so it never reads the spent code again.
@@ -777,13 +782,22 @@ func openStream(ctx context.Context, conn *transport.PairingConn, initiator bool
 	return stream, nil
 }
 
-// closeStream closes the send side of the pairing stream and waits for the peer
-// to close its own, so that the last message is delivered before the connection
-// is closed.
-func closeStream(stream *quic.Stream) {
-	_ = stream.Close()
-	_ = stream.SetReadDeadline(time.Now().Add(closeTimeout))
-	_, _ = io.Copy(io.Discard, stream)
+// streamTeardown ends the stream of an exchange once. It closes the send side
+// and waits for the peer to close its own, so that the last frame is delivered
+// before the connection is closed.
+type streamTeardown struct {
+	stream *quic.Stream
+	once   sync.Once
+}
+
+// finish ends the send side of the stream and waits for the peer to end its own.
+// A peer that stays silent is not waited for longer than closeTimeout.
+func (t *streamTeardown) finish() {
+	t.once.Do(func() {
+		_ = t.stream.Close()
+		_ = t.stream.SetReadDeadline(time.Now().Add(closeTimeout))
+		_, _ = io.Copy(io.Discard, t.stream)
+	})
 }
 
 // reportFailure reports an exchange that ended without a new pair.
