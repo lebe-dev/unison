@@ -114,14 +114,15 @@ func (s *Service) offer(ctx context.Context, peer model.DeviceID, files []File) 
 		saved:   make(map[[32]byte]string, len(files)),
 		wake:    make(chan struct{}, 1),
 	}
+	snapshot := rec.transfer.clone()
 	s.add(rec)
 
-	if err := s.sendOffer(peer, rec.transfer); err != nil {
+	if err := s.sendOffer(peer, snapshot); err != nil {
 		s.drop(id)
 		return "", err
 	}
-	s.log.Info("offered files", "transfer", id, "peer", peer, "files", len(files), "bytes", rec.transfer.TotalBytes)
-	s.report(ctx, Event{Kind: EventOffered, Peer: peer, Transfer: rec.transfer.clone()})
+	s.log.Info("offered files", "transfer", id, "peer", peer, "files", len(files), "bytes", snapshot.TotalBytes)
+	s.report(ctx, Event{Kind: EventOffered, Peer: peer, Transfer: snapshot})
 	return id, nil
 }
 

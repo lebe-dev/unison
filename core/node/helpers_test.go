@@ -120,9 +120,16 @@ func newTestNode(t *testing.T, network *vnet.Network, bus *fake.Bus, base int) *
 func newTestNodeAt(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, dir string, keys *fake.Keystore) *testNode {
 	t.Helper()
 
+	return newTestNodeWith(t, network, bus, base, dir, keys, nil)
+}
+
+// newTestNodeWith creates a node and lets the test change its settings.
+func newTestNodeWith(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, dir string, keys *fake.Keystore, tune func(*Config)) *testNode {
+	t.Helper()
+
 	clipboard := fake.NewClipboard()
 	sockets := newSocketFactory(network, base)
-	created, err := New(Config{
+	cfg := Config{
 		DataDir:        dir,
 		Name:           fmt.Sprintf("device-%d", base),
 		Platform:       model.PlatformMacOS,
@@ -137,7 +144,11 @@ func newTestNodeAt(t *testing.T, network *vnet.Network, bus *fake.Bus, base int,
 			ReconnectMaxDelay: 500 * time.Millisecond,
 		},
 		ListenPacket: sockets.listenPacket,
-	})
+	}
+	if tune != nil {
+		tune(&cfg)
+	}
+	created, err := New(cfg)
 	if err != nil {
 		t.Fatalf("create node: %v", err)
 	}

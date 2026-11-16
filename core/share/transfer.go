@@ -18,6 +18,9 @@ const (
 	MaxTransfers = 64
 	// MaxPending bounds the incoming offers that wait for a decision.
 	MaxPending = 16
+	// MaxPendingPerPeer bounds the incoming offers of one peer that wait for a
+	// decision.
+	MaxPendingPerPeer = 8
 	// PendingTTL is how long an offer waits for a decision.
 	PendingTTL = 10 * time.Minute
 	// MaxNameLength bounds a file name in bytes.
@@ -177,6 +180,9 @@ type Transfer struct {
 	Err string
 	// CreatedAt is the time the transfer started.
 	CreatedAt time.Time
+	// ExpiresAt is the time an offer that waits for a decision stops waiting.
+	// It is zero for the other states.
+	ExpiresAt time.Time
 }
 
 // clone returns a copy that does not share the slices of the receiver.
