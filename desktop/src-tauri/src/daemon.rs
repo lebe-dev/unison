@@ -21,6 +21,13 @@ const START_INTERVAL: Duration = Duration::from_millis(200);
 /// before it starts the daemon of the bundle itself.
 const LOGIN_WAIT: Duration = Duration::from_secs(3);
 
+/// BINARY_NAME is the file name of the daemon next to the app binary.
+const BINARY_NAME: &str = if cfg!(windows) {
+    "unisond.exe"
+} else {
+    "unisond"
+};
+
 /// STARTED is the daemon the app started itself, which steps aside when the
 /// login item takes over.
 static STARTED: Mutex<Option<u32>> = Mutex::new(None);
@@ -51,7 +58,7 @@ pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
             }
             // A login item that the system cannot start must not leave the app
             // without a daemon.
-            match daemon_binary() {
+            match binary() {
                 Some(binary) => {
                     start(&binary)?;
                     wait_for(endpoint, START_TIMEOUT).await
@@ -64,7 +71,7 @@ pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
         crate::agent::LoginItemStatus::RequiresApproval => {
             Err("the login item waits for approval in System Settings".to_string())
         }
-        _ => match daemon_binary() {
+        _ => match binary() {
             Some(binary) => {
                 start(&binary)?;
                 wait_for(endpoint, START_TIMEOUT).await
@@ -106,18 +113,20 @@ async fn probe(endpoint: &str) -> bool {
     )
 }
 
-/// daemon_binary returns the daemon to start. A packaged app runs the daemon
-/// from the login item, and from next to the app binary when the login item is
-/// turned off. Development builds start the daemon from `bin/`.
-fn daemon_binary() -> Option<PathBuf> {
+/// binary returns the daemon to start. A packaged app runs the daemon from the
+/// autostart entry of the system, and from next to the app binary when that
+/// entry is turned off. Development builds start the daemon from `bin/`.
+pub fn binary() -> Option<PathBuf> {
     if let Some(path) = std::env::var_os(BINARY_ENV) {
         return Some(PathBuf::from(path));
     }
     let path = if cfg!(debug_assertions) {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../bin/unisond")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../bin")
+            .join(BINARY_NAME)
     } else {
         let exe = std::env::current_exe().ok()?;
-        exe.parent()?.join("unisond")
+        exe.parent()?.join(BINARY_NAME)
     };
     path.is_file().then_some(path)
 }

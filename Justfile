@@ -145,6 +145,14 @@ package-macos *args:
 verify-macos *args:
     packaging/macos/verify.sh {{args}}
 
+# Build the Windows installer with the daemon, its startup entry and its firewall rule.
+package-windows *args:
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/package.ps1 {{args}}
+
+# Check the Windows installer and the installed application.
+verify-windows *args:
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/verify.ps1 {{args}}
+
 # Run the component tests of the desktop app.
 desktop-test:
     cd desktop && yarn test

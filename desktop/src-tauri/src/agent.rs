@@ -1,13 +1,19 @@
-//! Login item of the daemon.
+//! Autostart of the daemon.
 //!
-//! The packaged app carries the daemon as a login item and registers it with
-//! `SMAppService`, so the system starts the daemon at login. The login item is
-//! the property list in `Contents/Library/LaunchAgents`.
+//! The packaged app keeps the daemon in the autostart list of the system, so it
+//! runs without the window: a login item that `SMAppService` registers on macOS,
+//! and a `Run` entry of the current user on Windows.
 
 use serde::Serialize;
 
 /// PLIST_NAME names the login item inside `Contents/Library/LaunchAgents`.
+#[cfg(target_os = "macos")]
 pub const PLIST_NAME: &str = "app.unison.unisond.plist";
+
+/// VALUE_NAME names the autostart entry in the `Run` key of the current user.
+/// The name is the product name, which the uninstaller uses to remove it.
+#[cfg(windows)]
+const VALUE_NAME: &str = "Unison";
 
 /// ACTION_ARG selects the login item action on the command line, so a packaged
 /// app can report and change the login item without opening a window.
@@ -54,7 +60,11 @@ pub fn status() -> LoginItemStatus {
     {
         platform::status()
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        platform::status()
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
     {
         LoginItemStatus::Unsupported
     }
@@ -71,7 +81,12 @@ pub fn set(enabled: bool) -> Result<LoginItemStatus, String> {
         }
         Ok(platform::status())
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        platform::set(enabled)?;
+        Ok(platform::status())
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
     {
         let _ = enabled;
         Ok(LoginItemStatus::Unsupported)
@@ -79,9 +94,11 @@ pub fn set(enabled: bool) -> Result<LoginItemStatus, String> {
 }
 
 /// register_at_launch registers the login item on the first launch of the
-/// packaged app. It leaves a login item that the user has to approve alone.
+/// packaged app. It leaves a login item that the user has to approve alone. The
+/// autostart entry of Windows belongs to the installer, so the toggle of the
+/// settings keeps ownership of it.
 pub fn register_at_launch() -> Option<Result<LoginItemStatus, String>> {
-    if cfg!(debug_assertions) {
+    if cfg!(debug_assertions) || cfg!(windows) {
         return None;
     }
     match status() {
@@ -223,5 +240,178 @@ mod platform {
         description
             .map(|text| text.to_string())
             .unwrap_or_else(|| "the login item could not be changed".to_string())
+    }
+}
+
+/// platform keeps the autostart entry of the daemon in the registry of the
+/// current user.
+#[cfg(windows)]
+mod platform {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use std::path::Path;
+
+    use windows_sys::Win32::Foundation::{ERROR_FILE_NOT_FOUND, ERROR_SUCCESS};
+    use windows_sys::Win32::System::Registry::{
+        HKEY, HKEY_CURRENT_USER, KEY_QUERY_VALUE, KEY_SET_VALUE, REG_SZ, RegCloseKey,
+        RegDeleteValueW, RegOpenKeyExW, RegQueryValueExW, RegSetValueExW,
+    };
+
+    use super::{LoginItemStatus, VALUE_NAME};
+
+    /// RUN_KEY holds the programs the system starts at the login of the user.
+    const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+
+    /// Key closes its handle when it leaves the scope.
+    struct Key(HKEY);
+
+    impl Drop for Key {
+        fn drop(&mut self) {
+            // SAFETY: the handle comes from open and is not used afterwards.
+            unsafe { RegCloseKey(self.0) };
+        }
+    }
+
+    /// status reports whether the `Run` entry starts the daemon of this
+    /// installation.
+    pub fn status() -> LoginItemStatus {
+        let Some(command) = read() else {
+            return LoginItemStatus::NotRegistered;
+        };
+        let path = command.trim().trim_matches('"');
+        if Path::new(path).is_file() {
+            LoginItemStatus::Enabled
+        } else {
+            LoginItemStatus::NotFound
+        }
+    }
+
+    /// set writes or removes the `Run` entry of the daemon.
+    pub fn set(enabled: bool) -> Result<(), String> {
+        if !enabled {
+            return remove();
+        }
+        let binary = crate::daemon::binary()
+            .ok_or_else(|| "the daemon is not installed next to the app".to_string())?;
+        // The command is the quoted path of the daemon, without arguments.
+        let command: Vec<u16> = std::iter::once(u16::from(b'"'))
+            .chain(binary.as_os_str().encode_wide())
+            .chain(std::iter::once(u16::from(b'"')))
+            .chain(std::iter::once(0))
+            .collect();
+        write(&command)
+    }
+
+    /// read returns the command of the `Run` entry, or None when the entry does
+    /// not exist.
+    fn read() -> Option<String> {
+        let key = open(KEY_QUERY_VALUE)?;
+        let name = wide(VALUE_NAME);
+        let mut size = 0u32;
+        // SAFETY: the call only asks for the size of the value.
+        let code = unsafe {
+            RegQueryValueExW(
+                key.0,
+                name.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut size,
+            )
+        };
+        if code != ERROR_SUCCESS || size == 0 {
+            return None;
+        }
+        let mut data = vec![0u8; size as usize];
+        // SAFETY: the buffer is as large as the size the call reported.
+        let code = unsafe {
+            RegQueryValueExW(
+                key.0,
+                name.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                data.as_mut_ptr(),
+                &mut size,
+            )
+        };
+        if code != ERROR_SUCCESS {
+            return None;
+        }
+        Some(text(&data))
+    }
+
+    /// write stores the command of the `Run` entry.
+    fn write(command: &[u16]) -> Result<(), String> {
+        let key =
+            open(KEY_SET_VALUE).ok_or_else(|| "the autostart key cannot be opened".to_string())?;
+        let name = wide(VALUE_NAME);
+        let bytes: Vec<u8> = command.iter().flat_map(|unit| unit.to_le_bytes()).collect();
+        // SAFETY: the name and the data are null terminated strings of the
+        // reported lengths.
+        let code = unsafe {
+            RegSetValueExW(
+                key.0,
+                name.as_ptr(),
+                0,
+                REG_SZ,
+                bytes.as_ptr(),
+                bytes.len() as u32,
+            )
+        };
+        if code != ERROR_SUCCESS {
+            return Err(format!(
+                "the autostart entry cannot be written, error {code}"
+            ));
+        }
+        Ok(())
+    }
+
+    /// remove deletes the `Run` entry of the daemon.
+    fn remove() -> Result<(), String> {
+        let Some(key) = open(KEY_SET_VALUE) else {
+            return Ok(());
+        };
+        let name = wide(VALUE_NAME);
+        // SAFETY: the name is a null terminated string.
+        let code = unsafe { RegDeleteValueW(key.0, name.as_ptr()) };
+        if code == ERROR_SUCCESS || code == ERROR_FILE_NOT_FOUND {
+            return Ok(());
+        }
+        Err(format!(
+            "the autostart entry cannot be removed, error {code}"
+        ))
+    }
+
+    /// open opens the `Run` key of the current user.
+    fn open(access: u32) -> Option<Key> {
+        let path = wide(RUN_KEY);
+        let mut key: HKEY = std::ptr::null_mut();
+        // SAFETY: the path is a null terminated string and the handle is
+        // written by the call.
+        let code = unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, path.as_ptr(), 0, access, &mut key) };
+        (code == ERROR_SUCCESS).then_some(Key(key))
+    }
+
+    /// text decodes a `REG_SZ` value.
+    fn text(data: &[u8]) -> String {
+        let units: Vec<u16> = data
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|unit| u16::from_le_bytes(*unit))
+            .collect();
+        let end = units
+            .iter()
+            .position(|unit| *unit == 0)
+            .unwrap_or(units.len());
+        String::from_utf16_lossy(&units[..end])
+    }
+
+    /// wide returns the UTF-16 form of a string with a terminating null.
+    fn wide(value: &str) -> Vec<u16> {
+        OsStr::new(value)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect()
     }
 }
