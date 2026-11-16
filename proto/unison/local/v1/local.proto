@@ -449,7 +449,11 @@ message RejectSasRequest {
 
 message RejectSasResponse {}
 
-message GetPairingQrRequest {}
+message GetPairingQrRequest {
+  // Addresses of this device to put into the code, host:port. A device that
+  // cannot list its own interfaces passes the addresses its platform reports.
+  repeated string addrs = 1;
+}
 
 message GetPairingQrResponse {
   // Code of the open window, absent when no window is open.
