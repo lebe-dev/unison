@@ -20,10 +20,24 @@
   let loaded = $state(false);
   let busy = $state(false);
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
+  let clock = $state(Date.now());
 
   const loginEnabled = $derived(
     login?.status === "enabled" || login?.status === "requires_approval",
   );
+
+  const friendsOn = $derived(daemon.status?.friendsDiscovery?.on ?? false);
+
+  const friendsLeft = $derived.by(() => {
+    const until = Number(daemon.status?.friendsDiscovery?.untilUnixMs ?? 0n);
+    if (!until) {
+      return "";
+    }
+    const left = Math.max(0, until - clock);
+    const minutes = Math.floor(left / 60_000);
+    const seconds = Math.floor((left % 60_000) / 1000);
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  });
 
   const loginHint = $derived.by(() => {
     switch (login?.status) {
@@ -51,6 +65,13 @@
       loginLoaded = true;
       void loadLogin();
     }
+  });
+
+  $effect(() => {
+    const timer = setInterval(() => {
+      clock = Date.now();
+    }, 1000);
+    return () => clearInterval(timer);
   });
 
   async function loadLogin(): Promise<void> {
@@ -118,6 +139,22 @@
     await daemon.setPause(choice);
     if (daemon.error) {
       notice = { kind: "error", text: daemon.error };
+    }
+  }
+
+  async function setFriends(on: boolean): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      await client.setFriendsDiscovery({ on });
+      await daemon.refresh();
+    } catch (error) {
+      notice = {
+        kind: "error",
+        text: errorText(error, "The search for friends could not be changed."),
+      };
+    } finally {
+      busy = false;
     }
   }
 
@@ -202,6 +239,29 @@
           Hold incoming items for confirmation
           <small>
             Items from other devices wait in the history until you apply them.
+          </small>
+        </span>
+      </label>
+    </section>
+
+    <section class="panel">
+      <h3>Friends</h3>
+      <label class="toggle">
+        <input
+          type="checkbox"
+          checked={friendsOn}
+          disabled={busy || !daemon.connected}
+          onchange={(event) => void setFriends(event.currentTarget.checked)}
+        />
+        <span>
+          Find friends
+          <small>
+            {#if friendsOn}
+              Searching for {friendsLeft}. Turn it on on the other device too; the search stops by
+              itself.
+            {:else}
+              Both devices have to turn it on. The search stops by itself after 15 minutes.
+            {/if}
           </small>
         </span>
       </label>
