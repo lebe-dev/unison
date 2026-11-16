@@ -5,9 +5,11 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.clipboard.PauseRequest
+import app.unison.policy.PolicyDefaults
 import app.unison.service.OperatingMode
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
@@ -59,7 +61,7 @@ class SettingsScreenTest {
         var request: PauseRequest? = null
         setContent(operatingMode = OperatingMode.ALWAYS, onPause = { request = it })
 
-        compose.onNodeWithText("5 minutes").performClick()
+        compose.onNodeWithText("5 minutes").performScrollTo().performClick()
 
         assertEquals(Local.PauseMode.PAUSE_MODE_UNTIL, request?.mode)
     }
@@ -76,7 +78,7 @@ class SettingsScreenTest {
         )
 
         compose.onAllNodesWithText("Until turned off").assertCountEquals(2)
-        compose.onNodeWithText("Resume").performClick()
+        compose.onNodeWithText("Resume").performScrollTo().performClick()
 
         assertEquals(Local.PauseMode.PAUSE_MODE_OFF, request?.mode)
     }
@@ -98,8 +100,11 @@ class SettingsScreenTest {
                     state = CoreState(loading = false, status = status),
                     deviceName = deviceName,
                     operatingMode = operatingMode,
+                    policy = PolicyDefaults.config,
                     onDeviceNameChange = onDeviceNameChange,
                     onOperatingModeChange = onOperatingModeChange,
+                    onPolicyChange = {},
+                    onPolicyReset = {},
                     onPause = onPause,
                     onRefresh = {},
                 )

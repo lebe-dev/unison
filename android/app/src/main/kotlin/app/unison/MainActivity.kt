@@ -23,6 +23,9 @@ import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
 import app.unison.history.HistoryDownloads
+import app.unison.policy.PolicyConfig
+import app.unison.policy.PolicyDefaults
+import app.unison.policy.PolicyStore
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
@@ -35,9 +38,11 @@ import kotlinx.coroutines.launch
 /** Single screen of the app: devices, pairing, history and settings. */
 class MainActivity : ComponentActivity() {
     private lateinit var appState: AppState
+    private lateinit var policyStore: PolicyStore
     private var onboarded by mutableStateOf(false)
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
+    private var policy by mutableStateOf(PolicyDefaults.config)
     private var pending by mutableStateOf<ClipboardDraft?>(null)
 
     private val notificationPermission =
@@ -57,9 +62,11 @@ class MainActivity : ComponentActivity() {
             saver = HistoryDownloads(this),
             localAddresses = LocalAddresses(this)::ipv4,
         )
+        policyStore = PolicyStore(this)
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
+        policy = policyStore.load()
         setContent {
             UnisonTheme {
                 val state by appState.state.collectAsState()
@@ -72,6 +79,7 @@ class MainActivity : ComponentActivity() {
                         pairing = pairing,
                         deviceName = deviceName,
                         operatingMode = operatingMode,
+                        policy = policy,
                         clipboardOffer = pending,
                         notices = appState.notices,
                         onRefresh = ::refresh,
@@ -79,6 +87,8 @@ class MainActivity : ComponentActivity() {
                         onDismissClipboard = { pending = null },
                         onDeviceNameChange = ::saveDeviceName,
                         onOperatingModeChange = ::saveOperatingMode,
+                        onPolicyChange = ::savePolicy,
+                        onPolicyReset = ::resetPolicy,
                         onPause = appState::setPause,
                         onRefreshHistory = appState::refreshHistory,
                         onHistoryKindChange = appState::setHistoryKind,
@@ -210,5 +220,17 @@ class MainActivity : ComponentActivity() {
         if (mode != OperatingMode.APP_OPEN) {
             UnisonService.start(this)
         }
+    }
+
+    /** Stores the network policy of this device. */
+    private fun savePolicy(config: PolicyConfig) {
+        policy = config
+        policyStore.save(config)
+    }
+
+    /** Puts the default table back and drops the stored one. */
+    private fun resetPolicy() {
+        policy = policyStore.reset()
+        Toast.makeText(this, R.string.policy_reset_done, Toast.LENGTH_SHORT).show()
     }
 }

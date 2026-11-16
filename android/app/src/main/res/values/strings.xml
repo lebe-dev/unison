@@ -197,6 +197,26 @@
     <string name="action_download">Download</string>
     <string name="action_delete">Delete</string>
 
+    <string name="policy_section">Network policy</string>
+    <string name="policy_now">Now: %1$s</string>
+    <string name="policy_hint">Items larger than the limit arrive on request.</string>
+    <string name="policy_condition_unmetered">Wi-Fi, not metered</string>
+    <string name="policy_condition_metered">Mobile data</string>
+    <string name="policy_condition_roaming">Roaming</string>
+    <string name="policy_condition_data_saver">Data Saver</string>
+    <string name="policy_condition_offline">Offline</string>
+    <string name="policy_mode_reject">Drop</string>
+    <string name="policy_mode_metadata">On request</string>
+    <string name="policy_mode_confirm">Ask first</string>
+    <string name="policy_mode_auto">Automatic</string>
+    <string name="policy_relay">Relay</string>
+    <string name="policy_relay_limit">Relay limit</string>
+    <string name="policy_limit">Limit</string>
+    <string name="policy_megabytes">MB</string>
+    <string name="policy_reset">Reset to defaults</string>
+    <string name="policy_reset_done">Network policy reset</string>
+    <string name="service_waiting_wifi">Waiting for Wi-Fi</string>
+
     <string name="onboarding_title">Welcome to Unison</string>
     <string name="onboarding_body">Unison keeps the clipboard in sync between your devices. Content travels directly between them.</string>
     <string name="onboarding_bullet_network">Devices have to be on the same network to find each other.</string>
