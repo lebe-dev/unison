@@ -207,6 +207,28 @@ aar:
 android-build: aar
     ./android/gradlew -p android assembleDebug
 
+apk_debug := "android/app/build/outputs/apk/debug/app-debug.apk"
+
+# Install the current debug APK on the phone connected over USB.
+deploy-android:
+    #!/usr/bin/env bash
+    set -eu -o pipefail
+    phones="$(adb devices -l | awk 'NR > 1 && $2 == "device" && / usb:/ { print $1 }')"
+    count="$(printf '%s\n' "$phones" | grep -c . || true)"
+    if [ "$count" -eq 0 ]; then
+        echo "no phone is connected over USB" >&2
+        exit 1
+    fi
+    if [ "$count" -gt 1 ]; then
+        echo "several phones are connected over USB, leave exactly one:" >&2
+        printf '%s\n' "$phones" >&2
+        exit 1
+    fi
+    if [ ! -f {{apk_debug}} ]; then
+        just android-build
+    fi
+    adb -s "$phones" install -r {{apk_debug}}
+
 # Run the Android unit tests.
 android-test:
     ./android/gradlew -p android testDebugUnitTest
