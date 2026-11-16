@@ -855,11 +855,11 @@ func (n *Node) openSession(ctx context.Context, conn *transport.Conn) (*session.
 	}
 
 	sess, err := session.New(conn, session.Config{
-		Name:                n.cfg.Name,
+		Name:                n.Name(),
 		Platform:            n.cfg.Platform,
 		Capabilities:        n.cfg.Capabilities,
 		RequireConfirmation: require,
-		Trust:               n.trust,
+		Trust:               n.announcedTrust(),
 		Clock:               n.clock,
 		Logger:              n.log,
 	})

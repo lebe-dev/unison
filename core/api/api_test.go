@@ -278,21 +278,15 @@ func TestWatchEventsNotRunning(t *testing.T) {
 	requireCode(t, err, connect.CodeFailedPrecondition)
 }
 
-// TestDevicesNotImplemented checks the device calls the core does not serve yet.
-func TestDevicesNotImplemented(t *testing.T) {
+// TestDevicesUnknown checks that the device calls refuse an unknown device.
+func TestDevicesUnknown(t *testing.T) {
 	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 900)
 	n.start(t)
 	client := newClient(t, n.Node, api.Options{DeviceName: "one"})
 	ctx := callTimeout(t)
 
 	id := model.DeviceID{1}.String()
-	_, err := client.ListDevices(ctx, connect.NewRequest(&localv1.ListDevicesRequest{}))
-	requireCode(t, err, connect.CodeUnimplemented)
-
-	_, err = client.RenameDevice(ctx, connect.NewRequest(&localv1.RenameDeviceRequest{DeviceId: id, Name: "x"}))
-	requireCode(t, err, connect.CodeUnimplemented)
-
-	_, err = client.RevokeDevice(ctx, connect.NewRequest(&localv1.RevokeDeviceRequest{DeviceId: id}))
+	_, err := client.RevokeDevice(ctx, connect.NewRequest(&localv1.RevokeDeviceRequest{DeviceId: id}))
 	requireCode(t, err, connect.CodeNotFound)
 
 	_, err = client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{DeviceId: id}))

@@ -120,8 +120,8 @@ func (s *Service) pauseState(ctx context.Context) (*localv1.Pause, error) {
 }
 
 // devices returns the paired devices with their live connection state.
-func (s *Service) devices(ctx context.Context) ([]*localv1.Device, error) {
-	peers, err := s.node.Trust().List(ctx, trust.ListFilter{})
+func (s *Service) devices(ctx context.Context, includeRevoked bool) ([]*localv1.Device, error) {
+	peers, err := s.node.Trust().List(ctx, trust.ListFilter{IncludeRevoked: includeRevoked})
 	if err != nil {
 		return nil, err
 	}

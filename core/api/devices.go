@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -12,19 +11,55 @@ import (
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
-// errDevicesUnavailable reports the device management calls the core does not
-// serve yet.
-var errDevicesUnavailable = errors.New("api: device management is not implemented")
-
-// ListDevices returns the paired devices. The call is not implemented yet and
-// the clients read the devices from GetStatus.
-func (s *Service) ListDevices(context.Context, *connect.Request[localv1.ListDevicesRequest]) (*connect.Response[localv1.ListDevicesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errDevicesUnavailable)
+// ListDevices returns the paired devices with their live connection state.
+func (s *Service) ListDevices(ctx context.Context, req *connect.Request[localv1.ListDevicesRequest]) (*connect.Response[localv1.ListDevicesResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	devices, err := s.devices(ctx, req.Msg.GetIncludeRevoked())
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.ListDevicesResponse{Devices: devices}), nil
 }
 
-// RenameDevice changes the display name of a paired device.
-func (s *Service) RenameDevice(context.Context, *connect.Request[localv1.RenameDeviceRequest]) (*connect.Response[localv1.RenameDeviceResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errDevicesUnavailable)
+// RenameDevice changes the display name of a paired device. The name of a peer
+// is local to this device and does not travel to it. The name of this device is
+// stored and announced to the peers on the next handshake.
+func (s *Service) RenameDevice(ctx context.Context, req *connect.Request[localv1.RenameDeviceRequest]) (*connect.Response[localv1.RenameDeviceResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	id, idErr := deviceID(req.Msg.GetDeviceId())
+	if idErr != nil {
+		return nil, idErr
+	}
+	name, nameErr := deviceName(req.Msg.GetName())
+	if nameErr != nil {
+		return nil, nameErr
+	}
+
+	if id == s.node.DeviceID() {
+		if err := s.node.SetDeviceName(ctx, name); err != nil {
+			return nil, errorOf(err)
+		}
+		return connect.NewResponse(&localv1.RenameDeviceResponse{
+			Device: &localv1.Device{DeviceId: id.String(), Name: name, Online: true},
+		}), nil
+	}
+
+	if err := s.node.Trust().Rename(ctx, id, name); err != nil {
+		return nil, errorOf(err)
+	}
+	peer, err := s.node.Trust().Get(ctx, id)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	state, err := s.node.Peer(ctx, id)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.RenameDeviceResponse{Device: deviceToProto(peer, state)}), nil
 }
 
 // RevokeDevice revokes a paired device or, when the local device is named,

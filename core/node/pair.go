@@ -59,9 +59,9 @@ func (n *Node) OpenPairing(role model.Role) error {
 
 	window, err := pairing.Open(ctx, pairing.Options{
 		Identity:     n.identity,
-		Trust:        n.trust,
+		Trust:        n.announcedTrust(),
 		Discovery:    pairingDiscovery{Discovery: n.cfg.Discovery},
-		Name:         n.cfg.Name,
+		Name:         n.Name(),
 		Platform:     n.cfg.Platform,
 		Role:         role,
 		Clock:        n.clock,
@@ -161,8 +161,8 @@ func (n *Node) ScanPairingQR(uri string) error {
 
 	opts := pairing.Options{
 		Identity:     n.identity,
-		Trust:        n.trust,
-		Name:         n.cfg.Name,
+		Trust:        n.announcedTrust(),
+		Name:         n.Name(),
 		Platform:     n.cfg.Platform,
 		Clock:        n.clock,
 		Logger:       n.log,
