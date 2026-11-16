@@ -123,6 +123,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.pause(ctx, rest)
 	case "policy":
 		err = a.policy(ctx, rest)
+	case "settings":
+		err = a.settings(ctx, rest)
 	case "relay":
 		err = a.relay(ctx, rest)
 	case "help":
@@ -245,6 +247,12 @@ commands:
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
   policy                      show what arrives by itself on every kind of
                               network
+  settings                    show the settings of the daemon
+  settings ttl                show the lifetimes of the history
+  settings ttl <kind> <lifetime>
+                              change one lifetime; the kind is text, image or
+                              files and the lifetime looks like 24h or 7d
+  settings ttl reset          back to the default lifetimes
   relay [status]              show the relay of the group and its connection
   relay set <url> --token <t> [--files-on-request]
                               store the relay address and token; the other
