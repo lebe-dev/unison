@@ -235,6 +235,41 @@ func (s *Store) SetRequireConfirmation(ctx context.Context, id model.DeviceID, r
 	})
 }
 
+// SetRequireConfirmationRemote records the confirmation flag a peer announced in
+// its hello. The local policy for the peer stays unchanged: the peer owns the
+// flag and this device only shows it.
+func (s *Store) SetRequireConfirmationRemote(ctx context.Context, id model.DeviceID, require bool) error {
+	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		peer, err := s.activePeer(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if peer.RequireConfirmationRemote == require {
+			return nil
+		}
+		peer.RequireConfirmationRemote = require
+		return s.writeProfile(ctx, tx, peer)
+	})
+}
+
+// SetPlatform records the operating system a peer announced in its hello.
+func (s *Store) SetPlatform(ctx context.Context, id model.DeviceID, platform model.Platform) error {
+	if platform == model.PlatformUnknown {
+		return fmt.Errorf("%w: unknown platform", ErrInvalidPeer)
+	}
+	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		peer, err := s.activePeer(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if peer.Platform == platform {
+			return nil
+		}
+		peer.Platform = platform
+		return s.writeProfile(ctx, tx, peer)
+	})
+}
+
 // MarkRevoked revokes a peer and drops its cached addresses. The record stays
 // as a deny-list entry. Revoking twice is not an error.
 func (s *Store) MarkRevoked(ctx context.Context, id model.DeviceID) error {
@@ -372,15 +407,16 @@ func scanPeer(scanner rowScanner, sealer *store.Sealer) (Peer, error) {
 	}
 
 	peer := Peer{
-		Public:              public,
-		Name:                profile.Name,
-		Platform:            model.Platform(profile.Platform),
-		Role:                model.Role(role),
-		RequireConfirmation: profile.RequireConfirmation,
-		AddedAt:             timeFromMilli(addedAt),
-		LastSeenAt:          timeFromMilli(lastSeenAt),
-		LastAddrs:           addrs,
-		Revoked:             revoked,
+		Public:                    public,
+		Name:                      profile.Name,
+		Platform:                  model.Platform(profile.Platform),
+		Role:                      model.Role(role),
+		RequireConfirmation:       profile.RequireConfirmation,
+		RequireConfirmationRemote: profile.RequireConfirmationRemote,
+		AddedAt:                   timeFromMilli(addedAt),
+		LastSeenAt:                timeFromMilli(lastSeenAt),
+		LastAddrs:                 addrs,
+		Revoked:                   revoked,
 	}
 	if profile.IntroducedBy != "" {
 		peer.IntroducedBy, err = model.ParseDeviceID(profile.IntroducedBy)
@@ -446,20 +482,22 @@ const profileVersion = 1
 
 // peerProfile is the sealed part of a peer record.
 type peerProfile struct {
-	Version             int    `json:"version"`
-	Name                string `json:"name"`
-	Platform            uint8  `json:"platform"`
-	RequireConfirmation bool   `json:"require_confirmation"`
-	IntroducedBy        string `json:"introduced_by,omitempty"`
+	Version                   int    `json:"version"`
+	Name                      string `json:"name"`
+	Platform                  uint8  `json:"platform"`
+	RequireConfirmation       bool   `json:"require_confirmation"`
+	RequireConfirmationRemote bool   `json:"require_confirmation_remote,omitempty"`
+	IntroducedBy              string `json:"introduced_by,omitempty"`
 }
 
 // sealPeerProfile encodes and seals the profile of the peer.
 func sealPeerProfile(sealer *store.Sealer, peer Peer) ([]byte, error) {
 	profile := peerProfile{
-		Version:             profileVersion,
-		Name:                peer.Name,
-		Platform:            uint8(peer.Platform),
-		RequireConfirmation: peer.RequireConfirmation,
+		Version:                   profileVersion,
+		Name:                      peer.Name,
+		Platform:                  uint8(peer.Platform),
+		RequireConfirmation:       peer.RequireConfirmation,
+		RequireConfirmationRemote: peer.RequireConfirmationRemote,
 	}
 	if !peer.IntroducedBy.IsZero() {
 		profile.IntroducedBy = peer.IntroducedBy.String()

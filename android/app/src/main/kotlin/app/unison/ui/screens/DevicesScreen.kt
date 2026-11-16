@@ -266,6 +266,15 @@ private fun DeviceRow(
             }
         }
 
+        if (device.peerRequireConfirmation) {
+            Text(
+                text = stringResource(R.string.devices_peer_confirmation),
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,

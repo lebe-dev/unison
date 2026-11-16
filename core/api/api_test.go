@@ -122,6 +122,90 @@ func TestGetStatusDevices(t *testing.T) {
 	}
 }
 
+// TestGetStatusConfirmationFlags checks that the local policy for a device and
+// the flag the device announced are reported separately.
+func TestGetStatusConfirmationFlags(t *testing.T) {
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 450)
+	n.start(t)
+
+	peer := offlinePeer(t, 5)
+	if err := n.AddPeer(t.Context(), peer); err != nil {
+		t.Fatalf("add peer: %v", err)
+	}
+	if err := n.Trust().SetRequireConfirmation(t.Context(), peer.DeviceID(), true); err != nil {
+		t.Fatalf("set the local policy: %v", err)
+	}
+	if err := n.Trust().SetRequireConfirmationRemote(t.Context(), peer.DeviceID(), true); err != nil {
+		t.Fatalf("set the announced flag: %v", err)
+	}
+
+	client := newClient(t, n.Node, api.Options{DeviceName: n.name})
+	response, err := client.GetStatus(callTimeout(t), connect.NewRequest(&localv1.GetStatusRequest{}))
+	if err != nil {
+		t.Fatalf("get status: %v", err)
+	}
+	devices := response.Msg.GetDevices()
+	if len(devices) != 1 {
+		t.Fatalf("status reports %d devices, want one", len(devices))
+	}
+	device := devices[0]
+	if !device.GetRequireConfirmation() {
+		t.Error("the local policy is not reported")
+	}
+	if !device.GetPeerRequireConfirmation() {
+		t.Error("the announced flag is not reported")
+	}
+
+	if err := n.Trust().SetRequireConfirmation(t.Context(), peer.DeviceID(), false); err != nil {
+		t.Fatalf("clear the local policy: %v", err)
+	}
+	response, err = client.GetStatus(callTimeout(t), connect.NewRequest(&localv1.GetStatusRequest{}))
+	if err != nil {
+		t.Fatalf("get status: %v", err)
+	}
+	device = response.Msg.GetDevices()[0]
+	if device.GetRequireConfirmation() {
+		t.Error("the local policy is still reported")
+	}
+	if !device.GetPeerRequireConfirmation() {
+		t.Error("clearing the local policy changed the announced flag")
+	}
+}
+
+// TestSetDeviceConfirmationPeerKeepsLocalPolicy checks that asking a device to
+// hold its items also records the local policy for it.
+func TestSetDeviceConfirmationPeerKeepsLocalPolicy(t *testing.T) {
+	network := vnet.NewNetwork()
+	bus := fake.NewBus()
+	one := newNode(t, network, bus, 460)
+	two := newNode(t, network, bus, 470)
+	one.start(t)
+	two.start(t)
+	one.pair(t, two)
+	two.pair(t, one)
+	waitPeerOnline(t, one, two.DeviceID())
+
+	client := newClient(t, one.Node, api.Options{DeviceName: one.name})
+	ctx := callTimeout(t)
+	if _, err := client.SetDeviceConfirmation(ctx, connect.NewRequest(&localv1.SetDeviceConfirmationRequest{
+		DeviceId: two.DeviceID().String(),
+		Require:  true,
+	})); err != nil {
+		t.Fatalf("set the flag of the peer: %v", err)
+	}
+
+	peer, err := one.Trust().Get(ctx, two.DeviceID())
+	if err != nil {
+		t.Fatalf("read the peer: %v", err)
+	}
+	if !peer.RequireConfirmation {
+		t.Error("the local policy for the peer is off")
+	}
+	if peer.RequireConfirmationRemote {
+		t.Error("asking the peer changed the flag it announced")
+	}
+}
+
 // TestWatchEventsPeerOnline checks that the event stream reports a peer that
 // comes online.
 func TestWatchEventsPeerOnline(t *testing.T) {

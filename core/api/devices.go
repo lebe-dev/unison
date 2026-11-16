@@ -46,7 +46,8 @@ func (s *Service) RevokeDevice(ctx context.Context, req *connect.Request[localv1
 
 // SetDeviceConfirmation sets the confirmation flag of this device or of a
 // paired device. The flag of a paired device is changed by that device, so the
-// request travels there as a signed policy.
+// request travels there as a signed policy; the local policy for the peer is
+// recorded at the same time.
 func (s *Service) SetDeviceConfirmation(ctx context.Context, req *connect.Request[localv1.SetDeviceConfirmationRequest]) (*connect.Response[localv1.SetDeviceConfirmationResponse], error) {
 	if err := s.requireRunning(); err != nil {
 		return nil, errorOf(err)

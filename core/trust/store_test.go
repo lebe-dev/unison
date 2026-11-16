@@ -456,6 +456,79 @@ func TestRenameAndConfirmation(t *testing.T) {
 	}
 }
 
+// TestSetRequireConfirmationRemote checks that the announced flag of a peer is
+// stored separately from the local policy for it.
+func TestSetRequireConfirmationRemote(t *testing.T) {
+	ctx := context.Background()
+	ts := openTestStore(t)
+
+	peer := testPeer(t, 15, model.RolePersonal)
+	if err := ts.Add(ctx, peer); err != nil {
+		t.Fatalf("add peer: %v", err)
+	}
+	id := peer.DeviceID()
+
+	if err := ts.SetRequireConfirmation(ctx, id, true); err != nil {
+		t.Fatalf("set the local policy: %v", err)
+	}
+	if err := ts.SetRequireConfirmationRemote(ctx, id, true); err != nil {
+		t.Fatalf("set the announced flag: %v", err)
+	}
+	got, err := ts.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("get peer: %v", err)
+	}
+	if !got.RequireConfirmationRemote {
+		t.Fatal("the announced flag is not stored")
+	}
+	if !got.RequireConfirmation {
+		t.Fatal("the announced flag cleared the local policy")
+	}
+
+	if err := ts.SetRequireConfirmationRemote(ctx, id, false); err != nil {
+		t.Fatalf("clear the announced flag: %v", err)
+	}
+	got, err = ts.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("get peer: %v", err)
+	}
+	if got.RequireConfirmationRemote {
+		t.Fatal("the announced flag is still stored")
+	}
+	if !got.RequireConfirmation {
+		t.Fatal("clearing the announced flag changed the local policy")
+	}
+
+	if err := ts.SetRequireConfirmationRemote(ctx, testPeer(t, 16, model.RolePersonal).DeviceID(), true); !errors.Is(err, ErrPeerNotFound) {
+		t.Fatalf("set the flag of an unknown peer: got %v, want ErrPeerNotFound", err)
+	}
+}
+
+// TestSetPlatform checks that the platform a peer announces replaces the
+// platform recorded at pairing.
+func TestSetPlatform(t *testing.T) {
+	ctx := context.Background()
+	ts := openTestStore(t)
+
+	peer := testPeer(t, 17, model.RolePersonal)
+	if err := ts.Add(ctx, peer); err != nil {
+		t.Fatalf("add peer: %v", err)
+	}
+	if err := ts.SetPlatform(ctx, peer.DeviceID(), model.PlatformAndroid); err != nil {
+		t.Fatalf("set platform: %v", err)
+	}
+	got, err := ts.Get(ctx, peer.DeviceID())
+	if err != nil {
+		t.Fatalf("get peer: %v", err)
+	}
+	if got.Platform != model.PlatformAndroid {
+		t.Fatalf("platform %s, want android", got.Platform)
+	}
+	if err := ts.SetPlatform(ctx, peer.DeviceID(), model.PlatformUnknown); !errors.Is(err, ErrInvalidPeer) {
+		t.Fatalf("set an unknown platform: got %v, want ErrInvalidPeer", err)
+	}
+}
+
 func TestTouchSeen(t *testing.T) {
 	ctx := context.Background()
 	ts := openTestStore(t)

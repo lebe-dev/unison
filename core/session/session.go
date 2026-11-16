@@ -68,6 +68,12 @@ type platformRecorder interface {
 	SetPlatform(ctx context.Context, id model.DeviceID, platform model.Platform) error
 }
 
+// policyRecorder is the optional part of Trust that records the confirmation
+// flag a peer announces in Hello.
+type policyRecorder interface {
+	SetRequireConfirmationRemote(ctx context.Context, id model.DeviceID, require bool) error
+}
+
 var _ Trust = (*trust.Store)(nil)
 
 // Handler handles one kind of control message.
@@ -376,12 +382,17 @@ func (s *Session) recordPeer(ctx context.Context, hello PeerHello) {
 			s.log.Warn("session: cannot record the peer name", "peer", s.peerID, "error", err)
 		}
 	}
-	recorder, ok := s.cfg.Trust.(platformRecorder)
-	if !ok || hello.Platform == model.PlatformUnknown {
+	if recorder, ok := s.cfg.Trust.(platformRecorder); ok && hello.Platform != model.PlatformUnknown {
+		if err := recorder.SetPlatform(ctx, s.peerID, hello.Platform); err != nil {
+			s.log.Warn("session: cannot record the peer platform", "peer", s.peerID, "error", err)
+		}
+	}
+	recorder, ok := s.cfg.Trust.(policyRecorder)
+	if !ok {
 		return
 	}
-	if err := recorder.SetPlatform(ctx, s.peerID, hello.Platform); err != nil {
-		s.log.Warn("session: cannot record the peer platform", "peer", s.peerID, "error", err)
+	if err := recorder.SetRequireConfirmationRemote(ctx, s.peerID, hello.RequireConfirmation); err != nil {
+		s.log.Warn("session: cannot record the peer confirmation flag", "peer", s.peerID, "error", err)
 	}
 }
 

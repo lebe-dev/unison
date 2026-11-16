@@ -214,12 +214,16 @@ message Device {
   Platform platform = 4;
   bool online = 5;
   Path path = 6;
+  // The local policy for the device: its items are held for confirmation.
   bool require_confirmation = 7;
   bool revoked = 8;
   // Time the device was added, unix milliseconds.
   int64 added_at_unix_ms = 9;
   // Time the device was last reachable, unix milliseconds.
   int64 last_seen_at_unix_ms = 10;
+  // The flag the device announced in the last hello: it holds the items it
+  // receives for confirmation.
+  bool peer_require_confirmation = 11;
 }
 
 // State of the clipboard pause.

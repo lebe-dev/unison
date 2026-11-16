@@ -68,6 +68,31 @@ func TestHelloExchange(t *testing.T) {
 	}
 }
 
+// TestHelloRecordsPeerPolicy checks that the confirmation flag the peer
+// announces is stored without touching the local policy for the peer, and that
+// the next hello updates it.
+func TestHelloRecordsPeerPolicy(t *testing.T) {
+	h := newHarness(t, model.RolePersonal, model.RolePersonal)
+	h.clientCfg.RequireConfirmation = true
+
+	_, server := h.open(nil)
+
+	stored := h.serverTrust.peer(t, h.clientID.DeviceID())
+	if !stored.RequireConfirmationRemote {
+		t.Fatal("the announced confirmation flag is not stored")
+	}
+	if stored.RequireConfirmation {
+		t.Fatal("the announced flag changed the local policy for the peer")
+	}
+
+	server.recordPeer(context.Background(), PeerHello{Name: "client", RequireConfirmation: false})
+
+	stored = h.serverTrust.peer(t, h.clientID.DeviceID())
+	if stored.RequireConfirmationRemote {
+		t.Fatal("the next hello did not update the announced flag")
+	}
+}
+
 // TestIncompatibleVersion checks that a peer with another protocol version is
 // asked to update and the session is closed.
 func TestIncompatibleVersion(t *testing.T) {

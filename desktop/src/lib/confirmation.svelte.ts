@@ -5,8 +5,7 @@ import { errorText } from "./errors";
 
 /**
  * ConfirmationStore keeps the confirmation flags the user changed in this
- * window. The daemon reports the flag of a paired device as it was recorded at
- * pairing, so the value set here stays on screen for the session.
+ * window until the daemon reports them in the status.
  */
 class ConfirmationStore {
   /** Devices whose state is being changed, by device ID. */
@@ -20,8 +19,9 @@ class ConfirmationStore {
   }
 
   /**
-   * set asks a device to hold the items it receives for confirmation, or to
-   * apply them automatically. It returns the reason of a failure.
+   * set makes this device hold the items of a paired device for confirmation,
+   * or apply them automatically, and asks the device to do the same with the
+   * items it receives. It returns the reason of a failure.
    */
   async set(deviceId: string, require: boolean): Promise<string | null> {
     if (this.busy.includes(deviceId)) {

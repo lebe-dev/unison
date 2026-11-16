@@ -40,8 +40,12 @@ type Peer struct {
 	// Role is the trust role assigned at pairing.
 	Role model.Role
 	// RequireConfirmation marks a Personal device whose clipboard items are not
-	// applied without user confirmation.
+	// applied without user confirmation. The flag is the local policy for the
+	// peer and only this device changes it.
 	RequireConfirmation bool
+	// RequireConfirmationRemote is the confirmation flag the peer announced in
+	// its last hello. The peer changes it; this device only records it.
+	RequireConfirmationRemote bool
 	// IntroducedBy is the Personal device that introduced this peer, or the zero
 	// device ID when the peer was paired directly.
 	IntroducedBy model.DeviceID

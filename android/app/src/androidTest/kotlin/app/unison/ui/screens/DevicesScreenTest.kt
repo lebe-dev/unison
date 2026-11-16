@@ -130,12 +130,31 @@ class DevicesScreenTest {
             }
         }
 
-        compose.onAllNodesWithText("Ask before applying").assertCountEquals(1)
+        compose.onAllNodesWithText("Ask before applying its items").assertCountEquals(1)
         compose.onAllNodes(isToggleable()).assertCountEquals(1)
         compose.onAllNodes(isToggleable())[0].performClick()
 
         assertEquals("Mac", changed?.first?.name)
         assertEquals(true, changed?.second)
+    }
+
+    @Test
+    fun theAnnouncedConfirmationOfADeviceIsShown() {
+        val state = CoreState(
+            loading = false,
+            status = Local.GetStatusResponse.newBuilder()
+                .setDeviceName("Pixel")
+                .addDevices(
+                    device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true).toBuilder()
+                        .setPeerRequireConfirmation(true)
+                        .build(),
+                )
+                .build(),
+        )
+        setContent(state)
+
+        compose.onAllNodesWithText("Asks for confirmation before applying what it receives")
+            .assertCountEquals(1)
     }
 
     @Test

@@ -55,16 +55,20 @@ unison devices revoke <id|self> [--yes]
 ```
 
 ```
-FINGERPRINT          NAME     ROLE      PLATFORM  STATE
-W5MF-NWIT-4C6K-P7KR  MacBook  personal  macos     online lan
-QK3A-7T2M-VX5E-J9BD  Phone    personal  android   offline
+FINGERPRINT          NAME     ROLE      PLATFORM  STATE       CONFIRM  PEER ASKS
+W5MF-NWIT-4C6K-P7KR  MacBook  personal  macos     online lan  on       yes
+QK3A-7T2M-VX5E-J9BD  Phone    personal  android   offline     off      no
 ```
 
-`STATE` is `online lan`, `online relay` or `offline`.
+`STATE` is `online lan`, `online relay` or `offline`. `CONFIRM` is the local policy for the device:
+its items wait for you here instead of being applied at once. `PEER ASKS` is what the device
+announced in its last hello: it holds the items it receives. The second value appears after the
+device connects, because a device reports its flag when a session starts.
 
 `devices address` stores an address of a paired device and waits for the connection; `--wait 0s`
 returns at once. `devices confirm self on` makes this device hold the items that arrive for you,
-and `devices confirm <id> on` asks another device to do that; see
+and `devices confirm <id> on` asks another device to do that and holds the items of that device
+here; see
 [Devices and pairing](devices.md#the-confirmation-flag). `devices revoke` asks for a confirmation
 unless `--yes` is given, and `devices revoke self` leaves the group.
 

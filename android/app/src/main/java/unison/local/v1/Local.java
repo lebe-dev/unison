@@ -2340,6 +2340,10 @@ public final class Local {
     unison.local.v1.Local.Path getPath();
 
     /**
+     * <pre>
+     * The local policy for the device: its items are held for confirmation.
+     * </pre>
+     *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
      * @return The requireConfirmation.
      */
@@ -2370,6 +2374,17 @@ public final class Local {
      * @return The lastSeenAtUnixMs.
      */
     long getLastSeenAtUnixMs();
+
+    /**
+     * <pre>
+     * The flag the device announced in the last hello: it holds the items it
+     * receives for confirmation.
+     * </pre>
+     *
+     * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+     * @return The peerRequireConfirmation.
+     */
+    boolean getPeerRequireConfirmation();
   }
   /**
    * <pre>
@@ -2659,6 +2674,10 @@ public final class Local {
     public static final int REQUIRE_CONFIRMATION_FIELD_NUMBER = 7;
     private boolean requireConfirmation_;
     /**
+     * <pre>
+     * The local policy for the device: its items are held for confirmation.
+     * </pre>
+     *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
      * @return The requireConfirmation.
      */
@@ -2667,6 +2686,10 @@ public final class Local {
       return requireConfirmation_;
     }
     /**
+     * <pre>
+     * The local policy for the device: its items are held for confirmation.
+     * </pre>
+     *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
      * @param value The requireConfirmation to set.
      */
@@ -2675,6 +2698,10 @@ public final class Local {
       requireConfirmation_ = value;
     }
     /**
+     * <pre>
+     * The local policy for the device: its items are held for confirmation.
+     * </pre>
+     *
      * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
      */
     private void clearRequireConfirmation() {
@@ -2782,6 +2809,47 @@ public final class Local {
     private void clearLastSeenAtUnixMs() {
 
       lastSeenAtUnixMs_ = 0L;
+    }
+
+    public static final int PEER_REQUIRE_CONFIRMATION_FIELD_NUMBER = 11;
+    private boolean peerRequireConfirmation_;
+    /**
+     * <pre>
+     * The flag the device announced in the last hello: it holds the items it
+     * receives for confirmation.
+     * </pre>
+     *
+     * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+     * @return The peerRequireConfirmation.
+     */
+    @java.lang.Override
+    public boolean getPeerRequireConfirmation() {
+      return peerRequireConfirmation_;
+    }
+    /**
+     * <pre>
+     * The flag the device announced in the last hello: it holds the items it
+     * receives for confirmation.
+     * </pre>
+     *
+     * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+     * @param value The peerRequireConfirmation to set.
+     */
+    private void setPeerRequireConfirmation(boolean value) {
+      
+      peerRequireConfirmation_ = value;
+    }
+    /**
+     * <pre>
+     * The flag the device announced in the last hello: it holds the items it
+     * receives for confirmation.
+     * </pre>
+     *
+     * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+     */
+    private void clearPeerRequireConfirmation() {
+
+      peerRequireConfirmation_ = false;
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -3173,6 +3241,10 @@ public final class Local {
       }
 
       /**
+       * <pre>
+       * The local policy for the device: its items are held for confirmation.
+       * </pre>
+       *
        * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
        * @return The requireConfirmation.
        */
@@ -3181,6 +3253,10 @@ public final class Local {
         return instance.getRequireConfirmation();
       }
       /**
+       * <pre>
+       * The local policy for the device: its items are held for confirmation.
+       * </pre>
+       *
        * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
        * @param value The requireConfirmation to set.
        * @return This builder for chaining.
@@ -3191,6 +3267,10 @@ public final class Local {
         return this;
       }
       /**
+       * <pre>
+       * The local policy for the device: its items are held for confirmation.
+       * </pre>
+       *
        * <code>bool require_confirmation = 7 [json_name = "requireConfirmation"];</code>
        * @return This builder for chaining.
        */
@@ -3308,6 +3388,49 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * The flag the device announced in the last hello: it holds the items it
+       * receives for confirmation.
+       * </pre>
+       *
+       * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+       * @return The peerRequireConfirmation.
+       */
+      @java.lang.Override
+      public boolean getPeerRequireConfirmation() {
+        return instance.getPeerRequireConfirmation();
+      }
+      /**
+       * <pre>
+       * The flag the device announced in the last hello: it holds the items it
+       * receives for confirmation.
+       * </pre>
+       *
+       * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+       * @param value The peerRequireConfirmation to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPeerRequireConfirmation(boolean value) {
+        copyOnWrite();
+        instance.setPeerRequireConfirmation(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The flag the device announced in the last hello: it holds the items it
+       * receives for confirmation.
+       * </pre>
+       *
+       * <code>bool peer_require_confirmation = 11 [json_name = "peerRequireConfirmation"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPeerRequireConfirmation() {
+        copyOnWrite();
+        instance.clearPeerRequireConfirmation();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -3334,10 +3457,12 @@ public final class Local {
               "revoked_",
               "addedAtUnixMs_",
               "lastSeenAtUnixMs_",
+              "peerRequireConfirmation_",
             };
             java.lang.String info =
-                "\u0000\n\u0000\u0000\u0001\n\n\u0000\u0000\u0000\u0001\u0208\u0002\u0208\u0003\f" +
-                "\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002";
+                "\u0000\u000b\u0000\u0000\u0001\u000b\u000b\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
+                "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

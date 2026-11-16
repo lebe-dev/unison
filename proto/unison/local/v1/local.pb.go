@@ -812,20 +812,24 @@ func (x *NetworkState) GetDataSaver() bool {
 type Device struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Device ID in lowercase hex.
-	DeviceId            string   `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	Name                string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Role                Role     `protobuf:"varint,3,opt,name=role,proto3,enum=unison.local.v1.Role" json:"role,omitempty"`
-	Platform            Platform `protobuf:"varint,4,opt,name=platform,proto3,enum=unison.local.v1.Platform" json:"platform,omitempty"`
-	Online              bool     `protobuf:"varint,5,opt,name=online,proto3" json:"online,omitempty"`
-	Path                Path     `protobuf:"varint,6,opt,name=path,proto3,enum=unison.local.v1.Path" json:"path,omitempty"`
-	RequireConfirmation bool     `protobuf:"varint,7,opt,name=require_confirmation,json=requireConfirmation,proto3" json:"require_confirmation,omitempty"`
-	Revoked             bool     `protobuf:"varint,8,opt,name=revoked,proto3" json:"revoked,omitempty"`
+	DeviceId string   `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	Name     string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Role     Role     `protobuf:"varint,3,opt,name=role,proto3,enum=unison.local.v1.Role" json:"role,omitempty"`
+	Platform Platform `protobuf:"varint,4,opt,name=platform,proto3,enum=unison.local.v1.Platform" json:"platform,omitempty"`
+	Online   bool     `protobuf:"varint,5,opt,name=online,proto3" json:"online,omitempty"`
+	Path     Path     `protobuf:"varint,6,opt,name=path,proto3,enum=unison.local.v1.Path" json:"path,omitempty"`
+	// The local policy for the device: its items are held for confirmation.
+	RequireConfirmation bool `protobuf:"varint,7,opt,name=require_confirmation,json=requireConfirmation,proto3" json:"require_confirmation,omitempty"`
+	Revoked             bool `protobuf:"varint,8,opt,name=revoked,proto3" json:"revoked,omitempty"`
 	// Time the device was added, unix milliseconds.
 	AddedAtUnixMs int64 `protobuf:"varint,9,opt,name=added_at_unix_ms,json=addedAtUnixMs,proto3" json:"added_at_unix_ms,omitempty"`
 	// Time the device was last reachable, unix milliseconds.
 	LastSeenAtUnixMs int64 `protobuf:"varint,10,opt,name=last_seen_at_unix_ms,json=lastSeenAtUnixMs,proto3" json:"last_seen_at_unix_ms,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// The flag the device announced in the last hello: it holds the items it
+	// receives for confirmation.
+	PeerRequireConfirmation bool `protobuf:"varint,11,opt,name=peer_require_confirmation,json=peerRequireConfirmation,proto3" json:"peer_require_confirmation,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Device) Reset() {
@@ -926,6 +930,13 @@ func (x *Device) GetLastSeenAtUnixMs() int64 {
 		return x.LastSeenAtUnixMs
 	}
 	return 0
+}
+
+func (x *Device) GetPeerRequireConfirmation() bool {
+	if x != nil {
+		return x.PeerRequireConfirmation
+	}
+	return false
 }
 
 // State of the clipboard pause.
@@ -5947,7 +5958,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\aroaming\x18\x05 \x01(\bR\aroaming\x12\x10\n" +
 	"\x03vpn\x18\x06 \x01(\bR\x03vpn\x12\x1d\n" +
 	"\n" +
-	"data_saver\x18\a \x01(\bR\tdataSaver\"\x84\x03\n" +
+	"data_saver\x18\a \x01(\bR\tdataSaver\"\xc0\x03\n" +
 	"\x06Device\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
@@ -5959,7 +5970,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\arevoked\x18\b \x01(\bR\arevoked\x12'\n" +
 	"\x10added_at_unix_ms\x18\t \x01(\x03R\raddedAtUnixMs\x12.\n" +
 	"\x14last_seen_at_unix_ms\x18\n" +
-	" \x01(\x03R\x10lastSeenAtUnixMs\"F\n" +
+	" \x01(\x03R\x10lastSeenAtUnixMs\x12:\n" +
+	"\x19peer_require_confirmation\x18\v \x01(\bR\x17peerRequireConfirmation\"F\n" +
 	"\x10FriendsDiscovery\x12\x0e\n" +
 	"\x02on\x18\x01 \x01(\bR\x02on\x12\"\n" +
 	"\runtil_unix_ms\x18\x02 \x01(\x03R\vuntilUnixMs\"c\n" +
