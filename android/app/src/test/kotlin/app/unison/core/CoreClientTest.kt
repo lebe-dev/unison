@@ -71,4 +71,63 @@ class CoreClientTest {
 
         assertEquals("DeleteHistoryItem", transport.lastRequest?.method)
     }
+
+    @Test
+    fun answerSendsTheRequestIdAndTheDecision() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).decideRequest("request-id", accept = false)
+
+        assertEquals("DecideRequest", transport.lastRequest?.method)
+        val request = Local.DecideRequestRequest.parseFrom(transport.lastRequest?.payload)
+        assertEquals("request-id", request.id)
+        assertTrue(!request.accept)
+    }
+
+    @Test
+    fun requestsAreDecoded() = runBlocking {
+        val response = Local.ListRequestsResponse.newBuilder()
+            .addRequests(Local.ShareRequest.newBuilder().setId("one").setDeviceName("Friend").build())
+            .build()
+        val transport = FakeTransport {
+            Mobile.CallResponse.newBuilder().setPayload(response.toByteString()).build()
+        }
+
+        val requests = CoreClient(transport).requests()
+
+        assertEquals("ListRequests", transport.lastRequest?.method)
+        assertEquals("Friend", requests.requestsList.single().deviceName)
+    }
+
+    @Test
+    fun peerConfirmationSendsTheFlag() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).setDeviceConfirmation("abcd", require = true)
+
+        assertEquals("SetDeviceConfirmation", transport.lastRequest?.method)
+        val request = Local.SetDeviceConfirmationRequest.parseFrom(transport.lastRequest?.payload)
+        assertEquals("abcd", request.deviceId)
+        assertTrue(request.require)
+    }
+
+    @Test
+    fun revokeSendsTheDeviceId() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).revokeDevice("abcd")
+
+        assertEquals("RevokeDevice", transport.lastRequest?.method)
+        assertEquals("abcd", Local.RevokeDeviceRequest.parseFrom(transport.lastRequest?.payload).deviceId)
+    }
+
+    @Test
+    fun applySendsTheItemId() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).applyHistoryItem("item")
+
+        assertEquals("ApplyHistoryItem", transport.lastRequest?.method)
+        assertEquals("item", Local.ApplyHistoryItemRequest.parseFrom(transport.lastRequest?.payload).id)
+    }
 }

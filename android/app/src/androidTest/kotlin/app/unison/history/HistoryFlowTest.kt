@@ -66,10 +66,12 @@ class HistoryFlowTest {
                     HistoryScreen(
                         history = current,
                         status = null,
+                        held = emptySet(),
                         onRefresh = state::refreshHistory,
                         onKindChange = state::setHistoryKind,
                         onDeviceChange = state::setHistoryDevice,
                         onCopy = { state.copyHistoryItem(it.item.id) },
+                        onApply = { state.applyHistoryItem(it.item.id) },
                         onDownload = { state.downloadHistoryItem(it.item.id) },
                         onDelete = { state.deleteHistoryItem(it.item.id) },
                     )
