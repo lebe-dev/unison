@@ -1,6 +1,7 @@
 package app.unison.ui.state
 
 import app.unison.R
+import app.unison.clipboard.HeldItems
 import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
@@ -37,6 +38,14 @@ class AppStateTest {
         val historyCalls = mutableListOf<Pair<Local.Kind, String>>()
         val copied = mutableListOf<String>()
         val deleted = mutableListOf<String>()
+        val applied = mutableListOf<String>()
+        var settings: Local.Settings = Local.Settings.getDefaultInstance()
+        val selfConfirmations = mutableListOf<Boolean>()
+        val confirmations = mutableListOf<Pair<String, Boolean>>()
+        val revoked = mutableListOf<String>()
+        var requests: List<Local.ShareRequest> = emptyList()
+        var requestsFailure: Exception? = null
+        val decided = mutableListOf<Pair<String, Boolean>>()
 
         override suspend fun status(): Local.GetStatusResponse {
             statusCalls++
@@ -73,6 +82,26 @@ class AppStateTest {
             deleted += id
         }
 
+        override suspend fun applyHistoryItem(id: String) {
+            applied += id
+        }
+
+        override suspend fun settings(): Local.Settings = settings
+
+        override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
+            selfConfirmations += require
+            settings = settings.toBuilder().setRequireConfirmation(require).build()
+            return settings
+        }
+
+        override suspend fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+            confirmations += deviceId to require
+        }
+
+        override suspend fun revokeDevice(deviceId: String) {
+            revoked += deviceId
+        }
+
         override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse =
             Local.FetchHistoryItemResponse.getDefaultInstance()
 
@@ -80,6 +109,17 @@ class AppStateTest {
             Local.ListTransfersResponse.getDefaultInstance()
 
         override suspend fun cancelTransfer(id: String) = Unit
+
+        override suspend fun requests(): Local.ListRequestsResponse {
+            requestsFailure?.let { throw it }
+            return Local.ListRequestsResponse.newBuilder().addAllRequests(requests).build()
+        }
+
+        override suspend fun decideRequest(id: String, accept: Boolean) {
+            requestsFailure?.let { throw it }
+            decided += id to accept
+            requests = requests.filter { it.id != id }
+        }
 
         var window: Local.PairingWindow = Local.PairingWindow.newBuilder()
             .setOpen(true)
@@ -393,6 +433,191 @@ class AppStateTest {
     }
 
     @Test
+    fun refreshLoadsTheSettings() = runTest {
+        val core = FakeCore()
+        core.settings = Local.Settings.newBuilder().setRequireConfirmation(true).build()
+        val state = appState(core)
+
+        state.refresh()
+        advanceUntilIdle()
+
+        assertTrue(state.state.value.requiresConfirmation)
+    }
+
+    @Test
+    fun selfConfirmationIsSaved() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.setSelfConfirmation(true)
+        advanceUntilIdle()
+
+        assertEquals(listOf(true), core.selfConfirmations)
+        assertTrue(state.state.value.requiresConfirmation)
+        assertTrue(R.string.settings_confirmation_saved in notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun deviceConfirmationIsSent() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.setDeviceConfirmation("abcd", true)
+        advanceUntilIdle()
+
+        assertEquals(listOf("abcd" to true), core.confirmations)
+    }
+
+    @Test
+    fun revokeUsesTheDeviceId() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.revokeDevice("abcd")
+        advanceUntilIdle()
+
+        assertEquals(listOf("abcd"), core.revoked)
+    }
+
+    @Test
+    fun leaveGroupRevokesThisDevice() = runTest {
+        val core = FakeCore()
+        core.response = sampleStatus().toBuilder().setDeviceId("self0").build()
+        val state = appState(core)
+        state.refresh()
+        advanceUntilIdle()
+
+        state.leaveGroup()
+        advanceUntilIdle()
+
+        assertEquals(listOf("self0"), core.revoked)
+    }
+
+    @Test
+    fun requestsAreLoaded() = runTest {
+        val core = FakeCore()
+        core.requests = listOf(request("req1"))
+        val state = appState(core)
+
+        state.refreshRequests()
+        advanceUntilIdle()
+
+        assertEquals(1, state.requests.value.pending)
+        assertFalse(state.requests.value.isEmpty)
+    }
+
+    @Test
+    fun emptyRequestsAreExplained() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.refreshRequests()
+        advanceUntilIdle()
+
+        assertTrue(state.requests.value.isEmpty)
+    }
+
+    @Test
+    fun failedRequestsAreReported() = runTest {
+        val core = FakeCore()
+        core.requestsFailure = IllegalStateException("core is busy")
+        val state = appState(core)
+
+        state.refreshRequests()
+        advanceUntilIdle()
+
+        assertEquals(CoreFailure.UNAVAILABLE, state.requests.value.failure)
+    }
+
+    @Test
+    fun offerIsAnsweredAndDropped() = runTest {
+        val core = FakeCore()
+        core.requests = listOf(request("req1"))
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+        state.refreshRequests()
+        advanceUntilIdle()
+
+        state.decideRequest("req1", accept = true)
+        advanceUntilIdle()
+
+        assertEquals(listOf("req1" to true), core.decided)
+        assertTrue(state.requests.value.requests.isEmpty())
+        assertTrue(R.string.requests_accepted in notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun failedAnswerKeepsTheOffer() = runTest {
+        val core = FakeCore()
+        core.requests = listOf(request("req1"))
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+        state.refreshRequests()
+        advanceUntilIdle()
+        core.requestsFailure = IllegalStateException("core is busy")
+
+        state.decideRequest("req1", accept = false)
+        advanceUntilIdle()
+
+        assertEquals(1, state.requests.value.requests.size)
+        assertTrue(R.string.requests_answer_failed in notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun transferEventReloadsTheRequests() = runTest {
+        val core = FakeCore()
+        core.requests = listOf(request("req1"))
+        val state = appState(core)
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_UNSPECIFIED)
+                .setEvent(Local.Event.newBuilder().setKind(Local.EventKind.EVENT_KIND_TRANSFER).build())
+                .build(),
+        )
+        advanceUntilIdle()
+
+        assertEquals(1, state.requests.value.pending)
+    }
+
+    @Test
+    fun heldItemIsApplied() = runTest {
+        val core = FakeCore()
+        val held = HeldItems()
+        val state = appState(core, held = held)
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_CLIP_RECEIVED)
+                .setEvent(
+                    Local.Event.newBuilder()
+                        .setKind(Local.EventKind.EVENT_KIND_CLIP_APPLY)
+                        .setItem(Local.ClipItem.newBuilder().setId("item").build())
+                        .build(),
+                )
+                .build(),
+        )
+        runCurrent()
+
+        assertTrue("item" in held.ids.value)
+
+        state.applyHistoryItem("item")
+        advanceUntilIdle()
+
+        assertEquals(listOf("item"), core.applied)
+        assertTrue(held.ids.value.isEmpty())
+    }
+
+    @Test
     fun windowShowsTheRoleTheCodeAndTheCandidates() = runTest {
         val core = FakeCore()
         core.candidates = listOf(
@@ -526,8 +751,17 @@ class AppStateTest {
         state.close()
     }
 
-    private fun TestScope.appState(core: CoreApi, saver: HistorySaver = FakeSaver()): AppState =
-        AppState(core, events, saver, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+    private fun TestScope.appState(
+        core: CoreApi,
+        saver: HistorySaver = FakeSaver(),
+        held: HeldItems = HeldItems(),
+    ): AppState = AppState(
+        core = core,
+        events = events,
+        saver = saver,
+        scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        held = held,
+    )
 
     private companion object {
         const val WINDOW_MS = 180_000L
@@ -552,6 +786,14 @@ class AppStateTest {
                     .build(),
             )
             .setComplete(true)
+            .build()
+
+        fun request(id: String): Local.ShareRequest = Local.ShareRequest.newBuilder()
+            .setId(id)
+            .setDeviceId("friend")
+            .setDeviceName("Friend")
+            .addFiles(Local.TransferFile.newBuilder().setName("notes.txt").setSize(11).build())
+            .setTotalBytes(11)
             .build()
     }
 }

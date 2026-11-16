@@ -12,6 +12,7 @@ import app.unison.ui.state.HistoryState
 import app.unison.ui.theme.UnisonTheme
 import com.google.protobuf.ByteString
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -69,6 +70,28 @@ class HistoryScreenTest {
         )
 
         compose.onNodeWithText("Mac - 0 B - not downloaded yet").assertIsDisplayed()
+    }
+
+    @Test
+    fun heldEntryIsAppliedInsteadOfCopied() {
+        var applied: Local.HistoryItem? = null
+        var copied: Local.HistoryItem? = null
+        setContent(
+            history = HistoryState(
+                loaded = true,
+                items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
+            ),
+            held = setOf("1"),
+            onCopy = { copied = it },
+            onApply = { applied = it },
+        )
+
+        compose.onNodeWithText("Waits for you").assertIsDisplayed()
+        compose.onAllNodesWithText("Copy").assertCountEquals(0)
+        compose.onNodeWithText("Apply").performClick()
+
+        assertEquals("1", applied?.item?.id)
+        assertNull(copied)
     }
 
     @Test
@@ -145,10 +168,12 @@ class HistoryScreenTest {
 
     private fun setContent(
         history: HistoryState,
+        held: Set<String> = emptySet(),
         onRefresh: () -> Unit = {},
         onKindChange: (Local.Kind) -> Unit = {},
         onDeviceChange: (String) -> Unit = {},
         onCopy: (Local.HistoryItem) -> Unit = {},
+        onApply: (Local.HistoryItem) -> Unit = {},
         onDownload: (Local.HistoryItem) -> Unit = {},
         onDelete: (Local.HistoryItem) -> Unit = {},
     ) {
@@ -157,10 +182,12 @@ class HistoryScreenTest {
                 HistoryScreen(
                     history = history,
                     status = status(),
+                    held = held,
                     onRefresh = onRefresh,
                     onKindChange = onKindChange,
                     onDeviceChange = onDeviceChange,
                     onCopy = onCopy,
+                    onApply = onApply,
                     onDownload = onDownload,
                     onDelete = onDelete,
                 )

@@ -1,8 +1,10 @@
 package app.unison.ui.screens
 
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -14,6 +16,8 @@ import app.unison.service.OperatingMode
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -83,6 +87,30 @@ class SettingsScreenTest {
         assertEquals(Local.PauseMode.PAUSE_MODE_OFF, request?.mode)
     }
 
+    @Test
+    fun selfConfirmationIsOffered() {
+        var require: Boolean? = null
+        setContent(onSelfConfirmationChange = { require = it })
+
+        compose.onNodeWithTag(CONFIRMATION_TAG).performScrollTo().performClick()
+
+        assertEquals(true, require)
+    }
+
+    @Test
+    fun leavingTheGroupAsksForConfirmation() {
+        var left = false
+        setContent(onLeaveGroup = { left = true })
+
+        compose.onNodeWithText("Remove this device from the group").performScrollTo().performClick()
+        compose.onNodeWithText("Remove this device from the group?").assertIsDisplayed()
+        assertFalse(left)
+
+        compose.onNodeWithText("Remove").performClick()
+
+        assertTrue(left)
+    }
+
     private fun setContent(
         deviceName: String = "Pixel",
         operatingMode: OperatingMode = OperatingMode.ALWAYS,
@@ -90,14 +118,17 @@ class SettingsScreenTest {
             .setDeviceName(deviceName)
             .setVersion("0.1.0")
             .build(),
+        settings: Local.Settings = Local.Settings.getDefaultInstance(),
         onDeviceNameChange: (String) -> Unit = {},
         onOperatingModeChange: (OperatingMode) -> Unit = {},
         onPause: (PauseRequest) -> Unit = {},
+        onSelfConfirmationChange: (Boolean) -> Unit = {},
+        onLeaveGroup: () -> Unit = {},
     ) {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 SettingsScreen(
-                    state = CoreState(loading = false, status = status),
+                    state = CoreState(loading = false, status = status, settings = settings),
                     deviceName = deviceName,
                     operatingMode = operatingMode,
                     policy = PolicyDefaults.config,
@@ -106,6 +137,8 @@ class SettingsScreenTest {
                     onPolicyChange = {},
                     onPolicyReset = {},
                     onPause = onPause,
+                    onSelfConfirmationChange = onSelfConfirmationChange,
+                    onLeaveGroup = onLeaveGroup,
                     onRefresh = {},
                 )
             }

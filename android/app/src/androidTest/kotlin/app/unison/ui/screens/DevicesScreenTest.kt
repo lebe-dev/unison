@@ -2,6 +2,7 @@ package app.unison.ui.screens
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -12,6 +13,7 @@ import app.unison.ui.state.CoreFailure
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -67,6 +69,8 @@ class DevicesScreenTest {
                     onRefresh = { retried = true },
                     onSendClipboard = {},
                     onDismissClipboard = {},
+                    onSetConfirmation = { _, _ -> },
+                    onRevoke = {},
                 )
             }
         }
@@ -89,6 +93,8 @@ class DevicesScreenTest {
                     onRefresh = {},
                     onSendClipboard = { sent = it },
                     onDismissClipboard = {},
+                    onSetConfirmation = { _, _ -> },
+                    onRevoke = {},
                 )
             }
         }
@@ -97,6 +103,72 @@ class DevicesScreenTest {
         compose.onNodeWithText("Send").performClick()
 
         assertEquals(draft, sent)
+    }
+
+    @Test
+    fun confirmationIsOfferedForPersonalDevicesOnly() {
+        val state = CoreState(
+            loading = false,
+            status = Local.GetStatusResponse.newBuilder()
+                .setDeviceName("Pixel")
+                .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
+                .addDevices(device("Friend", Local.Role.ROLE_FRIENDS, Local.Path.PATH_RELAY, online = true))
+                .build(),
+        )
+        var changed: Pair<Local.Device, Boolean>? = null
+        compose.setContent {
+            UnisonTheme(dynamicColor = false) {
+                DevicesScreen(
+                    state = state,
+                    clipboardOffer = null,
+                    onRefresh = {},
+                    onSendClipboard = {},
+                    onDismissClipboard = {},
+                    onSetConfirmation = { device, require -> changed = device to require },
+                    onRevoke = {},
+                )
+            }
+        }
+
+        compose.onAllNodesWithText("Ask before applying").assertCountEquals(1)
+        compose.onAllNodes(isToggleable()).assertCountEquals(1)
+        compose.onAllNodes(isToggleable())[0].performClick()
+
+        assertEquals("Mac", changed?.first?.name)
+        assertEquals(true, changed?.second)
+    }
+
+    @Test
+    fun removalAsksForConfirmation() {
+        val state = CoreState(
+            loading = false,
+            status = Local.GetStatusResponse.newBuilder()
+                .setDeviceName("Pixel")
+                .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
+                .build(),
+        )
+        var removed: Local.Device? = null
+        compose.setContent {
+            UnisonTheme(dynamicColor = false) {
+                DevicesScreen(
+                    state = state,
+                    clipboardOffer = null,
+                    onRefresh = {},
+                    onSendClipboard = {},
+                    onDismissClipboard = {},
+                    onSetConfirmation = { _, _ -> },
+                    onRevoke = { removed = it },
+                )
+            }
+        }
+
+        compose.onNodeWithText("Remove").performClick()
+        compose.onNodeWithText("Remove Mac?").assertIsDisplayed()
+        assertNull(removed)
+
+        compose.onAllNodesWithText("Remove")[1].performClick()
+
+        assertEquals("Mac", removed?.name)
     }
 
     private fun setContent(state: CoreState) {
@@ -108,6 +180,8 @@ class DevicesScreenTest {
                     onRefresh = {},
                     onSendClipboard = {},
                     onDismissClipboard = {},
+                    onSetConfirmation = { _, _ -> },
+                    onRevoke = {},
                 )
             }
         }

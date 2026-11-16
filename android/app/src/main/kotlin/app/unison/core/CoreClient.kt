@@ -94,6 +94,54 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.pause
     }
 
+    /** Current settings of the core. */
+    override suspend fun settings(): Local.Settings {
+        val response = call(
+            method = "GetSettings",
+            request = Local.GetSettingsRequest.getDefaultInstance(),
+            parse = { Local.GetSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Makes this device ask for a confirmation before the clipboard is applied. */
+    override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
+        val request = Local.UpdateSettingsRequest.newBuilder()
+            .setRequireConfirmation(require)
+            .build()
+        val response = call(
+            method = "UpdateSettings",
+            request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Changes the confirmation flag of a paired device. */
+    override suspend fun setDeviceConfirmation(deviceId: String, require: Boolean) {
+        val request = Local.SetDeviceConfirmationRequest.newBuilder()
+            .setDeviceId(deviceId)
+            .setRequire(require)
+            .build()
+        call(
+            method = "SetDeviceConfirmation",
+            request = request,
+            parse = { Local.SetDeviceConfirmationResponse.parseFrom(it) },
+        )
+    }
+
+    /** Removes a device from the group; the ID of this device leaves the group. */
+    override suspend fun revokeDevice(deviceId: String) {
+        val request = Local.RevokeDeviceRequest.newBuilder()
+            .setDeviceId(deviceId)
+            .build()
+        call(
+            method = "RevokeDevice",
+            request = request,
+            parse = { Local.RevokeDeviceResponse.parseFrom(it) },
+        )
+    }
+
     /** Changes the pause of the clipboard synchronization. */
     override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
         val request = Local.SetPauseRequest.newBuilder()
@@ -138,6 +186,18 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         )
     }
 
+    /** Writes an entry that waited for a confirmation to the clipboard. */
+    override suspend fun applyHistoryItem(id: String) {
+        val request = Local.ApplyHistoryItemRequest.newBuilder()
+            .setId(id)
+            .build()
+        call(
+            method = "ApplyHistoryItem",
+            request = request,
+            parse = { Local.ApplyHistoryItemResponse.parseFrom(it) },
+        )
+    }
+
     /** Deletes one history entry on every device. */
     override suspend fun deleteHistoryItem(id: String) {
         val request = Local.DeleteHistoryItemRequest.newBuilder()
@@ -179,6 +239,26 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             method = "CancelTransfer",
             request = request,
             parse = { Local.CancelTransferResponse.parseFrom(it) },
+        )
+    }
+
+    /** File offers of Friends that wait for an answer, newest first. */
+    override suspend fun requests(): Local.ListRequestsResponse = call(
+        method = "ListRequests",
+        request = Local.ListRequestsRequest.getDefaultInstance(),
+        parse = { Local.ListRequestsResponse.parseFrom(it) },
+    )
+
+    /** Accepts or declines an incoming file offer. */
+    override suspend fun decideRequest(id: String, accept: Boolean) {
+        val request = Local.DecideRequestRequest.newBuilder()
+            .setId(id)
+            .setAccept(accept)
+            .build()
+        call(
+            method = "DecideRequest",
+            request = request,
+            parse = { Local.DecideRequestResponse.parseFrom(it) },
         )
     }
 

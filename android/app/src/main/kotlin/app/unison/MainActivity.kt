@@ -1,6 +1,7 @@
 package app.unison
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,7 @@ import app.unison.clipboard.ClipboardDraft
 import app.unison.clipboard.ClipboardRead
 import app.unison.clipboard.ClipboardReader
 import app.unison.clipboard.ClipboardSender
+import app.unison.clipboard.HeldItems
 import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
@@ -29,13 +31,17 @@ import app.unison.policy.PolicyStore
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
+import app.unison.ui.Destination
 import app.unison.ui.UnisonRoot
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.theme.UnisonTheme
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-/** Single screen of the app: devices, pairing, history and settings. */
+/** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
     private lateinit var appState: AppState
     private lateinit var policyStore: PolicyStore
@@ -44,6 +50,8 @@ class MainActivity : ComponentActivity() {
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
     private var policy by mutableStateOf(PolicyDefaults.config)
     private var pending by mutableStateOf<ClipboardDraft?>(null)
+    private val requestedScreen = MutableStateFlow<Destination?>(null)
+    private var requestsPoll: Job? = null
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { finishOnboarding() }
@@ -67,21 +75,28 @@ class MainActivity : ComponentActivity() {
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
         policy = policyStore.load()
+        requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
         setContent {
             UnisonTheme {
                 val state by appState.state.collectAsState()
                 val history by appState.history.collectAsState()
                 val pairing by appState.pairing.collectAsState()
+                val requests by appState.requests.collectAsState()
+                val held by HeldItems.shared.ids.collectAsState()
                 if (onboarded) {
                     UnisonRoot(
                         state = state,
                         history = history,
                         pairing = pairing,
+                        requests = requests,
+                        held = held,
                         deviceName = deviceName,
                         operatingMode = operatingMode,
                         policy = policy,
                         clipboardOffer = pending,
                         notices = appState.notices,
+                        requestedScreen = requestedScreen,
+                        onScreenShown = { requestedScreen.value = null },
                         onRefresh = ::refresh,
                         onSendClipboard = ::send,
                         onDismissClipboard = { pending = null },
@@ -90,12 +105,22 @@ class MainActivity : ComponentActivity() {
                         onPolicyChange = ::savePolicy,
                         onPolicyReset = ::resetPolicy,
                         onPause = appState::setPause,
+                        onSelfConfirmationChange = appState::setSelfConfirmation,
+                        onLeaveGroup = appState::leaveGroup,
+                        onSetDeviceConfirmation = { device, require ->
+                            appState.setDeviceConfirmation(device.deviceId, require)
+                        },
+                        onRevokeDevice = { device -> appState.revokeDevice(device.deviceId) },
                         onRefreshHistory = appState::refreshHistory,
                         onHistoryKindChange = appState::setHistoryKind,
                         onHistoryDeviceChange = appState::setHistoryDevice,
                         onCopyHistoryItem = { appState.copyHistoryItem(it.item.id) },
+                        onApplyHistoryItem = { appState.applyHistoryItem(it.item.id) },
                         onDownloadHistoryItem = { appState.downloadHistoryItem(it.item.id) },
                         onDeleteHistoryItem = { appState.deleteHistoryItem(it.item.id) },
+                        onRefreshRequests = appState::refreshRequests,
+                        onAcceptRequest = { appState.decideRequest(it.id, accept = true) },
+                        onDeclineRequest = { appState.decideRequest(it.id, accept = false) },
                         onPairingRoleChange = appState::setPairingRole,
                         onOpenPairingWindow = appState::openPairingWindow,
                         onExtendPairingWindow = appState::extendPairingWindow,
@@ -121,14 +146,24 @@ class MainActivity : ComponentActivity() {
             UnisonService.start(this)
             appState.refresh()
             appState.refreshHistory()
+            appState.refreshRequests()
+            startRequestsPoll()
         }
     }
 
     override fun onStop() {
+        requestsPoll?.cancel()
+        requestsPoll = null
         if (operatingMode == OperatingMode.APP_OPEN) {
             UnisonService.stop(this)
         }
         super.onStop()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        requestedScreen.value = Destination.ofScreen(intent.getStringExtra(EXTRA_SCREEN))
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -139,6 +174,7 @@ class MainActivity : ComponentActivity() {
         refresh()
         if (onboarded) {
             appState.refreshHistory()
+            appState.refreshRequests()
         }
     }
 
@@ -171,6 +207,9 @@ class MainActivity : ComponentActivity() {
         onboarded = true
         UnisonService.start(this)
         appState.refresh()
+        appState.refreshHistory()
+        appState.refreshRequests()
+        startRequestsPoll()
     }
 
     private fun needsNotificationPermission(): Boolean =
@@ -232,5 +271,26 @@ class MainActivity : ComponentActivity() {
     private fun resetPolicy() {
         policy = policyStore.reset()
         Toast.makeText(this, R.string.policy_reset_done, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Follows the offers while the app is on screen, they expire on their own. */
+    private fun startRequestsPoll() {
+        if (requestsPoll != null) {
+            return
+        }
+        requestsPoll = lifecycleScope.launch {
+            while (true) {
+                delay(REQUESTS_POLL_MS)
+                appState.refreshRequests()
+            }
+        }
+    }
+
+    companion object {
+        /** Screen a notification asks to open. */
+        const val EXTRA_SCREEN = "app.unison.extra.SCREEN"
+
+        /** Interval of the offers while the app is on screen. */
+        private const val REQUESTS_POLL_MS = 15_000L
     }
 }

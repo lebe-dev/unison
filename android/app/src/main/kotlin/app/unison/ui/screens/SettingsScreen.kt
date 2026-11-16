@@ -16,15 +16,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -33,6 +36,7 @@ import app.unison.clipboard.PauseOption
 import app.unison.clipboard.PauseRequest
 import app.unison.policy.PolicyConfig
 import app.unison.service.OperatingMode
+import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
@@ -53,9 +57,13 @@ fun SettingsScreen(
     onPolicyChange: (PolicyConfig) -> Unit,
     onPolicyReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
+    onSelfConfirmationChange: (Boolean) -> Unit,
+    onLeaveGroup: () -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var leaving by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -78,8 +86,25 @@ fun SettingsScreen(
             onReset = onPolicyReset,
         )
         Pause(pause = state.status?.pause, onPause = onPause)
+        Confirmation(
+            require = state.requiresConfirmation,
+            onChange = onSelfConfirmationChange,
+        )
+        Group(onLeave = { leaving = true })
         About(state = state)
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (leaving) {
+        ConfirmDialog(
+            title = stringResource(R.string.settings_leave_title),
+            body = stringResource(R.string.settings_leave_body),
+            onConfirm = {
+                leaving = false
+                onLeaveGroup()
+            },
+            onDismiss = { leaving = false },
+        )
     }
 }
 
@@ -202,6 +227,55 @@ private fun About(state: CoreState) {
     )
 }
 
+/** Confirmation of the clipboard items that arrive on this device. */
+@Composable
+private fun Confirmation(require: Boolean, onChange: (Boolean) -> Unit) {
+    SectionTitle(text = stringResource(R.string.settings_section_confirmation))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.settings_confirmation),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.settings_confirmation_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = require,
+            onCheckedChange = onChange,
+            modifier = Modifier.testTag(CONFIRMATION_TAG),
+        )
+    }
+}
+
+/** Membership of this device in the group of Personal devices. */
+@Composable
+private fun Group(onLeave: () -> Unit) {
+    SectionTitle(text = stringResource(R.string.settings_section_group))
+    Text(
+        text = stringResource(R.string.settings_leave_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    OutlinedButton(
+        onClick = onLeave,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_leave_group),
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+}
+
 private fun OperatingMode.label(): Int = when (this) {
     OperatingMode.ALWAYS -> R.string.mode_always
     OperatingMode.WIFI_ONLY -> R.string.mode_wifi_only
@@ -213,3 +287,6 @@ private fun OperatingMode.hint(): Int = when (this) {
     OperatingMode.WIFI_ONLY -> R.string.mode_wifi_only_hint
     OperatingMode.APP_OPEN -> R.string.mode_app_open_hint
 }
+
+/** Tag of the switch of the confirmation of this device. */
+internal const val CONFIRMATION_TAG = "settings.confirmation"

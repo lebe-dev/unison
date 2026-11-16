@@ -335,6 +335,26 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "ListRequests":
+		call, err := requestOf[localv1.ListRequestsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ListRequests(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "DecideRequest":
+		call, err := requestOf[localv1.DecideRequestRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.DecideRequest(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "WatchEvents":
 		return failureOf(connect.CodeUnimplemented, "mobile: events are delivered through Platform.OnEvent")
 	case "":

@@ -18,9 +18,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.clipboard.ClipboardDraft
+import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
@@ -46,8 +52,12 @@ fun DevicesScreen(
     onRefresh: () -> Unit,
     onSendClipboard: (ClipboardDraft) -> Unit,
     onDismissClipboard: () -> Unit,
+    onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onRevoke: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var revokeTarget by remember { mutableStateOf<Local.Device?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -91,14 +101,33 @@ fun DevicesScreen(
                 title = stringResource(R.string.devices_section_personal),
                 empty = stringResource(R.string.devices_empty_personal),
                 devices = state.devices(Local.Role.ROLE_PERSONAL),
+                onSetConfirmation = onSetConfirmation,
+                onRemove = { revokeTarget = it },
             )
             DeviceSection(
                 title = stringResource(R.string.devices_section_friends),
                 empty = stringResource(R.string.devices_empty_friends),
                 devices = state.devices(Local.Role.ROLE_FRIENDS),
+                onSetConfirmation = onSetConfirmation,
+                onRemove = { revokeTarget = it },
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    revokeTarget?.let { device ->
+        ConfirmDialog(
+            title = stringResource(
+                R.string.devices_remove_title,
+                device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
+            ),
+            body = stringResource(R.string.devices_remove_body),
+            onConfirm = {
+                revokeTarget = null
+                onRevoke(device)
+            },
+            onDismiss = { revokeTarget = null },
+        )
     }
 }
 
@@ -132,7 +161,13 @@ private fun ThisDevice(status: Local.GetStatusResponse) {
 
 /** One role of the devices with its rows. */
 @Composable
-private fun DeviceSection(title: String, empty: String, devices: List<Local.Device>) {
+private fun DeviceSection(
+    title: String,
+    empty: String,
+    devices: List<Local.Device>,
+    onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onRemove: (Local.Device) -> Unit,
+) {
     SectionTitle(text = title)
     if (devices.isEmpty()) {
         Text(
@@ -144,7 +179,11 @@ private fun DeviceSection(title: String, empty: String, devices: List<Local.Devi
     }
     Column {
         devices.forEachIndexed { index, device ->
-            DeviceRow(device = device)
+            DeviceRow(
+                device = device,
+                onSetConfirmation = onSetConfirmation,
+                onRemove = onRemove,
+            )
             if (index != devices.lastIndex) {
                 HorizontalDivider()
             }
@@ -152,55 +191,92 @@ private fun DeviceSection(title: String, empty: String, devices: List<Local.Devi
     }
 }
 
-/** One paired device with its live connection state. */
+/** One paired device with its live connection state and its settings. */
 @Composable
-private fun DeviceRow(device: Local.Device) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
+private fun DeviceRow(
+    device: Local.Device,
+    onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onRemove: (Local.Device) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
             modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(
-                    if (device.online) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outline
-                    },
-                ),
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
-                style = MaterialTheme.typography.titleMedium,
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (device.online) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        },
+                    ),
             )
-            val path = pathLabel(device.path)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                val path = pathLabel(device.path)
+                Text(
+                    text = if (path != null && device.online) {
+                        stringResource(R.string.device_detail, platformLabel(device.platform), path)
+                    } else {
+                        platformLabel(device.platform)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Text(
-                text = if (path != null && device.online) {
-                    stringResource(R.string.device_detail, platformLabel(device.platform), path)
+                text = stringResource(
+                    if (device.online) R.string.device_online else R.string.device_offline,
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (device.online) {
+                    MaterialTheme.colorScheme.primary
                 } else {
-                    platformLabel(device.platform)
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(
-            text = stringResource(
-                if (device.online) R.string.device_online else R.string.device_offline,
-            ),
-            style = MaterialTheme.typography.labelMedium,
-            color = if (device.online) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        )
+
+        if (device.role == Local.Role.ROLE_PERSONAL) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.devices_confirmation),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = device.requireConfirmation,
+                    onCheckedChange = { onSetConfirmation(device, it) },
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(onClick = { onRemove(device) }) {
+                Text(
+                    text = stringResource(R.string.action_remove),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
     }
 }
 

@@ -17,8 +17,14 @@ enum class CoreFailure(@StringRes val message: Int) {
 data class CoreState(
     val loading: Boolean = true,
     val status: Local.GetStatusResponse? = null,
+    /** Settings of the core, absent until the first load. */
+    val settings: Local.Settings? = null,
     val failure: CoreFailure? = null,
 ) {
+
+    /** This device asks for a confirmation before the clipboard is applied. */
+    val requiresConfirmation: Boolean
+        get() = settings?.requireConfirmation == true
 
     /** Paired devices of [role], the online ones first. */
     fun devices(role: Local.Role): List<Local.Device> =
