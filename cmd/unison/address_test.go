@@ -88,8 +88,8 @@ func TestDevicesAddressJSON(t *testing.T) {
 	device.pair(t, other)
 
 	code, stdout, stderr := runCommand(t, "",
-		"--endpoint", device.endpoint, "--json", "devices", "address", "--wait", "0s",
-		other.name, other.Addr().String())
+		"--endpoint", device.endpoint, "devices", "address",
+		other.name, other.Addr().String(), "--wait", "0s", "--json")
 	if code != exitOK {
 		t.Fatalf("devices address exited with %d, stderr %q", code, stderr)
 	}

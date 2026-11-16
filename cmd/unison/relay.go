@@ -30,10 +30,11 @@ func (a *app) relay(ctx context.Context, args []string) error {
 // relayStatus prints the relay access of the group and the state of the client.
 func (a *app) relayStatus(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("relay")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("relay takes no arguments")
 	}
 
@@ -60,12 +61,11 @@ func (a *app) relaySet(ctx context.Context, args []string) error {
 	var filesOnRequest bool
 	flags.StringVar(&token, "token", "", "access token of the relay")
 	flags.BoolVar(&filesOnRequest, "files-on-request", false, "transfer files over the relay only when asked")
-	valued := map[string]bool{"token": true, "endpoint": true}
-	flagArgs, rest := splitFlags(args, valued)
-	if err := parseFlags(flags, flagArgs); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if len(rest) != 1 {
+	if len(positional) != 1 {
 		return a.usageError("relay set takes one address")
 	}
 	if token == "" {
@@ -83,7 +83,7 @@ func (a *app) relaySet(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	request := &localv1.SetRelayRequest{Url: rest[0], Token: &token}
+	request := &localv1.SetRelayRequest{Url: positional[0], Token: &token}
 	if filesSet {
 		request.FilesOnRequest = &filesOnRequest
 	}
@@ -94,7 +94,7 @@ func (a *app) relaySet(ctx context.Context, args []string) error {
 	if a.json {
 		return a.writeJSON(response.Msg)
 	}
-	a.info("the group uses the relay at %s", rest[0])
+	a.info("the group uses the relay at %s", positional[0])
 	a.writeRelay(response.Msg.GetRelay())
 	return nil
 }
@@ -102,10 +102,11 @@ func (a *app) relaySet(ctx context.Context, args []string) error {
 // relayOff turns the relay off for the group.
 func (a *app) relayOff(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("relay off")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("relay off takes no arguments")
 	}
 

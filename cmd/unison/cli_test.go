@@ -322,7 +322,7 @@ func TestDevicesRevokeSelf(t *testing.T) {
 	other.start(t)
 	device.pair(t, other)
 
-	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "revoke", "--yes", "self")
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "revoke", "self", "--yes")
 	if code != exitOK {
 		t.Fatalf("devices revoke exited with %d, stderr %q", code, stderr)
 	}
@@ -594,17 +594,22 @@ func TestPause(t *testing.T) {
 		t.Errorf("pause 5m printed %q", stdout)
 	}
 
-	code, stdout, stderr = runCommand(t, "", "--endpoint", device.endpoint, "--json", "pause", "5m")
-	if code != exitOK {
-		t.Fatalf("pause 5m --json exited with %d, stderr %q", code, stderr)
-	}
-	var response localv1.SetPauseResponse
-	if err := protojson.Unmarshal([]byte(stdout), &response); err != nil {
-		t.Fatalf("decode the pause %q: %v", stdout, err)
-	}
-	until := time.UnixMilli(response.GetPause().GetUntilUnixMs())
-	if delta := time.Until(until); delta < 4*time.Minute || delta > 6*time.Minute {
-		t.Errorf("the pause ends in %v, want about five minutes", delta)
+	for _, args := range [][]string{
+		{"--json", "pause", "5m"},
+		{"pause", "5m", "--json"},
+	} {
+		code, stdout, stderr := runCommand(t, "", append([]string{"--endpoint", device.endpoint}, args...)...)
+		if code != exitOK {
+			t.Fatalf("%v exited with %d, stderr %q", args, code, stderr)
+		}
+		var response localv1.SetPauseResponse
+		if err := protojson.Unmarshal([]byte(stdout), &response); err != nil {
+			t.Fatalf("%v printed %q: %v", args, stdout, err)
+		}
+		until := time.UnixMilli(response.GetPause().GetUntilUnixMs())
+		if delta := time.Until(until); delta < 4*time.Minute || delta > 6*time.Minute {
+			t.Errorf("%v: the pause ends in %v, want about five minutes", args, delta)
+		}
 	}
 
 	code, stdout, _ = runCommand(t, "", "--endpoint", device.endpoint, "pause", "on")

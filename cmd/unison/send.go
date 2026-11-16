@@ -44,18 +44,18 @@ func (a *app) send(ctx context.Context, args []string) error {
 	var to stringList
 	flags.Var(&to, "to", "device to send the files to, may be repeated")
 	name := flags.String("name", stdinName, "file name of the standard input payload")
-	order, positional := splitFlags(args, map[string]bool{"to": true, "name": true, "endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 1 {
+	if len(positional) != 1 {
 		return a.usageError("send takes one path or - for standard input")
 	}
 	if len(to) == 0 {
 		return a.usageError("send needs at least one --to <device>")
 	}
 
-	path := flags.Arg(0)
+	path := positional[0]
 	var cleanup func()
 	if path == "-" {
 		written, remove, err := a.writeStdin(*name)

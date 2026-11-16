@@ -14,10 +14,11 @@ import (
 // pause prints or changes the pause of the clipboard synchronization.
 func (a *app) pause(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("pause")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() > 1 {
+	if len(positional) > 1 {
 		return a.usageError("pause takes one argument: a duration, on or off")
 	}
 
@@ -25,7 +26,7 @@ func (a *app) pause(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	if flags.NArg() == 0 {
+	if len(positional) == 0 {
 		response, err := client.GetPause(ctx, connect.NewRequest(&localv1.GetPauseRequest{}))
 		if err != nil {
 			return fmt.Errorf("read the pause: %w", err)
@@ -37,7 +38,7 @@ func (a *app) pause(ctx context.Context, args []string) error {
 		return nil
 	}
 
-	request, err := pauseRequest(flags.Arg(0))
+	request, err := pauseRequest(positional[0])
 	if err != nil {
 		return a.usageError("%v", err)
 	}

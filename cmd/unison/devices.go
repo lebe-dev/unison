@@ -39,10 +39,11 @@ func (a *app) devices(ctx context.Context, args []string) error {
 // devicesList prints the paired devices.
 func (a *app) devicesList(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("devices takes no arguments")
 	}
 
@@ -67,13 +68,14 @@ func (a *app) devicesList(ctx context.Context, args []string) error {
 // devicesRename changes the display name of a device.
 func (a *app) devicesRename(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices rename")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 2 {
+	if len(positional) != 2 {
 		return a.usageError("devices rename needs an id and a name")
 	}
-	reference, name := flags.Arg(0), strings.TrimSpace(flags.Arg(1))
+	reference, name := positional[0], strings.TrimSpace(positional[1])
 	if name == "" {
 		return a.usageError("the device name is empty")
 	}
@@ -107,14 +109,15 @@ func (a *app) devicesRename(ctx context.Context, args []string) error {
 // device. A paired device changes its own flag, so the request travels there.
 func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices confirm")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 2 {
+	if len(positional) != 2 {
 		return a.usageError("devices confirm needs a device and on or off")
 	}
-	reference := flags.Arg(0)
-	state := strings.ToLower(flags.Arg(1))
+	reference := positional[0]
+	state := strings.ToLower(positional[1])
 
 	var require bool
 	switch state {
@@ -170,13 +173,14 @@ const onlinePoll = 100 * time.Millisecond
 func (a *app) devicesAddress(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices address")
 	wait := flags.Duration("wait", addressWait, "how long to wait for the connection")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 2 {
+	if len(positional) != 2 {
 		return a.usageError("devices address needs a device and an address")
 	}
-	reference, value := flags.Arg(0), flags.Arg(1)
+	reference, value := positional[0], positional[1]
 	addr, err := peerAddress(value)
 	if err != nil {
 		return a.usageError("%v", err)
@@ -273,13 +277,14 @@ func peerAddress(value string) (string, error) {
 func (a *app) devicesRevoke(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices revoke")
 	assumeYes := flags.Bool("yes", false, "revoke without asking for a confirmation")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 1 {
+	if len(positional) != 1 {
 		return a.usageError("devices revoke needs one device")
 	}
-	reference := flags.Arg(0)
+	reference := positional[0]
 
 	client, err := a.api()
 	if err != nil {

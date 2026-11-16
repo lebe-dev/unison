@@ -14,10 +14,11 @@ import (
 // status prints the state of the daemon, of the network and of the peers.
 func (a *app) status(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("status")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("status takes no arguments")
 	}
 

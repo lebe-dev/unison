@@ -41,10 +41,11 @@ func (a *app) historyList(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("history")
 	kind := flags.String("type", "", "only items of the type text, image or file")
 	limit := flags.Uint("limit", historyLimit, "number of items to list")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("history takes no arguments")
 	}
 
@@ -86,11 +87,11 @@ func (a *app) historyList(ctx context.Context, args []string) error {
 // an item that a device with the confirmation flag held back.
 func (a *app) historyApply(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("history apply")
-	order, positional := splitFlags(args, map[string]bool{"endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 1 {
+	if len(positional) != 1 {
 		return a.usageError("history apply takes one item id")
 	}
 
@@ -98,7 +99,7 @@ func (a *app) historyApply(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	id, err := resolveItem(ctx, client, flags.Arg(0))
+	id, err := resolveItem(ctx, client, positional[0])
 	if err != nil {
 		return err
 	}
@@ -118,14 +119,14 @@ func (a *app) historyFetch(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("history fetch")
 	path := flags.String("o", "", "write the payloads to this path")
 	output := flags.String("output", "", "write the payloads to this path")
-	order, positional := splitFlags(args, map[string]bool{"o": true, "output": true, "endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
 	if *path == "" {
 		*path = *output
 	}
-	if flags.NArg() != 1 {
+	if len(positional) != 1 {
 		return a.usageError("history fetch takes one item id")
 	}
 
@@ -133,7 +134,7 @@ func (a *app) historyFetch(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	id, err := resolveItem(ctx, client, flags.Arg(0))
+	id, err := resolveItem(ctx, client, positional[0])
 	if err != nil {
 		return err
 	}

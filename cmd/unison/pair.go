@@ -47,10 +47,11 @@ func (a *app) pair(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("pair")
 	roleName := flags.String("role", "personal", "role to propose: personal or friends")
 	code := flags.String("qr", "", "pairing code of the device to join")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("pair takes no arguments")
 	}
 	role, err := pairRole(*roleName)
