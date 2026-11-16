@@ -103,6 +103,16 @@ enum TransferState {
   TRANSFER_STATE_FAILED = 7;
 }
 
+// How a pairing exchange was started.
+enum PairingMethod {
+  PAIRING_METHOD_UNSPECIFIED = 0;
+  // Both devices compare a short authentication string.
+  PAIRING_METHOD_SAS = 1;
+  // One device scanned the code of the other one, so only that other device
+  // asks its user.
+  PAIRING_METHOD_QR = 2;
+}
+
 // Local API of the daemon, served over a unix socket or a named pipe.
 service UnisonService {
   // Version and runtime state of the daemon.
@@ -125,6 +135,10 @@ service UnisonService {
   rpc StartSas(StartSasRequest) returns (StartSasResponse);
   rpc ConfirmSas(ConfirmSasRequest) returns (ConfirmSasResponse);
   rpc RejectSas(RejectSasRequest) returns (RejectSasResponse);
+  // Pairing code of the open window, for the device that shows it.
+  rpc GetPairingQr(GetPairingQrRequest) returns (GetPairingQrResponse);
+  // Pair with the device of a pairing code, for the device that scans it.
+  rpc ScanPairingQr(ScanPairingQrRequest) returns (ScanPairingQrResponse);
 
   // Clipboard.
   rpc GetClip(GetClipRequest) returns (GetClipResponse);
@@ -270,6 +284,8 @@ message Event {
   int64 at_unix_ms = 13;
   // File transfer, set on EVENT_KIND_TRANSFER.
   Transfer transfer = 14;
+  // How the pairing exchange of the event was started.
+  PairingMethod pairing_method = 15;
 }
 
 // State of the pairing window.
@@ -279,6 +295,15 @@ message PairingWindow {
   string addr = 2;
   // Time the window closes, unix milliseconds.
   int64 expires_at_unix_ms = 3;
+}
+
+// Code of a pairing window. It carries a one time token, so a client must not
+// store it or put it into a log.
+message PairingQr {
+  // Text of the code.
+  string uri = 1;
+  // Time the window closes, unix milliseconds.
+  int64 expires_at_unix_ms = 2;
 }
 
 // A device that is open for pairing.
@@ -400,6 +425,20 @@ message RejectSasRequest {
 }
 
 message RejectSasResponse {}
+
+message GetPairingQrRequest {}
+
+message GetPairingQrResponse {
+  // Code of the open window, absent when no window is open.
+  PairingQr qr = 1;
+}
+
+message ScanPairingQrRequest {
+  // Text of the code.
+  string uri = 1;
+}
+
+message ScanPairingQrResponse {}
 
 message GetClipRequest {}
 

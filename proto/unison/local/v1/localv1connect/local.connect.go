@@ -69,6 +69,12 @@ const (
 	UnisonServiceConfirmSasProcedure = "/unison.local.v1.UnisonService/ConfirmSas"
 	// UnisonServiceRejectSasProcedure is the fully-qualified name of the UnisonService's RejectSas RPC.
 	UnisonServiceRejectSasProcedure = "/unison.local.v1.UnisonService/RejectSas"
+	// UnisonServiceGetPairingQrProcedure is the fully-qualified name of the UnisonService's
+	// GetPairingQr RPC.
+	UnisonServiceGetPairingQrProcedure = "/unison.local.v1.UnisonService/GetPairingQr"
+	// UnisonServiceScanPairingQrProcedure is the fully-qualified name of the UnisonService's
+	// ScanPairingQr RPC.
+	UnisonServiceScanPairingQrProcedure = "/unison.local.v1.UnisonService/ScanPairingQr"
 	// UnisonServiceGetClipProcedure is the fully-qualified name of the UnisonService's GetClip RPC.
 	UnisonServiceGetClipProcedure = "/unison.local.v1.UnisonService/GetClip"
 	// UnisonServiceSetClipProcedure is the fully-qualified name of the UnisonService's SetClip RPC.
@@ -143,6 +149,10 @@ type UnisonServiceClient interface {
 	StartSas(context.Context, *connect.Request[v1.StartSasRequest]) (*connect.Response[v1.StartSasResponse], error)
 	ConfirmSas(context.Context, *connect.Request[v1.ConfirmSasRequest]) (*connect.Response[v1.ConfirmSasResponse], error)
 	RejectSas(context.Context, *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error)
+	// Pairing code of the open window, for the device that shows it.
+	GetPairingQr(context.Context, *connect.Request[v1.GetPairingQrRequest]) (*connect.Response[v1.GetPairingQrResponse], error)
+	// Pair with the device of a pairing code, for the device that scans it.
+	ScanPairingQr(context.Context, *connect.Request[v1.ScanPairingQrRequest]) (*connect.Response[v1.ScanPairingQrResponse], error)
 	// Clipboard.
 	GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error)
 	// Copy local text to the clipboard and announce it to the peers.
@@ -264,6 +274,18 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+UnisonServiceRejectSasProcedure,
 			connect.WithSchema(unisonServiceMethods.ByName("RejectSas")),
+			connect.WithClientOptions(opts...),
+		),
+		getPairingQr: connect.NewClient[v1.GetPairingQrRequest, v1.GetPairingQrResponse](
+			httpClient,
+			baseURL+UnisonServiceGetPairingQrProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetPairingQr")),
+			connect.WithClientOptions(opts...),
+		),
+		scanPairingQr: connect.NewClient[v1.ScanPairingQrRequest, v1.ScanPairingQrResponse](
+			httpClient,
+			baseURL+UnisonServiceScanPairingQrProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ScanPairingQr")),
 			connect.WithClientOptions(opts...),
 		),
 		getClip: connect.NewClient[v1.GetClipRequest, v1.GetClipResponse](
@@ -398,6 +420,8 @@ type unisonServiceClient struct {
 	startSas              *connect.Client[v1.StartSasRequest, v1.StartSasResponse]
 	confirmSas            *connect.Client[v1.ConfirmSasRequest, v1.ConfirmSasResponse]
 	rejectSas             *connect.Client[v1.RejectSasRequest, v1.RejectSasResponse]
+	getPairingQr          *connect.Client[v1.GetPairingQrRequest, v1.GetPairingQrResponse]
+	scanPairingQr         *connect.Client[v1.ScanPairingQrRequest, v1.ScanPairingQrResponse]
 	getClip               *connect.Client[v1.GetClipRequest, v1.GetClipResponse]
 	setClip               *connect.Client[v1.SetClipRequest, v1.SetClipResponse]
 	listHistory           *connect.Client[v1.ListHistoryRequest, v1.ListHistoryResponse]
@@ -482,6 +506,16 @@ func (c *unisonServiceClient) ConfirmSas(ctx context.Context, req *connect.Reque
 // RejectSas calls unison.local.v1.UnisonService.RejectSas.
 func (c *unisonServiceClient) RejectSas(ctx context.Context, req *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error) {
 	return c.rejectSas.CallUnary(ctx, req)
+}
+
+// GetPairingQr calls unison.local.v1.UnisonService.GetPairingQr.
+func (c *unisonServiceClient) GetPairingQr(ctx context.Context, req *connect.Request[v1.GetPairingQrRequest]) (*connect.Response[v1.GetPairingQrResponse], error) {
+	return c.getPairingQr.CallUnary(ctx, req)
+}
+
+// ScanPairingQr calls unison.local.v1.UnisonService.ScanPairingQr.
+func (c *unisonServiceClient) ScanPairingQr(ctx context.Context, req *connect.Request[v1.ScanPairingQrRequest]) (*connect.Response[v1.ScanPairingQrResponse], error) {
+	return c.scanPairingQr.CallUnary(ctx, req)
 }
 
 // GetClip calls unison.local.v1.UnisonService.GetClip.
@@ -599,6 +633,10 @@ type UnisonServiceHandler interface {
 	StartSas(context.Context, *connect.Request[v1.StartSasRequest]) (*connect.Response[v1.StartSasResponse], error)
 	ConfirmSas(context.Context, *connect.Request[v1.ConfirmSasRequest]) (*connect.Response[v1.ConfirmSasResponse], error)
 	RejectSas(context.Context, *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error)
+	// Pairing code of the open window, for the device that shows it.
+	GetPairingQr(context.Context, *connect.Request[v1.GetPairingQrRequest]) (*connect.Response[v1.GetPairingQrResponse], error)
+	// Pair with the device of a pairing code, for the device that scans it.
+	ScanPairingQr(context.Context, *connect.Request[v1.ScanPairingQrRequest]) (*connect.Response[v1.ScanPairingQrResponse], error)
 	// Clipboard.
 	GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error)
 	// Copy local text to the clipboard and announce it to the peers.
@@ -716,6 +754,18 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		UnisonServiceRejectSasProcedure,
 		svc.RejectSas,
 		connect.WithSchema(unisonServiceMethods.ByName("RejectSas")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceGetPairingQrHandler := connect.NewUnaryHandler(
+		UnisonServiceGetPairingQrProcedure,
+		svc.GetPairingQr,
+		connect.WithSchema(unisonServiceMethods.ByName("GetPairingQr")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceScanPairingQrHandler := connect.NewUnaryHandler(
+		UnisonServiceScanPairingQrProcedure,
+		svc.ScanPairingQr,
+		connect.WithSchema(unisonServiceMethods.ByName("ScanPairingQr")),
 		connect.WithHandlerOptions(opts...),
 	)
 	unisonServiceGetClipHandler := connect.NewUnaryHandler(
@@ -860,6 +910,10 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceConfirmSasHandler.ServeHTTP(w, r)
 		case UnisonServiceRejectSasProcedure:
 			unisonServiceRejectSasHandler.ServeHTTP(w, r)
+		case UnisonServiceGetPairingQrProcedure:
+			unisonServiceGetPairingQrHandler.ServeHTTP(w, r)
+		case UnisonServiceScanPairingQrProcedure:
+			unisonServiceScanPairingQrHandler.ServeHTTP(w, r)
 		case UnisonServiceGetClipProcedure:
 			unisonServiceGetClipHandler.ServeHTTP(w, r)
 		case UnisonServiceSetClipProcedure:
@@ -957,6 +1011,14 @@ func (UnimplementedUnisonServiceHandler) ConfirmSas(context.Context, *connect.Re
 
 func (UnimplementedUnisonServiceHandler) RejectSas(context.Context, *connect.Request[v1.RejectSasRequest]) (*connect.Response[v1.RejectSasResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RejectSas is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetPairingQr(context.Context, *connect.Request[v1.GetPairingQrRequest]) (*connect.Response[v1.GetPairingQrResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetPairingQr is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ScanPairingQr(context.Context, *connect.Request[v1.ScanPairingQrRequest]) (*connect.Response[v1.ScanPairingQrResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ScanPairingQr is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) GetClip(context.Context, *connect.Request[v1.GetClipRequest]) (*connect.Response[v1.GetClipResponse], error) {

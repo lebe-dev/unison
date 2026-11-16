@@ -16,6 +16,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.61
 	github.com/quic-go/quic-go v0.65.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	golang.org/x/crypto v0.59.0
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.62.0
