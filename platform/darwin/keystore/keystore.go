@@ -19,6 +19,10 @@ const DefaultService = "app.unison"
 // was built without cgo.
 var ErrUnsupported = errors.New("keystore: keychain requires cgo")
 
+// ErrNoKeychain reports that the login keychain of the user cannot be opened,
+// for example because it is missing, locked or the process has none.
+var ErrNoKeychain = errors.New("keystore: no keychain available, unlock the login keychain")
+
 // Keystore is a ports.Keystore backed by the Keychain.
 type Keystore struct {
 	service string

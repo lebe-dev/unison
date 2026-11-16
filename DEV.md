@@ -67,6 +67,7 @@ sdkmanager "ndk;28.2.13676358"
 just build                # host binaries into bin/
 just test                 # unit tests
 just test-keychain        # Keychain integration tests against the login Keychain
+just keychain-reset       # delete the Keychain items of the dev and test services
 just test-pasteboard      # pasteboard integration tests against the real pasteboard
 just test-clipboard       # Win32 clipboard integration tests, run on Windows
 just test-blob-large      # large blob round trip, writes about 1.2 GiB
@@ -105,10 +106,34 @@ with a message that asks for a build with cgo.
 
 The macOS Keychain keystore in `platform/darwin/keystore` uses cgo: it links Security.framework
 and needs a host build to reach the Keychain. Without cgo, for example in a cross-compiled
-binary, its operations return `keystore.ErrUnsupported` and building still works. The Keychain
-integration tests use a separate service and are hidden behind the `keychaintest` build tag, so
-`just test` never touches the Keychain. Run them with `just test-keychain`; they create items
-under a random `app.unison.test.*` service and delete the items they created.
+binary, its operations return `keystore.ErrUnsupported` and building still works. The package
+opens the keychain once, the default keychain of the process or the login keychain of the user,
+and names it in every query, so the Keychain API never looks for a keychain of its own and never
+raises the dialog that asks for one. When there is no usable keychain its operations return
+`keystore.ErrNoKeychain` and the daemon exits with that error; unlocking the login keychain is the
+fix. The integration tests use the fixed services `app.unison.test.keychain` and
+`app.unison.test.isolation` and are hidden behind the `keychaintest` build tag, so `just test`
+never touches the Keychain. `just test-keychain` builds the test binary at `bin/keystore.test` and
+runs it; every test removes its items before it runs and again when it ends, so runs do not pile
+up items in the keychain.
+
+The service name of a daemon tells its data directories apart: the default data directory uses
+`app.unison`, any other one uses `app.unison.dev.<name>`, where the name is the directory name in
+lower case letters, digits and single dashes, cut to 24 characters, with a short hash of the path
+when the name needs sanitizing. A directory always maps to the same name, so repeated runs edit
+the items of one service instead of adding items under a new name, which is what made macOS ask
+for a password on every run. The daemon recipes build `bin/unisond` and run it from there for the
+same reason: a program at a stable path reaches the items it created, while a temporary binary of
+`go run` is a new program on every run. macOS may still ask once, when a service is used for the
+first time or after the binary changed, and choosing Allow keeps the answer. The first start of a
+freshly built daemon waits a few seconds in its first Keychain call while macOS checks the new
+program; later starts are immediate and nothing has to be answered.
+
+`just keychain-reset` deletes the items of the `app.unison.dev.*` and `app.unison.test.*`
+services and of the `app.unison.<hash>` services that name a data directory by its path, and it
+leaves the default data directory alone. A data directory whose items are gone, for example after
+a reset, does not start: its database is encrypted with the key that is gone, so remove the
+directory and start over.
 
 The clipboard in `platform/darwin/clipboard` is also a cgo package: it links AppKit, polls the
 general pasteboard change counter every 300 ms and reads plain text, HTML, a PNG image and the
@@ -318,11 +343,12 @@ handshake and leaves no session: the refused device reports the handshake error 
 `--clipboard=none` starts a daemon without the system clipboard, which is what a second daemon on
 one machine needs: two daemons would otherwise read and write the same pasteboard. The default
 data directory keeps its keys in the `app.unison` Keychain service and any other data directory
-gets a service of its own; on Windows the keys live below the data directory. Two instances on one
-machine are therefore two devices and can pair. `--name` sets the device name announced to peers;
-the name stored through the local API is used when the flag is absent. `SIGINT` and `SIGTERM` stop
-the daemon: the local API closes, the node stops, and the endpoint disappears. `--version` prints
-the version from the `VERSION` file.
+keeps them in a service named after the directory, so a second instance never reaches the keys of
+the first one; on Windows the keys live below the data directory. Two instances on one machine are
+therefore two devices and can pair. `--name` sets the device name announced to peers; the name
+stored through the local API is used when the flag is absent. `SIGINT` and `SIGTERM` stop the
+daemon: the local API closes, the node stops, and the endpoint disappears. `--version` prints the
+version from the `VERSION` file.
 
 A daemon started from a terminal does not send multicast on the physical interfaces of macOS 27,
 so discovery between two machines needs a daemon that runs from the bundle, which declares the

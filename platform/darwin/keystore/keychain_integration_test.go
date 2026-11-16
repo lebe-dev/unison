@@ -7,52 +7,77 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/platform/darwin/keystore"
 )
 
-// testKeystore writes to a service unique to one test and removes every item it
-// created when the test ends.
-type testKeystore struct {
-	*keystore.Keystore
-	names []string
+// The services and accounts are fixed, so repeated runs reuse the same items
+// and the Keychain asks for access once instead of once per run.
+const (
+	testService  = "app.unison.test.keychain"
+	otherService = "app.unison.test.isolation"
+)
+
+// testItems are the accounts the tests write.
+var testItems = []string{
+	"identity/ed25519-seed",
+	"store.dek",
+	"shared-name",
+	"empty",
+	"long",
 }
 
-func newTestKeystore(t *testing.T) *testKeystore {
+// newTestKeystore returns the keystore of service with the accounts of earlier
+// runs removed, and removes them again when the test ends.
+func newTestKeystore(t *testing.T, service string) *keystore.Keystore {
 	t.Helper()
-	var suffix [8]byte
-	if _, err := rand.Read(suffix[:]); err != nil {
-		t.Fatalf("random service: %v", err)
-	}
-	k, err := keystore.New(fmt.Sprintf("app.unison.test.%x", suffix))
+
+	k, err := keystore.New(service)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	tk := &testKeystore{Keystore: k}
+	err = clearItems(k)
+	if errors.Is(err, keystore.ErrNoKeychain) {
+		t.Skipf("no keychain available: %v", err)
+	}
+	if err != nil {
+		t.Fatalf("clear %q: %v", service, err)
+	}
 	t.Cleanup(func() {
-		for _, name := range tk.names {
-			if err := k.Delete(context.Background(), name); err != nil {
-				t.Errorf("cleanup %q: %v", name, err)
-			}
+		if err := clearItems(k); err != nil && !errors.Is(err, keystore.ErrNoKeychain) {
+			t.Errorf("clear %q: %v", service, err)
 		}
 	})
-	return tk
+	return k
 }
 
-func (tk *testKeystore) store(t *testing.T, name string, secret []byte) {
+// clearItems deletes the accounts of the tests. A keychain belongs to the user,
+// so a failure is reported to the caller instead of ending the process.
+func clearItems(k *keystore.Keystore) error {
+	for _, name := range testItems {
+		if err := k.Delete(context.Background(), name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// mustStore writes a secret and fails the test on error.
+func mustStore(t *testing.T, k *keystore.Keystore, name string, secret []byte) {
 	t.Helper()
-	if err := tk.Store(context.Background(), name, secret); err != nil {
+
+	if err := k.Store(context.Background(), name, secret); err != nil {
 		t.Fatalf("Store(%q): %v", name, err)
 	}
-	tk.names = append(tk.names, name)
 }
 
-func (tk *testKeystore) load(t *testing.T, name string) []byte {
+// mustLoad reads a secret and fails the test on error.
+func mustLoad(t *testing.T, k *keystore.Keystore, name string) []byte {
 	t.Helper()
-	secret, err := tk.Load(context.Background(), name)
+
+	secret, err := k.Load(context.Background(), name)
 	if err != nil {
 		t.Fatalf("Load(%q): %v", name, err)
 	}
@@ -60,53 +85,52 @@ func (tk *testKeystore) load(t *testing.T, name string) []byte {
 }
 
 func TestLoadMissing(t *testing.T) {
-	tk := newTestKeystore(t)
-	_, err := tk.Load(context.Background(), "missing")
-	if !errors.Is(err, ports.ErrNotFound) {
+	k := newTestKeystore(t, testService)
+	if _, err := k.Load(context.Background(), "missing"); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatalf("Load error = %v, want ErrNotFound", err)
 	}
 }
 
 func TestRoundTrip(t *testing.T) {
-	tk := newTestKeystore(t)
+	k := newTestKeystore(t, testService)
 	want := []byte{0x00, 0x01, 0x00, 0xff, 0xfe, 0x00}
-	tk.store(t, "identity/ed25519-seed", want)
+	mustStore(t, k, "identity/ed25519-seed", want)
 
-	if got := tk.load(t, "identity/ed25519-seed"); !bytes.Equal(got, want) {
+	if got := mustLoad(t, k, "identity/ed25519-seed"); !bytes.Equal(got, want) {
 		t.Fatalf("Load = %x, want %x", got, want)
 	}
 }
 
 func TestStoreOverwrites(t *testing.T) {
-	tk := newTestKeystore(t)
-	tk.store(t, "store.dek", []byte("first"))
+	k := newTestKeystore(t, testService)
+	mustStore(t, k, "store.dek", []byte("first"))
 
 	second := bytes.Repeat([]byte{0x42}, 32)
-	tk.store(t, "store.dek", second)
-	if got := tk.load(t, "store.dek"); !bytes.Equal(got, second) {
+	mustStore(t, k, "store.dek", second)
+	if got := mustLoad(t, k, "store.dek"); !bytes.Equal(got, second) {
 		t.Fatalf("Load = %x, want %x", got, second)
 	}
 }
 
 func TestDelete(t *testing.T) {
-	tk := newTestKeystore(t)
-	tk.store(t, "store.dek", []byte("secret"))
+	k := newTestKeystore(t, testService)
+	mustStore(t, k, "store.dek", []byte("secret"))
 
-	if err := tk.Delete(context.Background(), "store.dek"); err != nil {
+	if err := k.Delete(context.Background(), "store.dek"); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, err := tk.Load(context.Background(), "store.dek"); !errors.Is(err, ports.ErrNotFound) {
+	if _, err := k.Load(context.Background(), "store.dek"); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatalf("Load after Delete = %v, want ErrNotFound", err)
 	}
-	if err := tk.Delete(context.Background(), "store.dek"); err != nil {
+	if err := k.Delete(context.Background(), "store.dek"); err != nil {
 		t.Fatalf("repeated Delete: %v", err)
 	}
 }
 
 func TestServicesAreIsolated(t *testing.T) {
-	tk := newTestKeystore(t)
-	other := newTestKeystore(t)
-	tk.store(t, "shared-name", []byte("mine"))
+	k := newTestKeystore(t, testService)
+	other := newTestKeystore(t, otherService)
+	mustStore(t, k, "shared-name", []byte("mine"))
 
 	if _, err := other.Load(context.Background(), "shared-name"); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatalf("Load from another service = %v, want ErrNotFound", err)
@@ -114,23 +138,23 @@ func TestServicesAreIsolated(t *testing.T) {
 }
 
 func TestEmptySecret(t *testing.T) {
-	tk := newTestKeystore(t)
-	tk.store(t, "empty", []byte{})
+	k := newTestKeystore(t, testService)
+	mustStore(t, k, "empty", []byte{})
 
-	if got := tk.load(t, "empty"); len(got) != 0 {
+	if got := mustLoad(t, k, "empty"); len(got) != 0 {
 		t.Fatalf("Load = %x, want empty", got)
 	}
 }
 
 func TestLongSecret(t *testing.T) {
-	tk := newTestKeystore(t)
+	k := newTestKeystore(t, testService)
 	want := make([]byte, 4096)
 	if _, err := rand.Read(want); err != nil {
 		t.Fatalf("random secret: %v", err)
 	}
-	tk.store(t, "long", want)
+	mustStore(t, k, "long", want)
 
-	if got := tk.load(t, "long"); !bytes.Equal(got, want) {
+	if got := mustLoad(t, k, "long"); !bytes.Equal(got, want) {
 		t.Fatal("Load returned a different secret")
 	}
 }
