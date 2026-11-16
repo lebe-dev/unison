@@ -34,8 +34,10 @@ const (
 	// DefaultMaxMailboxes bounds the mailboxes of one connection.
 	DefaultMaxMailboxes = 8
 	// DefaultMaxDatagramBytes bounds the payload of one datagram. A datagram
-	// travels in a single QUIC packet, so it stays below the path MTU.
-	DefaultMaxDatagramBytes = 1024
+	// travels in a single QUIC packet, so it stays below the path MTU. The QUIC
+	// connection between devices runs inside these datagrams and needs at least
+	// 1200 byte packets, which is 1224 bytes of payload after the frame headers.
+	DefaultMaxDatagramBytes = 1400
 	// DefaultRatePerSecond limits the datagrams of one token per second.
 	DefaultRatePerSecond = 200
 	// DefaultRateBurst is the burst of the datagram rate.

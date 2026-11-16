@@ -46,10 +46,9 @@ A relay datagram travels in a single QUIC packet, so the relay caps its payload
 QUIC handshake needs packets of at least 1200 bytes, which is 1224 bytes of relay payload after the
 frame headers.
 
-A relay configured with the default payload of 1024 bytes cannot carry a QUIC handshake, so the
-devices refuse the relay path and log a warning. Run the relay with `-max-datagram-bytes 1400`. The
-client then uses packets of 1216 bytes and keeps path MTU discovery off, so nothing exceeds the
-relay limit.
+A relay configured with a payload below 1224 bytes cannot carry a QUIC handshake, so devices would
+refuse the relay path and log a warning. The default is 1400 bytes: the client then uses packets of
+1216 bytes and keeps path MTU discovery off, so nothing exceeds the relay limit.
 
 ## Reconnects
 
