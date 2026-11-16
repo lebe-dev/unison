@@ -112,6 +112,34 @@
     <string name="history_saved_notification">Saved to Downloads/Unison</string>
     <string name="history_failed_notification">Download failed</string>
 
+    <string name="share_label">Send with Unison</string>
+    <string name="share_text_summary">Text</string>
+    <string name="share_text_note">Text goes to every online personal device.</string>
+    <string name="share_text_recipients">Sends to %1$s</string>
+    <plurals name="share_files_summary">
+        <item quantity="one">%1$d file - %2$s</item>
+        <item quantity="other">%1$d files - %2$s</item>
+    </plurals>
+    <string name="share_no_online">No devices are online. Open Unison on the other device.</string>
+    <string name="share_no_devices">Pick at least one online device</string>
+    <string name="share_empty">Nothing to send</string>
+    <string name="share_too_many_files">Too many files at once, pick at most 32</string>
+    <string name="share_started">Sending started</string>
+    <string name="share_sending">Sending</string>
+    <string name="share_failed">Sending failed</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="transfer_progress_title">Sending to %1$s</string>
+    <string name="transfer_progress_text">%1$d%% - %2$s of %3$s</string>
+    <string name="transfer_preparing">Preparing</string>
+    <string name="transfer_sent">Sent to %1$s</string>
+    <string name="transfer_canceled">Sending canceled</string>
+    <string name="transfer_failed">Sending failed</string>
+    <plurals name="transfer_more_devices">
+        <item quantity="one">%1$s and %2$d more</item>
+        <item quantity="other">%1$s and %2$d more</item>
+    </plurals>
+
     <string name="kind_text">Text</string>
     <string name="kind_image">Image</string>
     <string name="kind_files">File</string>
