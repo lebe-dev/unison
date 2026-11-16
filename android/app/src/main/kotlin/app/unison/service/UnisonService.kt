@@ -1,6 +1,7 @@
 package app.unison.service
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -19,12 +20,15 @@ import app.unison.core.mobile.Mobile
 import app.unison.discovery.NsdDiscovery
 import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryNotifications
+import app.unison.share.TransferNotifications
+import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -37,6 +41,10 @@ class UnisonService : Service() {
     private val client = CoreClient()
     private var coreStarted = false
     private var statusJob: Job? = null
+    private var transfersJob: Job? = null
+    private val watchedTransfers = mutableSetOf<String>()
+    private var transferNames = emptyList<String>()
+    private var transfersCanceled = false
     private lateinit var discovery: NsdDiscovery
     private lateinit var blobs: BlobSink
     private lateinit var downloads: HistoryDownloads
@@ -60,6 +68,9 @@ class UnisonService : Service() {
         if (intent?.action == ACTION_DOWNLOAD_ITEM) {
             intent.getStringExtra(EXTRA_ITEM_ID)?.let(::download)
         }
+        if (intent?.action == ACTION_CANCEL_TRANSFERS) {
+            cancelTransfers()
+        }
         return START_STICKY
     }
 
@@ -68,6 +79,7 @@ class UnisonService : Service() {
     override fun onDestroy() {
         scope.cancel()
         discovery.stop()
+        NotificationManagerCompat.from(this).cancel(TransferNotifications.ID)
         if (coreStarted) {
             coreStarted = false
             runBlocking(Dispatchers.IO) {
@@ -132,7 +144,105 @@ class UnisonService : Service() {
             event.type == MobileProto.EventType.EVENT_TYPE_PEER_ONLINE ||
                 event.type == MobileProto.EventType.EVENT_TYPE_PEER_OFFLINE -> refreshStatus()
             event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD -> notifyPending(event.event)
+            event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_TRANSFER -> refreshTransfers()
         }
+    }
+
+    /** Keeps the transfers notification in step with the running transfers. */
+    private fun refreshTransfers() {
+        if (transfersJob?.isActive == true) {
+            return
+        }
+        transfersJob = scope.launch {
+            while (true) {
+                val transfers = listTransfers()
+                if (transfers == null) {
+                    failTransfers()
+                    return@launch
+                }
+                val active = TransferProgress.active(transfers)
+                if (active.isEmpty()) {
+                    finishTransfers(transfers)
+                    return@launch
+                }
+                watchedTransfers += active.map { it.id }
+                transferNames = TransferProgress.names(active)
+                showTransfers(TransferNotifications.progress(this@UnisonService, active))
+                delay(TRANSFERS_POLL_MS)
+            }
+        }
+    }
+
+    /** Running outgoing transfers, or null when the core does not answer. */
+    private suspend fun listTransfers(): List<Local.Transfer>? = try {
+        withContext(Dispatchers.IO) { client.listTransfers() }.transfersList
+    } catch (e: Exception) {
+        Log.w(TAG, "cannot read the transfers: ${e.message}")
+        null
+    }
+
+    /** Shows the result of the transfers that just ended. */
+    private fun finishTransfers(transfers: List<Local.Transfer>) {
+        if (watchedTransfers.isEmpty()) {
+            transfersCanceled = false
+            return
+        }
+        val failed = transfers.any {
+            it.id in watchedTransfers && it.state == Local.TransferState.TRANSFER_STATE_FAILED
+        }
+        val message = when {
+            transfersCanceled -> getString(R.string.transfer_canceled)
+            failed -> getString(R.string.transfer_failed)
+            else -> getString(R.string.transfer_sent, namesText())
+        }
+        watchedTransfers.clear()
+        transfersCanceled = false
+        showTransfers(TransferNotifications.result(this, message))
+    }
+
+    /** Tells the user that the transfers cannot be followed any more. */
+    private fun failTransfers() {
+        if (watchedTransfers.isEmpty()) {
+            transfersCanceled = false
+            return
+        }
+        watchedTransfers.clear()
+        transfersCanceled = false
+        showTransfers(TransferNotifications.result(this, getString(R.string.transfer_failed)))
+    }
+
+    /** Stops every running outgoing transfer. */
+    private fun cancelTransfers() {
+        transfersCanceled = true
+        scope.launch {
+            val active = listTransfers()?.let(TransferProgress::active).orEmpty()
+            for (transfer in active) {
+                try {
+                    withContext(Dispatchers.IO) { client.cancelTransfer(transfer.id) }
+                } catch (e: Exception) {
+                    Log.w(TAG, "cannot cancel a transfer: ${e.message}")
+                }
+            }
+            refreshTransfers()
+        }
+    }
+
+    /** Names of the peers of the transfers, as the texts expect them. */
+    private fun namesText(): String = when {
+        transferNames.isEmpty() -> getString(R.string.app_name)
+        transferNames.size == 1 -> transferNames.first()
+        else -> resources.getQuantityString(
+            R.plurals.transfer_more_devices,
+            transferNames.size - 1,
+            transferNames.first(),
+            transferNames.size - 1,
+        )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showTransfers(notification: Notification) {
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(TransferNotifications.ID, notification)
     }
 
     /** Tells the user about an item that has to be downloaded first. */
@@ -238,6 +348,9 @@ class UnisonService : Service() {
         /** Downloads one history entry. */
         const val ACTION_DOWNLOAD_ITEM = "app.unison.action.DOWNLOAD_ITEM"
 
+        /** Stops the outgoing file transfers. */
+        const val ACTION_CANCEL_TRANSFERS = "app.unison.action.CANCEL_TRANSFERS"
+
         /** Entry the download action refers to. */
         const val EXTRA_ITEM_ID = "app.unison.extra.ITEM_ID"
 
@@ -249,5 +362,8 @@ class UnisonService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, UnisonService::class.java))
         }
+
+        /** Time between two reads of the running transfers. */
+        private const val TRANSFERS_POLL_MS = 500L
     }
 }
