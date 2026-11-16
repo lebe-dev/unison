@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    `maven-publish`
 }
 
 android {
@@ -18,5 +19,31 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    publishing {
+        singleVariant("release")
+    }
+}
+
+group = "app.unison"
+version = rootProject.file("../VERSION").readText().trim()
+
+publishing {
+    repositories {
+        maven {
+            name = "build"
+            url = uri(rootProject.layout.buildDirectory.dir("maven"))
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            register<MavenPublication>("release") {
+                from(components["release"])
+            }
+        }
     }
 }
