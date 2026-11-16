@@ -6,6 +6,7 @@
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, State, Wry};
@@ -160,9 +161,10 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .tooltip("Unison")
         .show_menu_on_left_click(true)
+        .icon_as_template(true)
         .on_menu_event(|app, event| on_menu_event(app, event.id().as_ref()));
-    if let Some(icon) = app.default_window_icon() {
-        tray = tray.icon(icon.clone());
+    if let Some(icon) = tray_icon(app) {
+        tray = tray.icon(icon);
     }
     tray.build(app)?;
 
@@ -175,6 +177,29 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         send_entries: Mutex::new(Vec::new()),
     });
     Ok(())
+}
+
+/// tray_icon returns the image of the menu bar entry.
+///
+/// The glyph is a template image: black shapes on a transparent background,
+/// which the menu bar tints with the theme colour. The tray scales the image to
+/// a height of 18 points, so the 2x asset keeps the glyph sharp on Retina
+/// displays.
+#[cfg(target_os = "macos")]
+fn tray_icon(_app: &AppHandle) -> Option<Image<'static>> {
+    match Image::from_bytes(include_bytes!("../icons/trayTemplate@2x.png")) {
+        Ok(icon) => Some(icon),
+        Err(err) => {
+            eprintln!("unison: loading the tray icon failed: {err}");
+            None
+        }
+    }
+}
+
+/// tray_icon returns the image of the menu bar entry.
+#[cfg(not(target_os = "macos"))]
+fn tray_icon(app: &AppHandle) -> Option<Image<'static>> {
+    app.default_window_icon().cloned()
 }
 
 /// set_tray_state updates the texts and the dynamic lists of the menu.
