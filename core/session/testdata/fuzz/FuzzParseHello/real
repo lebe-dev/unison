@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\b\x01\x12\nclip.image\x12\x05share\x1a\vworkstation \x01*\x02\b\x01")

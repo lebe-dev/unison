@@ -323,6 +323,9 @@ func vectorFromProto(vector map[string]uint64) (map[model.DeviceID]uint64, error
 		if err != nil {
 			return nil, err
 		}
+		if device.IsZero() {
+			return nil, fmt.Errorf("history: peer vector names an empty device")
+		}
 		read++
 		if seq > 0 {
 			out[device] = seq

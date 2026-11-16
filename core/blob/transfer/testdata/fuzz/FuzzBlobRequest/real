@@ -1,0 +1,3 @@
+go test fuzz v1
+[]byte("\x12\x108c8d1a3f0b2e4d5a2\fblob.request")
+[]byte("\n \t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\x18\b")
