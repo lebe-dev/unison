@@ -2,6 +2,7 @@ package app.unison.ui.screens
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -47,7 +48,7 @@ class SettingsScreenTest {
         setContent(deviceName = "Pixel", onDeviceNameChange = { saved = it })
 
         compose.onNodeWithText("Name shown to other devices").performTextReplacement("Desk")
-        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithTag(NAME_SAVE_TAG).performClick()
 
         assertEquals("Desk", saved)
     }
@@ -57,7 +58,7 @@ class SettingsScreenTest {
         var saved: String? = null
         setContent(deviceName = "Pixel", onDeviceNameChange = { saved = it })
 
-        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithTag(NAME_SAVE_TAG).assertIsNotEnabled().performClick()
 
         assertEquals(null, saved)
     }
@@ -118,7 +119,9 @@ class SettingsScreenTest {
         compose.onNodeWithTag(ttlTag(Local.Kind.KIND_IMAGE)).performTextReplacement("soon")
         compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_IMAGE)).performScrollTo().performClick()
 
-        compose.onNodeWithText("Use a lifetime like 24h or 7d, up to 365d").assertIsDisplayed()
+        compose.onNodeWithText("Use a lifetime like 24h or 7d, up to 365d")
+            .performScrollTo()
+            .assertIsDisplayed()
         assertEquals(null, saved)
     }
 
