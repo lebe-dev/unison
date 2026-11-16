@@ -46,9 +46,9 @@ Copies of received files stay in `~/Downloads/Unison`.
 Unison needs Android 10 (API 29) or newer.
 
 The Android build is a debug APK at `android/app/build/outputs/apk/debug/app-debug.apk`.
-`just android-build` produces it, and `just deploy-android` installs it on the one phone that is
-connected over USB. `adb install -r <path>` works as well. There is no signed release build for
-Android yet.
+`just android-build` produces it, and `just deploy-android` rebuilds it and installs it on the one
+phone that is connected over USB. `adb install -r <path>` works as well. There is no signed
+release build for Android yet.
 
 The first start asks for notifications and, on Android 17 and newer, for access to the local
 network. Allow both: the notification belongs to the foreground service that keeps the daemon

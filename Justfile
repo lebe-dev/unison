@@ -264,9 +264,8 @@ deploy-android:
         printf '%s\n' "$phones" >&2
         exit 1
     fi
-    if [ ! -f {{apk_debug}} ]; then
-        just android-build
-    fi
+    # Always rebuild so a stale APK is never installed; Gradle and the Go build cache keep it fast.
+    just android-build
     adb -s "$phones" install -r {{apk_debug}}
 
 # Run the Android unit tests.
