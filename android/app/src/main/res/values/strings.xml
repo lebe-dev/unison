@@ -60,9 +60,10 @@
     <string name="device_detail">%1$s, %2$s</string>
     <string name="device_online">Online</string>
     <string name="device_offline">Offline</string>
-    <string name="devices_confirmation">Ask before applying</string>
+    <string name="devices_confirmation">Ask before applying its items</string>
     <string name="devices_confirmation_saved">Confirmation setting saved</string>
     <string name="devices_confirmation_failed">Cannot change the confirmation setting</string>
+    <string name="devices_peer_confirmation">Asks for confirmation before applying what it receives</string>
     <string name="devices_remove_title">Remove %1$s?</string>
     <string name="devices_remove_body">The device loses access to this one for good and cannot pair again until you add it. The other devices learn about the removal when they meet.</string>
     <string name="devices_removed">Device removed</string>

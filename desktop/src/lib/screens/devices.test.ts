@@ -51,13 +51,13 @@ describe("devices screen", () => {
   it("offers the confirmation flag to Personal devices only", () => {
     render(Devices);
 
-    expect(screen.getByRole("checkbox", { name: /Hold incoming items/ })).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /Ask before applying items from this device/ })).toBeTruthy();
     expect(screen.getAllByRole("checkbox")).toHaveLength(1);
   });
 
   it("asks a Personal device to hold incoming items", async () => {
     render(Devices);
-    const toggle = screen.getByRole("checkbox", { name: /Hold incoming items/ });
+    const toggle = screen.getByRole("checkbox", { name: /Ask before applying items from this device/ });
 
     await fireEvent.click(toggle);
 
@@ -72,9 +72,22 @@ describe("devices screen", () => {
     setDeviceConfirmation.mockRejectedValue(new ConnectError("peer offline", Code.Unavailable));
 
     render(Devices);
-    await fireEvent.click(screen.getByRole("checkbox", { name: /Hold incoming items/ }));
+    await fireEvent.click(screen.getByRole("checkbox", { name: /Ask before applying items from this device/ }));
 
     expect(await screen.findByText(/The device is offline/)).toBeTruthy();
+  });
+
+  it("shows the confirmation the device announced", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { peerRequireConfirmation: true })],
+    });
+
+    render(Devices);
+
+    expect(screen.getByText(/MacBook asks for confirmation/)).toBeTruthy();
   });
 
   it("revokes a device only after a confirmation", async () => {
@@ -98,13 +111,14 @@ describe("devices screen", () => {
   });
 });
 
-function personal(id: string) {
+function personal(id: string, fields: { peerRequireConfirmation?: boolean } = {}) {
   return create(DeviceSchema, {
     deviceId: id,
     name: "MacBook",
     role: Role.PERSONAL,
     platform: Platform.MACOS,
     online: true,
+    ...fields,
   });
 }
 

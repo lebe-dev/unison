@@ -54,7 +54,7 @@ func (a *app) writeEventJSON(event *localv1.Event) error {
 // writeTable writes the devices as a table.
 func (a *app) writeTable(devices []*localv1.Device) error {
 	rows := make([][]string, 0, len(devices)+1)
-	rows = append(rows, []string{"FINGERPRINT", "NAME", "ROLE", "PLATFORM", "STATE"})
+	rows = append(rows, []string{"FINGERPRINT", "NAME", "ROLE", "PLATFORM", "STATE", "CONFIRM", "PEER ASKS"})
 	for _, device := range devices {
 		rows = append(rows, []string{
 			fingerprintOf(device.GetDeviceId()),
@@ -62,6 +62,8 @@ func (a *app) writeTable(devices []*localv1.Device) error {
 			roleText(device.GetRole()),
 			platformText(device.GetPlatform()),
 			deviceState(device),
+			onOff(device.GetRequireConfirmation()),
+			yesNo(device.GetPeerRequireConfirmation()),
 		})
 	}
 	return a.writeRows(rows)
@@ -155,6 +157,22 @@ func deviceState(device *localv1.Device) string {
 		return "online " + path
 	}
 	return "online"
+}
+
+// onOff renders a flag of the device table.
+func onOff(on bool) string {
+	if on {
+		return "on"
+	}
+	return "off"
+}
+
+// yesNo renders a flag of a peer in the device table.
+func yesNo(on bool) string {
+	if on {
+		return "yes"
+	}
+	return "no"
 }
 
 // networkText describes the network conditions of the local device.

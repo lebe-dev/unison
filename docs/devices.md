@@ -121,7 +121,12 @@ unison devices confirm <id> on
 ```
 
 The second form sends a signed request to that device, which changes its own flag; the device has
-to be online, and the flag is a setting of that device, so this one does not keep a copy of it.
+to be online. The request also sets the local policy for that device: its items wait for you here,
+while the device holds what it receives. The switch in the device card is that local policy.
+
+A device reports its own flag when a session starts, so this device keeps a copy of what the other
+one announced and shows it under the switch, as a line of its own. The line appears after the
+device connects or reconnects, and only the device itself changes it.
 
 ## Revocation
 

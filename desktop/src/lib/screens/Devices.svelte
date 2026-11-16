@@ -171,12 +171,20 @@
                       onchange={(event) => void setConfirmation(device, event.currentTarget.checked)}
                     />
                     <span>
-                      Hold incoming items for confirmation
+                      Ask before applying items from this device
                       <small>
-                        The device keeps the items it receives until you apply them there.
+                        Its items wait here until you apply them. The device is asked to do the
+                        same with the items it receives.
                       </small>
                     </span>
                   </label>
+                {/if}
+
+                {#if device.peerRequireConfirmation}
+                  <p class="meta muted">
+                    {device.name || "The device"} asks for confirmation before applying what it
+                    receives.
+                  </p>
                 {/if}
 
                 {#if editing === device.deviceId}

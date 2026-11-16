@@ -15,6 +15,9 @@ import (
 // device changes its own flag directly and asks another device to change its
 // flag with a signed policy, so the flag of a device is only ever changed by
 // that device.
+//
+// The request also records the local policy for the peer: this device holds the
+// items the peer sends until the user applies them.
 func (n *Node) SetPeerRequireConfirmation(ctx context.Context, id model.DeviceID, require bool) error {
 	if err := n.usable(); err != nil {
 		return err
@@ -46,10 +49,16 @@ func (n *Node) SetPeerRequireConfirmation(ctx context.Context, id model.DeviceID
 	if !ok {
 		return fmt.Errorf("%w: %s", ErrPeerOffline, id)
 	}
+	if err := n.trust.SetRequireConfirmation(ctx, id, require); err != nil {
+		return err
+	}
 	message := &wirev1.ControlMessage{
 		Body: &wirev1.ControlMessage_SetPeerPolicy{SetPeerPolicy: policy.Proto()},
 	}
 	if err := sess.Send(ctx, message); err != nil {
+		if restore := n.trust.SetRequireConfirmation(ctx, id, peer.RequireConfirmation); restore != nil {
+			n.log.Warn("restoring the local confirmation flag failed", "peer", id, "error", restore)
+		}
 		return fmt.Errorf("node: send the peer policy: %w", err)
 	}
 	n.log.Info("confirmation policy sent", "peer", id, "require_confirmation", require)

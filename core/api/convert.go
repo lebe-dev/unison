@@ -127,16 +127,17 @@ func networkToProto(state model.NetworkState) *localv1.NetworkState {
 // deviceToProto converts a stored peer and its live state.
 func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 	return &localv1.Device{
-		DeviceId:            peer.DeviceID().String(),
-		Name:                peer.Name,
-		Role:                roleToProto(peer.Role),
-		Platform:            platformToProto(peer.Platform),
-		Online:              state.Online,
-		Path:                pathToProto(state.Path),
-		RequireConfirmation: peer.RequireConfirmation,
-		Revoked:             peer.Revoked,
-		AddedAtUnixMs:       unixMilli(peer.AddedAt),
-		LastSeenAtUnixMs:    unixMilli(peer.LastSeenAt),
+		DeviceId:                peer.DeviceID().String(),
+		Name:                    peer.Name,
+		Role:                    roleToProto(peer.Role),
+		Platform:                platformToProto(peer.Platform),
+		Online:                  state.Online,
+		Path:                    pathToProto(state.Path),
+		RequireConfirmation:     peer.RequireConfirmation,
+		PeerRequireConfirmation: peer.RequireConfirmationRemote,
+		Revoked:                 peer.Revoked,
+		AddedAtUnixMs:           unixMilli(peer.AddedAt),
+		LastSeenAtUnixMs:        unixMilli(peer.LastSeenAt),
 	}
 }
 
