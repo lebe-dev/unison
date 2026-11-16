@@ -11,14 +11,14 @@ import unison.mobile.v1.Mobile
 class CoreClientTest {
 
     private class FakeTransport(
-        private val respond: (Mobile.CallRequest) -> Mobile.CallResponse,
+        private val respond: (Mobile.CallRequest) -> Mobile.CallResponse?,
     ) : CoreTransport {
         var lastRequest: Mobile.CallRequest? = null
 
-        override fun call(request: ByteArray): ByteArray {
+        override fun call(request: ByteArray): ByteArray? {
             val call = Mobile.CallRequest.parseFrom(request)
             lastRequest = call
-            return respond(call).toByteArray()
+            return respond(call)?.toByteArray()
         }
     }
 
@@ -61,5 +61,14 @@ class CoreClientTest {
     @Test
     fun malformedEventIsDropped() {
         assertNull(decodeEvent(byteArrayOf(0xFF.toByte(), 0xFF.toByte())))
+    }
+
+    @Test
+    fun emptyResponseIsAccepted() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).deleteHistoryItem("item")
+
+        assertEquals("DeleteHistoryItem", transport.lastRequest?.method)
     }
 }

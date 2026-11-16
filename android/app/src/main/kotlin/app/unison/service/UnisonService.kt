@@ -17,6 +17,9 @@ import app.unison.core.CoreException
 import app.unison.core.coreEvents
 import app.unison.core.mobile.Mobile
 import app.unison.discovery.NsdDiscovery
+import app.unison.history.HistoryDownloads
+import app.unison.history.HistoryNotifications
+import app.unison.storage.BlobSink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,19 +28,25 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import unison.local.v1.Local
 import unison.mobile.v1.Mobile as MobileProto
 
 /** Keeps the core running in the foreground. */
 class UnisonService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val client = CoreClient()
     private var coreStarted = false
     private var statusJob: Job? = null
     private lateinit var discovery: NsdDiscovery
+    private lateinit var blobs: BlobSink
+    private lateinit var downloads: HistoryDownloads
 
     override fun onCreate() {
         super.onCreate()
         NotificationChannels.create(this)
         discovery = NsdDiscovery(this)
+        blobs = BlobSink(this, scope)
+        downloads = HistoryDownloads(this, client)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -48,6 +57,9 @@ class UnisonService : Service() {
 
         startInForeground(getString(R.string.service_starting))
         startCore()
+        if (intent?.action == ACTION_DOWNLOAD_ITEM) {
+            intent.getStringExtra(EXTRA_ITEM_ID)?.let(::download)
+        }
         return START_STICKY
     }
 
@@ -91,13 +103,7 @@ class UnisonService : Service() {
                 return@launch
             }
             scope.launch {
-                coreEvents.events.collect { event ->
-                    if (event.type == MobileProto.EventType.EVENT_TYPE_PEER_ONLINE ||
-                        event.type == MobileProto.EventType.EVENT_TYPE_PEER_OFFLINE
-                    ) {
-                        refreshStatus()
-                    }
-                }
+                coreEvents.events.collect(::handle)
             }
             refreshStatus()
         }
@@ -111,13 +117,76 @@ class UnisonService : Service() {
             .setDebugLog(debug)
             .build()
         discovery.start()
-        Mobile.start(config.toByteArray(), CorePlatform(this, discovery))
+        Mobile.start(config.toByteArray(), CorePlatform(this, discovery, blobs))
         Log.i(TAG, "core started")
         true
     } catch (e: Exception) {
         Log.e(TAG, "core start failed", e)
         discovery.stop()
         false
+    }
+
+    /** Reacts to the events of the core that change what the user sees. */
+    private fun handle(event: MobileProto.Event) {
+        when {
+            event.type == MobileProto.EventType.EVENT_TYPE_PEER_ONLINE ||
+                event.type == MobileProto.EventType.EVENT_TYPE_PEER_OFFLINE -> refreshStatus()
+            event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD -> notifyPending(event.event)
+        }
+    }
+
+    /** Tells the user about an item that has to be downloaded first. */
+    private fun notifyPending(event: Local.Event) {
+        val item = event.item
+        if (item.id.isEmpty()) {
+            return
+        }
+        scope.launch {
+            showPending(item, deviceName(event.deviceId))
+        }
+    }
+
+    private suspend fun deviceName(deviceId: String): String = try {
+        withContext(Dispatchers.IO) { client.status() }
+            .devicesList
+            .firstOrNull { it.deviceId == deviceId }
+            ?.name
+            .orEmpty()
+    } catch (e: Exception) {
+        Log.w(TAG, "cannot read the name of $deviceId: ${e.message}")
+        ""
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showPending(item: Local.ClipItem, device: String) {
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(
+            HistoryNotifications.idOf(item.id),
+            HistoryNotifications.pending(this, item, device),
+        )
+    }
+
+    /** Saves the payloads of an item into the Downloads collection. */
+    private fun download(itemId: String) {
+        startInForeground(getString(R.string.history_downloading))
+        scope.launch {
+            val saved = try {
+                withContext(Dispatchers.IO) { downloads.save(itemId) }
+            } catch (e: Exception) {
+                Log.w(TAG, "download of $itemId failed: ${e.message}")
+                0
+            }
+            showResult(itemId, saved > 0)
+            refreshStatus()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun showResult(itemId: String, saved: Boolean) {
+        NotificationManagerCompat.from(this).apply {
+            cancel(HistoryNotifications.idOf(itemId))
+            notify(HistoryNotifications.RESULT_ID, HistoryNotifications.result(this@UnisonService, saved))
+        }
     }
 
     private fun refreshStatus() {
@@ -129,7 +198,7 @@ class UnisonService : Service() {
     }
 
     private suspend fun statusText(): CharSequence = try {
-        val status = withContext(Dispatchers.IO) { CoreClient().status() }
+        val status = withContext(Dispatchers.IO) { client.status() }
         val online = status.devicesList.count { it.online }
         Log.i(TAG, "core is up, device ${status.deviceId}")
         getString(
@@ -165,6 +234,12 @@ class UnisonService : Service() {
 
         /** Stops the service and the core. */
         const val ACTION_STOP = "app.unison.action.STOP"
+
+        /** Downloads one history entry. */
+        const val ACTION_DOWNLOAD_ITEM = "app.unison.action.DOWNLOAD_ITEM"
+
+        /** Entry the download action refers to. */
+        const val EXTRA_ITEM_ID = "app.unison.extra.ITEM_ID"
 
         fun start(context: Context) {
             val intent = Intent(context, UnisonService::class.java).setAction(ACTION_START)

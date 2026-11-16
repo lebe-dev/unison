@@ -13,6 +13,22 @@ interface CoreApi {
 
     /** Changes the pause of the clipboard synchronization. */
     suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long = 0): Local.Pause
+
+    /** Live history entries, newest first. */
+    suspend fun listHistory(
+        kind: Local.Kind = Local.Kind.KIND_UNSPECIFIED,
+        deviceId: String = "",
+        limit: Int = 0,
+    ): Local.ListHistoryResponse
+
+    /** Writes one history entry back to the clipboard. */
+    suspend fun copyHistoryItem(id: String)
+
+    /** Deletes one history entry on every device. */
+    suspend fun deleteHistoryItem(id: String)
+
+    /** Downloads the payloads of one entry into [path]. */
+    suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse
 }
 
 /** Core that starts the service when it does not answer yet. */
@@ -34,6 +50,26 @@ class RunningCore(
     override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
         ensureRunning()
         return client.setPause(mode, untilUnixMs)
+    }
+
+    override suspend fun listHistory(kind: Local.Kind, deviceId: String, limit: Int): Local.ListHistoryResponse {
+        ensureRunning()
+        return client.listHistory(kind, deviceId, limit)
+    }
+
+    override suspend fun copyHistoryItem(id: String) {
+        ensureRunning()
+        client.copyHistoryItem(id)
+    }
+
+    override suspend fun deleteHistoryItem(id: String) {
+        ensureRunning()
+        client.deleteHistoryItem(id)
+    }
+
+    override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse {
+        ensureRunning()
+        return client.fetchHistoryItem(id, path)
     }
 
     private suspend fun ensureRunning() {

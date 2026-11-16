@@ -4,6 +4,7 @@ import app.unison.R
 import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
+import app.unison.history.HistorySaver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -30,6 +31,11 @@ class AppStateTest {
         var statusCalls = 0
         val pauses = mutableListOf<Pair<Local.PauseMode, Long>>()
         val names = mutableListOf<String>()
+        var history: List<Local.HistoryItem> = emptyList()
+        var historyFailure: Exception? = null
+        val historyCalls = mutableListOf<Pair<Local.Kind, String>>()
+        val copied = mutableListOf<String>()
+        val deleted = mutableListOf<String>()
 
         override suspend fun status(): Local.GetStatusResponse {
             statusCalls++
@@ -46,6 +52,38 @@ class AppStateTest {
             pauseFailure?.let { throw it }
             pauses += mode to untilUnixMs
             return Local.Pause.newBuilder().setPaused(true).build()
+        }
+
+        override suspend fun listHistory(
+            kind: Local.Kind,
+            deviceId: String,
+            limit: Int,
+        ): Local.ListHistoryResponse {
+            historyCalls += kind to deviceId
+            historyFailure?.let { throw it }
+            return Local.ListHistoryResponse.newBuilder().addAllItems(history).build()
+        }
+
+        override suspend fun copyHistoryItem(id: String) {
+            copied += id
+        }
+
+        override suspend fun deleteHistoryItem(id: String) {
+            deleted += id
+        }
+
+        override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse =
+            Local.FetchHistoryItemResponse.getDefaultInstance()
+    }
+
+    private class FakeSaver(private var saved: Int = 1) : HistorySaver {
+        var failure: Exception? = null
+        val ids = mutableListOf<String>()
+
+        override suspend fun save(id: String): Int {
+            ids += id
+            failure?.let { throw it }
+            return saved
         }
     }
 
@@ -149,8 +187,153 @@ class AppStateTest {
         assertEquals(listOf("Pixel"), core.names)
     }
 
-    private fun TestScope.appState(core: CoreApi): AppState =
-        AppState(core, events, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+    @Test
+    fun historyIsLoaded() = runTest {
+        val core = FakeCore()
+        core.history = listOf(entry("1", Local.Kind.KIND_TEXT))
+        val state = appState(core)
+
+        state.refreshHistory()
+        advanceUntilIdle()
+
+        assertEquals(1, state.history.value.items.size)
+        assertTrue(state.history.value.loaded)
+        assertFalse(state.history.value.isEmpty)
+    }
+
+    @Test
+    fun emptyHistoryIsExplained() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.refreshHistory()
+        advanceUntilIdle()
+
+        assertTrue(state.history.value.isEmpty)
+    }
+
+    @Test
+    fun filtersAreSentAndReloadTheList() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.refreshHistory()
+        advanceUntilIdle()
+        state.setHistoryKind(Local.Kind.KIND_IMAGE)
+        advanceUntilIdle()
+        state.setHistoryDevice("abc")
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                Local.Kind.KIND_UNSPECIFIED to "",
+                Local.Kind.KIND_IMAGE to "",
+                Local.Kind.KIND_IMAGE to "abc",
+            ),
+            core.historyCalls,
+        )
+    }
+
+    @Test
+    fun failedHistoryLoadIsReported() = runTest {
+        val core = FakeCore()
+        core.historyFailure = IllegalStateException("core is busy")
+        val state = appState(core)
+
+        state.refreshHistory()
+        advanceUntilIdle()
+
+        assertEquals(CoreFailure.UNAVAILABLE, state.history.value.failure)
+    }
+
+    @Test
+    fun copyCallsTheCore() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.copyHistoryItem("item")
+        advanceUntilIdle()
+
+        assertEquals(listOf("item"), core.copied)
+        assertTrue(R.string.history_copied in notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun downloadSavesThePayloads() = runTest {
+        val core = FakeCore()
+        val saver = FakeSaver(saved = 2)
+        val state = appState(core, saver)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.downloadHistoryItem("item")
+        advanceUntilIdle()
+
+        assertEquals(listOf("item"), saver.ids)
+        assertTrue(R.string.history_downloaded in notices)
+        assertEquals(emptySet<String>(), state.history.value.busy)
+        collector.cancel()
+    }
+
+    @Test
+    fun failedDownloadEmitsNotice() = runTest {
+        val core = FakeCore()
+        val saver = FakeSaver()
+        saver.failure = IllegalStateException("no space")
+        val state = appState(core, saver)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.downloadHistoryItem("item")
+        advanceUntilIdle()
+
+        assertTrue(notices.isNotEmpty())
+        assertEquals(R.string.history_download_failed, notices.last())
+        collector.cancel()
+    }
+
+    @Test
+    fun deleteCallsTheCore() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.deleteHistoryItem("item")
+        advanceUntilIdle()
+
+        assertEquals(listOf("item"), core.deleted)
+    }
+
+    @Test
+    fun clipEventReloadsTheHistory() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.refreshHistory()
+        advanceUntilIdle()
+        val before = core.historyCalls.size
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_CLIP_RECEIVED)
+                .setEvent(
+                    Local.Event.newBuilder()
+                        .setKind(Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD)
+                        .build(),
+                )
+                .build(),
+        )
+        advanceUntilIdle()
+
+        assertTrue(core.historyCalls.size > before)
+    }
+
+    private fun TestScope.appState(core: CoreApi, saver: HistorySaver = FakeSaver()): AppState =
+        AppState(core, events, saver, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
 
     private companion object {
         fun sampleStatus(): Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
@@ -163,6 +346,16 @@ class AppStateTest {
                     .setOnline(true)
                     .build(),
             )
+            .build()
+
+        fun entry(id: String, kind: Local.Kind): Local.HistoryItem = Local.HistoryItem.newBuilder()
+            .setItem(
+                Local.ClipItem.newBuilder()
+                    .setId(id)
+                    .setKind(kind)
+                    .build(),
+            )
+            .setComplete(true)
             .build()
     }
 }

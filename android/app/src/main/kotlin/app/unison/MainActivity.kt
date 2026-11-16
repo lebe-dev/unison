@@ -21,6 +21,7 @@ import app.unison.clipboard.ClipboardReader
 import app.unison.clipboard.ClipboardSender
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
+import app.unison.history.HistoryDownloads
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
@@ -49,16 +50,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        appState = AppState(RunningCore(this), coreEvents.events)
+        appState = AppState(RunningCore(this), coreEvents.events, HistoryDownloads(this))
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
         setContent {
             UnisonTheme {
                 val state by appState.state.collectAsState()
+                val history by appState.history.collectAsState()
                 if (onboarded) {
                     UnisonRoot(
                         state = state,
+                        history = history,
                         deviceName = deviceName,
                         operatingMode = operatingMode,
                         clipboardOffer = pending,
@@ -69,6 +72,12 @@ class MainActivity : ComponentActivity() {
                         onDeviceNameChange = ::saveDeviceName,
                         onOperatingModeChange = ::saveOperatingMode,
                         onPause = appState::setPause,
+                        onRefreshHistory = appState::refreshHistory,
+                        onHistoryKindChange = appState::setHistoryKind,
+                        onHistoryDeviceChange = appState::setHistoryDevice,
+                        onCopyHistoryItem = { appState.copyHistoryItem(it.item.id) },
+                        onDownloadHistoryItem = { appState.downloadHistoryItem(it.item.id) },
+                        onDeleteHistoryItem = { appState.deleteHistoryItem(it.item.id) },
                     )
                 } else {
                     OnboardingScreen(onEnable = ::enable)
@@ -82,6 +91,7 @@ class MainActivity : ComponentActivity() {
         if (onboarded) {
             UnisonService.start(this)
             appState.refresh()
+            appState.refreshHistory()
         }
     }
 
@@ -98,6 +108,9 @@ class MainActivity : ComponentActivity() {
             return
         }
         refresh()
+        if (onboarded) {
+            appState.refreshHistory()
+        }
     }
 
     override fun onDestroy() {

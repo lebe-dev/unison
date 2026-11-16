@@ -27,12 +27,15 @@ import app.unison.ui.screens.DevicesScreen
 import app.unison.ui.screens.HistoryScreen
 import app.unison.ui.screens.SettingsScreen
 import app.unison.ui.state.CoreState
+import app.unison.ui.state.HistoryState
 import kotlinx.coroutines.flow.Flow
+import unison.local.v1.Local
 
 /** Bottom navigation and the screens above it. */
 @Composable
 fun UnisonRoot(
     state: CoreState,
+    history: HistoryState,
     deviceName: String,
     operatingMode: OperatingMode,
     clipboardOffer: ClipboardDraft?,
@@ -43,6 +46,12 @@ fun UnisonRoot(
     onDeviceNameChange: (String) -> Unit,
     onOperatingModeChange: (OperatingMode) -> Unit,
     onPause: (PauseRequest) -> Unit,
+    onRefreshHistory: () -> Unit,
+    onHistoryKindChange: (Local.Kind) -> Unit,
+    onHistoryDeviceChange: (String) -> Unit,
+    onCopyHistoryItem: (Local.HistoryItem) -> Unit,
+    onDownloadHistoryItem: (Local.HistoryItem) -> Unit,
+    onDeleteHistoryItem: (Local.HistoryItem) -> Unit,
 ) {
     var destination by rememberSaveable { mutableStateOf(Destination.DEFAULT) }
     val snackbar = remember { SnackbarHostState() }
@@ -77,7 +86,17 @@ fun UnisonRoot(
                 modifier = content,
             )
             Destination.ADD -> AddScreen(modifier = content)
-            Destination.HISTORY -> HistoryScreen(modifier = content)
+            Destination.HISTORY -> HistoryScreen(
+                history = history,
+                status = state.status,
+                onRefresh = onRefreshHistory,
+                onKindChange = onHistoryKindChange,
+                onDeviceChange = onHistoryDeviceChange,
+                onCopy = onCopyHistoryItem,
+                onDownload = onDownloadHistoryItem,
+                onDelete = onDeleteHistoryItem,
+                modifier = content,
+            )
             Destination.SETTINGS -> SettingsScreen(
                 state = state,
                 deviceName = deviceName,
