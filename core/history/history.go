@@ -164,6 +164,9 @@ type Options struct {
 	// CleanupInterval is how often expired entries are removed.
 	// DefaultCleanupInterval is used when zero.
 	CleanupInterval time.Duration
+	// OnChange is called after the store changed its entries, whoever wrote
+	// them: it is how a reader learns that a new query is worth its cost.
+	OnChange func()
 }
 
 // Store is the history log of one device.
@@ -176,6 +179,7 @@ type Store struct {
 	clock    ports.Clock
 	log      *slog.Logger
 	interval time.Duration
+	onChange func()
 
 	mu      sync.Mutex
 	budgets map[model.DeviceID]int
@@ -200,6 +204,7 @@ func New(opts Options) (*Store, error) {
 		clock:    opts.Clock,
 		log:      opts.Logger,
 		interval: opts.CleanupInterval,
+		onChange: opts.OnChange,
 		budgets:  make(map[model.DeviceID]int),
 		sending:  make(map[model.DeviceID]bool),
 	}
@@ -223,22 +228,35 @@ func (s *Store) Origin() model.DeviceID {
 // Append records one item. An entry that is already known is kept, so items
 // that arrive twice are recorded once.
 func (s *Store) Append(ctx context.Context, item model.ClipItem) error {
-	if err := validate(item); err != nil {
+	inserted, err := s.record(ctx, item)
+	if err != nil {
 		return err
+	}
+	if inserted {
+		s.changed()
+	}
+	return nil
+}
+
+// record writes one entry and reports whether it was new.
+func (s *Store) record(ctx context.Context, item model.ClipItem) (bool, error) {
+	if err := validate(item); err != nil {
+		return false, err
 	}
 
 	payload, err := s.sealPayload(item)
 	if err != nil {
-		return err
+		return false, err
 	}
 	present, err := s.payloadState(ctx, item)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
-		inserted, err := insertItem(ctx, tx, item, payload)
-		if err != nil || !inserted {
+	var inserted bool
+	err = s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		var err error
+		if inserted, err = insertItem(ctx, tx, item, payload); err != nil || !inserted {
 			return err
 		}
 		if err := addReferences(ctx, tx, item, present); err != nil {
@@ -251,6 +269,17 @@ func (s *Store) Append(ctx context.Context, item model.ClipItem) error {
 		}
 		return recordVector(ctx, tx, item.Origin, item.Seq)
 	})
+	if err != nil {
+		return false, err
+	}
+	return inserted, nil
+}
+
+// changed reports a change of the entries to OnChange.
+func (s *Store) changed() {
+	if s.onChange != nil {
+		s.onChange()
+	}
 }
 
 // payloadState reports which payloads of the item are stored on this device.

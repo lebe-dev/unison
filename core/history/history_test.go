@@ -67,6 +67,31 @@ func TestAppendKeepsExistingEntry(t *testing.T) {
 	}
 }
 
+// TestAppendReportsChanges checks that the store reports the entries it records
+// once, and only when an entry is really new.
+func TestAppendReportsChanges(t *testing.T) {
+	changes := 0
+	f := newFixture(t, testDevice(1), func(opts *Options) {
+		opts.OnChange = func() { changes++ }
+	})
+
+	item := textItem(testID(1), f.origin, 1, "text", testTime, time.Hour)
+	f.append(item)
+	if changes != 1 {
+		t.Fatalf("%d change reports after one entry, want 1", changes)
+	}
+
+	f.append(item)
+	if changes != 1 {
+		t.Fatalf("%d change reports after a duplicate, want 1", changes)
+	}
+
+	f.append(textItem(testID(2), f.origin, 2, "next", testTime, time.Hour))
+	if changes != 2 {
+		t.Fatalf("%d change reports after two entries, want 2", changes)
+	}
+}
+
 func TestListFilters(t *testing.T) {
 	f := newFixture(t, testDevice(1))
 	other := testDevice(2)

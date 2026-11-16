@@ -657,6 +657,14 @@ public final class Local {
      * <code>EVENT_KIND_TRANSFER = 12;</code>
      */
     EVENT_KIND_TRANSFER(12),
+    /**
+     * <pre>
+     * The history changed: an entry was recorded, deleted or expired.
+     * </pre>
+     *
+     * <code>EVENT_KIND_HISTORY = 13;</code>
+     */
+    EVENT_KIND_HISTORY(13),
     UNRECOGNIZED(-1),
     ;
 
@@ -760,6 +768,14 @@ public final class Local {
      * <code>EVENT_KIND_TRANSFER = 12;</code>
      */
     public static final int EVENT_KIND_TRANSFER_VALUE = 12;
+    /**
+     * <pre>
+     * The history changed: an entry was recorded, deleted or expired.
+     * </pre>
+     *
+     * <code>EVENT_KIND_HISTORY = 13;</code>
+     */
+    public static final int EVENT_KIND_HISTORY_VALUE = 13;
 
 
     @java.lang.Override
@@ -795,6 +811,7 @@ public final class Local {
         case 10: return EVENT_KIND_CLIP_DOWNLOAD;
         case 11: return EVENT_KIND_CLIP_APPLY;
         case 12: return EVENT_KIND_TRANSFER;
+        case 13: return EVENT_KIND_HISTORY;
         default: return null;
       }
     }

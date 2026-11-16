@@ -100,6 +100,8 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_CLIP_APPLY
 	case node.EventTransfer:
 		return localv1.EventKind_EVENT_KIND_TRANSFER
+	case node.EventHistory:
+		return localv1.EventKind_EVENT_KIND_HISTORY
 	case node.EventPeerIncompatible:
 		return localv1.EventKind_EVENT_KIND_PEER_INCOMPATIBLE
 	case node.EventPairingCandidate:
@@ -226,6 +228,8 @@ func eventTypeOf(kind node.EventKind) mobilev1.EventType {
 		return mobilev1.EventType_EVENT_TYPE_PAIRING_FAILED
 	case node.EventPairingClosed:
 		return mobilev1.EventType_EVENT_TYPE_PAIRING_CLOSED
+	case node.EventHistory:
+		return mobilev1.EventType_EVENT_TYPE_HISTORY
 	default:
 		return mobilev1.EventType_EVENT_TYPE_UNSPECIFIED
 	}

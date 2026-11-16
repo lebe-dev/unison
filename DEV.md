@@ -237,9 +237,9 @@ later download, and an item that needs confirmation waits for the user. Download
 
 `Subscribe` returns a `*node.Subscriber` with an event queue of its own: a subscriber
 that falls behind misses events instead of holding up the core. The events are `peer-online`,
-`peer-offline`, `clipboard`, `clip-download`, `clip-apply`, `peer-incompatible`, `transfer` and the
-pairing events `pairing-candidate`, `pairing-request`, `pairing-paired`, `pairing-failed` and
-`pairing-closed`. The node also owns the
+`peer-offline`, `clipboard`, `clip-download`, `clip-apply`, `peer-incompatible`, `transfer`,
+`history` and the pairing events `pairing-candidate`, `pairing-request`, `pairing-paired`,
+`pairing-failed` and `pairing-closed`. The node also owns the
 pairing window (`OpenPairing`, `PairingCandidates`, `StartPairing`, `ConfirmPairing`,
 `RejectPairing`, `ExtendPairing`, `ClosePairing`) and translates the window events. `AddSessionHook`
 registers handlers on every new session, which is how the clipboard and the blob transfer attach to
@@ -261,7 +261,9 @@ item: the queries skip entries past their expiry and a cleanup every ten minutes
 an expired item disappears on every device without a network exchange. The lifetimes are the
 `history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, seven days, three days and
 one day by default; `UpdateSettings` stores them and `ReloadTTLs` passes them to the pipeline, so a
-change applies to the next captured item without a restart.
+change applies to the next captured item without a restart. Every write to the log reports itself
+through `history.Options.OnChange`, which the node publishes as the `history` event, so a reader
+refreshes its list whoever recorded the entry: the pipeline, the local API or the exchange.
 
 When a session with a Personal peer opens, both sides send the version vector of their history in
 `HistorySync`, and `HistoryBatch` answers it with the entries the other side misses, oldest first,

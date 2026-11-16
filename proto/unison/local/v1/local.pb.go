@@ -309,6 +309,8 @@ const (
 	EventKind_EVENT_KIND_CLIP_APPLY EventKind = 11
 	// A file transfer changed its state or made progress.
 	EventKind_EVENT_KIND_TRANSFER EventKind = 12
+	// The history changed: an entry was recorded, deleted or expired.
+	EventKind_EVENT_KIND_HISTORY EventKind = 13
 )
 
 // Enum value maps for EventKind.
@@ -327,6 +329,7 @@ var (
 		10: "EVENT_KIND_CLIP_DOWNLOAD",
 		11: "EVENT_KIND_CLIP_APPLY",
 		12: "EVENT_KIND_TRANSFER",
+		13: "EVENT_KIND_HISTORY",
 	}
 	EventKind_value = map[string]int32{
 		"EVENT_KIND_UNSPECIFIED":       0,
@@ -342,6 +345,7 @@ var (
 		"EVENT_KIND_CLIP_DOWNLOAD":     10,
 		"EVENT_KIND_CLIP_APPLY":        11,
 		"EVENT_KIND_TRANSFER":          12,
+		"EVENT_KIND_HISTORY":           13,
 	}
 )
 
@@ -6309,7 +6313,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x10SOURCE_CLIPBOARD\x10\x01\x12\x10\n" +
 	"\fSOURCE_SHARE\x10\x02\x12\x0e\n" +
 	"\n" +
-	"SOURCE_CLI\x10\x03*\x8d\x03\n" +
+	"SOURCE_CLI\x10\x03*\xa5\x03\n" +
 	"\tEventKind\x12\x1a\n" +
 	"\x16EVENT_KIND_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16EVENT_KIND_PEER_ONLINE\x10\x01\x12\x1b\n" +
@@ -6324,7 +6328,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x18EVENT_KIND_CLIP_DOWNLOAD\x10\n" +
 	"\x12\x19\n" +
 	"\x15EVENT_KIND_CLIP_APPLY\x10\v\x12\x17\n" +
-	"\x13EVENT_KIND_TRANSFER\x10\f*l\n" +
+	"\x13EVENT_KIND_TRANSFER\x10\f\x12\x16\n" +
+	"\x12EVENT_KIND_HISTORY\x10\r*l\n" +
 	"\tPauseMode\x12\x1a\n" +
 	"\x16PAUSE_MODE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0ePAUSE_MODE_OFF\x10\x01\x12\x19\n" +

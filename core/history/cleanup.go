@@ -53,6 +53,7 @@ func (s *Store) Cleanup(ctx context.Context) (int, error) {
 	}
 	if removed > 0 {
 		s.log.Info("expired history entries removed", "items", removed)
+		s.changed()
 	}
 	return removed, nil
 }

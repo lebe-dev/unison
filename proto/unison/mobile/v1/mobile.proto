@@ -19,6 +19,7 @@ enum EventType {
   EVENT_TYPE_PAIRING_PAIRED = 8;
   EVENT_TYPE_PAIRING_FAILED = 9;
   EVENT_TYPE_PAIRING_CLOSED = 10;
+  EVENT_TYPE_HISTORY = 11;
 }
 
 // Event delivered to the mobile host.
