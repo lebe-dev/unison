@@ -46,6 +46,7 @@ type link struct {
 	sess     *session.Session
 	online   bool
 	path     model.Path
+	incoming bool
 	upgrade  bool
 	stopped  bool
 	gen      uint64
@@ -144,6 +145,7 @@ func (l *link) stop() {
 	l.sess = nil
 	l.conn = nil
 	l.online = false
+	l.incoming = false
 	l.mu.Unlock()
 
 	l.wake()
@@ -278,7 +280,7 @@ func (l *link) endDial() {
 // connection that does not win over the current one is refused.
 func (l *link) takeConnection(local model.DeviceID, conn *transport.Conn, incoming bool, path model.Path) (gen uint64, wasOnline bool, previous model.Path, err error) {
 	l.mu.Lock()
-	if l.conn != nil && !takesOver(local, l.id, incoming, l.path, path) {
+	if l.conn != nil && !takesOver(local, l.id, incoming, l.incoming, l.path, path) {
 		l.mu.Unlock()
 		return 0, false, model.PathUnknown, errSuperseded
 	}
@@ -292,6 +294,7 @@ func (l *link) takeConnection(local model.DeviceID, conn *transport.Conn, incomi
 	l.conn = conn
 	l.sess = nil
 	l.path = path
+	l.incoming = incoming
 	l.mu.Unlock()
 
 	if previousSession != nil {
@@ -313,6 +316,7 @@ func (l *link) drop(gen uint64) bool {
 	l.conn = nil
 	l.sess = nil
 	l.online = false
+	l.incoming = false
 	return true
 }
 
@@ -379,10 +383,14 @@ func (l *link) nextDelay(first, limit time.Duration) time.Duration {
 // takesOver reports whether a new connection replaces the current one of the
 // link. A local network connection always wins over a relay one, and both
 // devices of a simultaneous dial settle on the connection the device with the
-// lower device ID initiated.
-func takesOver(local, peer model.DeviceID, incoming bool, current, next model.Path) bool {
+// lower device ID initiated. A connection in the direction of the current one
+// replaces nothing: the two are the same connection the rule already picked.
+func takesOver(local, peer model.DeviceID, incoming, currentIncoming bool, current, next model.Path) bool {
 	if current != next {
 		return next == model.PathLAN
+	}
+	if incoming == currentIncoming {
+		return false
 	}
 	if incoming {
 		return bytes.Compare(peer[:], local[:]) < 0
@@ -818,6 +826,7 @@ func (n *Node) watchSession(l *link, sess *session.Session, gen uint64) {
 	l.sess = nil
 	l.conn = nil
 	l.online = false
+	l.incoming = false
 	l.offline = n.clock.Now()
 	peer := l.peer
 	l.mu.Unlock()
