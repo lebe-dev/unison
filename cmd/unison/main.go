@@ -259,7 +259,9 @@ func (a *app) usage(w io.Writer) {
 commands:
   status                      show the daemon, the network and the peers
   devices [ls]                list the paired devices
-  devices rename <id> <name>  change the name of a paired device
+  devices rename <id|self> <name>
+                              change the local name of a device, or the name
+                              this device announces to the peers
   devices address <id> <host:port> [--wait 5s]
                               store an address of a paired device and connect
                               to it, for networks where discovery does not work

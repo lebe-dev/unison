@@ -145,8 +145,7 @@ func TestDevicesEmpty(t *testing.T) {
 }
 
 // TestDevicesRenameResolution checks that a device is found by its name and by
-// its fingerprint. The daemon does not serve the rename call yet, so the call
-// reaches it and reports that.
+// its fingerprint and renamed locally.
 func TestDevicesRenameResolution(t *testing.T) {
 	network, bus := newNetwork(t)
 	device := newDevice(t, network, bus, 230, api.Options{})
@@ -155,17 +154,60 @@ func TestDevicesRenameResolution(t *testing.T) {
 	other.start(t)
 	device.pair(t, other)
 
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "rename", other.name, "renamed")
+	if code != exitOK {
+		t.Fatalf("rename exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "renamed") {
+		t.Errorf("the command does not report the new name:\n%s", stdout)
+	}
+	peer, err := device.Trust().Get(t.Context(), other.DeviceID())
+	if err != nil {
+		t.Fatalf("read the device: %v", err)
+	}
+	if peer.Name != "renamed" {
+		t.Errorf("the stored name is %q, want %q", peer.Name, "renamed")
+	}
+
 	fingerprint := fingerprintOf(other.DeviceID().String())
 	prefix := strings.SplitN(fingerprint, "-", 2)[0]
+	for _, reference := range []string{prefix, strings.ToLower(prefix), other.DeviceID().String()[:8]} {
+		code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "rename", reference, "again")
+		if code != exitOK {
+			t.Fatalf("%q: rename exited with %d, stdout %q, stderr %q", reference, code, stdout, stderr)
+		}
+	}
+	peer, err = device.Trust().Get(t.Context(), other.DeviceID())
+	if err != nil {
+		t.Fatalf("read the device: %v", err)
+	}
+	if peer.Name != "again" {
+		t.Errorf("the stored name is %q, want %q", peer.Name, "again")
+	}
+	if other.Name() != other.name {
+		t.Errorf("the name of the peer changed to %q", other.Name())
+	}
+}
 
-	for _, reference := range []string{other.name, prefix, strings.ToLower(prefix), other.DeviceID().String()[:8]} {
-		code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "rename", reference, "renamed")
-		if code != exitFailure {
-			t.Fatalf("%q: rename exited with %d, stdout %q", reference, code, stdout)
-		}
-		if !strings.Contains(stderr, "not implemented") {
-			t.Errorf("%q: the error does not come from the daemon:\n%s", reference, stderr)
-		}
+// TestDevicesRenameSelf checks the name of this device.
+func TestDevicesRenameSelf(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 235, api.Options{})
+	device.start(t)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "--json", "devices", "rename", "self", "laptop")
+	if code != exitOK {
+		t.Fatalf("rename exited with %d, stderr %q", code, stderr)
+	}
+	var response localv1.RenameDeviceResponse
+	if err := protojson.Unmarshal([]byte(stdout), &response); err != nil {
+		t.Fatalf("decode the response %q: %v", stdout, err)
+	}
+	if response.GetDevice().GetName() != "laptop" {
+		t.Errorf("the response names the device %q", response.GetDevice().GetName())
+	}
+	if device.Name() != "laptop" {
+		t.Errorf("the device runs as %q, want %q", device.Name(), "laptop")
 	}
 }
 
