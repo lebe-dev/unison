@@ -832,8 +832,11 @@ type Device struct {
 	// The flag the device announced in the last hello: it holds the items it
 	// receives for confirmation.
 	PeerRequireConfirmation bool `protobuf:"varint,11,opt,name=peer_require_confirmation,json=peerRequireConfirmation,proto3" json:"peer_require_confirmation,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// Device that introduced this one to the group, in lowercase hex. Empty for
+	// a device that was paired directly.
+	IntroducedBy  string `protobuf:"bytes,13,opt,name=introduced_by,json=introducedBy,proto3" json:"introduced_by,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Device) Reset() {
@@ -941,6 +944,13 @@ func (x *Device) GetPeerRequireConfirmation() bool {
 		return x.PeerRequireConfirmation
 	}
 	return false
+}
+
+func (x *Device) GetIntroducedBy() string {
+	if x != nil {
+		return x.IntroducedBy
+	}
+	return ""
 }
 
 // State of the clipboard pause.
@@ -2259,7 +2269,7 @@ func (x *ListDevicesResponse) GetDevices() []*Device {
 
 type RenameDeviceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Device ID in lowercase hex.
+	// Device ID in lowercase hex. The ID of this device renames this device.
 	DeviceId      string `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	Name          string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2311,7 +2321,9 @@ func (x *RenameDeviceRequest) GetName() string {
 }
 
 type RenameDeviceResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The device with its new name.
+	Device        *Device `protobuf:"bytes,1,opt,name=device,proto3" json:"device,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2344,6 +2356,13 @@ func (x *RenameDeviceResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use RenameDeviceResponse.ProtoReflect.Descriptor instead.
 func (*RenameDeviceResponse) Descriptor() ([]byte, []int) {
 	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *RenameDeviceResponse) GetDevice() *Device {
+	if x != nil {
+		return x.Device
+	}
+	return nil
 }
 
 type RevokeDeviceRequest struct {
@@ -5962,7 +5981,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\aroaming\x18\x05 \x01(\bR\aroaming\x12\x10\n" +
 	"\x03vpn\x18\x06 \x01(\bR\x03vpn\x12\x1d\n" +
 	"\n" +
-	"data_saver\x18\a \x01(\bR\tdataSaver\"\xc0\x03\n" +
+	"data_saver\x18\a \x01(\bR\tdataSaver\"\xe5\x03\n" +
 	"\x06Device\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
@@ -5975,7 +5994,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x10added_at_unix_ms\x18\t \x01(\x03R\raddedAtUnixMs\x12.\n" +
 	"\x14last_seen_at_unix_ms\x18\n" +
 	" \x01(\x03R\x10lastSeenAtUnixMs\x12:\n" +
-	"\x19peer_require_confirmation\x18\v \x01(\bR\x17peerRequireConfirmation\"F\n" +
+	"\x19peer_require_confirmation\x18\v \x01(\bR\x17peerRequireConfirmation\x12#\n" +
+	"\rintroduced_by\x18\r \x01(\tR\fintroducedBy\"F\n" +
 	"\x10FriendsDiscovery\x12\x0e\n" +
 	"\x02on\x18\x01 \x01(\bR\x02on\x12\"\n" +
 	"\runtil_unix_ms\x18\x02 \x01(\x03R\vuntilUnixMs\"c\n" +
@@ -6086,8 +6106,9 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\adevices\x18\x01 \x03(\v2\x17.unison.local.v1.DeviceR\adevices\"F\n" +
 	"\x13RenameDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"\x16\n" +
-	"\x14RenameDeviceResponse\"2\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"G\n" +
+	"\x14RenameDeviceResponse\x12/\n" +
+	"\x06device\x18\x01 \x01(\v2\x17.unison.local.v1.DeviceR\x06device\"2\n" +
 	"\x13RevokeDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
 	"\x14RevokeDeviceResponse\"i\n" +
@@ -6561,124 +6582,125 @@ var file_unison_local_v1_local_proto_depIdxs = []int32{
 	14,  // 26: unison.local.v1.GetStatusResponse.friends_discovery:type_name -> unison.local.v1.FriendsDiscovery
 	19,  // 27: unison.local.v1.WatchEventsResponse.event:type_name -> unison.local.v1.Event
 	13,  // 28: unison.local.v1.ListDevicesResponse.devices:type_name -> unison.local.v1.Device
-	13,  // 29: unison.local.v1.SetPeerAddressResponse.device:type_name -> unison.local.v1.Device
-	14,  // 30: unison.local.v1.SetFriendsDiscoveryResponse.friends_discovery:type_name -> unison.local.v1.FriendsDiscovery
-	0,   // 31: unison.local.v1.OpenPairingWindowRequest.role:type_name -> unison.local.v1.Role
-	20,  // 32: unison.local.v1.OpenPairingWindowResponse.window:type_name -> unison.local.v1.PairingWindow
-	20,  // 33: unison.local.v1.ExtendPairingWindowResponse.window:type_name -> unison.local.v1.PairingWindow
-	22,  // 34: unison.local.v1.ListPairingCandidatesResponse.candidates:type_name -> unison.local.v1.PairingCandidate
-	21,  // 35: unison.local.v1.GetPairingQrResponse.qr:type_name -> unison.local.v1.PairingQr
-	17,  // 36: unison.local.v1.GetClipResponse.item:type_name -> unison.local.v1.ClipItem
-	17,  // 37: unison.local.v1.SetClipResponse.item:type_name -> unison.local.v1.ClipItem
-	17,  // 38: unison.local.v1.HistoryItem.item:type_name -> unison.local.v1.ClipItem
-	3,   // 39: unison.local.v1.ListHistoryRequest.kind:type_name -> unison.local.v1.Kind
-	64,  // 40: unison.local.v1.ListHistoryResponse.items:type_name -> unison.local.v1.HistoryItem
-	64,  // 41: unison.local.v1.GetHistoryItemResponse.item:type_name -> unison.local.v1.HistoryItem
-	64,  // 42: unison.local.v1.FetchHistoryItemResponse.item:type_name -> unison.local.v1.HistoryItem
-	7,   // 43: unison.local.v1.Transfer.direction:type_name -> unison.local.v1.TransferDirection
-	8,   // 44: unison.local.v1.Transfer.state:type_name -> unison.local.v1.TransferState
-	77,  // 45: unison.local.v1.Transfer.files:type_name -> unison.local.v1.TransferFile
-	78,  // 46: unison.local.v1.SendFilesResponse.transfers:type_name -> unison.local.v1.Transfer
-	78,  // 47: unison.local.v1.ListTransfersResponse.transfers:type_name -> unison.local.v1.Transfer
-	77,  // 48: unison.local.v1.ShareRequest.files:type_name -> unison.local.v1.TransferFile
-	89,  // 49: unison.local.v1.ListRequestsResponse.requests:type_name -> unison.local.v1.ShareRequest
-	89,  // 50: unison.local.v1.DecideRequestResponse.request:type_name -> unison.local.v1.ShareRequest
-	15,  // 51: unison.local.v1.GetPauseResponse.pause:type_name -> unison.local.v1.Pause
-	6,   // 52: unison.local.v1.SetPauseRequest.mode:type_name -> unison.local.v1.PauseMode
-	15,  // 53: unison.local.v1.SetPauseResponse.pause:type_name -> unison.local.v1.Pause
-	25,  // 54: unison.local.v1.GetSettingsResponse.settings:type_name -> unison.local.v1.Settings
-	24,  // 55: unison.local.v1.UpdateSettingsRequest.unmetered:type_name -> unison.local.v1.PolicyRow
-	24,  // 56: unison.local.v1.UpdateSettingsRequest.metered:type_name -> unison.local.v1.PolicyRow
-	24,  // 57: unison.local.v1.UpdateSettingsRequest.roaming:type_name -> unison.local.v1.PolicyRow
-	24,  // 58: unison.local.v1.UpdateSettingsRequest.data_saver:type_name -> unison.local.v1.PolicyRow
-	25,  // 59: unison.local.v1.UpdateSettingsResponse.settings:type_name -> unison.local.v1.Settings
-	11,  // 60: unison.local.v1.Relay.transport:type_name -> unison.local.v1.RelayTransport
-	102, // 61: unison.local.v1.GetRelayResponse.relay:type_name -> unison.local.v1.Relay
-	102, // 62: unison.local.v1.SetRelayResponse.relay:type_name -> unison.local.v1.Relay
-	102, // 63: unison.local.v1.RelayOffResponse.relay:type_name -> unison.local.v1.Relay
-	26,  // 64: unison.local.v1.UnisonService.GetStatus:input_type -> unison.local.v1.GetStatusRequest
-	28,  // 65: unison.local.v1.UnisonService.WatchEvents:input_type -> unison.local.v1.WatchEventsRequest
-	30,  // 66: unison.local.v1.UnisonService.ListDevices:input_type -> unison.local.v1.ListDevicesRequest
-	32,  // 67: unison.local.v1.UnisonService.RenameDevice:input_type -> unison.local.v1.RenameDeviceRequest
-	34,  // 68: unison.local.v1.UnisonService.RevokeDevice:input_type -> unison.local.v1.RevokeDeviceRequest
-	36,  // 69: unison.local.v1.UnisonService.SetDeviceConfirmation:input_type -> unison.local.v1.SetDeviceConfirmationRequest
-	38,  // 70: unison.local.v1.UnisonService.SetPeerAddress:input_type -> unison.local.v1.SetPeerAddressRequest
-	42,  // 71: unison.local.v1.UnisonService.OpenPairingWindow:input_type -> unison.local.v1.OpenPairingWindowRequest
-	44,  // 72: unison.local.v1.UnisonService.ExtendPairingWindow:input_type -> unison.local.v1.ExtendPairingWindowRequest
-	46,  // 73: unison.local.v1.UnisonService.ClosePairingWindow:input_type -> unison.local.v1.ClosePairingWindowRequest
-	48,  // 74: unison.local.v1.UnisonService.ListPairingCandidates:input_type -> unison.local.v1.ListPairingCandidatesRequest
-	50,  // 75: unison.local.v1.UnisonService.StartSas:input_type -> unison.local.v1.StartSasRequest
-	52,  // 76: unison.local.v1.UnisonService.ConfirmSas:input_type -> unison.local.v1.ConfirmSasRequest
-	54,  // 77: unison.local.v1.UnisonService.RejectSas:input_type -> unison.local.v1.RejectSasRequest
-	56,  // 78: unison.local.v1.UnisonService.GetPairingQr:input_type -> unison.local.v1.GetPairingQrRequest
-	58,  // 79: unison.local.v1.UnisonService.ScanPairingQr:input_type -> unison.local.v1.ScanPairingQrRequest
-	60,  // 80: unison.local.v1.UnisonService.GetClip:input_type -> unison.local.v1.GetClipRequest
-	62,  // 81: unison.local.v1.UnisonService.SetClip:input_type -> unison.local.v1.SetClipRequest
-	65,  // 82: unison.local.v1.UnisonService.ListHistory:input_type -> unison.local.v1.ListHistoryRequest
-	67,  // 83: unison.local.v1.UnisonService.GetHistoryItem:input_type -> unison.local.v1.GetHistoryItemRequest
-	69,  // 84: unison.local.v1.UnisonService.DeleteHistoryItem:input_type -> unison.local.v1.DeleteHistoryItemRequest
-	71,  // 85: unison.local.v1.UnisonService.FetchHistoryItem:input_type -> unison.local.v1.FetchHistoryItemRequest
-	73,  // 86: unison.local.v1.UnisonService.CopyHistoryItem:input_type -> unison.local.v1.CopyHistoryItemRequest
-	75,  // 87: unison.local.v1.UnisonService.ApplyHistoryItem:input_type -> unison.local.v1.ApplyHistoryItemRequest
-	79,  // 88: unison.local.v1.UnisonService.SendFiles:input_type -> unison.local.v1.SendFilesRequest
-	81,  // 89: unison.local.v1.UnisonService.ListTransfers:input_type -> unison.local.v1.ListTransfersRequest
-	83,  // 90: unison.local.v1.UnisonService.CancelTransfer:input_type -> unison.local.v1.CancelTransferRequest
-	85,  // 91: unison.local.v1.UnisonService.AcceptTransfer:input_type -> unison.local.v1.AcceptTransferRequest
-	87,  // 92: unison.local.v1.UnisonService.RejectTransfer:input_type -> unison.local.v1.RejectTransferRequest
-	40,  // 93: unison.local.v1.UnisonService.SetFriendsDiscovery:input_type -> unison.local.v1.SetFriendsDiscoveryRequest
-	90,  // 94: unison.local.v1.UnisonService.ListRequests:input_type -> unison.local.v1.ListRequestsRequest
-	92,  // 95: unison.local.v1.UnisonService.DecideRequest:input_type -> unison.local.v1.DecideRequestRequest
-	94,  // 96: unison.local.v1.UnisonService.GetPause:input_type -> unison.local.v1.GetPauseRequest
-	96,  // 97: unison.local.v1.UnisonService.SetPause:input_type -> unison.local.v1.SetPauseRequest
-	98,  // 98: unison.local.v1.UnisonService.GetSettings:input_type -> unison.local.v1.GetSettingsRequest
-	100, // 99: unison.local.v1.UnisonService.UpdateSettings:input_type -> unison.local.v1.UpdateSettingsRequest
-	103, // 100: unison.local.v1.UnisonService.GetRelay:input_type -> unison.local.v1.GetRelayRequest
-	105, // 101: unison.local.v1.UnisonService.SetRelay:input_type -> unison.local.v1.SetRelayRequest
-	107, // 102: unison.local.v1.UnisonService.RelayOff:input_type -> unison.local.v1.RelayOffRequest
-	27,  // 103: unison.local.v1.UnisonService.GetStatus:output_type -> unison.local.v1.GetStatusResponse
-	29,  // 104: unison.local.v1.UnisonService.WatchEvents:output_type -> unison.local.v1.WatchEventsResponse
-	31,  // 105: unison.local.v1.UnisonService.ListDevices:output_type -> unison.local.v1.ListDevicesResponse
-	33,  // 106: unison.local.v1.UnisonService.RenameDevice:output_type -> unison.local.v1.RenameDeviceResponse
-	35,  // 107: unison.local.v1.UnisonService.RevokeDevice:output_type -> unison.local.v1.RevokeDeviceResponse
-	37,  // 108: unison.local.v1.UnisonService.SetDeviceConfirmation:output_type -> unison.local.v1.SetDeviceConfirmationResponse
-	39,  // 109: unison.local.v1.UnisonService.SetPeerAddress:output_type -> unison.local.v1.SetPeerAddressResponse
-	43,  // 110: unison.local.v1.UnisonService.OpenPairingWindow:output_type -> unison.local.v1.OpenPairingWindowResponse
-	45,  // 111: unison.local.v1.UnisonService.ExtendPairingWindow:output_type -> unison.local.v1.ExtendPairingWindowResponse
-	47,  // 112: unison.local.v1.UnisonService.ClosePairingWindow:output_type -> unison.local.v1.ClosePairingWindowResponse
-	49,  // 113: unison.local.v1.UnisonService.ListPairingCandidates:output_type -> unison.local.v1.ListPairingCandidatesResponse
-	51,  // 114: unison.local.v1.UnisonService.StartSas:output_type -> unison.local.v1.StartSasResponse
-	53,  // 115: unison.local.v1.UnisonService.ConfirmSas:output_type -> unison.local.v1.ConfirmSasResponse
-	55,  // 116: unison.local.v1.UnisonService.RejectSas:output_type -> unison.local.v1.RejectSasResponse
-	57,  // 117: unison.local.v1.UnisonService.GetPairingQr:output_type -> unison.local.v1.GetPairingQrResponse
-	59,  // 118: unison.local.v1.UnisonService.ScanPairingQr:output_type -> unison.local.v1.ScanPairingQrResponse
-	61,  // 119: unison.local.v1.UnisonService.GetClip:output_type -> unison.local.v1.GetClipResponse
-	63,  // 120: unison.local.v1.UnisonService.SetClip:output_type -> unison.local.v1.SetClipResponse
-	66,  // 121: unison.local.v1.UnisonService.ListHistory:output_type -> unison.local.v1.ListHistoryResponse
-	68,  // 122: unison.local.v1.UnisonService.GetHistoryItem:output_type -> unison.local.v1.GetHistoryItemResponse
-	70,  // 123: unison.local.v1.UnisonService.DeleteHistoryItem:output_type -> unison.local.v1.DeleteHistoryItemResponse
-	72,  // 124: unison.local.v1.UnisonService.FetchHistoryItem:output_type -> unison.local.v1.FetchHistoryItemResponse
-	74,  // 125: unison.local.v1.UnisonService.CopyHistoryItem:output_type -> unison.local.v1.CopyHistoryItemResponse
-	76,  // 126: unison.local.v1.UnisonService.ApplyHistoryItem:output_type -> unison.local.v1.ApplyHistoryItemResponse
-	80,  // 127: unison.local.v1.UnisonService.SendFiles:output_type -> unison.local.v1.SendFilesResponse
-	82,  // 128: unison.local.v1.UnisonService.ListTransfers:output_type -> unison.local.v1.ListTransfersResponse
-	84,  // 129: unison.local.v1.UnisonService.CancelTransfer:output_type -> unison.local.v1.CancelTransferResponse
-	86,  // 130: unison.local.v1.UnisonService.AcceptTransfer:output_type -> unison.local.v1.AcceptTransferResponse
-	88,  // 131: unison.local.v1.UnisonService.RejectTransfer:output_type -> unison.local.v1.RejectTransferResponse
-	41,  // 132: unison.local.v1.UnisonService.SetFriendsDiscovery:output_type -> unison.local.v1.SetFriendsDiscoveryResponse
-	91,  // 133: unison.local.v1.UnisonService.ListRequests:output_type -> unison.local.v1.ListRequestsResponse
-	93,  // 134: unison.local.v1.UnisonService.DecideRequest:output_type -> unison.local.v1.DecideRequestResponse
-	95,  // 135: unison.local.v1.UnisonService.GetPause:output_type -> unison.local.v1.GetPauseResponse
-	97,  // 136: unison.local.v1.UnisonService.SetPause:output_type -> unison.local.v1.SetPauseResponse
-	99,  // 137: unison.local.v1.UnisonService.GetSettings:output_type -> unison.local.v1.GetSettingsResponse
-	101, // 138: unison.local.v1.UnisonService.UpdateSettings:output_type -> unison.local.v1.UpdateSettingsResponse
-	104, // 139: unison.local.v1.UnisonService.GetRelay:output_type -> unison.local.v1.GetRelayResponse
-	106, // 140: unison.local.v1.UnisonService.SetRelay:output_type -> unison.local.v1.SetRelayResponse
-	108, // 141: unison.local.v1.UnisonService.RelayOff:output_type -> unison.local.v1.RelayOffResponse
-	103, // [103:142] is the sub-list for method output_type
-	64,  // [64:103] is the sub-list for method input_type
-	64,  // [64:64] is the sub-list for extension type_name
-	64,  // [64:64] is the sub-list for extension extendee
-	0,   // [0:64] is the sub-list for field type_name
+	13,  // 29: unison.local.v1.RenameDeviceResponse.device:type_name -> unison.local.v1.Device
+	13,  // 30: unison.local.v1.SetPeerAddressResponse.device:type_name -> unison.local.v1.Device
+	14,  // 31: unison.local.v1.SetFriendsDiscoveryResponse.friends_discovery:type_name -> unison.local.v1.FriendsDiscovery
+	0,   // 32: unison.local.v1.OpenPairingWindowRequest.role:type_name -> unison.local.v1.Role
+	20,  // 33: unison.local.v1.OpenPairingWindowResponse.window:type_name -> unison.local.v1.PairingWindow
+	20,  // 34: unison.local.v1.ExtendPairingWindowResponse.window:type_name -> unison.local.v1.PairingWindow
+	22,  // 35: unison.local.v1.ListPairingCandidatesResponse.candidates:type_name -> unison.local.v1.PairingCandidate
+	21,  // 36: unison.local.v1.GetPairingQrResponse.qr:type_name -> unison.local.v1.PairingQr
+	17,  // 37: unison.local.v1.GetClipResponse.item:type_name -> unison.local.v1.ClipItem
+	17,  // 38: unison.local.v1.SetClipResponse.item:type_name -> unison.local.v1.ClipItem
+	17,  // 39: unison.local.v1.HistoryItem.item:type_name -> unison.local.v1.ClipItem
+	3,   // 40: unison.local.v1.ListHistoryRequest.kind:type_name -> unison.local.v1.Kind
+	64,  // 41: unison.local.v1.ListHistoryResponse.items:type_name -> unison.local.v1.HistoryItem
+	64,  // 42: unison.local.v1.GetHistoryItemResponse.item:type_name -> unison.local.v1.HistoryItem
+	64,  // 43: unison.local.v1.FetchHistoryItemResponse.item:type_name -> unison.local.v1.HistoryItem
+	7,   // 44: unison.local.v1.Transfer.direction:type_name -> unison.local.v1.TransferDirection
+	8,   // 45: unison.local.v1.Transfer.state:type_name -> unison.local.v1.TransferState
+	77,  // 46: unison.local.v1.Transfer.files:type_name -> unison.local.v1.TransferFile
+	78,  // 47: unison.local.v1.SendFilesResponse.transfers:type_name -> unison.local.v1.Transfer
+	78,  // 48: unison.local.v1.ListTransfersResponse.transfers:type_name -> unison.local.v1.Transfer
+	77,  // 49: unison.local.v1.ShareRequest.files:type_name -> unison.local.v1.TransferFile
+	89,  // 50: unison.local.v1.ListRequestsResponse.requests:type_name -> unison.local.v1.ShareRequest
+	89,  // 51: unison.local.v1.DecideRequestResponse.request:type_name -> unison.local.v1.ShareRequest
+	15,  // 52: unison.local.v1.GetPauseResponse.pause:type_name -> unison.local.v1.Pause
+	6,   // 53: unison.local.v1.SetPauseRequest.mode:type_name -> unison.local.v1.PauseMode
+	15,  // 54: unison.local.v1.SetPauseResponse.pause:type_name -> unison.local.v1.Pause
+	25,  // 55: unison.local.v1.GetSettingsResponse.settings:type_name -> unison.local.v1.Settings
+	24,  // 56: unison.local.v1.UpdateSettingsRequest.unmetered:type_name -> unison.local.v1.PolicyRow
+	24,  // 57: unison.local.v1.UpdateSettingsRequest.metered:type_name -> unison.local.v1.PolicyRow
+	24,  // 58: unison.local.v1.UpdateSettingsRequest.roaming:type_name -> unison.local.v1.PolicyRow
+	24,  // 59: unison.local.v1.UpdateSettingsRequest.data_saver:type_name -> unison.local.v1.PolicyRow
+	25,  // 60: unison.local.v1.UpdateSettingsResponse.settings:type_name -> unison.local.v1.Settings
+	11,  // 61: unison.local.v1.Relay.transport:type_name -> unison.local.v1.RelayTransport
+	102, // 62: unison.local.v1.GetRelayResponse.relay:type_name -> unison.local.v1.Relay
+	102, // 63: unison.local.v1.SetRelayResponse.relay:type_name -> unison.local.v1.Relay
+	102, // 64: unison.local.v1.RelayOffResponse.relay:type_name -> unison.local.v1.Relay
+	26,  // 65: unison.local.v1.UnisonService.GetStatus:input_type -> unison.local.v1.GetStatusRequest
+	28,  // 66: unison.local.v1.UnisonService.WatchEvents:input_type -> unison.local.v1.WatchEventsRequest
+	30,  // 67: unison.local.v1.UnisonService.ListDevices:input_type -> unison.local.v1.ListDevicesRequest
+	32,  // 68: unison.local.v1.UnisonService.RenameDevice:input_type -> unison.local.v1.RenameDeviceRequest
+	34,  // 69: unison.local.v1.UnisonService.RevokeDevice:input_type -> unison.local.v1.RevokeDeviceRequest
+	36,  // 70: unison.local.v1.UnisonService.SetDeviceConfirmation:input_type -> unison.local.v1.SetDeviceConfirmationRequest
+	38,  // 71: unison.local.v1.UnisonService.SetPeerAddress:input_type -> unison.local.v1.SetPeerAddressRequest
+	42,  // 72: unison.local.v1.UnisonService.OpenPairingWindow:input_type -> unison.local.v1.OpenPairingWindowRequest
+	44,  // 73: unison.local.v1.UnisonService.ExtendPairingWindow:input_type -> unison.local.v1.ExtendPairingWindowRequest
+	46,  // 74: unison.local.v1.UnisonService.ClosePairingWindow:input_type -> unison.local.v1.ClosePairingWindowRequest
+	48,  // 75: unison.local.v1.UnisonService.ListPairingCandidates:input_type -> unison.local.v1.ListPairingCandidatesRequest
+	50,  // 76: unison.local.v1.UnisonService.StartSas:input_type -> unison.local.v1.StartSasRequest
+	52,  // 77: unison.local.v1.UnisonService.ConfirmSas:input_type -> unison.local.v1.ConfirmSasRequest
+	54,  // 78: unison.local.v1.UnisonService.RejectSas:input_type -> unison.local.v1.RejectSasRequest
+	56,  // 79: unison.local.v1.UnisonService.GetPairingQr:input_type -> unison.local.v1.GetPairingQrRequest
+	58,  // 80: unison.local.v1.UnisonService.ScanPairingQr:input_type -> unison.local.v1.ScanPairingQrRequest
+	60,  // 81: unison.local.v1.UnisonService.GetClip:input_type -> unison.local.v1.GetClipRequest
+	62,  // 82: unison.local.v1.UnisonService.SetClip:input_type -> unison.local.v1.SetClipRequest
+	65,  // 83: unison.local.v1.UnisonService.ListHistory:input_type -> unison.local.v1.ListHistoryRequest
+	67,  // 84: unison.local.v1.UnisonService.GetHistoryItem:input_type -> unison.local.v1.GetHistoryItemRequest
+	69,  // 85: unison.local.v1.UnisonService.DeleteHistoryItem:input_type -> unison.local.v1.DeleteHistoryItemRequest
+	71,  // 86: unison.local.v1.UnisonService.FetchHistoryItem:input_type -> unison.local.v1.FetchHistoryItemRequest
+	73,  // 87: unison.local.v1.UnisonService.CopyHistoryItem:input_type -> unison.local.v1.CopyHistoryItemRequest
+	75,  // 88: unison.local.v1.UnisonService.ApplyHistoryItem:input_type -> unison.local.v1.ApplyHistoryItemRequest
+	79,  // 89: unison.local.v1.UnisonService.SendFiles:input_type -> unison.local.v1.SendFilesRequest
+	81,  // 90: unison.local.v1.UnisonService.ListTransfers:input_type -> unison.local.v1.ListTransfersRequest
+	83,  // 91: unison.local.v1.UnisonService.CancelTransfer:input_type -> unison.local.v1.CancelTransferRequest
+	85,  // 92: unison.local.v1.UnisonService.AcceptTransfer:input_type -> unison.local.v1.AcceptTransferRequest
+	87,  // 93: unison.local.v1.UnisonService.RejectTransfer:input_type -> unison.local.v1.RejectTransferRequest
+	40,  // 94: unison.local.v1.UnisonService.SetFriendsDiscovery:input_type -> unison.local.v1.SetFriendsDiscoveryRequest
+	90,  // 95: unison.local.v1.UnisonService.ListRequests:input_type -> unison.local.v1.ListRequestsRequest
+	92,  // 96: unison.local.v1.UnisonService.DecideRequest:input_type -> unison.local.v1.DecideRequestRequest
+	94,  // 97: unison.local.v1.UnisonService.GetPause:input_type -> unison.local.v1.GetPauseRequest
+	96,  // 98: unison.local.v1.UnisonService.SetPause:input_type -> unison.local.v1.SetPauseRequest
+	98,  // 99: unison.local.v1.UnisonService.GetSettings:input_type -> unison.local.v1.GetSettingsRequest
+	100, // 100: unison.local.v1.UnisonService.UpdateSettings:input_type -> unison.local.v1.UpdateSettingsRequest
+	103, // 101: unison.local.v1.UnisonService.GetRelay:input_type -> unison.local.v1.GetRelayRequest
+	105, // 102: unison.local.v1.UnisonService.SetRelay:input_type -> unison.local.v1.SetRelayRequest
+	107, // 103: unison.local.v1.UnisonService.RelayOff:input_type -> unison.local.v1.RelayOffRequest
+	27,  // 104: unison.local.v1.UnisonService.GetStatus:output_type -> unison.local.v1.GetStatusResponse
+	29,  // 105: unison.local.v1.UnisonService.WatchEvents:output_type -> unison.local.v1.WatchEventsResponse
+	31,  // 106: unison.local.v1.UnisonService.ListDevices:output_type -> unison.local.v1.ListDevicesResponse
+	33,  // 107: unison.local.v1.UnisonService.RenameDevice:output_type -> unison.local.v1.RenameDeviceResponse
+	35,  // 108: unison.local.v1.UnisonService.RevokeDevice:output_type -> unison.local.v1.RevokeDeviceResponse
+	37,  // 109: unison.local.v1.UnisonService.SetDeviceConfirmation:output_type -> unison.local.v1.SetDeviceConfirmationResponse
+	39,  // 110: unison.local.v1.UnisonService.SetPeerAddress:output_type -> unison.local.v1.SetPeerAddressResponse
+	43,  // 111: unison.local.v1.UnisonService.OpenPairingWindow:output_type -> unison.local.v1.OpenPairingWindowResponse
+	45,  // 112: unison.local.v1.UnisonService.ExtendPairingWindow:output_type -> unison.local.v1.ExtendPairingWindowResponse
+	47,  // 113: unison.local.v1.UnisonService.ClosePairingWindow:output_type -> unison.local.v1.ClosePairingWindowResponse
+	49,  // 114: unison.local.v1.UnisonService.ListPairingCandidates:output_type -> unison.local.v1.ListPairingCandidatesResponse
+	51,  // 115: unison.local.v1.UnisonService.StartSas:output_type -> unison.local.v1.StartSasResponse
+	53,  // 116: unison.local.v1.UnisonService.ConfirmSas:output_type -> unison.local.v1.ConfirmSasResponse
+	55,  // 117: unison.local.v1.UnisonService.RejectSas:output_type -> unison.local.v1.RejectSasResponse
+	57,  // 118: unison.local.v1.UnisonService.GetPairingQr:output_type -> unison.local.v1.GetPairingQrResponse
+	59,  // 119: unison.local.v1.UnisonService.ScanPairingQr:output_type -> unison.local.v1.ScanPairingQrResponse
+	61,  // 120: unison.local.v1.UnisonService.GetClip:output_type -> unison.local.v1.GetClipResponse
+	63,  // 121: unison.local.v1.UnisonService.SetClip:output_type -> unison.local.v1.SetClipResponse
+	66,  // 122: unison.local.v1.UnisonService.ListHistory:output_type -> unison.local.v1.ListHistoryResponse
+	68,  // 123: unison.local.v1.UnisonService.GetHistoryItem:output_type -> unison.local.v1.GetHistoryItemResponse
+	70,  // 124: unison.local.v1.UnisonService.DeleteHistoryItem:output_type -> unison.local.v1.DeleteHistoryItemResponse
+	72,  // 125: unison.local.v1.UnisonService.FetchHistoryItem:output_type -> unison.local.v1.FetchHistoryItemResponse
+	74,  // 126: unison.local.v1.UnisonService.CopyHistoryItem:output_type -> unison.local.v1.CopyHistoryItemResponse
+	76,  // 127: unison.local.v1.UnisonService.ApplyHistoryItem:output_type -> unison.local.v1.ApplyHistoryItemResponse
+	80,  // 128: unison.local.v1.UnisonService.SendFiles:output_type -> unison.local.v1.SendFilesResponse
+	82,  // 129: unison.local.v1.UnisonService.ListTransfers:output_type -> unison.local.v1.ListTransfersResponse
+	84,  // 130: unison.local.v1.UnisonService.CancelTransfer:output_type -> unison.local.v1.CancelTransferResponse
+	86,  // 131: unison.local.v1.UnisonService.AcceptTransfer:output_type -> unison.local.v1.AcceptTransferResponse
+	88,  // 132: unison.local.v1.UnisonService.RejectTransfer:output_type -> unison.local.v1.RejectTransferResponse
+	41,  // 133: unison.local.v1.UnisonService.SetFriendsDiscovery:output_type -> unison.local.v1.SetFriendsDiscoveryResponse
+	91,  // 134: unison.local.v1.UnisonService.ListRequests:output_type -> unison.local.v1.ListRequestsResponse
+	93,  // 135: unison.local.v1.UnisonService.DecideRequest:output_type -> unison.local.v1.DecideRequestResponse
+	95,  // 136: unison.local.v1.UnisonService.GetPause:output_type -> unison.local.v1.GetPauseResponse
+	97,  // 137: unison.local.v1.UnisonService.SetPause:output_type -> unison.local.v1.SetPauseResponse
+	99,  // 138: unison.local.v1.UnisonService.GetSettings:output_type -> unison.local.v1.GetSettingsResponse
+	101, // 139: unison.local.v1.UnisonService.UpdateSettings:output_type -> unison.local.v1.UpdateSettingsResponse
+	104, // 140: unison.local.v1.UnisonService.GetRelay:output_type -> unison.local.v1.GetRelayResponse
+	106, // 141: unison.local.v1.UnisonService.SetRelay:output_type -> unison.local.v1.SetRelayResponse
+	108, // 142: unison.local.v1.UnisonService.RelayOff:output_type -> unison.local.v1.RelayOffResponse
+	104, // [104:143] is the sub-list for method output_type
+	65,  // [65:104] is the sub-list for method input_type
+	65,  // [65:65] is the sub-list for extension type_name
+	65,  // [65:65] is the sub-list for extension extendee
+	0,   // [0:65] is the sub-list for field type_name
 }
 
 func init() { file_unison_local_v1_local_proto_init() }

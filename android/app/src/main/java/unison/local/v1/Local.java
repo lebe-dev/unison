@@ -2402,6 +2402,28 @@ public final class Local {
      * @return The peerRequireConfirmation.
      */
     boolean getPeerRequireConfirmation();
+
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     * @return The introducedBy.
+     */
+    java.lang.String getIntroducedBy();
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     * @return The bytes for introducedBy.
+     */
+    com.google.protobuf.ByteString
+        getIntroducedByBytes();
   }
   /**
    * <pre>
@@ -2418,6 +2440,7 @@ public final class Local {
     private Device() {
       deviceId_ = "";
       name_ = "";
+      introducedBy_ = "";
     }
     public static final int DEVICE_ID_FIELD_NUMBER = 1;
     private java.lang.String deviceId_;
@@ -2867,6 +2890,78 @@ public final class Local {
     private void clearPeerRequireConfirmation() {
 
       peerRequireConfirmation_ = false;
+    }
+
+    public static final int INTRODUCED_BY_FIELD_NUMBER = 13;
+    private java.lang.String introducedBy_;
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     * @return The introducedBy.
+     */
+    @java.lang.Override
+    public java.lang.String getIntroducedBy() {
+      return introducedBy_;
+    }
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     * @return The bytes for introducedBy.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIntroducedByBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(introducedBy_);
+    }
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     * @param value The introducedBy to set.
+     */
+    private void setIntroducedBy(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      introducedBy_ = value;
+    }
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     */
+    private void clearIntroducedBy() {
+
+      introducedBy_ = getDefaultInstance().getIntroducedBy();
+    }
+    /**
+     * <pre>
+     * Device that introduced this one to the group, in lowercase hex. Empty for
+     * a device that was paired directly.
+     * </pre>
+     *
+     * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+     * @param value The bytes for introducedBy to set.
+     */
+    private void setIntroducedByBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      introducedBy_ = value.toStringUtf8();
+
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -3448,6 +3543,80 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * Device that introduced this one to the group, in lowercase hex. Empty for
+       * a device that was paired directly.
+       * </pre>
+       *
+       * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+       * @return The introducedBy.
+       */
+      @java.lang.Override
+      public java.lang.String getIntroducedBy() {
+        return instance.getIntroducedBy();
+      }
+      /**
+       * <pre>
+       * Device that introduced this one to the group, in lowercase hex. Empty for
+       * a device that was paired directly.
+       * </pre>
+       *
+       * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+       * @return The bytes for introducedBy.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIntroducedByBytes() {
+        return instance.getIntroducedByBytes();
+      }
+      /**
+       * <pre>
+       * Device that introduced this one to the group, in lowercase hex. Empty for
+       * a device that was paired directly.
+       * </pre>
+       *
+       * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+       * @param value The introducedBy to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIntroducedBy(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setIntroducedBy(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device that introduced this one to the group, in lowercase hex. Empty for
+       * a device that was paired directly.
+       * </pre>
+       *
+       * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearIntroducedBy() {
+        copyOnWrite();
+        instance.clearIntroducedBy();
+        return this;
+      }
+      /**
+       * <pre>
+       * Device that introduced this one to the group, in lowercase hex. Empty for
+       * a device that was paired directly.
+       * </pre>
+       *
+       * <code>string introduced_by = 13 [json_name = "introducedBy"];</code>
+       * @param value The bytes for introducedBy to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIntroducedByBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIntroducedByBytes(value);
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -3475,10 +3644,11 @@ public final class Local {
               "addedAtUnixMs_",
               "lastSeenAtUnixMs_",
               "peerRequireConfirmation_",
+              "introducedBy_",
             };
             java.lang.String info =
-                "\u0000\u000b\u0000\u0000\u0001\u000b\u000b\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
-                "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
+                "\u0000\f\u0000\u0000\u0001\r\f\u0000\u0000\u0000\u0001\u0208\u0002\u0208\u0003\f" +
+                "\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007\r\u0208" +
                 "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
@@ -16605,7 +16775,7 @@ java.lang.String defaultValue) {
 
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16614,7 +16784,7 @@ java.lang.String defaultValue) {
     java.lang.String getDeviceId();
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16651,7 +16821,7 @@ java.lang.String defaultValue) {
     private java.lang.String deviceId_;
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16663,7 +16833,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16676,7 +16846,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16690,7 +16860,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16701,7 +16871,7 @@ java.lang.String defaultValue) {
     }
     /**
      * <pre>
-     * Device ID in lowercase hex.
+     * Device ID in lowercase hex. The ID of this device renames this device.
      * </pre>
      *
      * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16860,7 +17030,7 @@ java.lang.String defaultValue) {
 
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. The ID of this device renames this device.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16872,7 +17042,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. The ID of this device renames this device.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16885,7 +17055,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. The ID of this device renames this device.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16900,7 +17070,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. The ID of this device renames this device.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -16913,7 +17083,7 @@ java.lang.String defaultValue) {
       }
       /**
        * <pre>
-       * Device ID in lowercase hex.
+       * Device ID in lowercase hex. The ID of this device renames this device.
        * </pre>
        *
        * <code>string device_id = 1 [json_name = "deviceId"];</code>
@@ -17055,6 +17225,25 @@ java.lang.String defaultValue) {
   public interface RenameDeviceResponseOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.RenameDeviceResponse)
       com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     * @return Whether the device field is set.
+     */
+    boolean hasDevice();
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     * @return The device.
+     */
+    unison.local.v1.Local.Device getDevice();
   }
   /**
    * Protobuf type {@code unison.local.v1.RenameDeviceResponse}
@@ -17066,6 +17255,74 @@ java.lang.String defaultValue) {
       RenameDeviceResponseOrBuilder {
     private RenameDeviceResponse() {
     }
+    private int bitField0_;
+    public static final int DEVICE_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Device device_;
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    @java.lang.Override
+    public boolean hasDevice() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Device getDevice() {
+      return device_ == null ? unison.local.v1.Local.Device.getDefaultInstance() : device_;
+    }
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    private void setDevice(unison.local.v1.Local.Device value) {
+      java.util.Objects.requireNonNull(value);
+      device_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeDevice(unison.local.v1.Local.Device value) {
+      java.util.Objects.requireNonNull(value);
+      if (device_ != null &&
+          device_ != unison.local.v1.Local.Device.getDefaultInstance()) {
+        device_ =
+          unison.local.v1.Local.Device.newBuilder(device_).mergeFrom(value).buildPartial();
+      } else {
+        device_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The device with its new name.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+     */
+    private void clearDevice() {
+      device_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
     public static unison.local.v1.Local.RenameDeviceResponse parseFrom(
         java.nio.ByteBuffer data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -17163,6 +17420,77 @@ java.lang.String defaultValue) {
       }
 
 
+      /**
+       * <pre>
+       * The device with its new name.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      @java.lang.Override
+      public boolean hasDevice() {
+        return instance.hasDevice();
+      }
+      /**
+       * <pre>
+       * The device with its new name.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Device getDevice() {
+        return instance.getDevice();
+      }
+      /**
+       * <pre>
+       * The device with its new name.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder setDevice(unison.local.v1.Local.Device value) {
+        copyOnWrite();
+        instance.setDevice(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The device with its new name.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder setDevice(
+          unison.local.v1.Local.Device.Builder builderForValue) {
+        copyOnWrite();
+        instance.setDevice(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The device with its new name.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder mergeDevice(unison.local.v1.Local.Device value) {
+        copyOnWrite();
+        instance.mergeDevice(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device with its new name.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Device device = 1 [json_name = "device"];</code>
+       */
+      public Builder clearDevice() {  copyOnWrite();
+        instance.clearDevice();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.RenameDeviceResponse)
     }
     @java.lang.Override
@@ -17178,9 +17506,12 @@ java.lang.String defaultValue) {
           return new Builder();
         }
         case BUILD_MESSAGE_INFO: {
-            java.lang.Object[] objects = null;
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "device_",
+            };
             java.lang.String info =
-                "\u0000\u0000";
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
