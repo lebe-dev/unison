@@ -15,6 +15,9 @@ the bridge stays inactive while no such keyboard is installed.
 - An item copied on another device appears as a chip in the suggestion strip of the keyboard. A tap
   inserts the text at the cursor, or hands an image or a file to the editor.
 - The keyboard sees the pause of the synchronization and can change it.
+- The keyboard learns what happened to a publish: accepted by the core, refused by the pause, refused
+  because the core is unavailable or refused because the type is not carried. The result methods
+  answer every publish.
 
 ## What it needs
 
@@ -23,7 +26,9 @@ the bridge stays inactive while no such keyboard is installed.
 - At least one paired Personal device. Without one, an item stays in the history until a device
   connects.
 - No file leaves the phone through the bridge: text and images are published, a file can only be
-  received and opened.
+  received and opened. A publish of another type is refused and reported.
+- The app serves contract version 2. The base methods work with version 1 too; the publish results
+  need `BridgeContract.PUBLISH_RESULTS_VERSION`.
 
 ## For the keyboard developer
 

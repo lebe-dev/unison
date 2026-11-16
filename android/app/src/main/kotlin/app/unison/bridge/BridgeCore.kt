@@ -1,12 +1,22 @@
 package app.unison.bridge
 
 import android.content.Context
+import android.util.Log
 import app.unison.core.CoreClient
 import app.unison.core.CoreException
 import app.unison.core.CoreStarter
 import app.unison.core.mobile.Mobile
 import unison.local.v1.Local
 import unison.mobile.v1.Mobile as MobileProto
+
+/** Outcome of handing content to the core. */
+enum class SubmitOutcome {
+    ACCEPTED,
+    PAUSED,
+    CORE_UNAVAILABLE,
+    UNSUPPORTED_TYPE,
+    FAILED,
+}
 
 /** Core operations the bridge needs. */
 interface BridgeCore {
@@ -29,7 +39,7 @@ interface BridgeCore {
     suspend fun fetch(id: String, path: String): List<String>
 
     /** Sends local content to the core. */
-    suspend fun submit(payload: MobileProto.ClipPayload)
+    suspend fun submit(payload: MobileProto.ClipPayload): SubmitOutcome
 }
 
 /** Bridge core backed by the in-process local API and the gomobile facade. */
@@ -64,14 +74,42 @@ class MobileBridgeCore(
     override suspend fun fetch(id: String, path: String): List<String> =
         client.fetchHistoryItem(id, path).filesList
 
-    override suspend fun submit(payload: MobileProto.ClipPayload) {
-        requireRunning()
-        Mobile.submitClip(payload.toByteArray())
+    override suspend fun submit(payload: MobileProto.ClipPayload): SubmitOutcome {
+        if (!ensureRunning()) {
+            return SubmitOutcome.CORE_UNAVAILABLE
+        }
+        return try {
+            Mobile.submitClip(payload.toByteArray())
+            SubmitOutcome.ACCEPTED
+        } catch (e: Exception) {
+            Log.d(TAG, "submit failed: ${e.message}")
+            outcomeOf(e.message.orEmpty())
+        }
+    }
+
+    /**
+     * The facade reports every failure as an exception that carries the message of the core,
+     * so the outcome is read from that message.
+     */
+    private fun outcomeOf(message: String): SubmitOutcome = when {
+        message.contains(PAUSED_MARK) -> SubmitOutcome.PAUSED
+        message.contains(UNSUPPORTED_MARK) -> SubmitOutcome.UNSUPPORTED_TYPE
+        message.contains(NOT_RUNNING_MARK) -> SubmitOutcome.CORE_UNAVAILABLE
+        else -> SubmitOutcome.FAILED
     }
 
     private suspend fun requireRunning() {
         if (!ensureRunning()) {
             throw CoreException(CoreException.CODE_FAILED_PRECONDITION, "core is not running")
         }
+    }
+
+    private companion object {
+        private const val TAG = "MobileBridgeCore"
+
+        /** Parts of the error messages of clip.ErrPaused, clip.ErrUnsupportedContent and the facade. */
+        private const val PAUSED_MARK = "synchronization is paused"
+        private const val UNSUPPORTED_MARK = "unsupported content"
+        private const val NOT_RUNNING_MARK = "core is not running"
     }
 }

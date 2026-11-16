@@ -505,10 +505,12 @@ lives in the `app.unison.core.mobile` package; `android-build` runs `aar` first 
 app cannot be compiled without it.
 
 The AIDL contract between the app and the keyboard lives in the `android/bridge-aidl` module:
-`IUnisonBridge` and the oneway `IUnisonBridgeListener` of the `app.unison.bridge` package. The
-interfaces are frozen, so new methods are only appended at the end, and a caller reads
-`protocolVersion()` before it uses methods it does not know. `BridgeContract` holds the package,
-the bind action, the service class, the signature permission and the protocol version.
+`IUnisonBridge`, the oneway `IPublishCallback` and the oneway `IUnisonBridgeListener` of the
+`app.unison.bridge` package. The interfaces are frozen, so new methods are only appended at the end,
+and a caller reads `protocolVersion()` before it uses methods it does not know. `BridgeContract`
+holds the package, the bind action, the service class, the signature permission, the protocol
+version, the MIME check and the publish result codes; the bridge reports the outcome of a publish
+through `IPublishCallback`.
 `just bridge-publish` publishes the module as `app.unison:bridge-aidl:<version>` to
 `~/.m2/repository` and to `android/build/maven`, which the keyboard repository adds as a Maven
 repository; the AAR is not committed.

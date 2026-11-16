@@ -16,6 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import unison.local.v1.Local
 
@@ -52,6 +53,33 @@ class BridgeServiceTest {
         try {
             bridge.publishText(ClipPayload(text, null, "text/plain", text.length.toLong()))
             assertTrue("the item did not reach the history", runBlocking { awaitHistory(core, text) })
+        } finally {
+            context.unbindService(connection)
+        }
+    }
+
+    @Test
+    fun reportsTheResultOfAPublish() {
+        val core = CoreClient()
+        assertTrue("the core did not start", runBlocking { CoreStarter.await(context, START_MS) })
+        runBlocking { core.setPause(Local.PauseMode.PAUSE_MODE_OFF, 0) }
+
+        val results = LinkedBlockingQueue<PublishResult>()
+        val callback = object : IPublishCallback.Stub() {
+            override fun onPublishResult(result: PublishResult?) {
+                result?.let(results::put)
+            }
+        }
+        val text = "bridge result ${System.currentTimeMillis()}"
+        val bridge = IUnisonBridge.Stub.asInterface(bind())
+        try {
+            bridge.publishTextWithResult(
+                ClipPayload(text, null, "text/plain", text.length.toLong()),
+                callback,
+            )
+            val result = results.poll(WAIT_S, TimeUnit.SECONDS)
+            assertEquals(BridgeContract.PUBLISH_ACCEPTED, result?.code)
+            assertEquals("text/plain", result?.mime)
         } finally {
             context.unbindService(connection)
         }

@@ -19,6 +19,8 @@ clipboard and the checks that have to be made on a device.
   strip commits the text into the editor, or hands an image or a file to it.
 - **Pause control.** The keyboard reads the pause of the synchronization and can set it, so a
   hardware key or a long press can silence the synchronization for a while.
+- **Result reporting.** The publish methods with a result tell whether the content was accepted,
+  refused by the pause, refused by an unreachable core or refused as an unsupported type.
 
 The integration is optional in both directions. Without it the keyboard is a normal keyboard, and
 without the keyboard Unison still takes the clipboard from its share target, its quick settings
@@ -34,8 +36,9 @@ tile and its own screen.
   it is in the foreground, so the keyboard reads it from the input method and hands the content over.
 - It does not decide what is sensitive. The app skips a clip that carries
   `ClipDescription.EXTRA_IS_SENSITIVE`, the keyboard has to skip password fields.
-- It does not queue what it cannot deliver. A publish while the synchronization is paused, or content
-  the core cannot carry, is dropped.
+- It does not queue what it cannot deliver. A publish while the synchronization is paused, or
+  content the core cannot carry, is refused; the publish methods with a result report the refusal
+  and the plain methods only log it.
 
 ## Requirements
 
@@ -115,13 +118,16 @@ Without a Maven repository, copy the sources into the keyboard module. Keep the 
 ```
 src/main/aidl/app/unison/bridge/IUnisonBridge.aidl
 src/main/aidl/app/unison/bridge/IUnisonBridgeListener.aidl
+src/main/aidl/app/unison/bridge/IPublishCallback.aidl
 src/main/aidl/app/unison/bridge/ClipPayload.aidl
 src/main/aidl/app/unison/bridge/ClipSummary.aidl
 src/main/aidl/app/unison/bridge/BridgeState.aidl
+src/main/aidl/app/unison/bridge/PublishResult.aidl
 src/main/java/app/unison/bridge/BridgeContract.java
 src/main/java/app/unison/bridge/ClipPayload.java
 src/main/java/app/unison/bridge/ClipSummary.java
 src/main/java/app/unison/bridge/BridgeState.java
+src/main/java/app/unison/bridge/PublishResult.java
 ```
 
 AIDL compilation has to be enabled in the module:
@@ -301,31 +307,34 @@ Everything the bridge returns is a copy; nothing outlives the call.
 
 ## Version check
 
-Read the version of the service right after connecting and compare it with the version of the
-artifact:
+Read the version of the service right after connecting. The app serves version 2: every method of
+version 1 behaves the same, and version 2 adds the publish results.
 
 ```kotlin
 val version = service.protocolVersion()
-if (version < BridgeContract.PROTOCOL_VERSION) {
-    // The app is older than this artifact, do not use the interface.
+if (version < BridgeContract.FIRST_PROTOCOL_VERSION) {
+    // The app does not serve the bridge at all.
     return
 }
+val reportsResults = version >= BridgeContract.PUBLISH_RESULTS_VERSION
 ```
 
-The interface is append-only: new methods are added at the end of `IUnisonBridge` and of
-`IUnisonBridgeListener`, existing methods, their parameters, their order and their constants never
-change. Transaction codes are therefore stable, and a keyboard built against version 1 keeps working
-with every later version of the app.
+The interface is append-only: new methods are added at the end of `IUnisonBridge`, of
+`IPublishCallback` and of `IUnisonBridgeListener`; existing methods, their parameters, their order
+and their constants never change. Transaction codes are therefore stable, and a keyboard built
+against version 1 keeps working with every later version of the app.
 
 | Comparison | Meaning | What to do |
 |------------|---------|------------|
-| `service == artifact` | Same contract | Use everything in this document |
-| `service > artifact` | Newer app, more methods | Use the methods you know, they behave as documented; update the artifact to reach the new ones |
-| `service < artifact` | Older app | Use nothing beyond `protocolVersion`; this document describes version 1, the first one |
+| `service >= artifact` | Same or newer contract | Use the methods you know, they behave as documented |
+| `service < artifact` | Older app | Use the methods the app has; the result methods need `PUBLISH_RESULTS_VERSION` |
 
-`BridgeContract.PROTOCOL_VERSION` is the version of the artifact. Never hardcode the number in your
-own code, and never call a method that a lower version does not have: the transaction fails with a
-runtime exception, not with a useful error.
+`BridgeContract.PROTOCOL_VERSION` is the version of the artifact, `FIRST_PROTOCOL_VERSION` is the
+oldest served version and `PUBLISH_RESULTS_VERSION` is the first version with publish results.
+Never hardcode a number in your own code, and never call a method that a lower version does not
+have: the transaction fails with a runtime exception, not with a useful error. Compare with
+`FIRST_PROTOCOL_VERSION` and `PUBLISH_RESULTS_VERSION` rather than with `PROTOCOL_VERSION`, so a
+keyboard that can live without results keeps working with an older app.
 
 ## Method reference
 
@@ -334,11 +343,13 @@ runtime exception, not with a useful error.
 | `protocolVersion` | No | `int` | Call once after connecting |
 | `publishText` | No | - | Content rides in the transaction |
 | `publishBinary` | No | - | Content rides in a pipe |
-| `registerListener` | No | - | Immediate state callback |
+| `registerListener` | No | - | Immediate state callback, starts the core |
 | `unregisterListener` | No | - | Stops the state poll |
 | `recentRemoteItems` | No | `List<ClipSummary>` | Read from a cache of the app |
 | `openItem` | No | `ParcelFileDescriptor` | A pipe, content is streamed later |
 | `setPaused` | No | - | Result arrives through the listener |
+| `publishTextWithResult` | No | - | Same as `publishText`, outcome in the callback |
+| `publishBinaryWithResult` | No | - | Same as `publishBinary`, outcome in the callback |
 
 All methods are checked against the signature of the caller and throw `SecurityException` when the
 check fails. A call after the app process died throws `RemoteException` or its subclass
@@ -350,8 +361,9 @@ check fails. A call after the app process died throws `RemoteException` or its s
 int protocolVersion();
 ```
 
-Returns the version of the contract served by the app. It does not change within one installed
-version of the app.
+Returns the version of the contract served by the app, 2 in the current release. It does not change
+within one installed version of the app. The result methods need at least
+`BridgeContract.PUBLISH_RESULTS_VERSION`.
 
 ### publishText
 
@@ -362,16 +374,16 @@ void publishText(in ClipPayload payload);
 Publishes one clipboard copy as text.
 
 - `payload.text` becomes the `text/plain` representation, `payload.html` the `text/html` one. Both
-  are optional, but at least one has to be non-empty; with both empty nothing is sent and nothing is
-  reported. `mime` and `size` are ignored here.
+  are optional, but at least one has to be non-empty; with both empty nothing is sent. `mime` and
+  `size` are ignored here.
 - The content travels inside the binder transaction, which is limited to about 1 MB for the pair of
   processes. A larger payload fails in your process with `TransactionTooLargeException`. Keep an
   ordinary copy below a few hundred kilobytes, and send larger text as `text/plain` through
   `publishBinary`.
-- The call returns before the item is recorded. The app submits on a background thread and logs a
-  failure, which covers the paused synchronization, an unreachable core and content the core cannot
-  carry. A successful call means "accepted", not "delivered".
-- An empty or null payload is ignored.
+- The call returns before the item is recorded. The app submits on a background thread, starts the
+  core when needed and logs a refusal. The call itself only means "the app took the payload"; use
+  `publishTextWithResult` when the keyboard has to know whether the core accepted it.
+- An empty or null payload is refused with `PUBLISH_EMPTY`; nothing reaches the core.
 
 ### publishBinary
 
@@ -384,17 +396,20 @@ Publishes content that is too large for a binder transaction, streamed through a
 - Create the pipe with `ParcelFileDescriptor.createPipe()`, pass the read end as `data`, write into
   the write end on a background thread and close the write end when the content ends. The app reads
   until EOF.
-- `meta.mime` selects the type; an empty value becomes `application/octet-stream`. `meta.text`,
-  `meta.html` and `meta.size` are ignored.
-- The app accepts at most 16 MiB per publish. A larger stream is dropped without a report.
+- `meta.mime` is required and selects the type; `meta.text`, `meta.html` and `meta.size` are ignored.
+  An empty value is refused as an unsupported type.
+- Only `text/plain`, `text/html` and `image/*` are carried by the core. Any other type, for example
+  `application/pdf` or `application/zip`, is refused: the app closes the read end, so the write in
+  your process fails with `IOException`, the app logs the type and the result is
+  `PUBLISH_UNSUPPORTED_TYPE`. `BridgeContract.isSupportedMime(mime)` gives the same check before the
+  call.
+- Images are normalized to PNG by the core. An image above 64 MiB, 8192 pixels on a side or 24
+  megapixels is refused as an unsupported type by the core, whose message is in the app log.
+- The app accepts at most 16 MiB per publish. A larger stream is refused with `PUBLISH_TOO_LARGE`.
 - The write has to finish within 30 seconds. After that the app closes the read end and the write
-  fails with `IOException`. Never wait for a large download before calling: open the pipe, call, and
-  stream into it.
-- Only `text/plain`, `text/html` and `image/*` are carried by the core. A file, a binary blob or an
-  archive with another type is dropped. Images are normalized to PNG by the core; an image above
-  64 MiB, 8192 pixels on a side or 24 megapixels is dropped. The 16 MiB of the bridge is the
-  practical limit.
-- A null descriptor is ignored.
+  fails with `IOException`; the result is `PUBLISH_READ_FAILED`. Open the pipe, call, and stream into
+  it; never wait for a large download before calling.
+- A null descriptor is refused with `PUBLISH_EMPTY`.
 - The call returns at once and the reading runs in the app. Close your copy of the read end right
   after the call returns: the descriptor was duplicated into the app during the transaction, and your
   copy is not needed.
@@ -407,10 +422,14 @@ void registerListener(IUnisonBridgeListener listener);
 
 Subscribes to incoming items and state changes.
 
+- The app starts the core when it does not answer, so the state and the recent items are live
+  without a publish first.
 - The current `BridgeState` is delivered through `onStateChanged` right after the listener is
-  registered. The callback is oneway, so it arrives shortly after the call returns.
+  registered, and once more after the core reported the current state. The callback is oneway, so
+  it arrives shortly after the call returns.
 - The app reloads its cache of recent items and starts polling the pause and the number of online
-  devices every 30 seconds while at least one listener is registered.
+  devices every 30 seconds while at least one listener is registered. Read `recentRemoteItems` from
+  the callbacks: a read straight after registration can still be empty while the core starts.
 - A null listener is ignored. Several listeners are allowed and every one gets every item.
 - Registration belongs to the binder: a new connection, a restarted app or an update loses it.
   Register again in every `onServiceConnected`.
@@ -452,15 +471,18 @@ ParcelFileDescriptor openItem(String itemId, String mime);
 
 Opens the content of an item as a read-only pipe.
 
-- A null or empty id gives null. Any other id gives a descriptor, even when the item is unknown, gone
-  or expired; the stream then ends without a single byte. Treat a stream without bytes as "not
-  available" and drop the chip.
+- A null or empty id gives null. An id that is unknown, expired or already deleted gives null too,
+  and so does a call while the core cannot be reached. There is no empty pipe for a missing item:
+  drop the chip.
 - `mime` selects the representation by its exact type from `ClipSummary.mimeTypes`. When the item has
   no representation of that type, the first one is used, so an empty string opens the first
   representation.
 - A text item is served from the history at once. An image or file that is not on the phone yet is
   downloaded from an online device during the read, so a first read of such an item can take as long
   as the download.
+- A descriptor that ends without bytes means the item exists but its payload cannot be fetched: it is
+  metadata only and no device with the content is online, or the download failed. Keep the chip and
+  retry later.
 - Read until EOF and close the descriptor. The app closes the pipe when the reader takes nothing
   within 60 seconds.
 - The pipe is not seekable and has no length. Read it once, on a background thread, and keep the
@@ -485,10 +507,59 @@ Turns the pause of the clipboard synchronization on or off.
 - There is no result and no error. The new state arrives through `onStateChanged`, and a request the
   app cannot pass to its core is dropped.
 - The pause is stored by the core, so it survives a restart of both apps, and it covers both
-  directions: while it is on, published items are dropped and arriving items are dropped instead of
-  being recorded.
+  directions: while it is on, published content is refused with `PUBLISH_PAUSED` and arriving items
+  are dropped instead of being recorded.
 - The pause belongs to the phone: the quick settings tile, the app screen and the keyboard all see and
   change the same state. A pause set on the desktop affects the desktop only.
+
+## Publish results
+
+`publishTextWithResult` and `publishBinaryWithResult` are the same calls as `publishText` and
+`publishBinary` plus an `IPublishCallback` that reports what happened to the content:
+
+```aidl
+oneway interface IPublishCallback {
+    void onPublishResult(in PublishResult result);
+}
+```
+
+The callback is called exactly once per publish, on a binder thread of your process, and the app
+never waits for it. `PublishResult` carries the `code` and the `mime` the app tried:
+
+| Code | Constant | Meaning | What the keyboard does |
+|------|----------|---------|------------------------|
+| 0 | `PUBLISH_ACCEPTED` | The core recorded the content in the history | Nothing; the item reaches the peers |
+| 1 | `PUBLISH_PAUSED` | The synchronization is paused | Show the pause; do not retry until it ends |
+| 2 | `PUBLISH_CORE_UNAVAILABLE` | The core is not running and did not start | Retry with the next copy; the bridge works again once Unison runs |
+| 3 | `PUBLISH_UNSUPPORTED_TYPE` | The core does not carry this type | Do not retry; check `BridgeContract.isSupportedMime` before the call |
+| 4 | `PUBLISH_TOO_LARGE` | The streamed content is larger than 16 MiB | Do not retry the same content |
+| 5 | `PUBLISH_READ_FAILED` | The pipe failed or the write took longer than 30 seconds | Do not retry the same bytes |
+| 6 | `PUBLISH_EMPTY` | There was no content or no descriptor | A bug in the keyboard, nothing to retry |
+| 7 | `PUBLISH_FAILED` | The core refused the content for another reason | Log the code and the type; the message is in the app log |
+
+`mime` is `text/plain` or `text/html` for a text publish, `meta.mime` for a binary one, and empty
+when the payload carried none. Nothing in the result identifies the content itself.
+
+```kotlin
+private val callback = object : IPublishCallback.Stub() {
+    override fun onPublishResult(result: PublishResult?) {
+        result ?: return
+        if (result.code == BridgeContract.PUBLISH_ACCEPTED) {
+            return
+        }
+        Log.w(TAG, "publish of ${result.mime} was refused: ${result.code}")
+        main.post { showRefused(result.code) }
+    }
+}
+```
+
+The plain `publishText` and `publishBinary` are the same calls without a callback: the app logs the
+refusal and the keyboard learns nothing. Use them when the copy is best effort, and the result
+variants when the keyboard shows the state of the synchronization or retries.
+
+The result callback belongs to one publish. A callback whose process dies is dropped by the app and
+the publish still happens; a shared callback object without state of its own is fine for all
+publishes.
 
 ## Listener
 
@@ -571,6 +642,15 @@ use `kind` and draw an icon.
 | `onlinePeers` | `int` | Number of devices that are online now |
 
 Check `paused` before `untilMs`: a `0` means either no pause or a pause without a deadline.
+
+### PublishResult
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `code` | `int` | One of the `PUBLISH_*` constants |
+| `mime` | `String` | Type the app tried, empty when the payload carried none |
+
+The codes are listed in the publish results section.
 
 ### Kinds, ids and times
 
@@ -664,7 +744,7 @@ the bytes over:
 
 ```kotlin
 val mime = contentResolver.getType(uri) ?: return
-if (!mime.startsWith("image/")) {
+if (!BridgeContract.isSupportedMime(mime)) {
     return  // the bridge carries text, HTML and images only
 }
 contentResolver.openInputStream(uri)?.use { stream ->
@@ -686,8 +766,8 @@ process, which is exactly why the contract takes a pipe.
   clipboard, which fires `onPrimaryClipChanged` again; without suppression the item travels back to
   the device it came from. Keep the digest of the text you commit from a chip for about ten seconds
   and skip it, and skip the preview of a summary the same way.
-- Never publish while `BridgeState.paused` is true. The app drops it anyway, and the keyboard avoids
-  the binder call and the clipboard read.
+- Never publish while `BridgeState.paused` is true. The app refuses the content with
+  `PUBLISH_PAUSED`, and the keyboard avoids the binder call and the clipboard read.
 - Do not replay the clipboard in a loop. A peer accepts five clipboard announcements per second with
   a burst of ten, and a stream above that is treated as a protocol violation by the receiving
   device. A keyboard publishes one item per user copy, which is far below the limit.
@@ -779,11 +859,11 @@ files older than a day.
 The history of Unison has a lifetime: seven days for text, three days for images and one day for
 files by default. Past it, the item disappears.
 
-- `openItem` gives a descriptor with no bytes. Drop the chip, and read `recentRemoteItems` again to
-  pick up the current list.
-- The same happens when an item is metadata only and no device with the content is online. The chip
-  stays valid, so do not delete it on the first failed read; retry when a device comes online, which
-  is reported by `onStateChanged`.
+- `openItem` returns null for an item that expired or was deleted. Drop the chip, and read
+  `recentRemoteItems` again to pick up the current list.
+- An item that exists but is metadata only and has no online device with the content still opens a
+  descriptor, which ends without bytes. The chip stays valid, so do not delete it on the first failed
+  read; retry when a device comes online, which is reported by `onStateChanged`.
 - Close every descriptor in a `finally`. A descriptor that is never closed leaks a file descriptor in
   your process and keeps the pipe in the app until the timeout.
 
@@ -796,8 +876,8 @@ files by default. Past it, the item disappears.
 | Unison not installed | `bindService` returns false | Keep the bridge off and retry on a package broadcast |
 | Unison installed, nothing paired | Bridge works, publishes are recorded locally, no item arrives | Nothing; an item waits in the history |
 | No device online | `onlinePeers` is 0, publishes are accepted | Nothing; the item reaches the device when it connects |
-| Paused | `paused` is true, publishes are dropped | Skip the capture, show the pause in the UI |
-| Core stopped | `onlinePeers` is 0, `recentRemoteItems` is empty | Publish once or set a pause; the app starts its core on demand |
+| Paused | `paused` is true, publishes are refused with `PUBLISH_PAUSED` | Skip the capture, show the pause in the UI |
+| Core stopped | `onlinePeers` is 0, `recentRemoteItems` is empty | Register a listener, publish or set a pause; the app starts its core on demand |
 | Refused | `SecurityException` | The signatures differ, see the requirements |
 
 Publishing with no device online is not an error: the item is recorded in the history of the phone
@@ -844,8 +924,10 @@ import app.unison.bridge.BridgeContract
 import app.unison.bridge.BridgeState
 import app.unison.bridge.ClipPayload
 import app.unison.bridge.ClipSummary
+import app.unison.bridge.IPublishCallback
 import app.unison.bridge.IUnisonBridge
 import app.unison.bridge.IUnisonBridgeListener
+import app.unison.bridge.PublishResult
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -866,11 +948,15 @@ class UnisonBridgeClient(private val context: Context) {
     /** Called when the connection is ready, after the version check. */
     var onReady: (() -> Unit)? = null
 
+    /** Called with the outcome of a publish when the app reports results. */
+    var onPublishResult: ((PublishResult) -> Unit)? = null
+
     private val main = Handler(Looper.getMainLooper())
     private val io: ExecutorService = Executors.newSingleThreadExecutor()
 
     private var bridge: IUnisonBridge? = null
     private var bound = false
+    private var reportsResults = false
 
     private val listener = object : IUnisonBridgeListener.Stub() {
         override fun onRemoteItem(summary: ClipSummary?) {
@@ -881,6 +967,13 @@ class UnisonBridgeClient(private val context: Context) {
         override fun onStateChanged(state: BridgeState?) {
             state ?: return
             main.post { onState?.invoke(state) }
+        }
+    }
+
+    private val publishCallback = object : IPublishCallback.Stub() {
+        override fun onPublishResult(result: PublishResult?) {
+            result ?: return
+            main.post { onPublishResult?.invoke(result) }
         }
     }
 
@@ -896,10 +989,11 @@ class UnisonBridgeClient(private val context: Context) {
                 Log.w(TAG, "Unison refuses this app: ${e.message}")
                 return
             }
-            if (version < BridgeContract.PROTOCOL_VERSION) {
-                Log.w(TAG, "Unison serves $version, this client needs ${BridgeContract.PROTOCOL_VERSION}")
+            if (version < BridgeContract.FIRST_PROTOCOL_VERSION) {
+                Log.w(TAG, "Unison does not serve the bridge")
                 return
             }
+            reportsResults = version >= BridgeContract.PUBLISH_RESULTS_VERSION
             try {
                 service.registerListener(listener)
             } catch (e: RemoteException) {
@@ -966,8 +1060,13 @@ class UnisonBridgeClient(private val context: Context) {
     fun publishText(text: String, html: String? = null) {
         val service = bridge ?: return
         val size = text.toByteArray().size.toLong()
+        val payload = ClipPayload(text, html, "text/plain", size)
         try {
-            service.publishText(ClipPayload(text, html, "text/plain", size))
+            if (reportsResults) {
+                service.publishTextWithResult(payload, publishCallback)
+            } else {
+                service.publishText(payload)
+            }
         } catch (e: RemoteException) {
             bridge = null
         }
@@ -984,8 +1083,13 @@ class UnisonBridgeClient(private val context: Context) {
                 Log.w(TAG, "writing the content failed: ${e.message}")
             }
         }
+        val meta = ClipPayload(null, null, mime, bytes.size.toLong())
         try {
-            service.publishBinary(ClipPayload(null, null, mime, bytes.size.toLong()), pipe[0])
+            if (reportsResults) {
+                service.publishBinaryWithResult(meta, pipe[0], publishCallback)
+            } else {
+                service.publishBinary(meta, pipe[0])
+            }
         } catch (e: RemoteException) {
             bridge = null
         } finally {
@@ -1112,6 +1216,11 @@ class MyKeyboardService : InputMethodService(), ClipboardManager.OnPrimaryClipCh
             onReady = { showRecentChips() }
             onItem = { showChip(it) }
             onState = { state -> paused = state.paused }
+            onPublishResult = { result ->
+                if (result.code == BridgeContract.PUBLISH_PAUSED) {
+                    paused = true
+                }
+            }
         }
         client.bind()
         clipboard = getSystemService(ClipboardManager::class.java)
@@ -1373,15 +1482,17 @@ adb shell ime set com.example.keyboard/.MyKeyboardService
 
 1. Install both APKs and start Unison. Complete the first run screen so its core runs.
 2. Make the keyboard the active input method and open any app with a text field.
-3. Copy a text in another app, switch back to the field and wait a moment. Check the logcat of the
-   app for a submit line and the history screen of Unison for the item.
+3. Copy a text in another app, switch back to the field and wait a moment. The publish result has to
+   be `PUBLISH_ACCEPTED`, and the history screen of Unison has to show the item.
 4. Pair a second emulator or a desktop, wait until the device shows as online, and copy a text on the
    other device. A chip has to appear in the strip within a second or two on the local network.
 5. Tap the chip. The text is inserted at the cursor. Then copy a different text and confirm that it is
    published; the text you committed from the chip must never travel back.
 6. Turn the pause on from the quick settings tile of Unison. The keyboard has to see `paused` and stop
-   publishing; a copy on the other device is dropped, so neither the history nor the strip shows a new
-   item.
+   publishing; a publish now reports `PUBLISH_PAUSED`, and a copy on the other device is dropped, so
+   neither the history nor the strip shows a new item.
+7. Copy a file in a file manager and publish it with its type. The result has to be
+   `PUBLISH_UNSUPPORTED_TYPE` and nothing may reach the history.
 
 The clipboard of the emulator also follows the clipboard of the host when clipboard sharing is on in
 the extended controls, which is a quick way to produce a copy on the emulator side.
@@ -1413,12 +1524,16 @@ working bridge without a restart of the keyboard.
 | No callbacks at all | No listener registered, or it was registered before the app was ready | Register in `onServiceConnected` after the version check, and register again on every reconnect |
 | Callbacks stop after an update of Unison | The old binder is dead | Rebind in `onBindingDied`, and register the listener again |
 | A clipboard change is not delivered | The clip is sensitive, the editor is a password field, the pause is on, or the keyboard was not focused when the change happened | Check the logcat of the keyboard and the pause state of the app |
-| The app logs a failed submit | The core is not running, or the pause is on | Bring Unison to the foreground once, resume the pause |
-| The keyboard shows zero online devices | The core of the app is not running, or no Personal device is online | Publish once or set a pause to start the core; check the device list of Unison |
-| A chip opens nothing | The item expired, or it is metadata only and no device with the content is online | Drop or keep the chip, retry when a device comes online |
+| A publish reports 1 | The pause is on, `PUBLISH_PAUSED` | Resume the pause; the state arrives through `onStateChanged` |
+| A publish reports 2 | The core is not running and did not start, `PUBLISH_CORE_UNAVAILABLE` | Bring Unison to the foreground once; the next publish starts the core again |
+| A publish reports 3 | The type is not text or an image, or `meta.mime` is empty, `PUBLISH_UNSUPPORTED_TYPE` | Send a real `text/plain`, `text/html` or `image/*` type |
+| A publish reports 4 or 5 | The content is above 16 MiB, or the pipe failed or took longer than 30 seconds | Stream the bytes right after the call; do not retry the same content |
+| The keyboard shows zero online devices | The core of the app is not running, or no Personal device is online | Register a listener to start the core; check the device list of Unison |
+| A chip opens nothing | `openItem` returned null: the item expired or was deleted | Drop the chip and read `recentRemoteItems` again |
+| A chip opens no bytes | The item is metadata only and no device with the content is online, or the download failed | Keep the chip, retry when a device comes online |
 | `commitContent` does nothing on a phone | The editor does not accept content of that type | Check `EditorInfo.contentMimeTypes`; when it is null, the editor takes no content |
 | `TransactionTooLargeException` on publish | The text and HTML are larger than one binder transaction | Publish the text as `text/plain` through `publishBinary` |
-| An image never arrives | The type is not `image/*`, or the image is above the limit | Send `meta.mime` as a real image type and keep the bytes under 16 MiB |
+| An image never arrives | The image is above the limit or the core could not decode it | Keep the bytes under 16 MiB and use a real image type; check the app log |
 
 The bridge logs of the app use the tags `UnisonBridge`, `BridgeContent` and `CallerVerifier`. They
 carry sizes, kinds, ids and error messages, never content:
