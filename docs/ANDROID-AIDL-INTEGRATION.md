@@ -485,7 +485,8 @@ Turns the pause of the clipboard synchronization on or off.
 - There is no result and no error. The new state arrives through `onStateChanged`, and a request the
   app cannot pass to its core is dropped.
 - The pause is stored by the core, so it survives a restart of both apps, and it covers both
-  directions: while it is on, published items are dropped and arriving items are not delivered.
+  directions: while it is on, published items are dropped and arriving items are dropped instead of
+  being recorded.
 - The pause belongs to the phone: the quick settings tile, the app screen and the keyboard all see and
   change the same state. A pause set on the desktop affects the desktop only.
 
@@ -1379,7 +1380,8 @@ adb shell ime set com.example.keyboard/.MyKeyboardService
 5. Tap the chip. The text is inserted at the cursor. Then copy a different text and confirm that it is
    published; the text you committed from the chip must never travel back.
 6. Turn the pause on from the quick settings tile of Unison. The keyboard has to see `paused` and stop
-   publishing; a copy on the other device arrives in the history but no chip appears.
+   publishing; a copy on the other device is dropped, so neither the history nor the strip shows a new
+   item.
 
 The clipboard of the emulator also follows the clipboard of the host when clipboard sharing is on in
 the extended controls, which is a quick way to produce a copy on the emulator side.
