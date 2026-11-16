@@ -101,7 +101,9 @@ func Version() (v string) {
 }
 
 // Call runs one local API request in process. It returns a serialized
-// unison.mobile.v1.CallResponse; the code of a failure is set inside it.
+// unison.mobile.v1.CallResponse; the code of a failure is set inside it. A
+// response without fields comes back as a nil slice, which the host receives as
+// a null array.
 func Call(req []byte) (out []byte, err error) {
 	defer recoverErr(&err)
 
