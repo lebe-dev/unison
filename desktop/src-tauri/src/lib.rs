@@ -62,6 +62,13 @@ async fn api_stream(
     .await
 }
 
+/// daemon_status reports the state of the daemon and the reason of the last
+/// failed start.
+#[tauri::command]
+fn daemon_status() -> daemon::Status {
+    daemon::status()
+}
+
 /// login_item_status reports the state of the login item of the daemon.
 #[tauri::command]
 fn login_item_status() -> agent::LoginItem {
@@ -130,13 +137,17 @@ pub fn run() {
                 eprintln!("unison: the login item could not be registered: {err}");
             }
             let endpoint = daemon::resolve_endpoint();
-            if let Ok(path) = &endpoint {
-                let path = path.clone();
-                tauri::async_runtime::spawn(async move {
-                    if let Err(err) = daemon::ensure_running(&path).await {
-                        eprintln!("unison: {err}");
-                    }
-                });
+            match &endpoint {
+                Ok(path) => {
+                    let path = path.clone();
+                    tauri::async_runtime::spawn(async move {
+                        if let Err(err) = daemon::ensure_running(&path).await {
+                            eprintln!("unison: {err}");
+                        }
+                    });
+                }
+                // The window still has to tell why the app knows no daemon.
+                Err(err) => daemon::set_failed(err),
             }
             app.manage(AppState { endpoint });
             tray::install(app.handle())?;
@@ -145,6 +156,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             api_call,
             api_stream,
+            daemon_status,
             login_item_status,
             set_login_item,
             tray::set_tray_state,
