@@ -213,7 +213,8 @@ func ClipItemFromProto(item *wirev1.ClipItem) (model.ClipItem, error) {
 	out.Kind = KindFromProto(item.GetKind())
 	out.Source = SourceFromProto(item.GetSource())
 	out.Deleted = item.GetDeleted()
-	out.Representations = make([]model.Representation, 0, len(item.GetRepresentations()))
+	// The entries are converted one by one: a peer may send many entries that
+	// fail conversion, and the slice must grow only with the ones kept.
 	for i, r := range item.GetRepresentations() {
 		rep, err := RepresentationFromProto(r)
 		if err != nil {

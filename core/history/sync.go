@@ -311,8 +311,9 @@ func vectorToProto(vector map[model.DeviceID]uint64) map[string]uint64 {
 }
 
 // vectorFromProto reads a version vector from the wire, ignoring unknown keys.
+// The map is sized after the limit, since the peer controls its length.
 func vectorFromProto(vector map[string]uint64) (map[model.DeviceID]uint64, error) {
-	out := make(map[model.DeviceID]uint64, len(vector))
+	out := make(map[model.DeviceID]uint64, min(len(vector), maxVectorOrigins))
 	read := 0
 	for key, seq := range vector {
 		if read >= maxVectorOrigins {

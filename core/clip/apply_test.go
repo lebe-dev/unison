@@ -99,6 +99,14 @@ func TestApplyRejectsContentWithoutInlineText(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "too many representations",
+			item: model.ClipItem{
+				ID:              model.ClipID{0x07},
+				Kind:            model.KindText,
+				Representations: make([]model.Representation, maxRepresentations+1),
+			},
+		},
 	}
 
 	for _, test := range tests {
