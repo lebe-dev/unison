@@ -302,8 +302,9 @@ is how `SetClip` reaches the clipboard pipeline: without it the call reports tha
 implemented, and the daemon passes the pipeline of the node. `Handler` returns the connect handler
 with the request and response size limits. The errors of the core are mapped to connect codes: a
 missing peer is `not_found`, a closed pairing window or a stopped node `failed_precondition`,
-invalid input `invalid_argument` and a refused device `permission_denied`. The calls that manage
-paired devices are part of the contract but report `unimplemented`.
+invalid input `invalid_argument` and a refused device `permission_denied`. `ListDevices` and
+`RenameDevice` serve the device list and the local names, the rest of the device management calls
+change the policy or the trust record of the group.
 
 `core/api/localconn` serves that API on the endpoint of the daemon: the unix socket
 `~/Library/Application Support/Unison/unisond.sock` on macOS and the named pipe
@@ -374,8 +375,9 @@ the local API messages; `pair` prints one event per line in that mode and keeps 
 stderr, and the answer of `clip set` leaves out the payload it just read. The command exits with 0
 on success, 1 on a failure and 2 when it cannot reach the daemon. `--endpoint` selects the socket or
 the named pipe, and the common flags are read before the command name or right after it, but before
-the arguments of the command. The daemon does not serve the device management calls yet, so
-`devices rename` reports that the call is not implemented.
+the arguments of the command. `devices rename <id|self>` changes the name of a paired device on
+this device, or the name this device announces: the peers record the announced one in the
+handshake, so the sessions are opened again.
 
 The desktop app serves the frontend on `127.0.0.1:1420` during development and puts the
 bundle in `desktop/src-tauri/target/release/bundle`.
