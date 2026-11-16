@@ -79,14 +79,18 @@ func (l *Listener) Accept(ctx context.Context) (*Conn, error) {
 }
 
 // Close stops the listener, terminates its connections and closes the packet
-// connection.
+// connection. A listener of a Shared transport leaves the transport running.
 func (l *Listener) Close() error {
 	err := l.listener.Close()
-	if cerr := l.transport.Close(); err == nil {
-		err = cerr
+	if l.transport != nil {
+		if cerr := l.transport.Close(); err == nil {
+			err = cerr
+		}
 	}
-	if cerr := l.pc.Close(); err == nil {
-		err = cerr
+	if l.pc != nil {
+		if cerr := l.pc.Close(); err == nil {
+			err = cerr
+		}
 	}
 	return err
 }
@@ -166,11 +170,14 @@ func (d *Dialer) DialPairing(ctx context.Context, addr net.Addr, pin identity.Ce
 	return conn, nil
 }
 
-// Close closes the packet connection and every connection of the dialer.
+// Close closes the packet connection and every connection of the dialer. A
+// dialer of a Shared transport leaves the transport running.
 func (d *Dialer) Close() error {
 	err := d.transport.Close()
-	if cerr := d.pc.Close(); err == nil {
-		err = cerr
+	if d.pc != nil {
+		if cerr := d.pc.Close(); err == nil {
+			err = cerr
+		}
 	}
 	return err
 }

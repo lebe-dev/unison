@@ -31,6 +31,11 @@ const (
 	MaxIncomingStreams = 32
 	// MaxIncomingUniStreams bounds the concurrently open unidirectional streams of a peer.
 	MaxIncomingUniStreams = 128
+
+	// MinPacketSize is the smallest QUIC packet a handshake can use.
+	MinPacketSize = 1200
+	// MaxPacketSize is the largest QUIC packet a connection can carry.
+	MaxPacketSize = 1452
 )
 
 // Application error codes that the transport sends when it closes a connection.
@@ -73,6 +78,10 @@ type Config struct {
 	MaxIncomingStreams int64
 	// MaxIncomingUniStreams bounds the concurrently open unidirectional streams.
 	MaxIncomingUniStreams int64
+	// PacketSize is the largest QUIC packet the connection sends, in bytes. It
+	// is raised to MinPacketSize and turns path MTU discovery off. A zero value
+	// keeps the default size and lets discovery grow it.
+	PacketSize int
 }
 
 // withDefaults fills the zero fields with the package defaults.
@@ -97,13 +106,20 @@ func (c Config) withDefaults() Config {
 
 // quic returns the QUIC configuration described by c.
 func (c Config) quic() *quic.Config {
-	return &quic.Config{
+	cfg := &quic.Config{
 		KeepAlivePeriod:       c.KeepAlive,
 		MaxIdleTimeout:        c.IdleTimeout,
 		HandshakeIdleTimeout:  c.HandshakeTimeout,
 		MaxIncomingStreams:    c.MaxIncomingStreams,
 		MaxIncomingUniStreams: c.MaxIncomingUniStreams,
 	}
+	if c.PacketSize > 0 {
+		// A fixed packet size keeps the packets of a connection inside the
+		// datagrams that carry them, so path MTU discovery stays off.
+		cfg.InitialPacketSize = uint16(min(max(c.PacketSize, MinPacketSize), MaxPacketSize))
+		cfg.DisablePathMTUDiscovery = true
+	}
+	return cfg
 }
 
 // Peer is the authenticated remote device of a connection.

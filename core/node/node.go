@@ -18,6 +18,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/relay"
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/store"
@@ -36,6 +37,13 @@ const (
 	DefaultReconnectMaxDelay = 30 * time.Second
 	// DefaultEventBuffer is the event queue of one subscriber.
 	DefaultEventBuffer = 64
+	// DefaultRelayDelay is how long a peer stays off the local network before
+	// the node opens the relay path.
+	DefaultRelayDelay = 3 * time.Second
+	// DefaultRelayGrace is how long a relay session survives an interrupted
+	// relay connection. A shorter outage is absorbed, a longer one ends the
+	// session so it is opened again.
+	DefaultRelayGrace = 15 * time.Second
 	// maxCandidates bounds the cached discovery candidates.
 	maxCandidates = 64
 	// candidateTTL is how long a discovered address stays usable.
@@ -77,6 +85,12 @@ type Limits struct {
 	// EventBuffer is the event queue of one subscriber. DefaultEventBuffer is
 	// used when zero.
 	EventBuffer int
+	// RelayDelay is how long the node tries the local network before it opens
+	// the relay path to a peer. DefaultRelayDelay is used when zero.
+	RelayDelay time.Duration
+	// RelayGrace is how long a relay session survives an interrupted relay
+	// connection. DefaultRelayGrace is used when zero.
+	RelayGrace time.Duration
 }
 
 // withDefaults fills the zero fields with the package defaults.
@@ -95,6 +109,12 @@ func (l Limits) withDefaults() Limits {
 	}
 	if l.EventBuffer <= 0 {
 		l.EventBuffer = DefaultEventBuffer
+	}
+	if l.RelayDelay <= 0 {
+		l.RelayDelay = DefaultRelayDelay
+	}
+	if l.RelayGrace <= 0 {
+		l.RelayGrace = DefaultRelayGrace
 	}
 	return l
 }
@@ -137,6 +157,9 @@ type Config struct {
 	// ListenPacket binds the packet connections. A UDP socket is bound when
 	// nil.
 	ListenPacket ListenPacketFunc
+	// Relay tunes the relay client. The address and the token come from the
+	// group settings; the other fields keep their defaults when zero.
+	Relay relay.Config
 }
 
 // SessionHook registers handlers on a new session. Hooks run before the
@@ -183,6 +206,14 @@ type Node struct {
 
 	listener *transport.Listener
 	dialer   *transport.Dialer
+
+	// relayMu guards the relay client of the stored settings.
+	relayMu     sync.Mutex
+	relay       *relay.Dialer
+	relayConfig relay.Config
+	relayCancel context.CancelFunc
+	// relayKick wakes the links that wait for the relay.
+	relayKick chan struct{}
 
 	events *eventBus
 
@@ -250,6 +281,7 @@ func New(cfg Config) (*Node, error) {
 		links:      make(map[model.DeviceID]*link),
 		probing:    make(map[string]struct{}),
 		candidates: make(map[string]candidate),
+		relayKick:  make(chan struct{}, 1),
 		// A device that has not reported its network is treated as online:
 		// the desktop daemon has no network monitor of its own.
 		network: model.NetworkState{Online: true},
@@ -449,6 +481,7 @@ func (n *Node) NetworkChanged(state model.NetworkState) {
 	}
 
 	n.advertise(ctx)
+	n.relayNetworkChanged()
 	for _, l := range n.linkList() {
 		l.retry()
 	}
@@ -674,7 +707,7 @@ func (n *Node) startLink(peer trust.Peer) *link {
 	defer n.mu.Unlock()
 	l, ok := n.links[id]
 	if !ok {
-		l = newLink(id)
+		l = newLink(id, n.clock.Now())
 		n.links[id] = l
 		if n.state == stateRunning && n.ctx != nil {
 			ctx := n.ctx
@@ -743,17 +776,18 @@ func (n *Node) gossipPeersChanged(ctx context.Context) {
 	n.probeCandidates(n.ctx)
 }
 
-// gossipGroupChanged announces the device again after the discovery key of the
-// group changed.
+// gossipGroupChanged announces the device again and refreshes the relay after
+// the group data changed.
 func (n *Node) gossipGroupChanged(context.Context) {
 	n.mu.Lock()
 	running := n.state == stateRunning && n.ctx != nil
-	ctx := n.ctx
+	runCtx := n.ctx
 	n.mu.Unlock()
 	if !running {
 		return
 	}
-	n.advertise(ctx)
+	n.advertise(runCtx)
+	n.relaySettingsChanged(runCtx)
 }
 
 // stop ends the node once.
@@ -780,6 +814,10 @@ func (n *Node) shutdown(ctx context.Context, cancel context.CancelFunc) error {
 	if err := n.ClosePairing(); err != nil {
 		n.log.Warn("closing the pairing window failed", "error", err)
 	}
+	n.relayMu.Lock()
+	n.closeRelayLocked()
+	n.relayMu.Unlock()
+
 	if n.gossip != nil {
 		n.gossip.Close()
 	}
