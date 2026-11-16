@@ -18,7 +18,7 @@ func (a *app) friends(ctx context.Context, args []string) error {
 		return a.friendsSearch(ctx, rest)
 	case "":
 		flags := a.newFlagSet("friends")
-		if err := parseFlags(flags, rest); err != nil {
+		if _, err := parseCommand(flags, rest); err != nil {
 			return err
 		}
 		return a.usageError("friends needs a subcommand: search")
@@ -31,10 +31,11 @@ func (a *app) friends(ctx context.Context, args []string) error {
 func (a *app) friendsSearch(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("friends search")
 	off := flags.Bool("off", false, "turn the search off")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("friends search takes no arguments")
 	}
 

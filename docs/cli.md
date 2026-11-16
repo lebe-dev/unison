@@ -15,8 +15,8 @@ usage: unison [--endpoint path] [--json] <command> [arguments]
 | `--json` | print the answer as JSON instead of the readable form |
 | `--version` | print the version and exit |
 
-Write the options before the command, and write the flags of a command before its arguments;
-`history fetch` reads `-o` on either side of the item id.
+Write the options before the command. The flags of a command may stand before, after or between its
+arguments, so `history fetch <id> -o <path>` and `history fetch -o <path> <id>` are the same.
 
 The exit codes are 0 for a command that ran to the end, 1 for a failure and 2 when the daemon is
 not reachable.
@@ -48,10 +48,10 @@ group uses a relay.
 
 ```sh
 unison devices                       # the same as unison devices ls
-unison devices address --wait 10s <id> <host:port>
+unison devices address <id> <host:port> --wait 10s
 unison devices confirm <id|self> on
 unison devices confirm <id|self> off
-unison devices revoke [--yes] <id|self>
+unison devices revoke <id|self> [--yes]
 ```
 
 ```

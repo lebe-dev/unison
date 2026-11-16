@@ -12,10 +12,11 @@ import (
 // policy prints the network policy of the daemon.
 func (a *app) policy(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("policy")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("policy takes no arguments")
 	}
 

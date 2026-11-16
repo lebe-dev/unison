@@ -158,7 +158,17 @@ func (a *app) fail(err error) int {
 	return exitFailure
 }
 
-// parseFlags parses the arguments of a command and returns the error to report.
+// parseCommand parses the flags of a command and returns its positional
+// arguments. The flags may stand before, after or between the arguments.
+func parseCommand(set *flag.FlagSet, args []string) ([]string, error) {
+	flags, positional := splitFlags(args, valuedFlags(set))
+	if err := parseFlags(set, flags); err != nil {
+		return nil, err
+	}
+	return positional, nil
+}
+
+// parseFlags parses the arguments of a flag set and returns the error to report.
 func parseFlags(flags *flag.FlagSet, args []string) error {
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -169,14 +179,30 @@ func parseFlags(flags *flag.FlagSet, args []string) error {
 	return nil
 }
 
-// splitFlags moves the flags of a command line before its positional arguments,
-// so a command may take its arguments in any order. valued lists the flags that
-// take the next argument as their value.
-func splitFlags(args []string, valued map[string]bool) (flags, rest []string) {
+// valuedFlags returns the names of the flags of a set that take the next
+// argument as their value.
+func valuedFlags(set *flag.FlagSet) map[string]bool {
+	valued := make(map[string]bool)
+	set.VisitAll(func(f *flag.Flag) {
+		if boolean, ok := f.Value.(interface{ IsBoolFlag() bool }); ok && boolean.IsBoolFlag() {
+			return
+		}
+		valued[f.Name] = true
+	})
+	return valued
+}
+
+// splitFlags moves the flags of a command line in front of the positional
+// arguments and returns both groups. valued lists the flags that take the next
+// argument as their value. Everything after a "--" is positional.
+func splitFlags(args []string, valued map[string]bool) (flags, positional []string) {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		if arg == "-" || arg == "--" || !strings.HasPrefix(arg, "-") {
-			rest = append(rest, arg)
+		if arg == "--" {
+			return flags, append(positional, args[i+1:]...)
+		}
+		if arg == "-" || !strings.HasPrefix(arg, "-") {
+			positional = append(positional, arg)
 			continue
 		}
 		flags = append(flags, arg)
@@ -187,7 +213,7 @@ func splitFlags(args []string, valued map[string]bool) (flags, rest []string) {
 		i++
 		flags = append(flags, args[i])
 	}
-	return flags, rest
+	return flags, positional
 }
 
 // subcommand returns the subcommand of a command line and its arguments. The
@@ -234,13 +260,13 @@ commands:
   status                      show the daemon, the network and the peers
   devices [ls]                list the paired devices
   devices rename <id> <name>  change the name of a paired device
-  devices address <id> <host:port>
+  devices address <id> <host:port> [--wait 5s]
                               store an address of a paired device and connect
                               to it, for networks where discovery does not work
   devices confirm <id|self> on|off
                               hold the clipboard items of a device, or the items
                               of every device, until they are applied
-  devices revoke [--yes] <id|self>
+  devices revoke <id|self> [--yes]
                               revoke a device or leave the group; the device is
                               cut off and never trusted again
   pair [--role personal|friends] [--qr <code>]

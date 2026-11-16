@@ -24,7 +24,7 @@ func (a *app) clip(ctx context.Context, args []string) error {
 		return a.clipSet(ctx, rest)
 	case "":
 		flags := a.newFlagSet("clip")
-		if err := parseFlags(flags, rest); err != nil {
+		if _, err := parseCommand(flags, rest); err != nil {
 			return err
 		}
 		return a.usageError("clip needs a command: get or set")
@@ -39,10 +39,11 @@ func (a *app) clip(ctx context.Context, args []string) error {
 func (a *app) clipGet(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("clip get")
 	from := flags.String("from", "", "print the last item of this device")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("clip get takes no arguments")
 	}
 
@@ -106,10 +107,11 @@ func (a *app) clipItem(ctx context.Context, client localv1connect.UnisonServiceC
 // peers.
 func (a *app) clipSet(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("clip set")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() > 1 || (flags.NArg() == 1 && flags.Arg(0) != "-") {
+	if len(positional) > 1 || (len(positional) == 1 && positional[0] != "-") {
 		return a.usageError("clip set reads the standard input, pass - for the same")
 	}
 

@@ -19,10 +19,11 @@ func (a *app) settings(ctx context.Context, args []string) error {
 	switch command {
 	case "":
 		flags := a.newFlagSet("settings")
-		if err := parseFlags(flags, rest); err != nil {
+		positional, err := parseCommand(flags, rest)
+		if err != nil {
 			return err
 		}
-		if flags.NArg() != 0 {
+		if len(positional) != 0 {
 			return a.usageError("settings takes no arguments")
 		}
 		return a.showSettings(ctx)
@@ -57,10 +58,11 @@ func (a *app) showSettings(ctx context.Context) error {
 // settingsTTL prints or changes the lifetimes of the history.
 func (a *app) settingsTTL(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("settings ttl")
-	if err := parseFlags(flags, args); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	args = flags.Args()
+	args = positional
 
 	client, err := a.api()
 	if err != nil {

@@ -31,11 +31,11 @@ func (a *app) requests(ctx context.Context, args []string) error {
 // decision.
 func (a *app) requestsList(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("requests")
-	order, positional := splitFlags(args, map[string]bool{"endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("requests takes no arguments")
 	}
 
@@ -76,11 +76,11 @@ func (a *app) requestsDecide(ctx context.Context, args []string, accept bool) er
 		name = "requests decline"
 	}
 	flags := a.newFlagSet(name)
-	order, positional := splitFlags(args, map[string]bool{"endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 1 {
+	if len(positional) != 1 {
 		return a.usageError("%s takes one request id", name)
 	}
 
@@ -92,7 +92,7 @@ func (a *app) requestsDecide(ctx context.Context, args []string, accept bool) er
 	if err != nil {
 		return fmt.Errorf("read the requests: %w", err)
 	}
-	id, err := resolveRequest(requests.Msg.GetRequests(), flags.Arg(0))
+	id, err := resolveRequest(requests.Msg.GetRequests(), positional[0])
 	if err != nil {
 		return err
 	}

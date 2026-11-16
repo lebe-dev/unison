@@ -29,11 +29,11 @@ func (a *app) transfers(ctx context.Context, args []string) error {
 // transfersList prints the file transfers of this device, newest first.
 func (a *app) transfersList(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("transfers")
-	order, positional := splitFlags(args, map[string]bool{"endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 0 {
+	if len(positional) != 0 {
 		return a.usageError("transfers takes no arguments")
 	}
 
@@ -72,11 +72,11 @@ func (a *app) transfersList(ctx context.Context, args []string) error {
 // transfersCancel stops one transfer.
 func (a *app) transfersCancel(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("transfers cancel")
-	order, positional := splitFlags(args, map[string]bool{"endpoint": true})
-	if err := parseFlags(flags, append(order, positional...)); err != nil {
+	positional, err := parseCommand(flags, args)
+	if err != nil {
 		return err
 	}
-	if flags.NArg() != 1 {
+	if len(positional) != 1 {
 		return a.usageError("transfers cancel takes one transfer id")
 	}
 
@@ -84,7 +84,7 @@ func (a *app) transfersCancel(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	id, err := resolveTransfer(ctx, client, flags.Arg(0))
+	id, err := resolveTransfer(ctx, client, positional[0])
 	if err != nil {
 		return err
 	}
