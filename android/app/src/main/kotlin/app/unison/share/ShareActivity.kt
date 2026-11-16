@@ -1,5 +1,6 @@
 package app.unison.share
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -34,7 +35,50 @@ class ShareActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         core = RunningCore(this)
+        selection = savedInstanceState?.getStringArrayList(KEY_SELECTION)?.toSet().orEmpty()
+        preselected = savedInstanceState?.getBoolean(KEY_PRESELECTED) == true
 
+        setContent {
+            UnisonTheme {
+                content?.let { shared ->
+                    ShareScreen(
+                        content = shared,
+                        state = state,
+                        selection = selection,
+                        sending = sending,
+                        onToggle = ::toggle,
+                        onSend = ::send,
+                        onRetry = ::load,
+                        onClose = ::finish,
+                    )
+                }
+            }
+        }
+        takeContent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (content != null) {
+            load()
+        }
+    }
+
+    /**
+     * The activity is a single instance, so another share reaches the running
+     * one: the content is replaced and the devices are read again.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        takeContent(intent)
+        if (content != null) {
+            load()
+        }
+    }
+
+    /** Reads the shared content and closes the screen when it carries nothing to send. */
+    private fun takeContent(intent: Intent?) {
         val shared = ShareIntents.read(intent, contentResolver)
         if (shared == null) {
             Toast.makeText(this, R.string.share_empty, Toast.LENGTH_SHORT).show()
@@ -42,24 +86,9 @@ class ShareActivity : ComponentActivity() {
             return
         }
         content = shared
-        selection = savedInstanceState?.getStringArrayList(KEY_SELECTION)?.toSet().orEmpty()
-        preselected = savedInstanceState?.getBoolean(KEY_PRESELECTED) == true
-
-        setContent {
-            UnisonTheme {
-                ShareScreen(
-                    content = shared,
-                    state = state,
-                    selection = selection,
-                    sending = sending,
-                    onToggle = ::toggle,
-                    onSend = ::send,
-                    onRetry = ::load,
-                    onClose = ::finish,
-                )
-            }
-        }
-        load()
+        selection = emptySet()
+        preselected = false
+        sending = false
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
