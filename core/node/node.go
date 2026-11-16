@@ -225,6 +225,10 @@ type Node struct {
 
 	events *eventBus
 
+	// incoming carries the announced clipboard items to the worker that
+	// applies them.
+	incoming chan clipJob
+
 	mu         sync.Mutex
 	state      state
 	ctx        context.Context
@@ -294,6 +298,7 @@ func New(cfg Config) (*Node, error) {
 		clock:      clock,
 		log:        log,
 		events:     newEventBus(limits.EventBuffer, log),
+		incoming:   make(chan clipJob, clipQueueSize),
 		links:      make(map[model.DeviceID]*link),
 		probing:    make(map[string]struct{}),
 		candidates: make(map[string]candidate),
@@ -696,6 +701,7 @@ func (n *Node) run() {
 	n.spawn(func() { n.acceptLoop(ctx) })
 	n.spawn(func() { n.browseLoop(ctx) })
 	n.spawn(func() { n.clipRun(ctx) })
+	n.spawn(func() { n.clipIncoming(ctx) })
 	n.spawn(func() { n.historyRun(ctx) })
 	n.spawn(func() { n.friendsLoop(ctx) })
 

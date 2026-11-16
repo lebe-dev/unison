@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,6 +77,23 @@ func tiffBytes(t *testing.T, width, height int) []byte {
 	return buffer.Bytes()
 }
 
+// noisyImage draws an image that does not compress.
+func noisyImage(width, height int) image.Image {
+	source := image.NewNRGBA(image.Rect(0, 0, width, height))
+	seed := rand.New(rand.NewSource(1))
+	for y := range height {
+		for x := range width {
+			source.SetNRGBA(x, y, color.NRGBA{
+				R: uint8(seed.Intn(256)),
+				G: uint8(seed.Intn(256)),
+				B: uint8(seed.Intn(256)),
+				A: 0xff,
+			})
+		}
+	}
+	return source
+}
+
 // imageSnapshot returns clipboard content with one image.
 func imageSnapshot(mime string, data []byte) ports.Snapshot {
 	return ports.Snapshot{Content: ports.Content{
@@ -127,6 +145,33 @@ func TestNodesClipImage(t *testing.T) {
 	}
 	if len(event.Item.Representations) == 0 || event.Item.Representations[0].MIME != clip.MIMEImagePNG {
 		t.Fatal("the applied item carries no png representation")
+	}
+}
+
+// TestNodesClipBlobImage checks that an image above the inline limit arrives.
+// The payload travels through the blob store, so the announcement handler must
+// not fetch it while it holds the control stream of the session.
+func TestNodesClipBlobImage(t *testing.T) {
+	a, b := clipNodes(t, 54000)
+	events := b.subscribe(t)
+
+	var buffer bytes.Buffer
+	if err := png.Encode(&buffer, noisyImage(320, 240)); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	data := buffer.Bytes()
+	if len(data) <= clip.MaxInlineText {
+		t.Fatalf("the test image is %d bytes, want more than %d", len(data), clip.MaxInlineText)
+	}
+
+	a.clipboard.Emit(imageSnapshot(clip.MIMEImagePNG, data))
+	if applied := waitClipboardImage(t, b.clipboard, 320, 240); !bytes.Equal(applied, data) {
+		t.Fatal("the applied image differs from the announced one")
+	}
+
+	event := waitEvent(t, events, EventClipboard, a.DeviceID())
+	if event.Item.Kind != model.KindImage {
+		t.Fatalf("item kind is %s, want image", event.Item.Kind)
 	}
 }
 

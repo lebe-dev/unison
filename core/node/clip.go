@@ -66,9 +66,21 @@ func (n *Node) Report(_ context.Context, event clip.Event) {
 	n.publish(Event{Kind: kind, Peer: event.Peer, Item: event.Item})
 }
 
-// clipHandler applies the clipboard items a peer announces.
+// clipQueueSize bounds the announced items that wait for their turn. The rate
+// limit of announcements is far below the size of the queue.
+const clipQueueSize = 64
+
+// clipJob is one announced clipboard item that waits to be applied.
+type clipJob struct {
+	from model.DeviceID
+	item model.ClipItem
+}
+
+// clipHandler queues the clipboard items a peer announces. Applying an item may
+// download its payload, and the answer to the availability query comes over the
+// control stream the handler runs on, so the handler returns at once.
 func (n *Node) clipHandler(sess *session.Session) session.Handler {
-	return func(ctx context.Context, msg *wirev1.ControlMessage) error {
+	return func(_ context.Context, msg *wirev1.ControlMessage) error {
 		announce := msg.GetClipAnnounce()
 		if announce == nil {
 			return nil
@@ -78,10 +90,30 @@ func (n *Node) clipHandler(sess *session.Session) session.Handler {
 			return fmt.Errorf("node: clip announcement: %w", err)
 		}
 
-		if err := n.clip.Apply(ctx, sess.DeviceID(), item); err != nil {
-			return fmt.Errorf("node: apply clip item: %w", err)
+		select {
+		case n.incoming <- clipJob{from: sess.DeviceID(), item: item}:
+		default:
+			n.log.Warn("incoming clipboard queue is full", "id", item.ID.String(), "peer", sess.DeviceID())
 		}
 		return nil
+	}
+}
+
+// clipIncoming applies the announced items in the order they arrived.
+func (n *Node) clipIncoming(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case job := <-n.incoming:
+			if err := n.clip.Apply(ctx, job.from, job.item); err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				n.log.Warn("applying an incoming clip item failed",
+					"id", job.item.ID.String(), "peer", job.from, "error", err)
+			}
+		}
 	}
 }
 
