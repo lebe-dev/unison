@@ -113,6 +113,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.history(ctx, rest)
 	case "send":
 		err = a.send(ctx, rest)
+	case "friends":
+		err = a.friends(ctx, rest)
 	case "requests":
 		err = a.requests(ctx, rest)
 	case "pause":
@@ -223,6 +225,8 @@ commands:
                               download the payloads of a history item
   send <path|-> --to <device>...
                               offer a file or standard input to devices
+  friends search [--off]      look for Friends devices for a limited time; both
+                              devices have to turn it on
   requests [ls]               list the transfer requests that wait for a decision
   requests accept <id>        accept a request and receive its files
   requests decline <id>       decline a request

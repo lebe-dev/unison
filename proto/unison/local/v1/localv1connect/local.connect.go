@@ -111,6 +111,9 @@ const (
 	// UnisonServiceRejectTransferProcedure is the fully-qualified name of the UnisonService's
 	// RejectTransfer RPC.
 	UnisonServiceRejectTransferProcedure = "/unison.local.v1.UnisonService/RejectTransfer"
+	// UnisonServiceSetFriendsDiscoveryProcedure is the fully-qualified name of the UnisonService's
+	// SetFriendsDiscovery RPC.
+	UnisonServiceSetFriendsDiscoveryProcedure = "/unison.local.v1.UnisonService/SetFriendsDiscovery"
 	// UnisonServiceListRequestsProcedure is the fully-qualified name of the UnisonService's
 	// ListRequests RPC.
 	UnisonServiceListRequestsProcedure = "/unison.local.v1.UnisonService/ListRequests"
@@ -175,6 +178,9 @@ type UnisonServiceClient interface {
 	AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error)
 	// Reject an incoming offer that waits for a decision.
 	RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error)
+	// Temporary search for Friends devices. Both devices of a pair turn it on
+	// for the devices to find each other.
+	SetFriendsDiscovery(context.Context, *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error)
 	// Incoming file transfer requests that wait for a decision.
 	ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error)
 	// Accept or decline a request and tell the sender.
@@ -366,6 +372,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("RejectTransfer")),
 			connect.WithClientOptions(opts...),
 		),
+		setFriendsDiscovery: connect.NewClient[v1.SetFriendsDiscoveryRequest, v1.SetFriendsDiscoveryResponse](
+			httpClient,
+			baseURL+UnisonServiceSetFriendsDiscoveryProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetFriendsDiscovery")),
+			connect.WithClientOptions(opts...),
+		),
 		listRequests: connect.NewClient[v1.ListRequestsRequest, v1.ListRequestsResponse](
 			httpClient,
 			baseURL+UnisonServiceListRequestsProcedure,
@@ -435,6 +447,7 @@ type unisonServiceClient struct {
 	cancelTransfer        *connect.Client[v1.CancelTransferRequest, v1.CancelTransferResponse]
 	acceptTransfer        *connect.Client[v1.AcceptTransferRequest, v1.AcceptTransferResponse]
 	rejectTransfer        *connect.Client[v1.RejectTransferRequest, v1.RejectTransferResponse]
+	setFriendsDiscovery   *connect.Client[v1.SetFriendsDiscoveryRequest, v1.SetFriendsDiscoveryResponse]
 	listRequests          *connect.Client[v1.ListRequestsRequest, v1.ListRequestsResponse]
 	decideRequest         *connect.Client[v1.DecideRequestRequest, v1.DecideRequestResponse]
 	getPause              *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
@@ -583,6 +596,11 @@ func (c *unisonServiceClient) RejectTransfer(ctx context.Context, req *connect.R
 	return c.rejectTransfer.CallUnary(ctx, req)
 }
 
+// SetFriendsDiscovery calls unison.local.v1.UnisonService.SetFriendsDiscovery.
+func (c *unisonServiceClient) SetFriendsDiscovery(ctx context.Context, req *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error) {
+	return c.setFriendsDiscovery.CallUnary(ctx, req)
+}
+
 // ListRequests calls unison.local.v1.UnisonService.ListRequests.
 func (c *unisonServiceClient) ListRequests(ctx context.Context, req *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error) {
 	return c.listRequests.CallUnary(ctx, req)
@@ -659,6 +677,9 @@ type UnisonServiceHandler interface {
 	AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error)
 	// Reject an incoming offer that waits for a decision.
 	RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error)
+	// Temporary search for Friends devices. Both devices of a pair turn it on
+	// for the devices to find each other.
+	SetFriendsDiscovery(context.Context, *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error)
 	// Incoming file transfer requests that wait for a decision.
 	ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error)
 	// Accept or decline a request and tell the sender.
@@ -846,6 +867,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("RejectTransfer")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceSetFriendsDiscoveryHandler := connect.NewUnaryHandler(
+		UnisonServiceSetFriendsDiscoveryProcedure,
+		svc.SetFriendsDiscovery,
+		connect.WithSchema(unisonServiceMethods.ByName("SetFriendsDiscovery")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceListRequestsHandler := connect.NewUnaryHandler(
 		UnisonServiceListRequestsProcedure,
 		svc.ListRequests,
@@ -940,6 +967,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceAcceptTransferHandler.ServeHTTP(w, r)
 		case UnisonServiceRejectTransferProcedure:
 			unisonServiceRejectTransferHandler.ServeHTTP(w, r)
+		case UnisonServiceSetFriendsDiscoveryProcedure:
+			unisonServiceSetFriendsDiscoveryHandler.ServeHTTP(w, r)
 		case UnisonServiceListRequestsProcedure:
 			unisonServiceListRequestsHandler.ServeHTTP(w, r)
 		case UnisonServiceDecideRequestProcedure:
@@ -1071,6 +1100,10 @@ func (UnimplementedUnisonServiceHandler) AcceptTransfer(context.Context, *connec
 
 func (UnimplementedUnisonServiceHandler) RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RejectTransfer is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetFriendsDiscovery(context.Context, *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetFriendsDiscovery is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error) {
