@@ -373,7 +373,8 @@ off, the app starts the daemon of the bundle for the rest of the session. `--log
 line, which is how the packaged app is checked without the window.
 
 The Info.plist of the bundle declares `NSLocalNetworkUsageDescription` and `NSBonjourServices`
-with `_unison._udp` and `_unison-pair._udp`, because the daemon of the bundle does the discovery.
+with `_unison._udp`, `_unison-pair._udp` and `_unison-friends._udp`, because the daemon of the
+bundle does the discovery.
 The bundle is signed with the hardened runtime and the entitlements in
 `desktop/src-tauri/entitlements.plist`: network client for the paired devices and the local API,
 network server for the QUIC listener of the daemon.
