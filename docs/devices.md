@@ -55,6 +55,20 @@ listed once even when it is reachable over IPv4 and IPv6.
 
 Re-pairing a known device keeps the single record. A revoked device cannot be paired again.
 
+## Renaming
+
+The names in the device list are local to the device that shows them. Renaming a paired device
+changes how it is called here and nowhere else; the device keeps its own name:
+
+```sh
+unison devices rename <id> "Desk phone"
+unison devices rename self "Workstation"
+```
+
+The second form renames this device. The new name is stored, and the paired devices learn it in the
+handshake, so it takes a moment and a session with that device: the others show the old name until
+they connect. Setting the name of this device in the settings of the app does the same.
+
 ## Manual addresses
 
 Discovery is the usual way to find a device, but it can be unavailable: some networks block

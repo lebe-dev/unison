@@ -65,7 +65,8 @@ func (a *app) devicesList(ctx context.Context, args []string) error {
 	return a.writeTable(devices)
 }
 
-// devicesRename changes the display name of a device.
+// devicesRename changes the display name of a device. The name of a peer is
+// local to this device; the name of this device is announced to the peers.
 func (a *app) devicesRename(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("devices rename")
 	positional, err := parseCommand(flags, args)
@@ -84,25 +85,49 @@ func (a *app) devicesRename(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	devices, err := a.devicesOf(ctx, client)
-	if err != nil {
-		return err
-	}
-	device, err := resolveDevice(devices, reference)
+	target, self, err := a.renameTarget(ctx, client, reference)
 	if err != nil {
 		return err
 	}
 
-	request := &localv1.RenameDeviceRequest{DeviceId: device.GetDeviceId(), Name: name}
-	if _, err := client.RenameDevice(ctx, connect.NewRequest(request)); err != nil {
+	request := &localv1.RenameDeviceRequest{DeviceId: target, Name: name}
+	response, err := client.RenameDevice(ctx, connect.NewRequest(request))
+	if err != nil {
 		return fmt.Errorf("rename the device: %w", err)
 	}
-	device.Name = name
 	if a.json {
-		return a.writeJSON(device)
+		return a.writeJSON(response.Msg)
 	}
-	a.info("renamed %s to %q", fingerprintOf(device.GetDeviceId()), name)
+	if self {
+		a.info("renamed this device to %q", name)
+		return nil
+	}
+	a.info("renamed %s to %q", fingerprintOf(target), name)
 	return nil
+}
+
+// renameTarget resolves the device a rename refers to. The local device is
+// named by self.
+func (a *app) renameTarget(ctx context.Context, client localv1connect.UnisonServiceClient, reference string) (string, bool, error) {
+	if reference == "self" {
+		status, err := client.GetStatus(ctx, connect.NewRequest(&localv1.GetStatusRequest{}))
+		if err != nil {
+			return "", false, fmt.Errorf("read the local device: %w", err)
+		}
+		if !status.Msg.GetRunning() {
+			return "", false, errors.New("the daemon is not running")
+		}
+		return status.Msg.GetDeviceId(), true, nil
+	}
+	devices, err := a.devicesOf(ctx, client)
+	if err != nil {
+		return "", false, err
+	}
+	device, err := resolveDevice(devices, reference)
+	if err != nil {
+		return "", false, err
+	}
+	return device.GetDeviceId(), false, nil
 }
 
 // devicesConfirm sets the confirmation flag of this device or of a paired
@@ -351,15 +376,11 @@ func (a *app) confirm(question string) (bool, error) {
 	return answer == "y" || answer == "yes", nil
 }
 
-// devicesOf returns the paired devices. The local API does not serve the device
-// list yet, so the status carries it.
+// devicesOf returns the paired devices.
 func (a *app) devicesOf(ctx context.Context, client localv1connect.UnisonServiceClient) ([]*localv1.Device, error) {
-	response, err := client.GetStatus(ctx, connect.NewRequest(&localv1.GetStatusRequest{}))
+	response, err := client.ListDevices(ctx, connect.NewRequest(&localv1.ListDevicesRequest{}))
 	if err != nil {
 		return nil, fmt.Errorf("read the devices: %w", err)
-	}
-	if !response.Msg.GetRunning() {
-		return nil, errors.New("the daemon is not running")
 	}
 	return response.Msg.GetDevices(), nil
 }

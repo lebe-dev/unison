@@ -226,6 +226,9 @@ message Device {
   // The flag the device announced in the last hello: it holds the items it
   // receives for confirmation.
   bool peer_require_confirmation = 11;
+  // Device that introduced this one to the group, in lowercase hex. Empty for
+  // a device that was paired directly.
+  string introduced_by = 13;
 }
 
 // State of the clipboard pause.
@@ -436,12 +439,15 @@ message ListDevicesResponse {
 }
 
 message RenameDeviceRequest {
-  // Device ID in lowercase hex.
+  // Device ID in lowercase hex. The ID of this device renames this device.
   string device_id = 1;
   string name = 2;
 }
 
-message RenameDeviceResponse {}
+message RenameDeviceResponse {
+  // The device with its new name.
+  Device device = 1;
+}
 
 message RevokeDeviceRequest {
   // Device ID in lowercase hex. The ID of this device leaves the group.

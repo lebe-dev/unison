@@ -16,8 +16,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +44,7 @@ import app.unison.ui.pathLabel
 import app.unison.ui.pauseLabel
 import app.unison.ui.platformLabel
 import app.unison.ui.state.CoreState
+import app.unison.ui.state.DeviceNames
 import unison.local.v1.Local
 
 /** Paired devices and the state of this device. */
@@ -53,10 +56,13 @@ fun DevicesScreen(
     onSendClipboard: (ClipboardDraft) -> Unit,
     onDismissClipboard: () -> Unit,
     onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onRename: (Local.Device, String) -> Unit,
     onRevoke: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var revokeTarget by remember { mutableStateOf<Local.Device?>(null) }
+    var renameTarget by remember { mutableStateOf<Local.Device?>(null) }
+    var renameDraft by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -102,6 +108,10 @@ fun DevicesScreen(
                 empty = stringResource(R.string.devices_empty_personal),
                 devices = state.devices(Local.Role.ROLE_PERSONAL),
                 onSetConfirmation = onSetConfirmation,
+                onRename = {
+                    renameTarget = it
+                    renameDraft = it.name
+                },
                 onRemove = { revokeTarget = it },
             )
             DeviceSection(
@@ -109,6 +119,10 @@ fun DevicesScreen(
                 empty = stringResource(R.string.devices_empty_friends),
                 devices = state.devices(Local.Role.ROLE_FRIENDS),
                 onSetConfirmation = onSetConfirmation,
+                onRename = {
+                    renameTarget = it
+                    renameDraft = it.name
+                },
                 onRemove = { revokeTarget = it },
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -127,6 +141,46 @@ fun DevicesScreen(
                 onRevoke(device)
             },
             onDismiss = { revokeTarget = null },
+        )
+    }
+
+    renameTarget?.let { device ->
+        val name = renameDraft.trim()
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            title = {
+                Text(
+                    text = stringResource(
+                        R.string.devices_rename_title,
+                        device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
+                    ),
+                )
+            },
+            text = {
+                OutlinedTextField(
+                    value = renameDraft,
+                    onValueChange = { renameDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(text = stringResource(R.string.devices_rename_hint)) },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        renameTarget = null
+                        onRename(device, name)
+                    },
+                    enabled = DeviceNames.valid(name) && name != device.name,
+                ) {
+                    Text(text = stringResource(R.string.action_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { renameTarget = null }) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
+            },
         )
     }
 }
@@ -166,6 +220,7 @@ private fun DeviceSection(
     empty: String,
     devices: List<Local.Device>,
     onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
 ) {
     SectionTitle(text = title)
@@ -182,6 +237,7 @@ private fun DeviceSection(
             DeviceRow(
                 device = device,
                 onSetConfirmation = onSetConfirmation,
+                onRename = onRename,
                 onRemove = onRemove,
             )
             if (index != devices.lastIndex) {
@@ -196,6 +252,7 @@ private fun DeviceSection(
 private fun DeviceRow(
     device: Local.Device,
     onSetConfirmation: (Local.Device, Boolean) -> Unit,
+    onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -279,6 +336,9 @@ private fun DeviceRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
         ) {
+            TextButton(onClick = { onRename(device) }) {
+                Text(text = stringResource(R.string.devices_rename))
+            }
             TextButton(onClick = { onRemove(device) }) {
                 Text(
                     text = stringResource(R.string.action_remove),

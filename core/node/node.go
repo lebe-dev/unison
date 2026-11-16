@@ -231,6 +231,7 @@ type Node struct {
 
 	mu         sync.Mutex
 	state      state
+	name       string
 	ctx        context.Context
 	cancel     context.CancelFunc
 	links      map[model.DeviceID]*link
@@ -294,6 +295,7 @@ func New(cfg Config) (*Node, error) {
 
 	n := &Node{
 		cfg:        cfg,
+		name:       cfg.Name,
 		limits:     limits,
 		clock:      clock,
 		log:        log,

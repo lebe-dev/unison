@@ -35,6 +35,9 @@ type Peer struct {
 	Public identity.PublicIdentity
 	// Name is the display name of the device.
 	Name string
+	// NameLocal reports a name the user chose on this device. Such a name is not
+	// replaced by the name the device announces when a session opens.
+	NameLocal bool
 	// Platform is the operating system of the device.
 	Platform model.Platform
 	// Role is the trust role assigned at pairing.

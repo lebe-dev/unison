@@ -10,13 +10,10 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/lebe-dev/unison/core/blob"
+	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/share"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
-
-// settingDeviceName is the settings key of the device name used at the next
-// start.
-const settingDeviceName = "device.name"
 
 // invalidSizeError reports a store size limit that is not positive.
 func invalidSizeError() *connect.Error {
@@ -44,7 +41,7 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 		if err != nil {
 			return nil, err
 		}
-		if err := s.node.Store().Settings().SetString(ctx, settingDeviceName, name); err != nil {
+		if err := s.node.SetDeviceName(ctx, name); err != nil {
 			return nil, errorOf(err)
 		}
 	}
@@ -90,12 +87,9 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		return nil, err
 	}
 
-	stored, err := s.node.Store().Settings().GetString(ctx, settingDeviceName, "")
+	stored, err := s.deviceNameValue(ctx)
 	if err != nil {
 		return nil, err
-	}
-	if stored == "" {
-		stored = s.name
 	}
 
 	require, err := s.node.Trust().SelfRequireConfirmation(ctx)
@@ -122,6 +116,19 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 	fillPolicy(settings, s.node.Policy().Config())
 	fillHistoryTTLs(settings, s.node.TTLs())
 	return settings, nil
+}
+
+// deviceNameValue returns the name this device announces: the stored name or
+// the name the node started with.
+func (s *Service) deviceNameValue(ctx context.Context) (string, error) {
+	name, err := s.node.Store().Settings().GetString(ctx, node.SettingDeviceName, "")
+	if err != nil {
+		return "", err
+	}
+	if name == "" {
+		return s.name, nil
+	}
+	return name, nil
 }
 
 // downloadsDir validates the directory of received files.

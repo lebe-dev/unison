@@ -98,6 +98,11 @@ func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetS
 	if !status.Running {
 		return connect.NewResponse(status), nil
 	}
+	name, err := s.deviceNameValue(ctx)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	status.DeviceName = name
 	status.DeviceId = s.node.DeviceID().String()
 	status.Addrs = s.node.ListenAddrs()
 
@@ -109,7 +114,7 @@ func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetS
 	}
 	status.Pause = pause
 
-	devices, err := s.devices(ctx)
+	devices, err := s.devices(ctx, false)
 	if err != nil {
 		return nil, errorOf(err)
 	}

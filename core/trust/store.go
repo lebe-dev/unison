@@ -204,7 +204,8 @@ func (s *Store) List(ctx context.Context, filter ListFilter) ([]Peer, error) {
 	return peers, nil
 }
 
-// Rename sets the display name of a peer.
+// Rename sets the display name of a peer that the user chose on this device.
+// The name stays when the peer announces its own name in Hello.
 func (s *Store) Rename(ctx context.Context, id model.DeviceID, name string) error {
 	if err := validateName(name); err != nil {
 		return err
@@ -213,6 +214,29 @@ func (s *Store) Rename(ctx context.Context, id model.DeviceID, name string) erro
 		peer, err := s.activePeer(ctx, tx, id)
 		if err != nil {
 			return err
+		}
+		peer.Name = name
+		peer.NameLocal = true
+		return s.writeProfile(ctx, tx, peer)
+	})
+}
+
+// SetAnnouncedName records the name a peer announced. A name the user chose on
+// this device is kept.
+func (s *Store) SetAnnouncedName(ctx context.Context, id model.DeviceID, name string) error {
+	if err := validateName(name); err != nil {
+		return err
+	}
+	if name == "" {
+		return nil
+	}
+	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
+		peer, err := s.activePeer(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if peer.NameLocal || peer.Name == name {
+			return nil
 		}
 		peer.Name = name
 		return s.writeProfile(ctx, tx, peer)
@@ -409,6 +433,7 @@ func scanPeer(scanner rowScanner, sealer *store.Sealer) (Peer, error) {
 	peer := Peer{
 		Public:                    public,
 		Name:                      profile.Name,
+		NameLocal:                 profile.NameLocal,
 		Platform:                  model.Platform(profile.Platform),
 		Role:                      model.Role(role),
 		RequireConfirmation:       profile.RequireConfirmation,
@@ -484,6 +509,7 @@ const profileVersion = 1
 type peerProfile struct {
 	Version                   int    `json:"version"`
 	Name                      string `json:"name"`
+	NameLocal                 bool   `json:"name_local,omitempty"`
 	Platform                  uint8  `json:"platform"`
 	RequireConfirmation       bool   `json:"require_confirmation"`
 	RequireConfirmationRemote bool   `json:"require_confirmation_remote,omitempty"`
@@ -495,6 +521,7 @@ func sealPeerProfile(sealer *store.Sealer, peer Peer) ([]byte, error) {
 	profile := peerProfile{
 		Version:                   profileVersion,
 		Name:                      peer.Name,
+		NameLocal:                 peer.NameLocal,
 		Platform:                  uint8(peer.Platform),
 		RequireConfirmation:       peer.RequireConfirmation,
 		RequireConfirmationRemote: peer.RequireConfirmationRemote,

@@ -126,7 +126,7 @@ func networkToProto(state model.NetworkState) *localv1.NetworkState {
 
 // deviceToProto converts a stored peer and its live state.
 func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
-	return &localv1.Device{
+	device := &localv1.Device{
 		DeviceId:                peer.DeviceID().String(),
 		Name:                    peer.Name,
 		Role:                    roleToProto(peer.Role),
@@ -139,6 +139,10 @@ func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 		AddedAtUnixMs:           unixMilli(peer.AddedAt),
 		LastSeenAtUnixMs:        unixMilli(peer.LastSeenAt),
 	}
+	if !peer.IntroducedBy.IsZero() {
+		device.IntroducedBy = peer.IntroducedBy.String()
+	}
+	return device
 }
 
 // representationToProto converts one payload representation.

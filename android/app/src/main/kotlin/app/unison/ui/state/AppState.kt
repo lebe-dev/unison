@@ -267,6 +267,25 @@ class AppState(
         }
     }
 
+    /** Renames a paired device; the name stays on this device. */
+    fun renameDevice(deviceId: String, name: String) {
+        val trimmed = name.trim()
+        if (deviceId.isEmpty() || trimmed.isEmpty()) {
+            return
+        }
+        scope.launch {
+            try {
+                core.renameDevice(deviceId, trimmed)
+                mutableNotices.tryEmit(R.string.devices_renamed)
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.devices_rename_failed)
+            }
+        }
+    }
+
     /** Removes a paired device from the group for good. */
     fun revokeDevice(deviceId: String) {
         if (deviceId.isEmpty()) {
@@ -364,7 +383,7 @@ class AppState(
         }
     }
 
-    /** Stores the device name used from the next start. */
+    /** Stores the name this device announces to the peers. */
     fun setDeviceName(name: String) {
         scope.launch {
             try {

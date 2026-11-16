@@ -421,6 +421,29 @@ func TestRenameAndConfirmation(t *testing.T) {
 	if got.Name != "Desk" {
 		t.Fatalf("name %q, want Desk", got.Name)
 	}
+	if !got.NameLocal {
+		t.Error("the name of the user is not marked local")
+	}
+	if err := ts.SetAnnouncedName(ctx, id, "Mug"); err != nil {
+		t.Fatalf("record the announced name: %v", err)
+	}
+	got, err = ts.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("get peer: %v", err)
+	}
+	if got.Name != "Desk" {
+		t.Errorf("the announced name replaced the local one with %q", got.Name)
+	}
+	if err := ts.SetAnnouncedName(ctx, friends.Public.DeviceID, "Ann"); err != nil {
+		t.Fatalf("record the announced name: %v", err)
+	}
+	got, err = ts.Get(ctx, friends.Public.DeviceID)
+	if err != nil {
+		t.Fatalf("get peer: %v", err)
+	}
+	if got.Name != "Ann" {
+		t.Errorf("the announced name is %q, want Ann", got.Name)
+	}
 	if err := ts.Rename(ctx, id, strings.Repeat("a", maxNameLength+1)); !errors.Is(err, ErrInvalidPeer) {
 		t.Fatalf("rename to a long name: got %v, want ErrInvalidPeer", err)
 	}

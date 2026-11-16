@@ -49,6 +49,7 @@ group uses a relay.
 ```sh
 unison devices                       # the same as unison devices ls
 unison devices address <id> <host:port> --wait 10s
+unison devices rename <id|self> <name>
 unison devices confirm <id|self> on
 unison devices confirm <id|self> off
 unison devices revoke <id|self> [--yes]
@@ -66,14 +67,13 @@ announced in its last hello: it holds the items it receives. The second value ap
 device connects, because a device reports its flag when a session starts.
 
 `devices address` stores an address of a paired device and waits for the connection; `--wait 0s`
-returns at once. `devices confirm self on` makes this device hold the items that arrive for you,
-and `devices confirm <id> on` asks another device to do that and holds the items of that device
-here; see
+returns at once. `devices rename <id>` changes the name of a paired device on this device, and
+`devices rename self` changes the name this device announces; see
+[Devices and pairing](devices.md#renaming). `devices confirm self on` makes this device hold the
+items that arrive for you, and `devices confirm <id> on` asks another device to do that and holds
+the items of that device here; see
 [Devices and pairing](devices.md#the-confirmation-flag). `devices revoke` asks for a confirmation
 unless `--yes` is given, and `devices revoke self` leaves the group.
-
-Renaming a device is not available yet: the daemon does not serve the call and answers with
-`unimplemented`.
 
 ## pair
 
