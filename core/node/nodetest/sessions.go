@@ -66,6 +66,20 @@ func (l *sessionLog) settled(peer model.DeviceID, quiet time.Duration) bool {
 	return false
 }
 
+// count returns the number of sessions the device opened with the peer.
+func (l *sessionLog) count(peer model.DeviceID) int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	count := 0
+	for _, entry := range l.history {
+		if entry.peer == peer {
+			count++
+		}
+	}
+	return count
+}
+
 // String describes the sessions in the order they started.
 func (l *sessionLog) String() string {
 	l.mu.Lock()

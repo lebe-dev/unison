@@ -335,9 +335,7 @@ func (h *Harness) ChangeAddress(device *Node, peers ...*Node) {
 }
 
 // Settle waits until every device is connected to every other device of the
-// harness and the connections stay in place for the settle delay. Pairing
-// several devices changes the connections of the devices that are already
-// paired, so a test that builds a mesh calls this once before it starts.
+// harness and the connections stay in place for the settle delay.
 func (h *Harness) Settle() {
 	h.t.Helper()
 
