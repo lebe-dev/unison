@@ -274,7 +274,7 @@ android-test:
     ./android/gradlew -p android testDebugUnitTest
 
 # Run the Android UI tests on the connected device or emulator.
-android-test-ui:
+android-test-ui: aar
     ./android/gradlew -p android connectedDebugAndroidTest
 
 # Run the Android lint checks.
