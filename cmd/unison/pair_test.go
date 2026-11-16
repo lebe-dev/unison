@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/model"
@@ -123,6 +124,23 @@ func peersOf(t *testing.T, d *testDevice) map[model.DeviceID]trust.Peer {
 	return out
 }
 
+// waitPeer waits until the device stores the peer, because the responder of a
+// pairing answers before the initiator has stored it.
+func waitPeer(t *testing.T, d *testDevice, id model.DeviceID) {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, ok := peersOf(t, d)[id]; ok {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("device %s did not store %s", d.DeviceID(), id)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 // TestPairQrCode checks the code for a phone: the command prints it, a device
 // that scans it asks for the decision of the user and both devices end up
 // paired.
@@ -165,9 +183,7 @@ func TestPairQrCode(t *testing.T) {
 	if _, ok := peersOf(t, showing)[scanner.DeviceID()]; !ok {
 		t.Error("the showing device did not store the other one")
 	}
-	if _, ok := peersOf(t, scanner)[showing.DeviceID()]; !ok {
-		t.Error("the scanning device did not store the other one")
-	}
+	waitPeer(t, scanner, showing.DeviceID())
 }
 
 // TestPairQrCodeJSON checks that the code stays out of the event stream.
