@@ -21,6 +21,15 @@
   } from "../policy";
   import { PolicyAction } from "../api/gen/unison/local/v1/local_pb";
   import type { PauseChoice } from "../tray";
+  import {
+    lifetimeText,
+    parseLifetime,
+    ttlFromSettings,
+    ttlKinds,
+    ttlRequest,
+    type HistoryTTL,
+    type TTLKind,
+  } from "../ttl";
   import RelaySection from "./RelaySection.svelte";
 
   const pauses: { choice: PauseChoice; label: string }[] = [
@@ -33,6 +42,8 @@
   let name = $state("");
   let requireConfirmation = $state(false);
   let policy = $state<PolicyTable | null>(null);
+  let ttl = $state<HistoryTTL | null>(null);
+  let ttlDrafts = $state<Record<TTLKind, string>>({ text: "", image: "", files: "" });
   let login = $state<LoginItem | null>(null);
   let loginLoaded = $state(false);
   let loaded = $state(false);
@@ -107,6 +118,7 @@
       name = response.settings?.deviceName ?? "";
       requireConfirmation = response.settings?.requireConfirmation ?? false;
       policy = policyFromSettings(response.settings);
+      showTTL(ttlFromSettings(response.settings));
       loaded = true;
       notice = null;
     } catch (error) {
@@ -222,6 +234,53 @@
         kind: "error",
         text: errorText(error, "The network policy could not be reset."),
       };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** Shows the lifetimes and fills the fields with them. */
+  function showTTL(next: HistoryTTL | null): void {
+    ttl = next;
+    if (next) {
+      ttlDrafts = {
+        text: lifetimeText(next.text),
+        image: lifetimeText(next.image),
+        files: lifetimeText(next.files),
+      };
+    }
+  }
+
+  async function saveTTL(kind: TTLKind): Promise<void> {
+    const seconds = parseLifetime(ttlDrafts[kind]);
+    if (seconds === null) {
+      notice = { kind: "error", text: "Use a lifetime like 24h or 7d, up to 365d." };
+      showTTL(ttl);
+      return;
+    }
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings(ttlRequest(kind, seconds));
+      showTTL(ttlFromSettings(response.settings));
+      notice = { kind: "info", text: "The lifetime applies to the next item you copy." };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, "The lifetime could not be saved.") };
+      showTTL(ttl);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function resetTTL(): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings({ resetHistoryTtl: true });
+      showTTL(ttlFromSettings(response.settings));
+      notice = { kind: "info", text: "The lifetimes are back to their defaults." };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, "The lifetimes could not be reset.") };
     } finally {
       busy = false;
     }
@@ -369,6 +428,39 @@
       </div>
     </section>
 
+    {#if ttl}
+      <section class="panel">
+        <h3>History</h3>
+        <p class="muted">
+          How long this device keeps the items it copies. The lifetime is set on the item when it is
+          copied, so the items that already exist keep their own.
+        </p>
+        {#each ttlKinds as kind (kind.key)}
+          <div class="inline">
+            <label class="field grow">
+              <span>{kind.label}</span>
+              <input
+                type="text"
+                value={ttlDrafts[kind.key]}
+                aria-label={`${kind.label} lifetime`}
+                disabled={busy}
+                onchange={(event) => {
+                  ttlDrafts = { ...ttlDrafts, [kind.key]: event.currentTarget.value };
+                  void saveTTL(kind.key);
+                }}
+              />
+            </label>
+          </div>
+        {/each}
+        <p class="muted">Days and hours are accepted, for example 7d or 24h, up to 365d.</p>
+        <div class="toolbar">
+          <button class="button" type="button" onclick={() => void resetTTL()} disabled={busy}>
+            Reset lifetimes
+          </button>
+        </div>
+      </section>
+    {/if}
+
     {#if policy}
       {@const table = policy}
       <section class="panel">
@@ -469,7 +561,7 @@
     <RelaySection />
 
     <p class="muted">
-      The daemon does not expose the history lifetime and the downloads folder yet.
+      The downloads folder is not shown here yet.
     </p>
   </div>
 {/if}

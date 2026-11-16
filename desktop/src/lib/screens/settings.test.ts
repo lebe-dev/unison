@@ -57,6 +57,9 @@ function settings(): SettingsMessage {
     roaming: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
     dataSaver: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
     relayMaxSizeBytes: megabyte,
+    historyTtlTextSeconds: 7n * 86400n,
+    historyTtlImageSeconds: 3n * 86400n,
+    historyTtlFilesSeconds: 86400n,
   });
 }
 
@@ -191,6 +194,43 @@ describe("settings screen", () => {
 
     const request = updateSettings.mock.calls.at(-1)?.[0];
     expect(request?.roaming?.image?.action).toBe(PolicyAction.AUTO);
+  });
+
+  it("shows the lifetimes of the history", async () => {
+    render(Settings);
+
+    expect((await screen.findByLabelText("Text lifetime") as HTMLInputElement).value).toBe("7d");
+    expect((screen.getByLabelText("Images lifetime") as HTMLInputElement).value).toBe("3d");
+    expect((screen.getByLabelText("Files lifetime") as HTMLInputElement).value).toBe("1d");
+  });
+
+  it("saves a new lifetime", async () => {
+    render(Settings);
+
+    await fireEvent.change(await screen.findByLabelText("Text lifetime"), {
+      target: { value: "30d" },
+    });
+
+    expect(updateSettings).toHaveBeenLastCalledWith({ historyTtlTextSeconds: 30n * 86400n });
+  });
+
+  it("refuses an unusable lifetime", async () => {
+    render(Settings);
+
+    await fireEvent.change(await screen.findByLabelText("Images lifetime"), {
+      target: { value: "soon" },
+    });
+
+    expect(screen.getByText(/Use a lifetime like/)).toBeTruthy();
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it("resets the lifetimes to the defaults", async () => {
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Reset lifetimes" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({ resetHistoryTtl: true });
   });
 
   it("resets the policy to the defaults", async () => {
