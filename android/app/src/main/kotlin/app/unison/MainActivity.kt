@@ -27,7 +27,7 @@ import app.unison.core.coreEvents
 import app.unison.history.HistoryDownloads
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyDefaults
-import app.unison.policy.PolicyStore
+import app.unison.policy.PolicyProto
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
@@ -36,6 +36,7 @@ import app.unison.ui.UnisonRoot
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.theme.UnisonTheme
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +45,7 @@ import kotlinx.coroutines.launch
 /** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
     private lateinit var appState: AppState
-    private lateinit var policyStore: PolicyStore
+    private lateinit var core: RunningCore
     private var onboarded by mutableStateOf(false)
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
@@ -64,17 +65,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        core = RunningCore(this)
         appState = AppState(
-            core = RunningCore(this),
+            core = core,
             events = coreEvents.events,
             saver = HistoryDownloads(this),
             localAddresses = LocalAddresses(this)::ipv4,
         )
-        policyStore = PolicyStore(this)
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
-        policy = policyStore.load()
+        policy = PolicyDefaults.config
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
         setContent {
             UnisonTheme {
@@ -144,7 +145,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         if (onboarded) {
             UnisonService.start(this)
-            appState.refresh()
+            refresh()
             appState.refreshHistory()
             appState.refreshRequests()
             startRequestsPoll()
@@ -206,7 +207,7 @@ class MainActivity : ComponentActivity() {
         UnisonSettings.setOnboarded(this, true)
         onboarded = true
         UnisonService.start(this)
-        appState.refresh()
+        refresh()
         appState.refreshHistory()
         appState.refreshRequests()
         startRequestsPoll()
@@ -223,13 +224,27 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK) !=
             PackageManager.PERMISSION_GRANTED
 
-    /** Reloads the status and the clipboard offer. */
+    /** Reloads the status, the network policy and the clipboard offer. */
     private fun refresh() {
         if (!onboarded) {
             return
         }
         appState.refresh()
+        refreshPolicy()
         refreshPending()
+    }
+
+    /** Reloads the policy table of the core. */
+    private fun refreshPolicy() {
+        lifecycleScope.launch {
+            try {
+                policy = PolicyProto.table(core.settings())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // The table keeps its last value while the core is unavailable.
+            }
+        }
     }
 
     /** Offers the clipboard when it holds content that was not synchronized before. */
@@ -261,16 +276,37 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Stores the network policy of this device. */
+    /** Stores the network policy in the core. */
     private fun savePolicy(config: PolicyConfig) {
         policy = config
-        policyStore.save(config)
+        lifecycleScope.launch {
+            try {
+                val stored = PolicyProto.table(core.updatePolicy(config))
+                // A newer change may already be on its way, keep what it shows.
+                if (policy == config) {
+                    policy = stored
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, R.string.policy_save_failed, Toast.LENGTH_SHORT).show()
+                refreshPolicy()
+            }
+        }
     }
 
-    /** Puts the default table back and drops the stored one. */
+    /** Puts the default table back. */
     private fun resetPolicy() {
-        policy = policyStore.reset()
-        Toast.makeText(this, R.string.policy_reset_done, Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                policy = PolicyProto.table(core.resetPolicy())
+                Toast.makeText(this@MainActivity, R.string.policy_reset_done, Toast.LENGTH_SHORT).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Toast.makeText(this@MainActivity, R.string.policy_save_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     /** Follows the offers while the app is on screen, they expire on their own. */

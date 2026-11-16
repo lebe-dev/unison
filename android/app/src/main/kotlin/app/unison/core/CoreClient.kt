@@ -1,6 +1,8 @@
 package app.unison.core
 
 import app.unison.core.mobile.Mobile
+import app.unison.policy.PolicyConfig
+import app.unison.policy.PolicyProto
 import com.google.protobuf.MessageLite
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,6 +81,26 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         val response = call(
             method = "UpdateSettings",
             request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Stores the whole network policy and returns the resulting settings. */
+    suspend fun updatePolicy(table: PolicyConfig): Local.Settings {
+        val response = call(
+            method = "UpdateSettings",
+            request = PolicyProto.request(table),
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Drops the stored policy overrides and returns the defaults. */
+    suspend fun resetPolicy(): Local.Settings {
+        val response = call(
+            method = "UpdateSettings",
+            request = PolicyProto.reset(),
             parse = { Local.UpdateSettingsResponse.parseFrom(it) },
         )
         return response.settings

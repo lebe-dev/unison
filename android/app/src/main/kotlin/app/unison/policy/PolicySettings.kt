@@ -1,38 +1,33 @@
 package app.unison.policy
 
 /** Content kind of one policy cell. */
-enum class PolicyKind(val key: String) {
-    TEXT("text"),
-    IMAGE("image"),
-    FILES("files"),
+enum class PolicyKind {
+    TEXT,
+    IMAGE,
+    FILES,
 }
 
 /** Network condition of one policy row. */
-enum class PolicyCondition(val key: String) {
-    UNMETERED("unmetered"),
-    METERED("metered"),
-    ROAMING("roaming"),
-    DATA_SAVER("data_saver"),
+enum class PolicyCondition {
+    UNMETERED,
+    METERED,
+    ROAMING,
+    DATA_SAVER,
 }
 
 /** What happens to an item that arrives without an explicit request. */
-enum class PolicyMode(val key: String) {
+enum class PolicyMode {
     /** The item is dropped and not recorded. */
-    REJECT("reject"),
+    REJECT,
 
     /** The item is recorded and downloaded on request. */
-    METADATA("metadata"),
+    METADATA,
 
     /** The item is recorded and applied after a confirmation. */
-    CONFIRM("confirm"),
+    CONFIRM,
 
     /** The item is applied without asking. */
-    AUTO("auto");
-
-    companion object {
-        /** Mode of a stored value, null when the value is unknown. */
-        fun fromKey(value: String?): PolicyMode? = entries.firstOrNull { it.key == value }
-    }
+    AUTO,
 }
 
 /** One cell of the table: the outcome and the largest size fetched eagerly. */
@@ -55,35 +50,6 @@ data class PolicyConfig(val rows: Map<PolicyCondition, PolicyRow>, val relayMaxS
     /** Copy with another row of condition. */
     fun with(condition: PolicyCondition, row: PolicyRow): PolicyConfig =
         copy(rows = rows + (condition to row))
-}
-
-/** Settings keys of the policy table. */
-object PolicyKeys {
-    /** Largest item fetched eagerly over the relay. */
-    const val RELAY_MAX_SIZE = "policy.relay.max_size"
-
-    /** Key of the outcome of kind under condition. */
-    fun mode(condition: PolicyCondition, kind: PolicyKind): String =
-        "policy.network.${condition.key}.${kind.key}.mode"
-
-    /** Key of the eager size limit of kind under condition. */
-    fun maxSize(condition: PolicyCondition, kind: PolicyKind): String =
-        "policy.network.${condition.key}.${kind.key}.max_size"
-
-    /** Key of the relay permission of condition. */
-    fun relay(condition: PolicyCondition): String = "policy.network.${condition.key}.relay"
-
-    /** Every key of the table. */
-    fun all(): List<String> = buildList {
-        for (condition in PolicyCondition.entries) {
-            add(relay(condition))
-            for (kind in PolicyKind.entries) {
-                add(mode(condition, kind))
-                add(maxSize(condition, kind))
-            }
-        }
-        add(RELAY_MAX_SIZE)
-    }
 }
 
 /** Default table: text is applied on every network, images up to the limit, files only on request. */
