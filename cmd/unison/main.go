@@ -113,6 +113,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.history(ctx, rest)
 	case "send":
 		err = a.send(ctx, rest)
+	case "requests":
+		err = a.requests(ctx, rest)
 	case "pause":
 		err = a.pause(ctx, rest)
 	case "help":
@@ -220,6 +222,9 @@ commands:
                               download the payloads of a history item
   send <path|-> --to <device>...
                               offer a file or standard input to devices
+  requests [ls]               list the transfer requests that wait for a decision
+  requests accept <id>        accept a request and receive its files
+  requests decline <id>       decline a request
   pause [5m|1h|on|off]        pause or resume the clipboard synchronization
 
 <id> is a unique prefix of the fingerprint or the id of a device, or its

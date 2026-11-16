@@ -154,6 +154,9 @@ type Config struct {
 	// ShareDownloads is the directory of received shared files. The stored
 	// setting and then the user downloads directory are used when empty.
 	ShareDownloads string
+	// SharePendingTTL is how long an offer of a Friends device waits for a
+	// decision. The package default is used when zero.
+	SharePendingTTL time.Duration
 	// ListenPacket binds the packet connections. A UDP socket is bound when
 	// nil.
 	ListenPacket ListenPacketFunc

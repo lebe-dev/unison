@@ -151,6 +151,11 @@ service UnisonService {
   // Reject an incoming offer that waits for a decision.
   rpc RejectTransfer(RejectTransferRequest) returns (RejectTransferResponse);
 
+  // Incoming file transfer requests that wait for a decision.
+  rpc ListRequests(ListRequestsRequest) returns (ListRequestsResponse);
+  // Accept or decline a request and tell the sender.
+  rpc DecideRequest(DecideRequestRequest) returns (DecideRequestResponse);
+
   // Pause of the clipboard synchronization.
   rpc GetPause(GetPauseRequest) returns (GetPauseResponse);
   rpc SetPause(SetPauseRequest) returns (SetPauseResponse);
@@ -546,6 +551,41 @@ message RejectTransferRequest {
 }
 
 message RejectTransferResponse {}
+
+// An incoming file transfer request of a Friends device. Nothing is written to
+// the disk until it is accepted.
+message ShareRequest {
+  // Transfer ID.
+  string id = 1;
+  // Device ID of the sender in lowercase hex.
+  string device_id = 2;
+  string device_name = 3;
+  repeated TransferFile files = 4;
+  // Size of all files in bytes.
+  uint64 total_bytes = 5;
+  // Time the request arrived, unix milliseconds.
+  int64 created_at_unix_ms = 6;
+  // Time the request stops waiting for a decision, unix milliseconds.
+  int64 expires_at_unix_ms = 7;
+}
+
+message ListRequestsRequest {}
+
+message ListRequestsResponse {
+  repeated ShareRequest requests = 1;
+}
+
+message DecideRequestRequest {
+  // Transfer ID.
+  string id = 1;
+  // Accept the files or decline the request.
+  bool accept = 2;
+}
+
+message DecideRequestResponse {
+  // The request after the decision.
+  ShareRequest request = 1;
+}
 
 message GetPauseRequest {}
 

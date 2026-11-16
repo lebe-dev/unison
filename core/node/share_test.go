@@ -20,12 +20,20 @@ import (
 func shareNodes(t *testing.T, base int, role model.Role) (*testNode, *testNode) {
 	t.Helper()
 
+	return shareNodesWith(t, base, role, nil)
+}
+
+// shareNodesWith starts two paired nodes and lets the test change their
+// settings.
+func shareNodesWith(t *testing.T, base int, role model.Role, tune func(*Config)) (*testNode, *testNode) {
+	t.Helper()
+
 	network := vnet.NewNetwork()
 	t.Cleanup(func() { _ = network.Close() })
 	bus := fake.NewBus()
 
-	a := newTestNode(t, network, bus, base)
-	b := newTestNode(t, network, bus, base+1000)
+	a := newTestNodeWith(t, network, bus, base, t.TempDir(), fake.NewKeystore(), tune)
+	b := newTestNodeWith(t, network, bus, base+1000, t.TempDir(), fake.NewKeystore(), tune)
 	a.start(t)
 	b.start(t)
 

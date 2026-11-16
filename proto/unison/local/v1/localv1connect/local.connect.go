@@ -105,6 +105,12 @@ const (
 	// UnisonServiceRejectTransferProcedure is the fully-qualified name of the UnisonService's
 	// RejectTransfer RPC.
 	UnisonServiceRejectTransferProcedure = "/unison.local.v1.UnisonService/RejectTransfer"
+	// UnisonServiceListRequestsProcedure is the fully-qualified name of the UnisonService's
+	// ListRequests RPC.
+	UnisonServiceListRequestsProcedure = "/unison.local.v1.UnisonService/ListRequests"
+	// UnisonServiceDecideRequestProcedure is the fully-qualified name of the UnisonService's
+	// DecideRequest RPC.
+	UnisonServiceDecideRequestProcedure = "/unison.local.v1.UnisonService/DecideRequest"
 	// UnisonServiceGetPauseProcedure is the fully-qualified name of the UnisonService's GetPause RPC.
 	UnisonServiceGetPauseProcedure = "/unison.local.v1.UnisonService/GetPause"
 	// UnisonServiceSetPauseProcedure is the fully-qualified name of the UnisonService's SetPause RPC.
@@ -159,6 +165,10 @@ type UnisonServiceClient interface {
 	AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error)
 	// Reject an incoming offer that waits for a decision.
 	RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error)
+	// Incoming file transfer requests that wait for a decision.
+	ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error)
+	// Accept or decline a request and tell the sender.
+	DecideRequest(context.Context, *connect.Request[v1.DecideRequestRequest]) (*connect.Response[v1.DecideRequestResponse], error)
 	// Pause of the clipboard synchronization.
 	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
 	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
@@ -334,6 +344,18 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("RejectTransfer")),
 			connect.WithClientOptions(opts...),
 		),
+		listRequests: connect.NewClient[v1.ListRequestsRequest, v1.ListRequestsResponse](
+			httpClient,
+			baseURL+UnisonServiceListRequestsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ListRequests")),
+			connect.WithClientOptions(opts...),
+		),
+		decideRequest: connect.NewClient[v1.DecideRequestRequest, v1.DecideRequestResponse](
+			httpClient,
+			baseURL+UnisonServiceDecideRequestProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("DecideRequest")),
+			connect.WithClientOptions(opts...),
+		),
 		getPause: connect.NewClient[v1.GetPauseRequest, v1.GetPauseResponse](
 			httpClient,
 			baseURL+UnisonServiceGetPauseProcedure,
@@ -389,6 +411,8 @@ type unisonServiceClient struct {
 	cancelTransfer        *connect.Client[v1.CancelTransferRequest, v1.CancelTransferResponse]
 	acceptTransfer        *connect.Client[v1.AcceptTransferRequest, v1.AcceptTransferResponse]
 	rejectTransfer        *connect.Client[v1.RejectTransferRequest, v1.RejectTransferResponse]
+	listRequests          *connect.Client[v1.ListRequestsRequest, v1.ListRequestsResponse]
+	decideRequest         *connect.Client[v1.DecideRequestRequest, v1.DecideRequestResponse]
 	getPause              *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
 	setPause              *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
 	getSettings           *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
@@ -525,6 +549,16 @@ func (c *unisonServiceClient) RejectTransfer(ctx context.Context, req *connect.R
 	return c.rejectTransfer.CallUnary(ctx, req)
 }
 
+// ListRequests calls unison.local.v1.UnisonService.ListRequests.
+func (c *unisonServiceClient) ListRequests(ctx context.Context, req *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error) {
+	return c.listRequests.CallUnary(ctx, req)
+}
+
+// DecideRequest calls unison.local.v1.UnisonService.DecideRequest.
+func (c *unisonServiceClient) DecideRequest(ctx context.Context, req *connect.Request[v1.DecideRequestRequest]) (*connect.Response[v1.DecideRequestResponse], error) {
+	return c.decideRequest.CallUnary(ctx, req)
+}
+
 // GetPause calls unison.local.v1.UnisonService.GetPause.
 func (c *unisonServiceClient) GetPause(ctx context.Context, req *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {
 	return c.getPause.CallUnary(ctx, req)
@@ -587,6 +621,10 @@ type UnisonServiceHandler interface {
 	AcceptTransfer(context.Context, *connect.Request[v1.AcceptTransferRequest]) (*connect.Response[v1.AcceptTransferResponse], error)
 	// Reject an incoming offer that waits for a decision.
 	RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error)
+	// Incoming file transfer requests that wait for a decision.
+	ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error)
+	// Accept or decline a request and tell the sender.
+	DecideRequest(context.Context, *connect.Request[v1.DecideRequestRequest]) (*connect.Response[v1.DecideRequestResponse], error)
 	// Pause of the clipboard synchronization.
 	GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error)
 	SetPause(context.Context, *connect.Request[v1.SetPauseRequest]) (*connect.Response[v1.SetPauseResponse], error)
@@ -758,6 +796,18 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("RejectTransfer")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceListRequestsHandler := connect.NewUnaryHandler(
+		UnisonServiceListRequestsProcedure,
+		svc.ListRequests,
+		connect.WithSchema(unisonServiceMethods.ByName("ListRequests")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceDecideRequestHandler := connect.NewUnaryHandler(
+		UnisonServiceDecideRequestProcedure,
+		svc.DecideRequest,
+		connect.WithSchema(unisonServiceMethods.ByName("DecideRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceGetPauseHandler := connect.NewUnaryHandler(
 		UnisonServiceGetPauseProcedure,
 		svc.GetPause,
@@ -836,6 +886,10 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceAcceptTransferHandler.ServeHTTP(w, r)
 		case UnisonServiceRejectTransferProcedure:
 			unisonServiceRejectTransferHandler.ServeHTTP(w, r)
+		case UnisonServiceListRequestsProcedure:
+			unisonServiceListRequestsHandler.ServeHTTP(w, r)
+		case UnisonServiceDecideRequestProcedure:
+			unisonServiceDecideRequestHandler.ServeHTTP(w, r)
 		case UnisonServiceGetPauseProcedure:
 			unisonServiceGetPauseHandler.ServeHTTP(w, r)
 		case UnisonServiceSetPauseProcedure:
@@ -955,6 +1009,14 @@ func (UnimplementedUnisonServiceHandler) AcceptTransfer(context.Context, *connec
 
 func (UnimplementedUnisonServiceHandler) RejectTransfer(context.Context, *connect.Request[v1.RejectTransferRequest]) (*connect.Response[v1.RejectTransferResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RejectTransfer is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ListRequests is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) DecideRequest(context.Context, *connect.Request[v1.DecideRequestRequest]) (*connect.Response[v1.DecideRequestResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.DecideRequest is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) GetPause(context.Context, *connect.Request[v1.GetPauseRequest]) (*connect.Response[v1.GetPauseResponse], error) {

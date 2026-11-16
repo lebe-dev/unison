@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/lebe-dev/unison/core/blob/transfer"
 	"github.com/lebe-dev/unison/core/model"
@@ -28,14 +29,15 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 		s.log.Warn("refused a malformed offer", "peer", peer, "error", err)
 		return s.send(ctx, sess, decisionMessage(id, false))
 	}
-	s.expirePending(ctx)
+	s.expirePending(s.ctx)
 
 	s.mu.Lock()
-	known := s.records[id]
-	pending := s.pendingCount()
+	_, known := s.records[id]
+	pending := s.pendingCountLocked()
+	fromPeer := s.pendingForLocked(peer)
 	s.mu.Unlock()
-	if known != nil {
-		return s.repeatOffer(ctx, known, sess)
+	if known {
+		return s.repeatOffer(ctx, id, sess)
 	}
 
 	record, err := s.trust.Get(ctx, peer)
@@ -55,7 +57,7 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 		}
 		return s.startIncoming(ctx, sess, id, name, files)
 	}
-	if decision == trust.Confirm && pending < MaxPending {
+	if decision == trust.Confirm && pending < MaxPending && fromPeer < MaxPendingPerPeer {
 		return s.queueIncoming(ctx, sess, id, name, files)
 	}
 
@@ -65,15 +67,21 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 
 // repeatOffer answers an offer the receiver already knows, so a sender that
 // repeated the offer after a reconnect learns the decision.
-func (s *Service) repeatOffer(ctx context.Context, rec *record, sess *session.Session) error {
-	if rec.transfer.Direction != DirectionIncoming || rec.transfer.Peer != sess.DeviceID() {
+func (s *Service) repeatOffer(ctx context.Context, id string, sess *session.Session) error {
+	s.mu.Lock()
+	rec := s.records[id]
+	if rec == nil || rec.transfer.Direction != DirectionIncoming || rec.transfer.Peer != sess.DeviceID() {
+		s.mu.Unlock()
 		return nil
 	}
-	switch rec.transfer.State {
+	state := rec.transfer.State
+	s.mu.Unlock()
+
+	switch state {
 	case StateTransferring, StateDone:
-		return s.send(ctx, sess, decisionMessage(rec.transfer.ID, true))
+		return s.send(ctx, sess, decisionMessage(id, true))
 	case StateDeclined:
-		return s.send(ctx, sess, decisionMessage(rec.transfer.ID, false))
+		return s.send(ctx, sess, decisionMessage(id, false))
 	default:
 		return nil
 	}
@@ -81,6 +89,7 @@ func (s *Service) repeatOffer(ctx context.Context, rec *record, sess *session.Se
 
 // queueIncoming stores an offer that waits for the local decision.
 func (s *Service) queueIncoming(ctx context.Context, sess *session.Session, id, name string, files []File) error {
+	now := s.clock.Now()
 	rec := &record{
 		transfer: Transfer{
 			ID:         id,
@@ -90,16 +99,18 @@ func (s *Service) queueIncoming(ctx context.Context, sess *session.Session, id, 
 			State:      StatePending,
 			Files:      files,
 			TotalBytes: totalBytes(files),
-			CreatedAt:  s.clock.Now(),
+			CreatedAt:  now,
+			ExpiresAt:  now.Add(s.pendingTTL),
 		},
 		session: sess,
 		chunks:  make(map[[32]byte]int, len(files)),
 		saved:   make(map[[32]byte]string, len(files)),
 		wake:    make(chan struct{}, 1),
 	}
+	snapshot := rec.transfer.clone()
 	s.add(rec)
-	s.log.Info("offer waits for a decision", "peer", rec.transfer.Peer, "transfer", id, "files", len(files))
-	s.report(ctx, Event{Kind: EventPending, Peer: rec.transfer.Peer, Transfer: rec.transfer.clone()})
+	s.log.Info("offer waits for a decision", "peer", snapshot.Peer, "transfer", id, "files", len(files))
+	s.report(ctx, Event{Kind: EventPending, Peer: snapshot.Peer, Transfer: snapshot})
 	return nil
 }
 
@@ -121,14 +132,15 @@ func (s *Service) startIncoming(ctx context.Context, sess *session.Session, id, 
 		saved:   make(map[[32]byte]string, len(files)),
 		wake:    make(chan struct{}, 1),
 	}
+	snapshot := rec.transfer.clone()
 	s.add(rec)
 
 	if err := s.send(ctx, sess, decisionMessage(id, true)); err != nil {
 		s.drop(id)
 		return err
 	}
-	s.log.Info("accepted an offer", "peer", rec.transfer.Peer, "transfer", id, "files", len(files))
-	s.report(ctx, Event{Kind: EventAccepted, Peer: rec.transfer.Peer, Transfer: rec.transfer.clone()})
+	s.log.Info("accepted an offer", "peer", snapshot.Peer, "transfer", id, "files", len(files))
+	s.report(ctx, Event{Kind: EventAccepted, Peer: snapshot.Peer, Transfer: snapshot})
 	// The download runs on its own goroutine: the session handler has to return
 	// to the control stream.
 	go s.download(id)
@@ -456,6 +468,7 @@ func (s *Service) handleCancel(ctx context.Context, peer model.DeviceID, msg *wi
 	}
 	rec.transfer.State = StateCanceled
 	rec.transfer.Err = ""
+	rec.transfer.ExpiresAt = time.Time{}
 	if rec.cancel != nil {
 		rec.cancel()
 		rec.cancel = nil

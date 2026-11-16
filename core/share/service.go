@@ -63,6 +63,9 @@ type Options struct {
 	Events EventSink
 	// Clock is the time source. The system clock is used when nil.
 	Clock ports.Clock
+	// PendingTTL is how long an offer waits for a decision. The package
+	// default is used when zero.
+	PendingTTL time.Duration
 	// Logger receives service events. Nothing is logged when nil.
 	Logger *slog.Logger
 }
@@ -80,6 +83,8 @@ type Service struct {
 	clock     ports.Clock
 	log       *slog.Logger
 	serve     *transfer.Service
+	// pendingTTL is how long an incoming offer waits for a decision.
+	pendingTTL time.Duration
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -129,25 +134,30 @@ func New(opts Options) (*Service, error) {
 	if clock == nil {
 		clock = ports.SystemClock
 	}
+	pendingTTL := opts.PendingTTL
+	if pendingTTL <= 0 {
+		pendingTTL = PendingTTL
+	}
 	log := opts.Logger
 	if log == nil {
 		log = slog.New(slog.DiscardHandler)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		blobs:     opts.Blobs,
-		trust:     opts.Trust,
-		fetcher:   opts.Fetcher,
-		settings:  opts.Settings,
-		downloads: opts.Downloads,
-		sink:      opts.Sink,
-		events:    opts.Events,
-		clock:     clock,
-		log:       log,
-		ctx:       ctx,
-		cancel:    cancel,
-		sessions:  make(map[model.DeviceID]*session.Session),
-		records:   make(map[string]*record),
+		blobs:      opts.Blobs,
+		trust:      opts.Trust,
+		fetcher:    opts.Fetcher,
+		settings:   opts.Settings,
+		downloads:  opts.Downloads,
+		sink:       opts.Sink,
+		events:     opts.Events,
+		clock:      clock,
+		log:        log,
+		pendingTTL: pendingTTL,
+		ctx:        ctx,
+		cancel:     cancel,
+		sessions:   make(map[model.DeviceID]*session.Session),
+		records:    make(map[string]*record),
 	}
 	if s.sink == nil {
 		s.sink = downloadSink{dir: s.downloadsDir}
@@ -170,7 +180,8 @@ func New(opts Options) (*Service, error) {
 
 // expireLoop stops the offers that wait for a decision for too long.
 func (s *Service) expireLoop() {
-	ticker := time.NewTicker(time.Minute)
+	interval := min(max(s.pendingTTL/4, 100*time.Millisecond), time.Minute)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -182,25 +193,38 @@ func (s *Service) expireLoop() {
 	}
 }
 
-// expirePending declines the offers that waited longer than PendingTTL.
+// expiredOffer is an offer that stopped waiting for a decision.
+type expiredOffer struct {
+	transfer Transfer
+	sess     *session.Session
+}
+
+// expirePending declines the offers that waited longer than the pending TTL and
+// tells the senders when they are still connected.
 func (s *Service) expirePending(ctx context.Context) {
 	s.mu.Lock()
-	var expired []Transfer
+	var expired []expiredOffer
 	for _, rec := range s.records {
 		if rec.transfer.State != StatePending {
 			continue
 		}
-		if s.clock.Now().Sub(rec.transfer.CreatedAt) < PendingTTL {
+		if s.clock.Now().Sub(rec.transfer.CreatedAt) < s.pendingTTL {
 			continue
 		}
 		rec.transfer.State = StateDeclined
-		expired = append(expired, rec.transfer.clone())
+		rec.transfer.ExpiresAt = time.Time{}
+		expired = append(expired, expiredOffer{transfer: rec.transfer.clone(), sess: rec.session})
 	}
 	s.mu.Unlock()
 
-	for _, transfer := range expired {
-		s.log.Info("an offer expired", "transfer", transfer.ID, "peer", transfer.Peer)
-		s.report(ctx, Event{Kind: EventDeclined, Peer: transfer.Peer, Transfer: transfer})
+	for _, offer := range expired {
+		if offer.sess != nil && !closed(offer.sess) {
+			if err := s.send(ctx, offer.sess, decisionMessage(offer.transfer.ID, false)); err != nil {
+				s.log.Debug("sending the expiry failed", "transfer", offer.transfer.ID, "error", err)
+			}
+		}
+		s.log.Info("an offer expired", "transfer", offer.transfer.ID, "peer", offer.transfer.Peer)
+		s.report(ctx, Event{Kind: EventDeclined, Peer: offer.transfer.Peer, Transfer: offer.transfer})
 	}
 }
 
@@ -403,6 +427,30 @@ func (s *Service) Transfer(id string) (Transfer, error) {
 	return rec.transfer.clone(), nil
 }
 
+// Requests returns the incoming offers that wait for a decision, newest first.
+func (s *Service) Requests() []Transfer {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	out := make([]Transfer, 0, len(s.order))
+	for i := len(s.order) - 1; i >= 0; i-- {
+		rec := s.records[s.order[i]]
+		if rec == nil || rec.transfer.Direction != DirectionIncoming || rec.transfer.State != StatePending {
+			continue
+		}
+		out = append(out, rec.transfer.clone())
+	}
+	return out
+}
+
+// Decide accepts or declines an incoming offer that waits for a decision.
+func (s *Service) Decide(ctx context.Context, id string, accept bool) error {
+	if accept {
+		return s.Accept(ctx, id)
+	}
+	return s.Reject(ctx, id)
+}
+
 // Accept accepts an incoming offer that waits for a decision and starts the
 // download.
 func (s *Service) Accept(ctx context.Context, id string) error {
@@ -420,7 +468,7 @@ func (s *Service) Accept(ctx context.Context, id string) error {
 	sess := rec.session
 	s.mu.Unlock()
 
-	if sess == nil {
+	if sess == nil || closed(sess) {
 		return ErrPeerOffline
 	}
 	if err := s.checkOffer(ctx, files); err != nil {
@@ -434,6 +482,7 @@ func (s *Service) Accept(ctx context.Context, id string) error {
 		return ErrNotPending
 	}
 	rec.transfer.State = StateTransferring
+	rec.transfer.ExpiresAt = time.Time{}
 	snapshot := rec.transfer.clone()
 	peer := rec.transfer.Peer
 	s.mu.Unlock()
@@ -460,6 +509,7 @@ func (s *Service) Reject(ctx context.Context, id string) error {
 		return ErrNotPending
 	}
 	rec.transfer.State = StateDeclined
+	rec.transfer.ExpiresAt = time.Time{}
 	snapshot := rec.transfer.clone()
 	sess := rec.session
 	peer := rec.transfer.Peer
@@ -492,6 +542,7 @@ func (s *Service) Cancel(ctx context.Context, id string) error {
 	sess := rec.session
 	peer := rec.transfer.Peer
 	rec.transfer.State = StateCanceled
+	rec.transfer.ExpiresAt = time.Time{}
 	if rec.cancel != nil {
 		rec.cancel()
 		rec.cancel = nil
@@ -634,11 +685,24 @@ func (s *Service) trim() {
 	}
 }
 
-// pendingCount counts the offers that wait for a decision.
-func (s *Service) pendingCount() int {
+// pendingCountLocked counts the offers that wait for a decision. The caller
+// holds the lock.
+func (s *Service) pendingCountLocked() int {
 	count := 0
 	for _, rec := range s.records {
 		if rec.transfer.State == StatePending {
+			count++
+		}
+	}
+	return count
+}
+
+// pendingForLocked counts the offers of one peer that wait for a decision. The
+// caller holds the lock.
+func (s *Service) pendingForLocked(peer model.DeviceID) int {
+	count := 0
+	for _, rec := range s.records {
+		if rec.transfer.State == StatePending && rec.transfer.Peer == peer {
 			count++
 		}
 	}
