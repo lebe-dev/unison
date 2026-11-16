@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <permission
+        android:name="app.unison.permission.BRIDGE"
+        android:protectionLevel="signature" />
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -72,6 +76,16 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice"
             android:stopWithTask="false" />
+
+        <service
+            android:name=".service.BridgeService"
+            android:exported="true"
+            android:permission="app.unison.permission.BRIDGE">
+            <intent-filter>
+                <action android:name="app.unison.bridge.BIND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".tile.SendClipboardTile"
