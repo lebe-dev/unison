@@ -38,25 +38,30 @@ func newTestKeystore(t *testing.T, service string) *keystore.Keystore {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	removeItems(t, k)
-	t.Cleanup(func() { removeItems(t, k) })
+	err = clearItems(k)
+	if errors.Is(err, keystore.ErrNoKeychain) {
+		t.Skipf("no keychain available: %v", err)
+	}
+	if err != nil {
+		t.Fatalf("clear %q: %v", service, err)
+	}
+	t.Cleanup(func() {
+		if err := clearItems(k); err != nil && !errors.Is(err, keystore.ErrNoKeychain) {
+			t.Errorf("clear %q: %v", service, err)
+		}
+	})
 	return k
 }
 
-// removeItems deletes the accounts of the tests. A test without a keychain is
-// skipped: the keychain belongs to the user.
-func removeItems(t *testing.T, k *keystore.Keystore) {
-	t.Helper()
-
+// clearItems deletes the accounts of the tests. A keychain belongs to the user,
+// so a failure is reported to the caller instead of ending the process.
+func clearItems(k *keystore.Keystore) error {
 	for _, name := range testItems {
-		err := k.Delete(context.Background(), name)
-		if errors.Is(err, keystore.ErrNoKeychain) {
-			t.Skipf("no keychain available: %v", err)
-		}
-		if err != nil {
-			t.Errorf("remove %q: %v", name, err)
+		if err := k.Delete(context.Background(), name); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 // mustStore writes a secret and fails the test on error.
