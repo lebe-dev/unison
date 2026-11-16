@@ -106,6 +106,9 @@ class MainActivity : ComponentActivity() {
                         onPolicyChange = ::savePolicy,
                         onPolicyReset = ::resetPolicy,
                         onPause = appState::setPause,
+                        onRelaySave = appState::setRelay,
+                        onRelayOff = appState::relayOff,
+                        onRefreshRelay = appState::refreshRelay,
                         onSelfConfirmationChange = appState::setSelfConfirmation,
                         onLeaveGroup = appState::leaveGroup,
                         onSetDeviceConfirmation = { device, require ->

@@ -126,6 +126,43 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.settings
     }
 
+    /** Relay access of the group and the state of its client. */
+    override suspend fun relay(): Local.Relay {
+        val response = call(
+            method = "GetRelay",
+            request = Local.GetRelayRequest.getDefaultInstance(),
+            parse = { Local.GetRelayResponse.parseFrom(it) },
+        )
+        return response.relay
+    }
+
+    /** Stores the relay address and token. */
+    override suspend fun setRelay(url: String, token: String?, filesOnRequest: Boolean?): Local.Relay {
+        val request = Local.SetRelayRequest.newBuilder().setUrl(url)
+        if (token != null) {
+            request.setToken(token)
+        }
+        if (filesOnRequest != null) {
+            request.setFilesOnRequest(filesOnRequest)
+        }
+        val response = call(
+            method = "SetRelay",
+            request = request.build(),
+            parse = { Local.SetRelayResponse.parseFrom(it) },
+        )
+        return response.relay
+    }
+
+    /** Turns the relay off for the whole group. */
+    override suspend fun relayOff(): Local.Relay {
+        val response = call(
+            method = "RelayOff",
+            request = Local.RelayOffRequest.getDefaultInstance(),
+            parse = { Local.RelayOffResponse.parseFrom(it) },
+        )
+        return response.relay
+    }
+
     /** Makes this device ask for a confirmation before the clipboard is applied. */
     override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
         val request = Local.UpdateSettingsRequest.newBuilder()

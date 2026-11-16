@@ -88,6 +88,34 @@ class AppStateTest {
 
         override suspend fun settings(): Local.Settings = settings
 
+        var relay: Local.Relay = Local.Relay.getDefaultInstance()
+        var relayFailure: Exception? = null
+        val relaySaved = mutableListOf<Triple<String, String?, Boolean?>>()
+        var relayOffCalls = 0
+
+        override suspend fun relay(): Local.Relay {
+            relayFailure?.let { throw it }
+            return relay
+        }
+
+        override suspend fun setRelay(url: String, token: String?, filesOnRequest: Boolean?): Local.Relay {
+            relayFailure?.let { throw it }
+            relaySaved += Triple(url, token, filesOnRequest)
+            relay = relay.toBuilder()
+                .setUrl(url)
+                .setTokenSet(token != null || relay.tokenSet)
+                .setFilesOnRequest(filesOnRequest ?: relay.filesOnRequest)
+                .build()
+            return relay
+        }
+
+        override suspend fun relayOff(): Local.Relay {
+            relayFailure?.let { throw it }
+            relayOffCalls++
+            relay = Local.Relay.getDefaultInstance()
+            return relay
+        }
+
         override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {
             selfConfirmations += require
             settings = settings.toBuilder().setRequireConfirmation(require).build()
@@ -285,6 +313,49 @@ class AppStateTest {
         advanceUntilIdle()
 
         assertEquals(listOf("Pixel"), core.names)
+    }
+
+    @Test
+    fun refreshLoadsTheRelay() = runTest {
+        val core = FakeCore()
+        core.relay = Local.Relay.newBuilder()
+            .setUrl("relay.example.com:443")
+            .setTokenSet(true)
+            .setConnected(true)
+            .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
+            .build()
+        val state = appState(core)
+
+        state.refresh()
+        advanceUntilIdle()
+
+        assertEquals("relay.example.com:443", state.state.value.relay?.url)
+        assertTrue(state.state.value.relay?.connected == true)
+    }
+
+    @Test
+    fun relayTokenIsOptional() = runTest {
+        val core = FakeCore()
+        core.relay = Local.Relay.newBuilder().setUrl("relay.example.com:443").setTokenSet(true).build()
+        val state = appState(core)
+
+        state.setRelay("  relay.example.com:443  ", "  ", true)
+        advanceUntilIdle()
+
+        assertEquals(Triple("relay.example.com:443", null, true), core.relaySaved.single())
+    }
+
+    @Test
+    fun relayIsTurnedOff() = runTest {
+        val core = FakeCore()
+        core.relay = Local.Relay.newBuilder().setUrl("relay.example.com:443").setTokenSet(true).build()
+        val state = appState(core)
+
+        state.relayOff()
+        advanceUntilIdle()
+
+        assertEquals(1, core.relayOffCalls)
+        assertTrue(state.state.value.relay?.url.isNullOrEmpty())
     }
 
     @Test

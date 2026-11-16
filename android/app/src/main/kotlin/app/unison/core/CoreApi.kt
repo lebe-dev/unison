@@ -15,6 +15,18 @@ interface CoreApi {
     /** Current settings of the core. */
     suspend fun settings(): Local.Settings
 
+    /** Relay access of the group and the state of its client. */
+    suspend fun relay(): Local.Relay
+
+    /**
+     * Stores the relay address and token. A null [token] keeps the stored one and
+     * a null [filesOnRequest] keeps the stored rule.
+     */
+    suspend fun setRelay(url: String, token: String?, filesOnRequest: Boolean?): Local.Relay
+
+    /** Turns the relay off for the whole group. */
+    suspend fun relayOff(): Local.Relay
+
     /** Makes this device ask for a confirmation before the clipboard is applied. */
     suspend fun setSelfConfirmation(require: Boolean): Local.Settings
 
@@ -105,6 +117,21 @@ class RunningCore(
     override suspend fun settings(): Local.Settings {
         ensureRunning()
         return client.settings()
+    }
+
+    override suspend fun relay(): Local.Relay {
+        ensureRunning()
+        return client.relay()
+    }
+
+    override suspend fun setRelay(url: String, token: String?, filesOnRequest: Boolean?): Local.Relay {
+        ensureRunning()
+        return client.setRelay(url, token, filesOnRequest)
+    }
+
+    override suspend fun relayOff(): Local.Relay {
+        ensureRunning()
+        return client.relayOff()
     }
 
     override suspend fun setSelfConfirmation(require: Boolean): Local.Settings {

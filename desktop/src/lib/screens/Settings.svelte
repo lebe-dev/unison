@@ -21,6 +21,7 @@
   } from "../policy";
   import { PolicyAction } from "../api/gen/unison/local/v1/local_pb";
   import type { PauseChoice } from "../tray";
+  import RelaySection from "./RelaySection.svelte";
 
   const pauses: { choice: PauseChoice; label: string }[] = [
     { choice: "five_minutes", label: "Pause for 5 minutes" },
@@ -465,8 +466,10 @@
       </label>
     </section>
 
+    <RelaySection />
+
     <p class="muted">
-      The daemon does not expose the history lifetime, the downloads folder and the relay yet.
+      The daemon does not expose the history lifetime and the downloads folder yet.
     </p>
   </div>
 {/if}

@@ -19,6 +19,8 @@ data class CoreState(
     val status: Local.GetStatusResponse? = null,
     /** Settings of the core, absent until the first load. */
     val settings: Local.Settings? = null,
+    /** Relay access of the group, absent until the first load. */
+    val relay: Local.Relay? = null,
     val failure: CoreFailure? = null,
 ) {
 
