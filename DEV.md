@@ -90,6 +90,8 @@ just desktop-build        # build the desktop app bundle for the host platform
 just desktop-lint         # svelte-check, rustfmt and clippy for the desktop app
 just package-macos        # macOS bundle with the daemon, signed and notarized
 just verify-macos         # check the layout and the signature of the macOS bundle
+just package-windows      # Windows installer with the daemon, run on Windows
+just verify-windows       # check the installer and the installed Windows app
 just clean                # remove bin/
 ```
 
@@ -401,6 +403,62 @@ the entitlements, the hardened runtime and the signature of the bundle, and prin
 that need a second machine: the local network prompt, the daemon after a re-login, and the
 clipboard between two devices. Its login item check prints the state `SMAppService` reports for
 the bundle, which is `not-registered` before the first registration and `enabled` afterwards.
+
+## Windows packaging
+
+`just package-windows` builds the daemon for the host architecture, puts it next to the app as an
+external binary of the bundle and builds the NSIS installer with
+`tauri build --bundles nsis`. The result is
+`packaging/windows/build/Unison-<version>-setup.exe`, and the version comes from the `VERSION`
+file.
+
+The bundle configuration of Windows lives in `desktop/src-tauri/tauri.windows.conf.json`, which
+Tauri merges with the shared configuration. The daemon is
+`desktop/src-tauri/binaries/unisond-<target triple>.exe`, which the bundler places next to
+`Unison.exe` in the installation directory. The daemon uses the GUI subsystem
+(`-H windowsgui`), so the startup entry opens no console window: the log file is the only output,
+and `unisond.exe --version` prints nothing in a console.
+
+The installer installs for all users into `%ProgramFiles%\Unison` and asks for elevation once. A
+firewall rule needs elevation, so a per-machine installation keeps the rule in the same place as
+the files: the hooks in `desktop/src-tauri/installer-hooks.nsh` add a rule named `Unison daemon`
+for `unisond.exe` on the private and domain networks after the copy, and delete it before the
+uninstall. The public profile stays closed, where the daemon neither listens nor discovers. A
+per-user installation would have needed a second elevation step right after the install.
+
+The installer also writes the startup entry
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Unison`, which starts `unisond.exe` at the
+login of the user that ran the installer, so a re-login starts the daemon without the app. The
+Startup toggle of the settings screen writes and removes the same value in the registry of the
+current user, and the uninstaller removes it. An entry of an installation for all users belongs
+to the user that elevated the installer, so a standard user that installs with the credentials of
+an administrator turns the toggle on once. A change of the toggle leaves the running daemon
+alone on Windows: it affects the next login only.
+
+Signing takes the thumbprint of an Authenticode certificate from the environment and never stores
+it:
+
+```sh
+set UNISON_WINDOWS_CERT_THUMBPRINT=...
+just package-windows
+```
+
+`UNISON_WINDOWS_TIMESTAMP_URL` sets the timestamp server and defaults to
+`http://timestamp.digicert.com`. Without the thumbprint the installer and the daemon are
+unsigned: Windows shows an unknown publisher, and SmartScreen warns about the downloaded
+installer until it has enough reputation. `Get-AuthenticodeSignature` reports the signature of
+the installer, the app and the daemon.
+
+`just verify-windows [path]` checks the installer, the subsystem of the daemon and, when the app
+is installed, the installation directory, the startup entry and the firewall rule, and prints the
+checks that need the user: the re-login, the clipboard between two devices, the firewall dialog
+and the uninstall.
+
+The data directory of the daemon stays per user: `%LOCALAPPDATA%\Unison` holds the keys, the
+database and the logs, and the endpoint is the named pipe `\\.\pipe\unison-<user-sid>`, so the
+installation directory and the data of a user are independent of each other. The uninstaller
+leaves that directory alone; its Delete app data option removes it together with the data of the
+app.
 
 `just aar` binds the `mobile` package with gomobile for API 29 and the `arm64-v8a`,
 `armeabi-v7a` and `x86_64` ABIs. The library is written to `android/core/core.aar`, which the
