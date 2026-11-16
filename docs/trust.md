@@ -62,6 +62,32 @@ announcement. The tag is derived from a discovery key that only the group knows,
 see an anonymous service. The key is created at the first pairing and shared with every new
 Personal device.
 
+## Finding Friends devices
+
+A Friends device never learns the group key, so it cannot use the announcement of the group. Two
+Friends devices find each other only while both users turned the search on:
+
+```sh
+unison friends search
+unison friends search --off
+```
+
+The search lasts fifteen minutes and ends by itself; asking for it again extends the running one.
+A device that restarts keeps the search until it ends. The app has the same switch in Settings.
+
+While the search runs, the device announces itself on a separate service and looks for the
+announcements of the other devices. Both carry one tag per pair, derived from the rendezvous key
+that only the two devices of the pair know. Nobody else can compute the tag or tell that the device
+is online. The announcement carries the addresses and the tags only, never the name, the device ID
+or the role.
+
+The tags change every ten minutes, and a device accepts the tags of the previous and the next ten
+minutes, so clock differences do not matter. A neighbor device matches none of them and is refused
+during the handshake.
+
+Turning the search off withdraws the announcement, stops the lookups and refuses new sessions with
+Friends devices. A session that is already open stays until it ends.
+
 ## Revocation
 
 Revoking a device is irreversible. The device stays in the trust store as a revoked record and is

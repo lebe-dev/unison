@@ -102,9 +102,10 @@ func bootstrapMigrations() ([]store.Migration, error) {
 // trust store, which the node opens, and it changes when the device pairs or a
 // revocation rotates it.
 type keyProvider struct {
-	mu   sync.RWMutex
-	fn   func(ctx context.Context) ([]byte, error)
-	list func(ctx context.Context) ([][]byte, error)
+	mu      sync.RWMutex
+	fn      func(ctx context.Context) ([]byte, error)
+	list    func(ctx context.Context) ([][]byte, error)
+	friends func(ctx context.Context) ([][]byte, error)
 }
 
 // get returns the discovery key, or nil while the device has none.
@@ -129,6 +130,17 @@ func (p *keyProvider) keys(ctx context.Context) ([][]byte, error) {
 	return list(ctx)
 }
 
+// friendsKeys returns the rendezvous keys of the Friends devices.
+func (p *keyProvider) friendsKeys(ctx context.Context) ([][]byte, error) {
+	p.mu.RLock()
+	list := p.friends
+	p.mu.RUnlock()
+	if list == nil {
+		return nil, nil
+	}
+	return list(ctx)
+}
+
 // use replaces the source of the discovery key.
 func (p *keyProvider) use(fn func(ctx context.Context) ([]byte, error)) {
 	p.mu.Lock()
@@ -140,5 +152,12 @@ func (p *keyProvider) use(fn func(ctx context.Context) ([]byte, error)) {
 func (p *keyProvider) useKeys(list func(ctx context.Context) ([][]byte, error)) {
 	p.mu.Lock()
 	p.list = list
+	p.mu.Unlock()
+}
+
+// useFriends replaces the source of the Friends rendezvous keys.
+func (p *keyProvider) useFriends(list func(ctx context.Context) ([][]byte, error)) {
+	p.mu.Lock()
+	p.friends = list
 	p.mu.Unlock()
 }

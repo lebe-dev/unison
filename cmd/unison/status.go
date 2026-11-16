@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 
@@ -53,6 +54,9 @@ func (a *app) writeStatus(status *localv1.GetStatusResponse) {
 	}
 	a.field("network", networkText(status.GetNetwork()))
 	a.field("clipboard", pauseText(status.GetPause()))
+	if search := status.GetFriendsDiscovery(); search.GetOn() {
+		a.field("friends", fmt.Sprintf("searching until %s", time.UnixMilli(search.GetUntilUnixMs()).Format("15:04")))
+	}
 
 	online, offline := 0, 0
 	for _, device := range status.GetDevices() {

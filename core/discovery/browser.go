@@ -38,7 +38,7 @@ type browser struct {
 	typ     string
 	ch      chan Candidate
 	poke    chan struct{}
-	match   func(txt map[string]string) bool
+	match   func(txt map[string]string, tags []string) bool
 	isOwn   func(name string) bool
 
 	mu     sync.Mutex
@@ -97,6 +97,7 @@ type instance struct {
 	port int
 	host string
 	txt  map[string]string
+	tags []string
 	seen time.Time
 	ttl  time.Duration
 }
@@ -150,7 +151,9 @@ func (b *browserCache) update(msg *dns.Msg, typ, ifaceName string, now time.Time
 			if !strings.HasSuffix(strings.ToLower(rr.Hdr.Name), strings.ToLower(typ)) {
 				continue
 			}
-			b.instance(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl).txt = parseTXT(rr.Txt)
+			inst := b.instance(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl)
+			inst.txt = parseTXT(rr.Txt)
+			inst.tags = parseTags(rr.Txt)
 		case *dns.A:
 			if h := b.host(strings.ToLower(rr.Hdr.Name), now, rr.Hdr.Ttl); h != nil {
 				h.ips[ifaceName] = appendIP(h.ips[ifaceName], rr.A)
@@ -192,7 +195,7 @@ func (b *browserCache) host(name string, now time.Time, ttl uint32) *host {
 
 // candidates returns the addresses of the known instances that were not
 // emitted with their current tag.
-func (b *browserCache) candidates(typ string, now time.Time, isOwn func(string) bool, match func(map[string]string) bool) []Candidate {
+func (b *browserCache) candidates(typ string, now time.Time, isOwn func(string) bool, match func(map[string]string, []string) bool) []Candidate {
 	var out []Candidate
 	for name, inst := range b.instances {
 		if !strings.HasSuffix(strings.ToLower(name), strings.ToLower(typ)) {
@@ -223,15 +226,15 @@ func (b *browserCache) candidates(typ string, now time.Time, isOwn func(string) 
 					continue
 				}
 				key := name + "\x00" + addr
-				tag := inst.txt[txtTagKey]
-				if prev, ok := b.emitted[key]; ok && prev == tag {
+				signature := strings.Join(inst.tags, ",")
+				if prev, ok := b.emitted[key]; ok && prev == signature {
 					continue
 				}
-				b.emitted[key] = tag
+				b.emitted[key] = signature
 				out = append(out, Candidate{
 					Addr:    addr,
 					TXT:     maps.Clone(inst.txt),
-					Matched: match(inst.txt),
+					Matched: match(inst.txt, inst.tags),
 				})
 			}
 		}

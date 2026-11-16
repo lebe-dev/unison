@@ -52,7 +52,7 @@ func txtFields(txt map[string]string) []string {
 	return fields
 }
 
-func matchAll(map[string]string) bool { return true }
+func matchAll(map[string]string, []string) bool { return true }
 
 func TestBrowserCandidates(t *testing.T) {
 	now := epochTime(1000)
@@ -115,7 +115,7 @@ func TestBrowserFilters(t *testing.T) {
 	if got := cache.candidates(typ, now, func(string) bool { return true }, matchAll); len(got) != 0 {
 		t.Fatalf("own instance produced %d candidates", len(got))
 	}
-	if got := cache.candidates(typ, now, nil, func(map[string]string) bool { return false }); len(got) != 1 || got[0].Matched {
+	if got := cache.candidates(typ, now, nil, func(map[string]string, []string) bool { return false }); len(got) != 1 || got[0].Matched {
 		t.Fatalf("unmatched instance produced %v", got)
 	}
 

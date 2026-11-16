@@ -115,6 +115,18 @@ func newNode(t *testing.T, network *vnet.Network, bus *fake.Bus, base int) *test
 	return n
 }
 
+// enableFriends turns the friends discovery mode on, so Friends devices may open
+// sessions with each other.
+func enableFriends(t *testing.T, nodes ...*testNode) {
+	t.Helper()
+
+	for _, n := range nodes {
+		if _, err := n.SetFriendsDiscovery(t.Context(), true); err != nil {
+			t.Fatalf("enable friends discovery: %v", err)
+		}
+	}
+}
+
 // testLogger returns a logger that writes to stderr when the test is verbose.
 func testLogger() *slog.Logger {
 	if !testing.Verbose() {

@@ -168,6 +168,9 @@ func nodesWithRole(t *testing.T, base int, role model.Role) (*testNode, *testNod
 	b := newTestNode(t, network, bus, base+1000)
 	a.start(t)
 	b.start(t)
+	if role == model.RoleFriends {
+		enableFriends(t, a, b)
+	}
 
 	for _, pair := range [][2]*testNode{{a, b}, {b, a}} {
 		from, to := pair[0], pair[1]

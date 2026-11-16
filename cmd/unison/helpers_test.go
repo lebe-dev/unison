@@ -58,6 +58,18 @@ func newNetwork(t *testing.T) (*vnet.Network, *fake.Bus) {
 	return network, fake.NewBus()
 }
 
+// enableFriends turns the friends discovery mode on, so Friends devices may open
+// sessions with each other.
+func enableFriends(t *testing.T, devices ...*testDevice) {
+	t.Helper()
+
+	for _, d := range devices {
+		if _, err := d.SetFriendsDiscovery(context.Background(), true); err != nil {
+			t.Fatalf("enable friends discovery: %v", err)
+		}
+	}
+}
+
 // testDevice is one node with the local API served over a socket.
 type testDevice struct {
 	*node.Node

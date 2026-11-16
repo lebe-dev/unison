@@ -102,6 +102,12 @@ func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetS
 		return nil, errorOf(err)
 	}
 	status.Devices = devices
+
+	on, until, err := s.node.FriendsDiscovery(ctx)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	status.FriendsDiscovery = friendsDiscoveryToProto(on, until)
 	return connect.NewResponse(status), nil
 }
 

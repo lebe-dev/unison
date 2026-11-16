@@ -16,6 +16,7 @@ func TestServiceType(t *testing.T) {
 	}{
 		{ports.ServiceMain, "_unison._udp.local."},
 		{ports.ServicePairing, "_unison-pair._udp.local."},
+		{ports.ServiceFriends, "_unison-friends._udp.local."},
 	}
 	for _, c := range cases {
 		got, err := serviceType(c.service)
@@ -38,7 +39,8 @@ func TestAnnouncement(t *testing.T) {
 		instance: "abcdef",
 		host:     "unison-abcdef.local.",
 		port:     4242,
-		txt:      map[string]string{"v": "1", "tag": "r2ffkbe3kxzai"},
+		txt:      map[string]string{"v": "1"},
+		tags:     []string{"r2ffkbe3kxzai"},
 	}
 
 	records := rs.announcement(nil, false)
@@ -65,8 +67,8 @@ func TestAnnouncement(t *testing.T) {
 	if txt == nil {
 		t.Fatal("no TXT record")
 	}
-	if len(txt.Txt) != 2 || txt.Txt[0] != "tag=r2ffkbe3kxzai" || txt.Txt[1] != "v=1" {
-		t.Fatalf("TXT = %v, want sorted key=value fields", txt.Txt)
+	if len(txt.Txt) != 2 || txt.Txt[0] != "v=1" || txt.Txt[1] != "tag=r2ffkbe3kxzai" {
+		t.Fatalf("TXT = %v, want the version field and the tag", txt.Txt)
 	}
 
 	expired := rs.announcement(nil, true)

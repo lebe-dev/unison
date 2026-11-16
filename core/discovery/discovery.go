@@ -54,6 +54,11 @@ type Options struct {
 	// and the previous one of a rotation while it still matches. Key is used
 	// when nil.
 	Keys func(ctx context.Context) ([][]byte, error)
+	// FriendsKeys returns the rendezvous keys of the Friends devices. Their
+	// tags are announced on the friends service, and a device that looks for
+	// friends matches them with the same keys. Nothing is advertised for
+	// Friends when it returns nil.
+	FriendsKeys func(ctx context.Context) ([][]byte, error)
 	// Clock is the time source. The system clock is used when nil.
 	Clock ports.Clock
 	// Logger receives discovery events. Nothing is logged when nil.
@@ -83,6 +88,12 @@ func (a advert) fqdn() string {
 	return a.instance + "." + typ
 }
 
+// keyCache holds the keys of one source.
+type keyCache struct {
+	keys  [][]byte
+	until time.Time
+}
+
 // Discovery advertises and browses services on the local network.
 type Discovery struct {
 	opts  Options
@@ -101,8 +112,8 @@ type Discovery struct {
 	tr        *transport
 	ifaceHash string
 	epoch     int64
-	keys      [][]byte
-	keysUntil time.Time
+	group     keyCache
+	friends   keyCache
 	stopped   bool
 }
 
@@ -232,7 +243,7 @@ func (d *Discovery) BrowseCandidates(ctx context.Context, service ports.Service)
 		typ:     typ,
 		ch:      make(chan Candidate, candidateBuffer),
 		poke:    make(chan struct{}, 1),
-		match:   d.matchTag,
+		match:   func(_ map[string]string, tags []string) bool { return d.matchTags(service, tags) },
 		isOwn:   d.isOwn,
 	}
 	d.browsers[id] = b
@@ -412,67 +423,95 @@ func (d *Discovery) records(ctx context.Context, ad advert) recordSet {
 		txt = make(map[string]string, 2)
 	}
 	txt[txtVersionKey] = txtVersion
-	if ad.service == ports.ServiceMain {
-		if tag := Tag(d.keyBytes(ctx), d.clock.Now()); tag != "" {
-			txt[txtTagKey] = tag
-		}
-	}
+	delete(txt, txtTagKey)
 
-	typ, _ := serviceType(ad.service)
-	return recordSet{
-		typ:      typ,
+	rs := recordSet{
+		typ:      mustServiceType(ad.service),
 		instance: ad.instance,
 		host:     d.host,
 		port:     ad.port,
 		txt:      txt,
+		tags:     d.tags(ctx, ad.service),
 	}
+	return rs
 }
 
-// keyBytes returns the current group key, or nil when the device has none.
-func (d *Discovery) keyBytes(ctx context.Context) []byte {
-	keys := d.keyList(ctx)
-	if len(keys) == 0 {
-		return nil
-	}
-	return keys[0]
-}
-
-// keyList returns the group keys of the device: the current one first and the
-// previous one of a rotation while it still matches. The keys are cached, an
-// absent key for a shorter time than a present one.
-func (d *Discovery) keyList(ctx context.Context) [][]byte {
-	if d.opts.Key == nil && d.opts.Keys == nil {
+// tags returns the tags of the announcement of service at the current time.
+func (d *Discovery) tags(ctx context.Context, service ports.Service) []string {
+	var keys [][]byte
+	switch service {
+	case ports.ServiceMain:
+		keys = d.groupKeys(ctx)
+	case ports.ServiceFriends:
+		keys = d.friendsKeys(ctx)
+	default:
 		return nil
 	}
 
 	now := d.clock.Now()
+	tags := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if tag := Tag(key, now); tag != "" {
+			tags = append(tags, tag)
+		}
+	}
+	return tags
+}
+
+// mustServiceType returns the DNS-SD type of a service accepted by Advertise.
+func mustServiceType(service ports.Service) string {
+	typ, _ := serviceType(service)
+	return typ
+}
+
+// groupKeys returns the keys of the Personal group: the current one first and
+// the previous one of a rotation while it still matches.
+func (d *Discovery) groupKeys(ctx context.Context) [][]byte {
+	if d.opts.Key == nil && d.opts.Keys == nil {
+		return nil
+	}
+	return d.cached(ctx, &d.group, d.readGroupKeys, "discovery key")
+}
+
+// friendsKeys returns the rendezvous keys of the Friends devices.
+func (d *Discovery) friendsKeys(ctx context.Context) [][]byte {
+	if d.opts.FriendsKeys == nil {
+		return nil
+	}
+	return d.cached(ctx, &d.friends, d.opts.FriendsKeys, "friends discovery keys")
+}
+
+// cached returns the keys of one source. An absent key is cached for a shorter
+// time than a present one.
+func (d *Discovery) cached(ctx context.Context, cache *keyCache, source func(context.Context) ([][]byte, error), name string) [][]byte {
+	now := d.clock.Now()
 	d.mu.Lock()
-	if now.Before(d.keysUntil) {
-		keys := d.keys
+	if now.Before(cache.until) {
+		keys := cache.keys
 		d.mu.Unlock()
 		return keys
 	}
 	d.mu.Unlock()
 
-	keys, err := d.readKeys(ctx)
+	keys, err := source(ctx)
 	if err != nil {
-		debugf(d.log, "read discovery key: %v", err)
+		debugf(d.log, "read %s: %v", name, err)
 		keys = nil
 	}
 
 	d.mu.Lock()
-	d.keys = keys
+	cache.keys = keys
 	if len(keys) == 0 {
-		d.keysUntil = now.Add(keyRetryTTL)
+		cache.until = now.Add(keyRetryTTL)
 	} else {
-		d.keysUntil = now.Add(keyCacheTTL)
+		cache.until = now.Add(keyCacheTTL)
 	}
 	d.mu.Unlock()
 	return keys
 }
 
-// readKeys asks the key sources of the option for the group keys.
-func (d *Discovery) readKeys(ctx context.Context) ([][]byte, error) {
+// readGroupKeys asks the key sources of the option for the group keys.
+func (d *Discovery) readGroupKeys(ctx context.Context) ([][]byte, error) {
 	if d.opts.Keys != nil {
 		keys, err := d.opts.Keys(ctx)
 		if err != nil {
@@ -487,16 +526,23 @@ func (d *Discovery) readKeys(ctx context.Context) ([][]byte, error) {
 	return [][]byte{key}, nil
 }
 
-// matchTag reports whether the TXT records carry a tag of a group key.
-func (d *Discovery) matchTag(txt map[string]string) bool {
-	if len(txt) == 0 {
+// matchTags reports whether a candidate carries a tag of the service.
+func (d *Discovery) matchTags(service ports.Service, tags []string) bool {
+	if len(tags) == 0 {
 		return false
 	}
-	tag, ok := txt[txtTagKey]
-	if !ok {
-		return false
+	keys := d.groupKeys(context.Background())
+	if service == ports.ServiceFriends {
+		keys = d.friendsKeys(context.Background())
 	}
-	return MatchAnyTag(d.keyList(context.Background()), tag, d.clock.Now())
+
+	now := d.clock.Now()
+	for _, tag := range tags {
+		if MatchAnyTag(keys, tag, now) {
+			return true
+		}
+	}
+	return false
 }
 
 // isOwn reports whether name is an instance advertised by this node.

@@ -7,6 +7,7 @@
   <array>
     <string>_unison._udp</string>
     <string>_unison-pair._udp</string>
+    <string>_unison-friends._udp</string>
   </array>
   <key>NSLocalNetworkUsageDescription</key>
   <string>Unison finds your other devices on the local network and exchanges clipboard items and files with them.</string>

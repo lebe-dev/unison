@@ -71,7 +71,7 @@ description=$(plist_value "$plist" NSLocalNetworkUsageDescription)
     fail "local network usage description"
 
 services=$(plutil -extract NSBonjourServices json -o - "$plist" 2>/dev/null)
-for service in _unison._udp _unison-pair._udp; do
+for service in _unison._udp _unison-pair._udp _unison-friends._udp; do
     grep -q "\"$service\"" <<<"$services" && pass "bonjour service $service" ||
         fail "bonjour service $service"
 done

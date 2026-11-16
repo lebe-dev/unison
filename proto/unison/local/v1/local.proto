@@ -165,6 +165,10 @@ service UnisonService {
   // Reject an incoming offer that waits for a decision.
   rpc RejectTransfer(RejectTransferRequest) returns (RejectTransferResponse);
 
+  // Temporary search for Friends devices. Both devices of a pair turn it on
+  // for the devices to find each other.
+  rpc SetFriendsDiscovery(SetFriendsDiscoveryRequest) returns (SetFriendsDiscoveryResponse);
+
   // Incoming file transfer requests that wait for a decision.
   rpc ListRequests(ListRequestsRequest) returns (ListRequestsResponse);
   // Accept or decline a request and tell the sender.
@@ -208,6 +212,14 @@ message Device {
 }
 
 // State of the clipboard pause.
+// Temporary search for Friends devices.
+message FriendsDiscovery {
+  // The device looks for Friends devices.
+  bool on = 1;
+  // End of the search, unix milliseconds. Zero when it is off.
+  int64 until_unix_ms = 2;
+}
+
 message Pause {
   bool paused = 1;
   // The pause has no deadline and lasts until it is turned off.
@@ -340,6 +352,7 @@ message GetStatusResponse {
   // Paired devices with their live connection state.
   repeated Device devices = 6;
   Pause pause = 7;
+  FriendsDiscovery friends_discovery = 8;
 }
 
 message WatchEventsRequest {}
@@ -380,6 +393,16 @@ message SetDeviceConfirmationRequest {
 }
 
 message SetDeviceConfirmationResponse {}
+
+message SetFriendsDiscoveryRequest {
+  // On turns the search on and extends a running one, off turns it off.
+  bool on = 1;
+}
+
+message SetFriendsDiscoveryResponse {
+  // The search after the change.
+  FriendsDiscovery friends_discovery = 1;
+}
 
 message OpenPairingWindowRequest {
   Role role = 1;

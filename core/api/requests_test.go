@@ -29,6 +29,7 @@ func requestNodes(t *testing.T, base int) (sender, receiver localv1connect.Uniso
 	b = newNode(t, network, bus, base+1000)
 	a.start(t)
 	b.start(t)
+	enableFriends(t, a, b)
 	addFriend(t, a, b)
 	addFriend(t, b, a)
 
