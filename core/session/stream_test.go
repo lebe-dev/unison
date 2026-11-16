@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"io"
 	"sync"
@@ -306,6 +307,108 @@ func TestOpenStreamRefusedBeforeOpen(t *testing.T) {
 	}
 	if err := client.Send(ctx, clipAnnounce(1)); !errors.Is(err, ErrNotOpen) {
 		t.Fatalf("send error = %v, want ErrNotOpen", err)
+	}
+}
+
+// TestTransferStreamLimit checks that a peer that keeps too many transfer
+// streams open is refused.
+func TestTransferStreamLimit(t *testing.T) {
+	h := newHarness(t, model.RolePersonal, model.RolePersonal)
+	started := make(chan struct{}, MaxTransferStreams)
+	release := make(chan struct{})
+
+	client, server := h.open(func(_, server *Session) {
+		err := server.HandleTransfer("test.transfer", trust.ActionSyncHistory, func(ctx context.Context, _ *Transfer) error {
+			started <- struct{}{}
+			select {
+			case <-release:
+			case <-ctx.Done():
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("handle transfer: %v", err)
+		}
+	})
+	t.Cleanup(func() { close(release) })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	transfers := make([]*TransferWriter, 0, MaxTransferStreams)
+	for range MaxTransferStreams {
+		transfer, err := client.OpenTransfer(ctx, &wirev1.StreamHeader{PayloadType: "test.transfer"})
+		if err != nil {
+			t.Fatalf("open transfer: %v", err)
+		}
+		transfers = append(transfers, transfer)
+	}
+	for range MaxTransferStreams {
+		select {
+		case <-started:
+		case <-time.After(10 * time.Second):
+			t.Fatal("not every transfer reached its handler")
+		}
+	}
+
+	extra, err := client.OpenTransfer(ctx, &wirev1.StreamHeader{PayloadType: "test.transfer"})
+	if err != nil {
+		t.Fatalf("open transfer over the limit: %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for server.Violations() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("the transfer over the limit was not counted as a violation")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if server.isClosed() {
+		t.Fatal("one transfer over the limit ended the session")
+	}
+	for _, transfer := range transfers {
+		_ = transfer.Close()
+	}
+	_ = extra.Close()
+}
+
+// TestOversizedStreamFrame checks that a frame over the stream limit is refused
+// before its payload is read.
+func TestOversizedStreamFrame(t *testing.T) {
+	h := newHarness(t, model.RolePersonal, model.RolePersonal)
+	handled := make(chan struct{}, 1)
+	_, server := h.open(func(_, server *Session) {
+		err := server.HandleRequest("test.request", trust.ActionFetchBlob, func(context.Context, *Request) error {
+			handled <- struct{}{}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("handle request: %v", err)
+		}
+	})
+
+	stream, err := h.clientConn.OpenStream(context.Background())
+	if err != nil {
+		t.Fatalf("open stream: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	// Announce a header over the limit and send none of it.
+	prefix := binary.AppendUvarint(nil, uint64(MaxStreamMessage)+1)
+	if _, err := stream.Write(prefix); err != nil {
+		t.Fatalf("write length prefix: %v", err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for server.Violations() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("the oversized stream frame was not counted as a violation")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	select {
+	case <-handled:
+		t.Fatal("the oversized frame reached a handler")
+	default:
 	}
 }
 
