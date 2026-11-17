@@ -237,6 +237,37 @@ relay_image := "unison-relay:" + version
 relay-image:
     docker build --build-arg VERSION={{version}} --build-arg SENTRY_DSN='{{sentry_dsn}}' -t {{relay_image}} -f deploy/relay/Dockerfile .
 
+relay_repo := "tinyops/unison-relay"
+relay_platform := env("RELAY_PLATFORM", "linux/amd64")
+
+# Build the relay image for the release platform and push it with the given tag.
+[private]
+relay-push tag:
+    docker buildx build --platform {{relay_platform}} --build-arg VERSION={{tag}} --build-arg SENTRY_DSN='{{sentry_dsn}}' -t {{relay_repo}}:{{tag}} -f deploy/relay/Dockerfile --push .
+
+# Push the relay image tagged with the version.
+release-relay: (relay-push version)
+
+relay_dev_tag := version + "-" + `git rev-parse --short HEAD`
+
+# Push the relay image tagged with the version and the short commit hash.
+release-relay-dev: (relay-push relay_dev_tag)
+
+relay_host := env("RELAY_HOST", "kaiman")
+relay_dir := env("RELAY_DIR", "/opt/unison-relay")
+
+# Roll out the relay image with the given tag on the relay host.
+[private]
+relay-deploy tag:
+    scp deploy/relay/docker-compose.proxy.yml {{relay_host}}:{{relay_dir}}/docker-compose.yml
+    ssh {{relay_host}} 'set -e; cd {{relay_dir}}; touch .env; { grep -v "^RELAY_IMAGE=" .env || true; echo "RELAY_IMAGE={{relay_repo}}:{{tag}}"; } > .env.new; mv .env.new .env; docker compose pull; docker compose up -d --remove-orphans --wait; docker compose ps'
+
+# Push the release relay image and run it on the relay host.
+deploy-relay: release-relay (relay-deploy version)
+
+# Push the dev relay image and run it on the relay host.
+deploy-relay-dev: release-relay-dev (relay-deploy relay_dev_tag)
+
 # Run the relay container from deploy/relay/docker-compose.yml.
 relay-run:
     RELAY_IMAGE={{relay_image}} RELAY_VERSION={{version}} docker compose -f deploy/relay/docker-compose.yml up --build

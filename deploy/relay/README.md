@@ -31,6 +31,48 @@ docker buildx build --platform linux/amd64 --build-arg VERSION="$(cat VERSION)" 
     -f deploy/relay/Dockerfile -t unison-relay:"$(cat VERSION)" --load .
 ```
 
+## Publish
+
+Two recipes build the image for `linux/amd64` with `docker buildx` and push it to Docker Hub
+(log in with `docker login` first):
+
+```sh
+just release-relay       # tinyops/unison-relay:<version>
+just release-relay-dev   # tinyops/unison-relay:<version>-<short commit hash>
+```
+
+The tag is also the version compiled into the binary. Set `RELAY_PLATFORM` to build for another
+platform, for example `RELAY_PLATFORM=linux/amd64,linux/arm64` for a multi-arch image.
+
+`just deploy-relay` and `just deploy-relay-dev` push the same tags and then roll the image out
+on a server over SSH: they copy `docker-compose.proxy.yml` to `$RELAY_DIR/docker-compose.yml`
+on `$RELAY_HOST`, set `RELAY_IMAGE` in the `.env` next to it and restart the container. The
+directory must already hold `secrets/` with `cert.pem`, `key.pem` and `tokens.txt`.
+
+## Behind a reverse proxy
+
+`docker-compose.proxy.yml` runs the relay behind a proxy that terminates TLS on 443, for a host
+where UDP 443 is taken or the relay shares a domain with other services. It publishes only the
+WebSocket port and the health port, both on `127.0.0.1` (`RELAY_WS_PORT`, `RELAY_HTTP_PORT` in
+`.env`); clients try QUIC once, fail and stay on the WebSocket path until the network changes.
+The proxy forwards `/relay` over TLS, so a self-signed certificate is enough for the relay:
+
+```nginx
+location = /relay {
+    proxy_pass https://127.0.0.1:8443;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_buffering off;
+    proxy_read_timeout 1h;
+    proxy_send_timeout 1h;
+}
+```
+
+The relay URL on the devices is the proxy's domain without a path, for example
+`https://relay.example.com`.
+
 ## Run
 
 The compose file expects three files in `deploy/relay/secrets`: `cert.pem`, `key.pem` and
