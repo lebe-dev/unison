@@ -13515,6 +13515,17 @@ java.lang.String defaultValue) {
      * @return The sentryEnabled.
      */
     boolean getSentryEnabled();
+
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them, such as
+     * utm_source or fbclid, before they are stored and announced.
+     * </pre>
+     *
+     * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+     * @return The stripTracking.
+     */
+    boolean getStripTracking();
   }
   /**
    * <pre>
@@ -14237,6 +14248,47 @@ java.lang.String defaultValue) {
     private void clearSentryEnabled() {
 
       sentryEnabled_ = false;
+    }
+
+    public static final int STRIP_TRACKING_FIELD_NUMBER = 15;
+    private boolean stripTracking_;
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them, such as
+     * utm_source or fbclid, before they are stored and announced.
+     * </pre>
+     *
+     * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+     * @return The stripTracking.
+     */
+    @java.lang.Override
+    public boolean getStripTracking() {
+      return stripTracking_;
+    }
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them, such as
+     * utm_source or fbclid, before they are stored and announced.
+     * </pre>
+     *
+     * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+     * @param value The stripTracking to set.
+     */
+    private void setStripTracking(boolean value) {
+      
+      stripTracking_ = value;
+    }
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them, such as
+     * utm_source or fbclid, before they are stored and announced.
+     * </pre>
+     *
+     * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+     */
+    private void clearStripTracking() {
+
+      stripTracking_ = false;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -15082,6 +15134,49 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them, such as
+       * utm_source or fbclid, before they are stored and announced.
+       * </pre>
+       *
+       * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+       * @return The stripTracking.
+       */
+      @java.lang.Override
+      public boolean getStripTracking() {
+        return instance.getStripTracking();
+      }
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them, such as
+       * utm_source or fbclid, before they are stored and announced.
+       * </pre>
+       *
+       * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+       * @param value The stripTracking to set.
+       * @return This builder for chaining.
+       */
+      public Builder setStripTracking(boolean value) {
+        copyOnWrite();
+        instance.setStripTracking(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them, such as
+       * utm_source or fbclid, before they are stored and announced.
+       * </pre>
+       *
+       * <code>bool strip_tracking = 15 [json_name = "stripTracking"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearStripTracking() {
+        copyOnWrite();
+        instance.clearStripTracking();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -15113,11 +15208,13 @@ java.lang.String defaultValue) {
               "historyTtlFilesSeconds_",
               "requireFileConfirmation_",
               "sentryEnabled_",
+              "stripTracking_",
             };
             java.lang.String info =
-                "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
                 "\u0003\u0002\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b" +
-                "\u1009\u0003\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007\u000e\u0007";
+                "\u1009\u0003\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007\u000e\u0007\u000f\u0007" +
+                "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -43659,6 +43756,25 @@ java.lang.String defaultValue) {
      * @return The sentryEnabled.
      */
     boolean getSentryEnabled();
+
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them.
+     * </pre>
+     *
+     * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+     * @return Whether the stripTracking field is set.
+     */
+    boolean hasStripTracking();
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them.
+     * </pre>
+     *
+     * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+     * @return The stripTracking.
+     */
+    boolean getStripTracking();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -44412,6 +44528,56 @@ java.lang.String defaultValue) {
     private void clearSentryEnabled() {
       bitField0_ = (bitField0_ & ~0x00002000);
       sentryEnabled_ = false;
+    }
+
+    public static final int STRIP_TRACKING_FIELD_NUMBER = 17;
+    private boolean stripTracking_;
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them.
+     * </pre>
+     *
+     * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+     * @return Whether the stripTracking field is set.
+     */
+    @java.lang.Override
+    public boolean hasStripTracking() {
+      return ((bitField0_ & 0x00004000) != 0);
+    }
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them.
+     * </pre>
+     *
+     * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+     * @return The stripTracking.
+     */
+    @java.lang.Override
+    public boolean getStripTracking() {
+      return stripTracking_;
+    }
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them.
+     * </pre>
+     *
+     * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+     * @param value The stripTracking to set.
+     */
+    private void setStripTracking(boolean value) {
+      bitField0_ |= 0x00004000;
+      stripTracking_ = value;
+    }
+    /**
+     * <pre>
+     * Text items lose the advertising parameters of the URLs in them.
+     * </pre>
+     *
+     * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+     */
+    private void clearStripTracking() {
+      bitField0_ = (bitField0_ & ~0x00004000);
+      stripTracking_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -45281,6 +45447,58 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them.
+       * </pre>
+       *
+       * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+       * @return Whether the stripTracking field is set.
+       */
+      @java.lang.Override
+      public boolean hasStripTracking() {
+        return instance.hasStripTracking();
+      }
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them.
+       * </pre>
+       *
+       * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+       * @return The stripTracking.
+       */
+      @java.lang.Override
+      public boolean getStripTracking() {
+        return instance.getStripTracking();
+      }
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them.
+       * </pre>
+       *
+       * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+       * @param value The stripTracking to set.
+       * @return This builder for chaining.
+       */
+      public Builder setStripTracking(boolean value) {
+        copyOnWrite();
+        instance.setStripTracking(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Text items lose the advertising parameters of the URLs in them.
+       * </pre>
+       *
+       * <code>optional bool strip_tracking = 17 [json_name = "stripTracking"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearStripTracking() {
+        copyOnWrite();
+        instance.clearStripTracking();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -45314,12 +45532,13 @@ java.lang.String defaultValue) {
               "resetHistoryTtl_",
               "requireFileConfirmation_",
               "sentryEnabled_",
+              "stripTracking_",
             };
             java.lang.String info =
-                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u0000\u0011\u0000\u0001\u0001\u0011\u0011\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
                 "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
                 "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
-                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r";
+                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r\u0011\u1007\u000e";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

@@ -41,6 +41,9 @@ func TestGetSettings(t *testing.T) {
 	if limit := settings.GetBlobMaxSizeBytes(); limit != blob.DefaultLimitDesktop {
 		t.Errorf("blob limit is %d, want %d", limit, int64(blob.DefaultLimitDesktop))
 	}
+	if !settings.GetStripTracking() {
+		t.Error("the advertising parameters of the URLs are kept by default")
+	}
 }
 
 // TestUpdateSettings checks that the stored settings are reported back.
@@ -55,6 +58,7 @@ func TestUpdateSettings(t *testing.T) {
 		RequireConfirmation:     ptr(true),
 		RequireFileConfirmation: ptr(true),
 		BlobMaxSizeBytes:        ptr(int64(1 << 20)),
+		StripTracking:           ptr(false),
 	}))
 	if err != nil {
 		t.Fatalf("update settings: %v", err)
@@ -72,6 +76,9 @@ func TestUpdateSettings(t *testing.T) {
 	}
 	if settings.GetBlobMaxSizeBytes() != 1<<20 {
 		t.Errorf("blob limit is %d, want %d", settings.GetBlobMaxSizeBytes(), int64(1<<20))
+	}
+	if settings.GetStripTracking() {
+		t.Error("the advertising parameters are still stripped")
 	}
 
 	stored, err := client.GetSettings(ctx, connect.NewRequest(&localv1.GetSettingsRequest{}))

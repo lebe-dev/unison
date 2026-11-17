@@ -80,6 +80,11 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 		}
 		observability.SetEnabled(*value)
 	}
+	if value := req.Msg.StripTracking; value != nil {
+		if err := s.node.SetStripTracking(ctx, *value); err != nil {
+			return nil, errorOf(err)
+		}
+	}
 	if err := s.applyPolicy(ctx, req.Msg); err != nil {
 		return nil, errorOf(err)
 	}
@@ -124,6 +129,10 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 	if err != nil {
 		return nil, err
 	}
+	stripTracking, err := s.node.StripTracking(ctx)
+	if err != nil {
+		return nil, err
+	}
 	settings := &localv1.Settings{
 		DeviceName:              stored,
 		RequireConfirmation:     self.Clipboard,
@@ -131,6 +140,7 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		BlobMaxSizeBytes:        limit,
 		DownloadsDir:            dir,
 		SentryEnabled:           sentry,
+		StripTracking:           stripTracking,
 	}
 	fillPolicy(settings, s.node.Policy().Config())
 	fillHistoryTTLs(settings, s.node.TTLs())

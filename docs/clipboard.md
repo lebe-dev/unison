@@ -20,6 +20,17 @@ What arrives from the other devices is decided on the device that receives; see
 
 An item that Unison itself put into the clipboard is not announced again.
 
+## Advertising parameters
+
+Links in text items lose the known advertising and campaign parameters before the item is stored
+and announced, and again before an incoming item is written to the clipboard. That covers `utm_*`,
+`gclid`, `fbclid`, `msclkid`, `yclid`, `igshid`, `twclid` and similar names of Google, Meta, X,
+TikTok, Yandex and mail campaigns. The other parameters keep their order and encoding, as does the
+text around a link.
+
+The setting is on by default. Turn it off in `Settings` of the desktop app or of the Android app;
+`unison settings` shows it as `ad params`.
+
 ## Sensitive content
 
 Content that the system marks as sensitive is never sent. That covers the markers of password

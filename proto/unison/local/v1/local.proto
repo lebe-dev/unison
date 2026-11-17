@@ -462,6 +462,9 @@ message Settings {
   bool require_file_confirmation = 13;
   // The user allows the app and the daemon to send errors to the developer.
   bool sentry_enabled = 14;
+  // Text items lose the advertising parameters of the URLs in them, such as
+  // utm_source or fbclid, before they are stored and announced.
+  bool strip_tracking = 15;
 }
 
 message GetStatusRequest {}
@@ -868,6 +871,8 @@ message UpdateSettingsRequest {
   optional bool require_file_confirmation = 15;
   // The user allows the app and the daemon to send errors to the developer.
   optional bool sentry_enabled = 16;
+  // Text items lose the advertising parameters of the URLs in them.
+  optional bool strip_tracking = 17;
 }
 
 message UpdateSettingsResponse {

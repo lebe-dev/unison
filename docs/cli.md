@@ -219,6 +219,10 @@ The lifetime belongs to the device that captured the item; see
 [Clipboard and history](clipboard.md#history). Days and hours are accepted, from one second up to
 365 days.
 
+The output before the table also shows `ad params`, whether text items lose the advertising
+parameters of their URLs; see
+[Clipboard and history](clipboard.md#advertising-parameters).
+
 ## relay
 
 ```sh

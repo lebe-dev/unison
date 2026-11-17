@@ -131,6 +131,10 @@ type Options struct {
 	// TTLs are the lifetimes of captured items. The package defaults are used
 	// for the zero fields.
 	TTLs TTLs
+	// StripTracking removes the advertising parameters of the URLs in text
+	// items. The node enables it by default; a zero value keeps the content as
+	// it is.
+	StripTracking bool
 }
 
 // Pipeline moves clipboard content between the platform and the peers.
@@ -152,6 +156,9 @@ type Pipeline struct {
 
 	mu   sync.RWMutex
 	ttls TTLs
+	// stripTracking is read on every capture and apply, so a change applies at
+	// once.
+	stripTracking bool
 }
 
 // New creates a pipeline. The pipeline does nothing until Run is called and
@@ -181,6 +188,8 @@ func New(opts Options) (*Pipeline, error) {
 		log:       opts.Logger,
 		debounce:  opts.Debounce,
 		ttls:      opts.TTLs.withDefaults(),
+
+		stripTracking: opts.StripTracking,
 	}
 	switch {
 	case opts.Planner != nil:
@@ -227,6 +236,23 @@ func (p *Pipeline) TTLs() TTLs {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.ttls
+}
+
+// SetStripTracking enables or disables the removal of the advertising
+// parameters of the URLs in text items. The next captured and applied item
+// uses the new value.
+func (p *Pipeline) SetStripTracking(enabled bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.stripTracking = enabled
+}
+
+// StripTracking reports whether the pipeline removes the advertising
+// parameters of the URLs in text items.
+func (p *Pipeline) StripTracking() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.stripTracking
 }
 
 // Run watches the clipboard and creates items until ctx is done. Nothing is
@@ -360,6 +386,7 @@ func (p *Pipeline) Submit(ctx context.Context, content ports.Content) (model.Cli
 // record turns content into an item, stores it and announces it. The item is
 // left out when the content has no payload the pipeline can carry.
 func (p *Pipeline) record(ctx context.Context, content ports.Content) (model.ClipItem, bool, error) {
+	content = p.cleanTracking(content)
 	kind, payloads, err := p.classify(content)
 	if err != nil {
 		return model.ClipItem{}, false, err

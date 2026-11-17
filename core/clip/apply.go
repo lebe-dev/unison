@@ -211,6 +211,7 @@ func (p *Pipeline) textContent(ctx context.Context, item model.ClipItem) (ports.
 		if err != nil {
 			return ports.Content{}, err
 		}
+		data = p.stripTrackingText(rep.MIME, data)
 		reps = append(reps, ports.Representation{MIME: rep.MIME, Data: data})
 	}
 	if len(reps) == 0 {

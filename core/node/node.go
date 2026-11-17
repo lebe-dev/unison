@@ -621,6 +621,12 @@ func (n *Node) open(ctx context.Context) error {
 		return err
 	}
 
+	stripTracking, err := db.Settings().GetBool(ctx, SettingStripTracking, DefaultStripTracking)
+	if err != nil {
+		n.log.Warn("reading the URL tracking setting failed, using the default", "error", err)
+		stripTracking = DefaultStripTracking
+	}
+
 	pipeline, err := clip.New(clip.Options{
 		Clipboard: n.cfg.Clipboard,
 		Store:     db,
@@ -634,6 +640,8 @@ func (n *Node) open(ctx context.Context) error {
 		Clock:     n.clock,
 		Logger:    n.log,
 		TTLs:      clip.TTLs{Text: ttls.Text, Image: ttls.Image, Files: ttls.Files},
+		// The setting is on for a device that never changed it.
+		StripTracking: stripTracking,
 	})
 	if err != nil {
 		return err

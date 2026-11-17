@@ -52,6 +52,7 @@ func (a *app) showSettings(ctx context.Context) error {
 	a.field("device name", settings.GetDeviceName())
 	a.field("blob limit", sizeText(uint64(settings.GetBlobMaxSizeBytes())))
 	a.field("downloads", settings.GetDownloadsDir())
+	a.field("ad params", onOff(settings.GetStripTracking()))
 	return a.writeTTLs(settings)
 }
 
