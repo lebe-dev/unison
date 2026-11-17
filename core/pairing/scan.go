@@ -62,37 +62,53 @@ func Scan(ctx context.Context, opts Options, uri string, onEvent func(Event)) er
 	return w.scan(w.ctx, code)
 }
 
-// scan connects to the device of the code and runs one exchange.
+// scan connects to the device of the code and runs one exchange. A failure to
+// reach the device is reported like a failed exchange, so the screen that waits
+// for the result learns about it.
 func (w *Window) scan(ctx context.Context, code QR) error {
+	fl := flow{
+		method: MethodQR,
+		token:  code.Token,
+		pin:    code.Fingerprint,
+		id:     code.DeviceID,
+	}
+	conn, dialer, err := w.connectCode(ctx, code)
+	if err != nil {
+		w.reportFailure(peerInfo{id: code.DeviceID}, fl, err)
+		return err
+	}
+	defer func() { _ = dialer.Close() }()
+	defer w.untrack(conn)
+	defer func() { _ = conn.Close() }()
+
+	return w.run(ctx, conn, true, fl)
+}
+
+// connectCode opens a tracked connection to the device of the code. The caller
+// closes the connection and the dialer.
+func (w *Window) connectCode(ctx context.Context, code QR) (*transport.PairingConn, *transport.Dialer, error) {
 	pc, err := w.opts.ListenPacket(ctx)
 	if err != nil {
-		return fmt.Errorf("pairing: listen: %w", err)
+		return nil, nil, fmt.Errorf("pairing: listen: %w", err)
 	}
 	// The dialer owns the packet connection and closes it.
 	dialer, err := transport.NewDialer(pc, w.opts.Identity, unpairedVerifier{}, w.opts.Config)
 	if err != nil {
 		_ = pc.Close()
-		return err
+		return nil, nil, err
 	}
-	defer func() { _ = dialer.Close() }()
 
 	conn, err := w.dialCode(ctx, dialer, code)
 	if err != nil {
-		return err
+		_ = dialer.Close()
+		return nil, nil, err
 	}
 	if err := w.track(conn); err != nil {
 		_ = conn.Close()
-		return err
+		_ = dialer.Close()
+		return nil, nil, err
 	}
-	defer w.untrack(conn)
-	defer func() { _ = conn.Close() }()
-
-	return w.run(ctx, conn, true, flow{
-		method: MethodQR,
-		token:  code.Token,
-		pin:    code.Fingerprint,
-		id:     code.DeviceID,
-	})
+	return conn, dialer, nil
 }
 
 // dialCode connects to the first address of the code that answers.

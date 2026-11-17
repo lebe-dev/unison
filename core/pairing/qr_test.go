@@ -279,8 +279,16 @@ func TestScanAfterWindowClosed(t *testing.T) {
 		t.Fatalf("close the window: %v", err)
 	}
 
-	if result := waitScan(t, testScan(t, scanner, code)); result.err == nil {
+	result := waitScan(t, testScan(t, scanner, code))
+	if result.err == nil {
 		t.Fatal("the scan of a closed window succeeded")
+	}
+	// The scanning device learns about the failure, so its screen stops waiting.
+	if len(result.events) != 1 || result.events[0].Kind != EventFailed || result.events[0].Method != MethodQR {
+		t.Fatalf("events of the scan = %v, want one QR failure", result.events)
+	}
+	if result.events[0].DeviceID != showing.deviceID() || result.events[0].Err == nil {
+		t.Errorf("failure = %+v, want the device of the code and an error", result.events[0])
 	}
 	if _, err := showing.window.QR(); !errors.Is(err, ErrClosed) {
 		t.Errorf("code of a closed window = %v, want %v", err, ErrClosed)

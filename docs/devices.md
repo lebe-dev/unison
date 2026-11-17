@@ -51,6 +51,8 @@ screen of the app shows the same code. See [Command line](cli.md).
 
 On Android the code can be read by the Scan a code button of the Add screen or by the system
 camera: the camera opens the `unison://pair` link in Unison, which starts the pairing at once.
+The scanning device has to reach one of the addresses in the code. When none answers, for example
+on a Wi-Fi network that keeps its clients apart, the scan ends with an error instead of waiting.
 
 The command line lists the devices that are open for pairing, one line per device, named by the
 port of its window. A device has no name and no fingerprint before the pairing, and one device is
