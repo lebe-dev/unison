@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -35,9 +36,49 @@ class SettingsScreenTest {
     val compose = createComposeRule()
 
     @Test
+    fun indexListsEveryPage() {
+        setContent()
+
+        SettingsPage.entries.forEach { page ->
+            compose.onNodeWithTag(settingsPageTag(page)).performScrollTo().assertIsDisplayed()
+        }
+        compose.onNodeWithTag(NAME_SAVE_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun indexSummarizesTheCurrentValues() {
+        setContent(deviceName = "Pixel", downloadsFolder = "Documents/Inbox")
+
+        compose.onNodeWithText("Pixel", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Documents/Inbox").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun pageOpensAndGoesBackToTheIndex() {
+        setContent()
+
+        open(SettingsPage.NETWORK)
+        compose.onNodeWithText(testString(R.string.policy_section)).assertIsDisplayed()
+        compose.onNodeWithTag(settingsPageTag(SettingsPage.DEVICE)).assertDoesNotExist()
+
+        goBack()
+        compose.onNodeWithTag(settingsPageTag(SettingsPage.DEVICE)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aboutPageShowsTheVersion() {
+        setContent()
+
+        open(SettingsPage.ABOUT)
+
+        compose.onNodeWithText(testString(R.string.core_version, "0.1.0")).assertIsDisplayed()
+    }
+
+    @Test
     fun serviceModeIsSelected() {
         var selected: OperatingMode? = null
         setContent(operatingMode = OperatingMode.ALWAYS, onOperatingModeChange = { selected = it })
+        open(SettingsPage.DEVICE)
 
         compose.onNodeWithText(testString(R.string.mode_wifi_only)).performClick()
 
@@ -48,6 +89,7 @@ class SettingsScreenTest {
     fun deviceNameIsSaved() {
         var saved: String? = null
         setContent(deviceName = "Pixel", onDeviceNameChange = { saved = it })
+        open(SettingsPage.DEVICE)
 
         compose.onNodeWithText(testString(R.string.settings_name_hint)).performTextReplacement("Desk")
         compose.onNodeWithTag(NAME_SAVE_TAG).performClick()
@@ -59,6 +101,7 @@ class SettingsScreenTest {
     fun saveIsDisabledWithoutChanges() {
         var saved: String? = null
         setContent(deviceName = "Pixel", onDeviceNameChange = { saved = it })
+        open(SettingsPage.DEVICE)
 
         compose.onNodeWithTag(NAME_SAVE_TAG).assertIsNotEnabled().performClick()
 
@@ -69,6 +112,7 @@ class SettingsScreenTest {
     fun pauseOptionsAreOffered() {
         var request: PauseRequest? = null
         setContent(operatingMode = OperatingMode.ALWAYS, onPause = { request = it })
+        open(SettingsPage.CLIPBOARD)
 
         compose.onNodeWithText(testString(R.string.pause_five_minutes)).performScrollTo().performClick()
 
@@ -85,6 +129,7 @@ class SettingsScreenTest {
                 .build(),
             onPause = { request = it },
         )
+        open(SettingsPage.CLIPBOARD)
 
         compose.onAllNodesWithText(testString(R.string.pause_indefinite)).assertCountEquals(2)
         compose.onNodeWithText(testString(R.string.pause_resume)).performScrollTo().performClick()
@@ -97,9 +142,12 @@ class SettingsScreenTest {
         var changed: Pair<Local.ConfirmationScope, Boolean>? = null
         setContent(onSelfConfirmationChange = { scope, require -> changed = scope to require })
 
+        open(SettingsPage.CLIPBOARD)
         compose.onNodeWithTag(CONFIRMATION_TAG).performScrollTo().performClick()
         assertEquals(Local.ConfirmationScope.CONFIRMATION_SCOPE_CLIPBOARD to true, changed)
 
+        goBack()
+        open(SettingsPage.FILES)
         compose.onNodeWithTag(FILE_CONFIRMATION_TAG).performScrollTo().performClick()
         assertEquals(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES to true, changed)
     }
@@ -108,6 +156,7 @@ class SettingsScreenTest {
     fun diagnosticsReportingIsOffered() {
         var enabled: Boolean? = null
         setContent(onDiagnosticsChange = { enabled = it })
+        open(SettingsPage.ABOUT)
 
         compose.onNodeWithTag(DIAGNOSTICS_TAG).performScrollTo().performClick()
 
@@ -118,6 +167,7 @@ class SettingsScreenTest {
     fun trackingParametersCanBeKept() {
         var enabled: Boolean? = null
         setContent(stripTracking = true, onStripTrackingChange = { enabled = it })
+        open(SettingsPage.CLIPBOARD)
 
         compose.onNodeWithTag(STRIP_TRACKING_TAG).performScrollTo().performClick()
 
@@ -128,6 +178,7 @@ class SettingsScreenTest {
     fun historyLifetimeIsSaved() {
         var saved: Pair<Local.Kind, Long>? = null
         setContent(onTtlSave = { kind, seconds -> saved = kind to seconds })
+        open(SettingsPage.HISTORY)
 
         compose.onNodeWithTag(ttlTag(Local.Kind.KIND_TEXT)).performTextReplacement("30d")
         compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_TEXT)).performScrollTo().performClick()
@@ -139,6 +190,7 @@ class SettingsScreenTest {
     fun unusableHistoryLifetimeIsRefused() {
         var saved: Pair<Local.Kind, Long>? = null
         setContent(onTtlSave = { kind, seconds -> saved = kind to seconds })
+        open(SettingsPage.HISTORY)
 
         compose.onNodeWithTag(ttlTag(Local.Kind.KIND_IMAGE)).performTextReplacement("soon")
         compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_IMAGE)).performScrollTo().performClick()
@@ -153,6 +205,7 @@ class SettingsScreenTest {
     fun historyLifetimesCanBeReset() {
         var reset = false
         setContent(onTtlReset = { reset = true })
+        open(SettingsPage.HISTORY)
 
         compose.onNodeWithText(testString(R.string.history_ttl_reset)).performScrollTo().performClick()
 
@@ -162,6 +215,7 @@ class SettingsScreenTest {
     @Test
     fun defaultDownloadsFolderIsNamed() {
         setContent(downloadsFolder = null)
+        open(SettingsPage.FILES)
 
         compose.onNodeWithText(testString(R.string.settings_downloads_default)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(DOWNLOADS_RESET_TAG).assertIsNotEnabled()
@@ -171,6 +225,7 @@ class SettingsScreenTest {
     fun chosenDownloadsFolderIsShownAndCanBeReset() {
         var reset = false
         setContent(downloadsFolder = "Documents/Inbox", onDownloadsFolderReset = { reset = true })
+        open(SettingsPage.FILES)
 
         compose.onNodeWithText("Documents/Inbox").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(DOWNLOADS_RESET_TAG).performScrollTo().performClick()
@@ -182,6 +237,7 @@ class SettingsScreenTest {
     fun leavingTheGroupAsksForConfirmation() {
         var left = false
         setContent(onLeaveGroup = { left = true })
+        open(SettingsPage.DEVICE)
 
         compose.onNodeWithText(testString(R.string.settings_leave_group)).performScrollTo().performClick()
         compose.onNodeWithText(testString(R.string.settings_leave_title)).assertIsDisplayed()
@@ -190,6 +246,14 @@ class SettingsScreenTest {
         compose.onNodeWithText(testString(R.string.action_remove)).performClick()
 
         assertTrue(left)
+    }
+
+    private fun open(page: SettingsPage) {
+        compose.onNodeWithTag(settingsPageTag(page)).performScrollTo().performClick()
+    }
+
+    private fun goBack() {
+        compose.onNodeWithContentDescription(testString(R.string.action_back)).performClick()
     }
 
     private fun setContent(

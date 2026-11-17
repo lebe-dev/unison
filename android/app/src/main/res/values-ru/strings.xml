@@ -158,6 +158,16 @@
     <string name="settings_leave_group_failed">Не удалось покинуть группу</string>
     <string name="settings_section_about">О приложении</string>
     <string name="settings_device_id">ID устройства %1$s</string>
+    <string name="settings_section_version">Версия</string>
+    <string name="settings_page_device">Это устройство</string>
+    <string name="settings_page_clipboard">Буфер обмена</string>
+    <string name="settings_page_files">Файлы</string>
+    <string name="settings_page_history">История</string>
+    <string name="settings_page_network">Сеть и ретранслятор</string>
+    <string name="settings_page_history_summary">Сколько хранятся скопированные элементы</string>
+    <string name="settings_page_network_summary">Что принимать в каждой сети, сервер ретранслятора</string>
+    <string name="settings_page_about_summary">Версия и диагностика</string>
+    <string name="settings_summary_pair">%1$s · %2$s</string>
     <string name="mode_always">Всегда</string>
     <string name="mode_always_hint">Работает в фоне, в том числе после перезапуска</string>
     <string name="mode_wifi_only">Только Wi-Fi</string>
@@ -344,7 +354,7 @@
     <string name="action_download">Скачать</string>
     <string name="action_delete">Удалить</string>
 
-    <string name="history_ttl_section">История</string>
+    <string name="history_ttl_section">Сроки хранения</string>
     <string name="history_ttl_hint">Как долго это устройство хранит скопированные элементы. Уже существующие элементы сохраняют свой срок.</string>
     <string name="history_ttl_text">Текст</string>
     <string name="history_ttl_image">Изображения</string>

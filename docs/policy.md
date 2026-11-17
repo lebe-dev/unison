@@ -50,7 +50,7 @@ Files over the relay wait for you by default, even when their cell allows them; 
 ## Changing the table
 
 The desktop app has the table under `Settings > Network policy`, the Android app under
-`Settings`, and both offer `Reset to defaults` and the relay switches. The command line prints it:
+`Settings > Network and relay`, and both offer `Reset to defaults` and the relay switches. The command line prints it:
 
 ```sh
 unison policy

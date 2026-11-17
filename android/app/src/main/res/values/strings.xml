@@ -155,6 +155,16 @@
     <string name="settings_leave_group_failed">Cannot leave the group</string>
     <string name="settings_section_about">About</string>
     <string name="settings_device_id">Device ID %1$s</string>
+    <string name="settings_section_version">Version</string>
+    <string name="settings_page_device">This device</string>
+    <string name="settings_page_clipboard">Clipboard</string>
+    <string name="settings_page_files">Files</string>
+    <string name="settings_page_history">History</string>
+    <string name="settings_page_network">Network and relay</string>
+    <string name="settings_page_history_summary">How long copied items are kept</string>
+    <string name="settings_page_network_summary">What arrives on each network, relay server</string>
+    <string name="settings_page_about_summary">Version and diagnostics</string>
+    <string name="settings_summary_pair">%1$s · %2$s</string>
     <string name="mode_always">Always</string>
     <string name="mode_always_hint">Runs in the background, including after a restart</string>
     <string name="mode_wifi_only">Wi-Fi only</string>
@@ -331,7 +341,7 @@
     <string name="action_download">Download</string>
     <string name="action_delete">Delete</string>
 
-    <string name="history_ttl_section">History</string>
+    <string name="history_ttl_section">Item lifetimes</string>
     <string name="history_ttl_hint">How long this device keeps the items it copies. Items that already exist keep their own lifetime.</string>
     <string name="history_ttl_text">Text</string>
     <string name="history_ttl_image">Images</string>

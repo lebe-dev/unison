@@ -28,7 +28,8 @@ and announced, and again before an incoming item is written to the clipboard. Th
 TikTok, Yandex and mail campaigns. The other parameters keep their order and encoding, as does the
 text around a link.
 
-The setting is on by default. Turn it off in `Settings` of the desktop app or of the Android app;
+The setting is on by default. Turn it off in `Settings` of the desktop app or in
+`Settings > Clipboard` of the Android app;
 `unison settings` shows it as `ad params`.
 
 ## Sensitive content
@@ -72,7 +73,7 @@ brings back `~/Downloads/Unison`. The new folder applies to the files that arriv
 files already received stay where they are. The command line client shows the current folder
 with `unison settings`.
 
-On Android the folder is chosen in Settings under "Received files". The system folder picker
+On Android the folder is chosen in `Settings > Files` under "Received files". The system folder picker
 opens and Unison gets access to the folder you pick and to nothing else; the app asks for no
 storage permission. If the access is lost, for example because the folder was deleted, files go
 to `Download/Unison` again.
@@ -111,7 +112,7 @@ on the other Personal devices as well, so it does not come back from them.
 The lifetimes are a setting of the device that captured the item: it writes the expiry into the
 item, so a change applies to the next copy and the items that are already recorded keep theirs. The
 lifetimes are never sent to the other devices. Change them in `Settings` of the desktop app, in
-`History` of the Android settings, or from the command line:
+`Settings > History` of the Android app, or from the command line:
 
 ```sh
 unison settings                  # print the settings, with the lifetimes
