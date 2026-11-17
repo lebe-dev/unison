@@ -18,6 +18,9 @@ interface CoreApi {
     /** Mirrors the consent to report errors to the developer. */
     suspend fun setSentryEnabled(enabled: Boolean): Local.Settings
 
+    /** Turns the application log on or off. */
+    suspend fun setJournalEnabled(enabled: Boolean): Local.Settings
+
     /** Removes the tracking parameters from the links of the clipboard text. */
     suspend fun setStripTracking(enabled: Boolean): Local.Settings
 
@@ -149,6 +152,11 @@ class RunningCore(
     override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
         ensureRunning()
         return client.setSentryEnabled(enabled)
+    }
+
+    override suspend fun setJournalEnabled(enabled: Boolean): Local.Settings {
+        ensureRunning()
+        return client.setJournalEnabled(enabled)
     }
 
     override suspend fun setStripTracking(enabled: Boolean): Local.Settings {

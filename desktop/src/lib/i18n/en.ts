@@ -23,6 +23,7 @@ export type Message = string | PluralMessage;
 export const en = {
   // Shared words, mostly buttons and labels.
   "common.cancel": "Cancel",
+  "common.back": "Back",
   "common.save": "Save",
   "common.refresh": "Refresh",
   "common.tryAgain": "Try again",
@@ -452,6 +453,32 @@ export const en = {
   "settings.stripTrackingHint":
     "utm, fbclid, gclid and similar parameters are removed from the links in the clipboard.",
   "settings.stripTrackingFailed": "The tracking parameter setting could not be changed.",
+  "settings.applicationLog": "Application log",
+  "settings.applicationLogHint": "Records that help support find a problem.",
+  "journal.enable": "Record the application log",
+  "journal.enableHint":
+    "The log helps support find the cause of a problem. It never records clipboard content, file names or passwords.",
+  "journal.displayLevel": "Show",
+  "journal.levelInfo": "INFO",
+  "journal.levelDebug": "DEBUG",
+  "journal.copy": "Copy to clipboard",
+  "journal.share": "Share as a file",
+  "journal.records": "Records",
+  "journal.empty": "No records yet.",
+  "journal.footer":
+    "Copying and sharing always include the debug records, whatever this page shows.",
+  "journal.disabledInfo":
+    "The application log is off, so no new records are written. The records below can still be copied or shared.",
+  "journal.daemonOffline":
+    "The daemon is offline, so the log cannot be turned on now. The records of the app are still shown.",
+  "journal.loadFailed": "The application log settings could not be loaded.",
+  "journal.toggleFailed": "The application log could not be changed.",
+  "journal.nowEnabled": "The application log is on.",
+  "journal.nowDisabled": "The application log is off.",
+  "journal.copied": "The log is on the clipboard.",
+  "journal.copyFailed": "The log could not be copied.",
+  "journal.shareFailed": "The log could not be shared.",
+  "journal.readFailed": "The log files could not be read.",
 
   // Labels of the network policy table.
   "policy.condition.unmetered": "Unmetered",

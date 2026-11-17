@@ -80,6 +80,14 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 		}
 		observability.SetEnabled(*value)
 	}
+	if value := req.Msg.JournalEnabled; value != nil {
+		if s.journal == nil {
+			return nil, connect.NewError(connect.CodeUnavailable, errors.New("the application log is not available"))
+		}
+		if err := s.journal.SetEnabled(*value); err != nil {
+			return nil, errorOf(err)
+		}
+	}
 	if value := req.Msg.StripTracking; value != nil {
 		if err := s.node.SetStripTracking(ctx, *value); err != nil {
 			return nil, errorOf(err)
@@ -141,6 +149,7 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		DownloadsDir:            dir,
 		SentryEnabled:           sentry,
 		StripTracking:           stripTracking,
+		JournalEnabled:          s.journal.Enabled(),
 	}
 	fillPolicy(settings, s.node.Policy().Config())
 	fillHistoryTTLs(settings, s.node.TTLs())

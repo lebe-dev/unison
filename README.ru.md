@@ -33,5 +33,6 @@ Unison переносит буфер обмена, изображения и ф�
 - [macOS](docs/architecture/macos.ru.md) - порты darwin и сборка приложения
 - [Windows](docs/architecture/windows.ru.md) - порты windows и установщик
 - [Android](docs/architecture/android.ru.md) - мобильная привязка, сервис и приложение
+- [Журнал приложения](docs/architecture/application-log.ru.md) - журнал, который пользователь может включить и отправить
 
 Как собрать код и запустить тесты, описано в `DEV.md`.

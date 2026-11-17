@@ -60,6 +60,7 @@ internal enum class SettingsPage(@StringRes val title: Int, @DrawableRes val ico
     NOTIFICATIONS(R.string.settings_page_notifications, R.drawable.ic_nav_notifications),
     NETWORK(R.string.settings_page_network, R.drawable.ic_network),
     ABOUT(R.string.settings_section_about, R.drawable.ic_info),
+    JOURNAL(R.string.settings_page_journal, R.drawable.ic_log),
 }
 
 /** Pages of the first group of the index; the rest sit in a group of their own. */
@@ -103,6 +104,8 @@ fun SettingsScreen(
     onDiagnosticsChange: (Boolean) -> Unit,
     notifications: NotificationSettings,
     onNotificationsChange: (NotificationSettings) -> Unit,
+    journalEnabled: Boolean,
+    onJournalChange: (Boolean) -> Unit,
     stripTracking: Boolean,
     onStripTrackingChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
@@ -213,6 +216,16 @@ fun SettingsScreen(
                         Diagnostics(enabled = diagnosticsEnabled, onChange = onDiagnosticsChange)
                     }
                 }
+                SettingsPage.JOURNAL -> {
+                    SettingsCard {
+                        JournalSection(
+                            enabled = journalEnabled,
+                            onEnabledChange = onJournalChange,
+                            state = state,
+                            policy = policy,
+                        )
+                    }
+                }
             }
         }
     }
@@ -256,6 +269,7 @@ private fun SettingsIndex(
             state.status?.let { stringResource(R.string.core_version, it.version) }
                 ?: stringResource(R.string.settings_page_about_summary)
             ),
+        SettingsPage.JOURNAL to stringResource(R.string.settings_page_journal_summary),
     )
 
     Column(

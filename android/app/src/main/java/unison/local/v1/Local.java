@@ -13803,6 +13803,17 @@ java.lang.String defaultValue) {
      * @return The stripTracking.
      */
     boolean getStripTracking();
+
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    boolean getJournalEnabled();
   }
   /**
    * <pre>
@@ -14566,6 +14577,47 @@ java.lang.String defaultValue) {
     private void clearStripTracking() {
 
       stripTracking_ = false;
+    }
+
+    public static final int JOURNAL_ENABLED_FIELD_NUMBER = 16;
+    private boolean journalEnabled_;
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    @java.lang.Override
+    public boolean getJournalEnabled() {
+      return journalEnabled_;
+    }
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     * @param value The journalEnabled to set.
+     */
+    private void setJournalEnabled(boolean value) {
+      
+      journalEnabled_ = value;
+    }
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     */
+    private void clearJournalEnabled() {
+
+      journalEnabled_ = false;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -15454,6 +15506,49 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user turned on the application log. It records at debug level until the
+       * user turns it off again.
+       * </pre>
+       *
+       * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+       * @return The journalEnabled.
+       */
+      @java.lang.Override
+      public boolean getJournalEnabled() {
+        return instance.getJournalEnabled();
+      }
+      /**
+       * <pre>
+       * The user turned on the application log. It records at debug level until the
+       * user turns it off again.
+       * </pre>
+       *
+       * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+       * @param value The journalEnabled to set.
+       * @return This builder for chaining.
+       */
+      public Builder setJournalEnabled(boolean value) {
+        copyOnWrite();
+        instance.setJournalEnabled(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user turned on the application log. It records at debug level until the
+       * user turns it off again.
+       * </pre>
+       *
+       * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearJournalEnabled() {
+        copyOnWrite();
+        instance.clearJournalEnabled();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -15486,12 +15581,13 @@ java.lang.String defaultValue) {
               "requireFileConfirmation_",
               "sentryEnabled_",
               "stripTracking_",
+              "journalEnabled_",
             };
             java.lang.String info =
-                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
                 "\u0003\u0002\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b" +
                 "\u1009\u0003\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007\u000e\u0007\u000f\u0007" +
-                "";
+                "\u0010\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -44052,6 +44148,25 @@ java.lang.String defaultValue) {
      * @return The stripTracking.
      */
     boolean getStripTracking();
+
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return Whether the journalEnabled field is set.
+     */
+    boolean hasJournalEnabled();
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    boolean getJournalEnabled();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -44855,6 +44970,56 @@ java.lang.String defaultValue) {
     private void clearStripTracking() {
       bitField0_ = (bitField0_ & ~0x00004000);
       stripTracking_ = false;
+    }
+
+    public static final int JOURNAL_ENABLED_FIELD_NUMBER = 18;
+    private boolean journalEnabled_;
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return Whether the journalEnabled field is set.
+     */
+    @java.lang.Override
+    public boolean hasJournalEnabled() {
+      return ((bitField0_ & 0x00008000) != 0);
+    }
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    @java.lang.Override
+    public boolean getJournalEnabled() {
+      return journalEnabled_;
+    }
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @param value The journalEnabled to set.
+     */
+    private void setJournalEnabled(boolean value) {
+      bitField0_ |= 0x00008000;
+      journalEnabled_ = value;
+    }
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     */
+    private void clearJournalEnabled() {
+      bitField0_ = (bitField0_ & ~0x00008000);
+      journalEnabled_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -45776,6 +45941,58 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @return Whether the journalEnabled field is set.
+       */
+      @java.lang.Override
+      public boolean hasJournalEnabled() {
+        return instance.hasJournalEnabled();
+      }
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @return The journalEnabled.
+       */
+      @java.lang.Override
+      public boolean getJournalEnabled() {
+        return instance.getJournalEnabled();
+      }
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @param value The journalEnabled to set.
+       * @return This builder for chaining.
+       */
+      public Builder setJournalEnabled(boolean value) {
+        copyOnWrite();
+        instance.setJournalEnabled(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearJournalEnabled() {
+        copyOnWrite();
+        instance.clearJournalEnabled();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -45810,12 +46027,14 @@ java.lang.String defaultValue) {
               "requireFileConfirmation_",
               "sentryEnabled_",
               "stripTracking_",
+              "journalEnabled_",
             };
             java.lang.String info =
-                "\u0000\u0011\u0000\u0001\u0001\u0011\u0011\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u0000\u0012\u0000\u0001\u0001\u0012\u0012\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
                 "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
                 "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
-                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r\u0011\u1007\u000e";
+                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r\u0011\u1007\u000e\u0012\u1007\u000f" +
+                "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

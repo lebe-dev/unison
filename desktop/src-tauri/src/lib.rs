@@ -2,9 +2,11 @@ pub mod agent;
 mod daemon;
 mod files;
 mod i18n;
+mod journal;
 pub mod observability;
 mod prompt;
 mod proxy;
+mod redact;
 mod streams;
 #[cfg(all(test, unix))]
 mod testutil;
@@ -166,6 +168,7 @@ async fn set_login_item(
             if let Some(path) = endpoint {
                 tauri::async_runtime::spawn(async move {
                     if let Err(err) = daemon::ensure_running(&path).await {
+                        journal::error(&format!("the daemon did not start: {err}"));
                         eprintln!("unison: {err}");
                     }
                 });
@@ -189,8 +192,10 @@ async fn set_login_item(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    journal::install_panic_hook();
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if let Some(Err(err)) = agent::register_at_launch() {
@@ -203,6 +208,7 @@ pub fn run() {
                     let path = path.clone();
                     tauri::async_runtime::spawn(async move {
                         if let Err(err) = daemon::ensure_running(&path).await {
+                            journal::error(&format!("the daemon did not start: {err}"));
                             eprintln!("unison: {err}");
                         }
                     });
@@ -226,6 +232,14 @@ pub fn run() {
             open_local_network_settings,
             files::show_in_folder,
             files::open_files,
+            journal::journal_enabled,
+            journal::journal_read,
+            journal::journal_read_all,
+            journal::journal_record,
+            journal::journal_save,
+            journal::journal_share,
+            journal::journal_shell_info,
+            journal::journal_write,
             login_item_status,
             set_login_item,
             set_sentry_enabled,

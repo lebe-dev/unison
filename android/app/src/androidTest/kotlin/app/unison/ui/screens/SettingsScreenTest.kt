@@ -317,6 +317,8 @@ class SettingsScreenTest {
         onDiagnosticsChange: (Boolean) -> Unit = {},
         notifications: NotificationSettings = NotificationSettings(),
         onNotificationsChange: (NotificationSettings) -> Unit = {},
+        journalEnabled: Boolean = false,
+        onJournalChange: (Boolean) -> Unit = {},
         stripTracking: Boolean = true,
         onStripTrackingChange: (Boolean) -> Unit = {},
     ) {
@@ -348,6 +350,8 @@ class SettingsScreenTest {
                     onDiagnosticsChange = onDiagnosticsChange,
                     notifications = notifications,
                     onNotificationsChange = onNotificationsChange,
+                    journalEnabled = journalEnabled,
+                    onJournalChange = onJournalChange,
                     stripTracking = stripTracking,
                     onStripTrackingChange = onStripTrackingChange,
                     onRefresh = {},

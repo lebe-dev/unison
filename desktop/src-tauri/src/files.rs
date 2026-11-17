@@ -35,6 +35,7 @@ fn absolute_paths(paths: Vec<String>) -> Result<Vec<String>, String> {
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 fn unexpected(message: String) -> String {
     crate::observability::capture_error("the file command could not run");
+    crate::journal::error(&format!("the file command failed: {message}"));
     message
 }
 

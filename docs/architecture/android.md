@@ -196,3 +196,17 @@ API 37 need to reach the local network. The `versionName` comes from `VERSION`.
 `diagnostics/Diagnostics` wraps Sentry for the app with the component tag `android`. The DSN comes
 from the build, reporting is off until the user grants consent, and only uncaught exceptions and ANRs
 are sent: breadcrumbs, tracing and personal data are disabled, and paths are redacted.
+
+## Application log
+
+The user turns the application log on in Settings > Application log. While it is on, the shell
+appends its own records to `logs/app.log` of the data directory and the core writes `logs/journal.log`;
+both files rotate and keep backups, and `logs/journal.on` exists exactly while the log is on, so the
+switch applies without restarting the service. Records use the same line format as on the other
+platforms, and absolute paths become `[path]`.
+
+Copy and Share build one plain-text file from a header and the merged records of both files and their
+backups; the live page reads the current files only. The header carries the app and core versions,
+the OS, the device, the network condition, the listener addresses and the settings, with
+`downloads_dir` shown as `[path]`; relay tokens and keys are never included. The display level of the
+page filters the live view only: an export always carries the debug records too.

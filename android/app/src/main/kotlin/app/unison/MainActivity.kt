@@ -160,6 +160,8 @@ class MainActivity : ComponentActivity() {
                         onDiagnosticsChange = ::saveDiagnostics,
                         notifications = notificationSettings,
                         onNotificationsChange = ::saveNotificationSettings,
+                        journalEnabled = state.journalEnabled,
+                        onJournalChange = appState::setJournalEnabled,
                         stripTracking = state.stripTracking,
                         onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->

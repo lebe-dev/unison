@@ -20,6 +20,7 @@ import app.unison.core.CoreException
 import app.unison.core.coreEvents
 import app.unison.core.mobile.Mobile
 import app.unison.diagnostics.Diagnostics
+import app.unison.diagnostics.Journal
 import app.unison.discovery.NsdDiscovery
 import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryNotifications
@@ -82,6 +83,7 @@ class UnisonService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Journal.info("service created")
         NotificationChannels.create(this)
         discovery = NsdDiscovery(this)
         network = NetworkMonitor(this, ::onNetworkConditions)
@@ -90,6 +92,7 @@ class UnisonService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Journal.debug("service command", "action" to intent?.action.orEmpty())
         if (intent?.action == ACTION_STOP) {
             stopSelf()
             return START_NOT_STICKY
@@ -127,6 +130,7 @@ class UnisonService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        Journal.info("service stopped")
         // Written before coreStarted is read: a start that is still running either sees
         // this flag or is seen here, so the core never outlives the service.
         destroyed = true
@@ -185,6 +189,11 @@ class UnisonService : Service() {
     /** Reacts to a change of the network conditions. */
     private fun onNetworkConditions(conditions: NetworkConditions) {
         Log.i(TAG, "network state applied: online=${conditions.online} local=${conditions.localNetwork}")
+        Journal.debug(
+            "network state applied",
+            "online" to conditions.online,
+            "local" to conditions.localNetwork,
+        )
         applyMode(report = true)
     }
 
@@ -207,6 +216,7 @@ class UnisonService : Service() {
         withContext(Dispatchers.IO) { stopCoreBlocking() }
         discovery.stop()
         Log.i(TAG, "core paused until the network allows it")
+        Journal.info("core paused until the network allows it")
         show(getString(R.string.service_waiting_wifi))
     }
 
@@ -217,6 +227,7 @@ class UnisonService : Service() {
             Mobile.networkChanged(state.toByteArray())
         } catch (e: Exception) {
             Log.w(TAG, "reporting the network failed: ${e.message}")
+            Journal.warn("reporting the network failed", "error" to e.message)
         }
     }
 
@@ -246,15 +257,18 @@ class UnisonService : Service() {
         // The service may have been destroyed while the core started; then nobody else stops it.
         if (destroyed) {
             Log.i(TAG, "core stopped right after the start, the service is gone")
+            Journal.warn("core stopped right after the start")
             stopCoreBlocking()
             discovery.stop()
             false
         } else {
             Log.i(TAG, "core started")
+            Journal.info("core started")
             true
         }
     } catch (e: Exception) {
         Log.e(TAG, "core start failed", e)
+        Journal.error("core start failed", "error" to e.message)
         Diagnostics.capture(e)
         discovery.stop()
         false
@@ -266,6 +280,7 @@ class UnisonService : Service() {
             Mobile.stop()
         } catch (e: Exception) {
             Log.w(TAG, "core stop failed: ${e.message}")
+            Journal.warn("core stop failed", "error" to e.message)
             Diagnostics.capture(e)
         }
         coreStarted = false
@@ -677,9 +692,11 @@ class UnisonService : Service() {
         throw e
     } catch (e: CoreException) {
         Log.w(TAG, "status failed: ${e.message}")
+        Journal.warn("core status failed", "error" to e.message)
         getString(R.string.service_failed)
     } catch (e: Exception) {
         Log.w(TAG, "status failed: ${e.message}")
+        Journal.warn("core status failed", "error" to e.message)
         getString(R.string.service_failed)
     }
 

@@ -7,6 +7,7 @@ import type { Message, MessageKey } from "./en";
 export const ru: { [K in MessageKey]: Message } = {
   // Shared words, mostly buttons and labels.
   "common.cancel": "Отмена",
+  "common.back": "Назад",
   "common.save": "Сохранить",
   "common.refresh": "Обновить",
   "common.tryAgain": "Повторить",
@@ -454,6 +455,32 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.stripTrackingHint":
     "Из ссылок в буфере обмена удаляются utm, fbclid, gclid и подобные параметры.",
   "settings.stripTrackingFailed": "Не удалось изменить настройку параметров отслеживания.",
+  "settings.applicationLog": "Журнал приложения",
+  "settings.applicationLogHint": "Записи, которые помогают поддержке найти проблему.",
+  "journal.enable": "Записывать журнал приложения",
+  "journal.enableHint":
+    "Журнал помогает поддержке найти причину проблемы. Он не записывает содержимое буфера обмена, имена файлов и пароли.",
+  "journal.displayLevel": "Показывать",
+  "journal.levelInfo": "INFO",
+  "journal.levelDebug": "DEBUG",
+  "journal.copy": "Копировать в буфер обмена",
+  "journal.share": "Отправить файлом",
+  "journal.records": "Записи",
+  "journal.empty": "Записей пока нет.",
+  "journal.footer":
+    "Копирование и отправка всегда включают записи DEBUG, независимо от того, что показывает эта страница.",
+  "journal.disabledInfo":
+    "Журнал приложения выключен, поэтому новые записи не создаются. Записи ниже можно скопировать или отправить.",
+  "journal.daemonOffline":
+    "Служба не запущена, поэтому журнал нельзя включить сейчас. Записи приложения все равно показаны.",
+  "journal.loadFailed": "Не удалось загрузить настройки журнала приложения.",
+  "journal.toggleFailed": "Не удалось изменить журнал приложения.",
+  "journal.nowEnabled": "Журнал приложения включен.",
+  "journal.nowDisabled": "Журнал приложения выключен.",
+  "journal.copied": "Журнал скопирован в буфер обмена.",
+  "journal.copyFailed": "Не удалось скопировать журнал.",
+  "journal.shareFailed": "Не удалось отправить журнал.",
+  "journal.readFailed": "Не удалось прочитать файлы журнала.",
 
   // Labels of the network policy table.
   "policy.condition.unmetered": "Без лимита",

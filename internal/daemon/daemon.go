@@ -15,6 +15,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/journal"
 	"github.com/lebe-dev/unison/internal/observability"
 )
 
@@ -112,11 +113,19 @@ func Run(ctx context.Context, opts Options) error {
 		return fmt.Errorf("%w: an instance answers on %s", ErrRunning, opts.Endpoint)
 	}
 
-	log, closeLog, err := openLog(opts.DataDir, opts.LogLevel, opts.Stderr)
+	appLog, journalErr := journal.Open(opts.DataDir)
+	if appLog != nil {
+		defer func() { _ = appLog.Close() }()
+	}
+
+	log, closeLog, err := openLog(opts.DataDir, opts.LogLevel, opts.Stderr, appLog)
 	if err != nil {
 		return err
 	}
 	defer closeLog()
+	if journalErr != nil {
+		log.Warn("the application log is not available", "error", journalErr)
+	}
 
 	if err := removeStaleSocket(opts.Endpoint); err != nil {
 		return err
@@ -191,7 +200,7 @@ func Run(ctx context.Context, opts Options) error {
 
 	serveCtx, stopServing := context.WithCancel(context.Background())
 	defer stopServing()
-	serveDone, err := serve(serveCtx, n, opts, name, localNetworkBlocked(disc))
+	serveDone, err := serve(serveCtx, n, opts, name, localNetworkBlocked(disc), appLog)
 	if err != nil {
 		return err
 	}
@@ -291,7 +300,7 @@ func localNetworkBlocked(disc ports.Discovery) func() bool {
 
 // serve binds the endpoint and serves the local API on it. The returned channel
 // reports the end of the server.
-func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBlocked func() bool) (<-chan error, error) {
+func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBlocked func() bool, appLog *journal.Store) (<-chan error, error) {
 	// SetClip copies text from the clients into the pipeline, which records and
 	// announces it.
 	service, err := api.New(n, api.Options{
@@ -299,6 +308,7 @@ func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBloc
 		DeviceName:          name,
 		LocalClip:           n.Clip(),
 		LocalNetworkBlocked: lanBlocked,
+		Journal:             appLog,
 	})
 	if err != nil {
 		return nil, err

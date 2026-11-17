@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/core/transport/vnet"
+	"github.com/lebe-dev/unison/internal/journal"
 	"github.com/lebe-dev/unison/internal/observability"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
@@ -187,4 +188,51 @@ func TestUpdateSettingsNotRunning(t *testing.T) {
 
 	_, err := client.GetSettings(ctx, connect.NewRequest(&localv1.GetSettingsRequest{}))
 	requireCode(t, err, connect.CodeFailedPrecondition)
+}
+
+// TestJournalSetting checks that the settings report the application log and
+// turn it on and off.
+func TestJournalSetting(t *testing.T) {
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 2150)
+	n.start(t)
+	dir := t.TempDir()
+	appLog, err := journal.Open(dir)
+	if err != nil {
+		t.Fatalf("open the journal: %v", err)
+	}
+	t.Cleanup(func() { _ = appLog.Close() })
+
+	client := newClient(t, n.Node, api.Options{DeviceName: "one", Journal: appLog})
+	ctx := callTimeout(t)
+
+	settings, err := client.GetSettings(ctx, connect.NewRequest(&localv1.GetSettingsRequest{}))
+	if err != nil {
+		t.Fatalf("get settings: %v", err)
+	}
+	if settings.Msg.GetSettings().GetJournalEnabled() {
+		t.Error("a new application log is enabled")
+	}
+
+	updated, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		JournalEnabled: ptr(true),
+	}))
+	if err != nil {
+		t.Fatalf("update settings: %v", err)
+	}
+	if !updated.Msg.GetSettings().GetJournalEnabled() {
+		t.Error("the application log is not enabled")
+	}
+	if !appLog.Enabled() {
+		t.Error("the journal of the data directory is not enabled")
+	}
+
+	updated, err = client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		JournalEnabled: ptr(false),
+	}))
+	if err != nil {
+		t.Fatalf("update settings: %v", err)
+	}
+	if updated.Msg.GetSettings().GetJournalEnabled() {
+		t.Error("the application log is still enabled")
+	}
 }

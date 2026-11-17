@@ -10,6 +10,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/journal"
 	mobilev1 "github.com/lebe-dev/unison/proto/unison/mobile/v1"
 )
 
@@ -85,8 +86,9 @@ func parseConfig(data []byte) (config, error) {
 	}, nil
 }
 
-// loggerOf returns the logger of the core.
-func (c config) loggerOf() *slog.Logger {
+// loggerOf returns the logger of the core. The application log takes the
+// debug records when the user turned it on.
+func (c config) loggerOf(appLog *journal.Store) *slog.Logger {
 	if c.logger != nil {
 		return c.logger
 	}
@@ -94,5 +96,9 @@ func (c config) loggerOf() *slog.Logger {
 	if c.debug {
 		level = slog.LevelDebug
 	}
-	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	handlers := []slog.Handler{slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})}
+	if appLog != nil {
+		handlers = append(handlers, appLog.Handler())
+	}
+	return slog.New(journal.Tee(handlers...))
 }

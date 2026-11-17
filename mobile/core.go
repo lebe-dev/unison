@@ -18,6 +18,7 @@ import (
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/share"
+	"github.com/lebe-dev/unison/internal/journal"
 	"github.com/lebe-dev/unison/internal/observability"
 	mobilev1 "github.com/lebe-dev/unison/proto/unison/mobile/v1"
 )
@@ -30,6 +31,7 @@ type core struct {
 	api      *api.Service
 	sub      *node.Subscriber
 	bridge   *discoveryBridge
+	journal  *journal.Store
 	log      *slog.Logger
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
@@ -41,7 +43,19 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 	if clock == nil {
 		clock = ports.SystemClock
 	}
-	log := cfg.loggerOf()
+	// The journal opens before the node, so a failure to start is recorded
+	// once the user turned the log on.
+	appLog, journalErr := journal.Open(cfg.dataDir)
+	keepJournal := false
+	defer func() {
+		if !keepJournal && appLog != nil {
+			_ = appLog.Close()
+		}
+	}()
+	log := cfg.loggerOf(appLog)
+	if journalErr != nil {
+		log.Warn("the application log is not available", "error", journalErr)
+	}
 
 	keys, err := newKeystore(cfg.dataDir, platform)
 	if err != nil {
@@ -88,6 +102,7 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 		Version:    version,
 		DeviceName: cfg.name,
 		LocalClip:  localClip{pipeline: n.Clip()},
+		Journal:    appLog,
 	})
 	if err != nil {
 		stopCtx, stopCancel := context.WithTimeout(context.Background(), stopTimeout)
@@ -104,11 +119,13 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 		api:      service,
 		sub:      n.Subscribe(),
 		bridge:   bridge,
+		journal:  appLog,
 		log:      log,
 		cancel:   stopRelay,
 	}
 	c.wg.Add(1)
 	go c.relay(relayCtx)
+	keepJournal = true
 	return c, nil
 }
 
@@ -117,6 +134,9 @@ func (c *core) stop(ctx context.Context) error {
 	c.cancel()
 	c.sub.Close()
 	c.wg.Wait()
+	if c.journal != nil {
+		_ = c.journal.Close()
+	}
 	return c.node.Stop(ctx)
 }
 

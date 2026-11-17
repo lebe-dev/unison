@@ -185,6 +185,19 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.settings
     }
 
+    /** Turns the application log on or off. */
+    override suspend fun setJournalEnabled(enabled: Boolean): Local.Settings {
+        val request = Local.UpdateSettingsRequest.newBuilder()
+            .setJournalEnabled(enabled)
+            .build()
+        val response = call(
+            method = "UpdateSettings",
+            request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
     /** Removes the tracking parameters from the links of the clipboard text. */
     override suspend fun setStripTracking(enabled: Boolean): Local.Settings {
         val request = Local.UpdateSettingsRequest.newBuilder()

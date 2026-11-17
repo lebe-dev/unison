@@ -7,6 +7,7 @@ import app.unison.R
 import app.unison.core.CoreStarter
 import app.unison.core.SubmitFailure
 import app.unison.core.mobile.Mobile
+import app.unison.diagnostics.Journal
 import app.unison.service.UnisonSettings
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +56,7 @@ object ClipboardSender {
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "submit failed: ${e.message}")
+            Journal.warn("clipboard submit failed", "error" to e.message)
             // The pause may start between the check above and the submit.
             return when (SubmitFailure.of(e)) {
                 SubmitFailure.PAUSED -> SendOutcome.PAUSED

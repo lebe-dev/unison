@@ -467,6 +467,20 @@ class AppState(
         }
     }
 
+    /** Turns the application log of the app and the core on or off. */
+    fun setJournalEnabled(enabled: Boolean) {
+        scope.launch {
+            try {
+                val settings = core.setJournalEnabled(enabled)
+                mutableState.update { it.copy(settings = settings) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_journal_failed)
+            }
+        }
+    }
+
     /** Mirrors the removal of the tracking parameters from the links into the core. */
     fun setStripTracking(enabled: Boolean) {
         scope.launch {

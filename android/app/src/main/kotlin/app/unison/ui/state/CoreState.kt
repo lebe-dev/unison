@@ -2,6 +2,7 @@ package app.unison.ui.state
 
 import androidx.annotation.StringRes
 import app.unison.R
+import app.unison.diagnostics.Journal
 import unison.local.v1.Local
 
 /** Failure of the core that the screens report. */
@@ -43,6 +44,10 @@ data class CoreState(
     /** This device removes the tracking parameters from the links. */
     val stripTracking: Boolean
         get() = settings?.stripTracking ?: true
+
+    /** The user turned on the application log, from the marker while the settings are absent. */
+    val journalEnabled: Boolean
+        get() = settings?.journalEnabled ?: Journal.enabled()
 
     /** Paired devices of [role], the online ones first. */
     fun devices(role: Local.Role): List<Local.Device> =

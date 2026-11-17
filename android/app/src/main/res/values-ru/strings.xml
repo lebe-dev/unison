@@ -151,6 +151,9 @@
     <string name="settings_notification_system_off">Уведомления отключены в системных настройках. Unison не сможет показывать их, пока вы их не включите.</string>
     <string name="settings_notification_channel_off">Канал службы отключен в системных настройках.</string>
     <string name="settings_notification_system">Открыть системные настройки</string>
+    <string name="settings_journal">Вести журнал приложения</string>
+    <string name="settings_journal_hint">Записывает события службы для поддержки. Содержимое буфера обмена, имена файлов и пароли не записываются.</string>
+    <string name="settings_journal_failed">Не удалось сохранить настройку журнала приложения</string>
     <string name="relay_title">Ретранслятор</string>
     <string name="relay_url_label">Адрес ретранслятора</string>
     <string name="relay_url_hint">Хост и порт группового ретранслятора или https://host:port. Передается другим вашим устройствам.</string>
@@ -210,6 +213,17 @@
     <string name="settings_page_notifications_summary">Что показывать в шторке</string>
     <string name="settings_page_network_summary">Что принимать в каждой сети, сервер ретранслятора</string>
     <string name="settings_page_about_summary">Версия и диагностика</string>
+    <string name="settings_page_journal">Журнал приложения</string>
+    <string name="settings_page_journal_summary">Записи для поддержки</string>
+    <string name="journal_disabled">Журнал приложения выключен. Новые записи не ведутся. Записи ниже можно скопировать или отправить.</string>
+    <string name="journal_level">Показывать записи</string>
+    <string name="journal_level_info">INFO</string>
+    <string name="journal_level_debug">DEBUG</string>
+    <string name="journal_share">Поделиться</string>
+    <string name="journal_empty">Записей пока нет.</string>
+    <string name="journal_copied">Журнал скопирован</string>
+    <string name="journal_copy_failed">Не удалось скопировать журнал</string>
+    <string name="journal_share_failed">Не удалось поделиться журналом</string>
     <string name="settings_summary_pair">%1$s · %2$s</string>
     <string name="mode_always">Всегда</string>
     <string name="mode_always_hint">Работает в фоне, в том числе после перезапуска</string>

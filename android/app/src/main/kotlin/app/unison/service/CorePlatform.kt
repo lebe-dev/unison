@@ -7,6 +7,7 @@ import app.unison.core.AndroidKeystore
 import app.unison.core.coreEvents
 import app.unison.core.mobile.Platform
 import app.unison.discovery.NsdDiscovery
+import app.unison.diagnostics.Journal
 import app.unison.storage.BlobSink
 
 /**
@@ -44,6 +45,7 @@ class CorePlatform(
         block()
     } catch (e: Exception) {
         Log.w(TAG, "$what failed: ${e.message}")
+        Journal.warn("$what failed", "error" to e.message)
         fallback
     }
 

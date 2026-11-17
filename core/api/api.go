@@ -11,6 +11,7 @@ import (
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/journal"
 	"github.com/lebe-dev/unison/internal/observability"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 	"github.com/lebe-dev/unison/proto/unison/local/v1/localv1connect"
@@ -46,6 +47,9 @@ type Options struct {
 	// LocalNetworkBlocked reports that the system refuses the sends of the
 	// daemon to the local network. The access is reported as granted when nil.
 	LocalNetworkBlocked func() bool
+	// Journal is the application log the user can turn on and share. The
+	// setting reports that the log is off when nil.
+	Journal *journal.Store
 }
 
 // Service implements the local API over a node.
@@ -56,6 +60,7 @@ type Service struct {
 	localClip  LocalClip
 	clock      ports.Clock
 	lanBlocked func() bool
+	journal    *journal.Store
 }
 
 // compile time check of the generated handler interface.
@@ -84,6 +89,7 @@ func New(n *node.Node, opts Options) (*Service, error) {
 		localClip:  opts.LocalClip,
 		clock:      clock,
 		lanBlocked: opts.LocalNetworkBlocked,
+		journal:    opts.Journal,
 	}, nil
 }
 
