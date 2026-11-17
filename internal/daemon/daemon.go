@@ -173,6 +173,18 @@ func Run(ctx context.Context, opts Options) error {
 	key.useKeys(n.Trust().DiscoveryKeys)
 	key.useFriends(n.Trust().FriendsDiscoveryKeys)
 
+	// The daemon follows the addresses of the interfaces itself: the desktop
+	// has no network monitor of the platform, and the peers of a network the
+	// device left are unreachable by their cached addresses.
+	refresher, refreshes := disc.(networkRefresher)
+	go watchNetwork(ctx, func() {
+		log.Info("network changed, retrying the peers")
+		if refreshes {
+			refresher.Refresh()
+		}
+		n.NetworkChanged(model.NetworkState{Online: true})
+	})
+
 	serveCtx, stopServing := context.WithCancel(context.Background())
 	defer stopServing()
 	serveDone, err := serve(serveCtx, n, opts, name, localNetworkBlocked(disc))
@@ -255,6 +267,12 @@ func newNode(opts Options, name string, key *keyProvider, log *slog.Logger) (*no
 // sends reach the local network.
 type localNetworkReporter interface {
 	LocalNetworkBlocked() bool
+}
+
+// networkRefresher is a discovery that reopens its sockets on the interfaces of
+// the current network.
+type networkRefresher interface {
+	Refresh()
 }
 
 // localNetworkBlocked returns the check of the local network access of disc,

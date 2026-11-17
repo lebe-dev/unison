@@ -326,6 +326,14 @@ func (d *Discovery) refreshLoop() {
 	}
 }
 
+// Refresh brings the sockets and the announcements up to date with the
+// interfaces. A network change leaves the sockets on the interfaces of the old
+// network until the next refresh, so a caller that noticed the change can ask
+// for this one.
+func (d *Discovery) Refresh() {
+	d.refresh()
+}
+
 // refresh brings the sockets and the announcements up to date.
 func (d *Discovery) refresh() {
 	ifaces := d.interfaces()
@@ -345,7 +353,6 @@ func (d *Discovery) refresh() {
 	}
 	d.epoch = epoch
 	if ifaceChanged {
-		d.ifaceHash = hash
 		if d.tr != nil {
 			d.tr.close()
 			d.tr = nil
@@ -812,9 +819,35 @@ func (d *Discovery) interfaces() []net.Interface {
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagMulticast == 0 {
 			continue
 		}
+		// An interface without an address a peer can dial, such as the link
+		// local one of AirDrop, would only add addresses no device can use.
+		if !hasPeerAddress(&iface) {
+			continue
+		}
 		ifaces = append(ifaces, iface)
 	}
 	return ifaces
+}
+
+// hasPeerAddress reports whether the interface has an address another device of
+// the local network can dial.
+func hasPeerAddress(iface *net.Interface) bool {
+	list, err := iface.Addrs()
+	if err != nil {
+		return false
+	}
+	for _, entry := range list {
+		ipNet, ok := entry.(*net.IPNet)
+		if !ok {
+			continue
+		}
+		ip := ipNet.IP
+		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() || ip.IsMulticast() {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // randomLabel returns a random lowercase base32 label.
