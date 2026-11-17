@@ -477,10 +477,11 @@ func (n *Node) acceptLoop(ctx context.Context) {
 
 // browseLoop dials the devices discovery reports. Only a candidate that carries
 // the group tag is dialed when discovery decides the match itself. A candidate
-// without the tag is dialed while a paired device is offline: a device that has
-// no discovery key announces without a tag, and the handshake still tells
-// whether it is a paired one. The address is remembered either way, so the next
-// reconnect tries it.
+// without the tag is dialed and remembered only while a paired device is
+// offline: a device that has no discovery key announces without a tag, and the
+// handshake still tells whether it is a paired one. While every paired device
+// is online, such a candidate is most likely a device of another group, and
+// keeping it would make every later reconnect dial it.
 func (n *Node) browseLoop(ctx context.Context) {
 	if tagged, ok := n.cfg.Discovery.(taggedDiscovery); ok {
 		candidates, err := tagged.BrowseCandidates(ctx, ports.ServiceMain)
@@ -489,10 +490,10 @@ func (n *Node) browseLoop(ctx context.Context) {
 			return
 		}
 		consumeCandidates(ctx, candidates, func(candidate discovery.Candidate) {
-			n.rememberCandidate(candidate.Addr)
 			if !candidate.Matched && !n.needsPeers() {
 				return
 			}
+			n.rememberCandidate(candidate.Addr)
 			n.probe(ctx, candidate.Addr)
 		})
 		return
