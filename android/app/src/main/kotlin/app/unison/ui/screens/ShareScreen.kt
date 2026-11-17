@@ -20,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,10 +61,20 @@ fun ShareScreen(
     val friends = if (content.allowsFriends) state.devices(Local.Role.ROLE_FRIENDS) else emptyList()
     val online = personal.filter { it.online }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        bottomBar = {
+            ShareAction(
+                sending = sending,
+                enabled = canSend(content, personal, friends, selection, sending),
+                onSend = onSend,
+            )
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxSize()
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
@@ -133,12 +144,6 @@ fun ShareScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
-
-        ShareAction(
-            sending = sending,
-            enabled = canSend(content, personal, friends, selection, sending),
-            onSend = onSend,
-        )
     }
 }
 
