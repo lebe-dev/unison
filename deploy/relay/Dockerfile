@@ -10,9 +10,11 @@ RUN go mod download
 
 COPY . /build
 
-# The version is reported by the binary and by the metrics.
+# The version is reported by the binary and by the metrics, the DSN is empty
+# when the image reports no errors.
 ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+ARG SENTRY_DSN=""
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X github.com/lebe-dev/unison/internal/observability.dsn=${SENTRY_DSN} -X github.com/lebe-dev/unison/internal/observability.environment=release" \
         -o unison-relay ./cmd/unison-relay && \
     CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" \
         -o healthcheck ./deploy/relay/healthcheck && \

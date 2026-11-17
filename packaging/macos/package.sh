@@ -16,6 +16,13 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 version=$(tr -d '[:space:]' <"$root/VERSION")
 build="$root/packaging/macos/build"
+
+# The DSN comes from the environment or from the .env file of the repository.
+if [[ -z "${SENTRY_DSN:-}" && -f "$root/.env" ]]; then
+    SENTRY_DSN=$(sed -n 's/^SENTRY_DSN=//p' "$root/.env" | tail -n 1)
+    SENTRY_DSN=${SENTRY_DSN#\"}
+    SENTRY_DSN=${SENTRY_DSN%\"}
+fi
 entitlements="$root/desktop/src-tauri/entitlements.plist"
 agent_plist="Library/LaunchAgents/app.unison.unisond.plist"
 
@@ -66,7 +73,7 @@ done
 
 # The daemon needs cgo for the Keychain and the pasteboard, so every slice is
 # built on macOS and merged into one universal binary.
-daemon_ldflags="-s -w -X main.version=$version"
+daemon_ldflags="-s -w -X main.version=$version -X github.com/lebe-dev/unison/internal/observability.dsn=${SENTRY_DSN:-} -X github.com/lebe-dev/unison/internal/observability.environment=release"
 
 build_daemon() {
     local arch=$1 target=$2

@@ -13505,6 +13505,16 @@ java.lang.String defaultValue) {
      * @return The requireFileConfirmation.
      */
     boolean getRequireFileConfirmation();
+
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+     * @return The sentryEnabled.
+     */
+    boolean getSentryEnabled();
   }
   /**
    * <pre>
@@ -14189,6 +14199,44 @@ java.lang.String defaultValue) {
     private void clearRequireFileConfirmation() {
 
       requireFileConfirmation_ = false;
+    }
+
+    public static final int SENTRY_ENABLED_FIELD_NUMBER = 14;
+    private boolean sentryEnabled_;
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+     * @return The sentryEnabled.
+     */
+    @java.lang.Override
+    public boolean getSentryEnabled() {
+      return sentryEnabled_;
+    }
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+     * @param value The sentryEnabled to set.
+     */
+    private void setSentryEnabled(boolean value) {
+      
+      sentryEnabled_ = value;
+    }
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+     */
+    private void clearSentryEnabled() {
+
+      sentryEnabled_ = false;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -14994,6 +15042,46 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+       * @return The sentryEnabled.
+       */
+      @java.lang.Override
+      public boolean getSentryEnabled() {
+        return instance.getSentryEnabled();
+      }
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+       * @param value The sentryEnabled to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentryEnabled(boolean value) {
+        copyOnWrite();
+        instance.setSentryEnabled(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>bool sentry_enabled = 14 [json_name = "sentryEnabled"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSentryEnabled() {
+        copyOnWrite();
+        instance.clearSentryEnabled();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -15024,11 +15112,12 @@ java.lang.String defaultValue) {
               "historyTtlImageSeconds_",
               "historyTtlFilesSeconds_",
               "requireFileConfirmation_",
+              "sentryEnabled_",
             };
             java.lang.String info =
-                "\u0000\r\u0000\u0001\u0001\r\r\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0002" +
-                "\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b\u1009\u0003" +
-                "\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007";
+                "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0003\u0002\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b" +
+                "\u1009\u0003\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007\u000e\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -43551,6 +43640,25 @@ java.lang.String defaultValue) {
      * @return The requireFileConfirmation.
      */
     boolean getRequireFileConfirmation();
+
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+     * @return Whether the sentryEnabled field is set.
+     */
+    boolean hasSentryEnabled();
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+     * @return The sentryEnabled.
+     */
+    boolean getSentryEnabled();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -44254,6 +44362,56 @@ java.lang.String defaultValue) {
     private void clearRequireFileConfirmation() {
       bitField0_ = (bitField0_ & ~0x00001000);
       requireFileConfirmation_ = false;
+    }
+
+    public static final int SENTRY_ENABLED_FIELD_NUMBER = 16;
+    private boolean sentryEnabled_;
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+     * @return Whether the sentryEnabled field is set.
+     */
+    @java.lang.Override
+    public boolean hasSentryEnabled() {
+      return ((bitField0_ & 0x00002000) != 0);
+    }
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+     * @return The sentryEnabled.
+     */
+    @java.lang.Override
+    public boolean getSentryEnabled() {
+      return sentryEnabled_;
+    }
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+     * @param value The sentryEnabled to set.
+     */
+    private void setSentryEnabled(boolean value) {
+      bitField0_ |= 0x00002000;
+      sentryEnabled_ = value;
+    }
+    /**
+     * <pre>
+     * The user allows the app and the daemon to send errors to the developer.
+     * </pre>
+     *
+     * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+     */
+    private void clearSentryEnabled() {
+      bitField0_ = (bitField0_ & ~0x00002000);
+      sentryEnabled_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -45071,6 +45229,58 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+       * @return Whether the sentryEnabled field is set.
+       */
+      @java.lang.Override
+      public boolean hasSentryEnabled() {
+        return instance.hasSentryEnabled();
+      }
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+       * @return The sentryEnabled.
+       */
+      @java.lang.Override
+      public boolean getSentryEnabled() {
+        return instance.getSentryEnabled();
+      }
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+       * @param value The sentryEnabled to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentryEnabled(boolean value) {
+        copyOnWrite();
+        instance.setSentryEnabled(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user allows the app and the daemon to send errors to the developer.
+       * </pre>
+       *
+       * <code>optional bool sentry_enabled = 16 [json_name = "sentryEnabled"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSentryEnabled() {
+        copyOnWrite();
+        instance.clearSentryEnabled();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -45103,12 +45313,13 @@ java.lang.String defaultValue) {
               "historyTtlFilesSeconds_",
               "resetHistoryTtl_",
               "requireFileConfirmation_",
+              "sentryEnabled_",
             };
             java.lang.String info =
-                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
                 "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
                 "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
-                "\u000b\u000e\u0007\u000f\u1007\f";
+                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

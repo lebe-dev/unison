@@ -1,7 +1,15 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set dotenv-load := true
 
 version := trim(read("VERSION"))
 ldflags := "-s -w -X main.version=" + version
+
+# The DSN comes from .env or the environment and is empty in builds without
+# reporting.
+sentry_dsn := env("SENTRY_DSN", "")
+sentry_ldflags := "-X github.com/lebe-dev/unison/internal/observability.dsn=" + sentry_dsn
+debug_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.environment=debug"
+release_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.environment=release"
 
 # Binaries are pure Go so every target can be cross-compiled without a C toolchain.
 export CGO_ENABLED := "0"
@@ -30,11 +38,11 @@ default:
 
 # Build the Go binaries for the host platform into bin/.
 build:
-    go build -trimpath -ldflags "{{ldflags}}" -o bin/ ./cmd/...
+    go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/ ./cmd/...
 
 # Build unisond for the given OS and architecture.
 build-unisond os arch:
-    GOOS={{os}} GOARCH={{arch}} go build -trimpath -ldflags "{{ldflags}}" -o bin/unisond-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }} ./cmd/unisond
+    GOOS={{os}} GOARCH={{arch}} go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/unisond-{{os}}-{{arch}}{{ if os == "windows" { ".exe" } else { "" } }} ./cmd/unisond
 
 # Build unisond for every supported desktop target.
 build-unisond-all:
@@ -45,7 +53,7 @@ build-unisond-all:
 # Build unisond for the host with the Keychain and pasteboard of the platform. On
 # macOS it is the bundle bin/unisond.app, so the daemon holds its own permissions.
 build-unisond-host:
-    {{ if os() == "macos" { "packaging/macos/dev-daemon/build.sh '" + ldflags + "'" } else { "CGO_ENABLED=" + daemon_cgo + " go build -trimpath -ldflags '" + ldflags + "' -o bin/unisond ./cmd/unisond" } }}
+    {{ if os() == "macos" { "packaging/macos/dev-daemon/build.sh '" + debug_ldflags + "'" } else { "CGO_ENABLED=" + daemon_cgo + " go build -trimpath -ldflags '" + debug_ldflags + "' -o bin/unisond ./cmd/unisond" } }}
 
 # Build and run the daemon of the default data directory, replacing the one that runs.
 run-daemon *args: build-unisond-host
@@ -167,8 +175,8 @@ test-share-large:
 
 # Build the binaries of the end-to-end scenarios.
 e2e-build: build-unisond-host
-    go build -trimpath -ldflags "{{ldflags}}" -o bin/unison ./cmd/unison
-    go build -trimpath -ldflags "{{ldflags}}" -o bin/unison-relay ./cmd/unison-relay
+    go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/unison ./cmd/unison
+    go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/unison-relay ./cmd/unison-relay
 
 # Run the end-to-end scenarios of the release matrix on this machine.
 e2e *scenarios: e2e-build
@@ -227,7 +235,7 @@ relay_image := "unison-relay:" + version
 
 # Build the relay container image.
 relay-image:
-    docker build --build-arg VERSION={{version}} -t {{relay_image}} -f deploy/relay/Dockerfile .
+    docker build --build-arg VERSION={{version}} --build-arg SENTRY_DSN='{{sentry_dsn}}' -t {{relay_image}} -f deploy/relay/Dockerfile .
 
 # Run the relay container from deploy/relay/docker-compose.yml.
 relay-run:
@@ -292,7 +300,7 @@ desktop-test:
 aar:
     mkdir -p android/core bin
     go build -o bin/gobind golang.org/x/mobile/cmd/gobind
-    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}}" -trimpath -o android/core/core.aar ./mobile
+    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.environment=debug" -trimpath -o android/core/core.aar ./mobile
     rm -f android/core/core-sources.jar
 
 # Build the Android debug APK.

@@ -460,6 +460,8 @@ message Settings {
   int64 history_ttl_files_seconds = 12;
   // This device asks before it accepts a file transfer of any device.
   bool require_file_confirmation = 13;
+  // The user allows the app and the daemon to send errors to the developer.
+  bool sentry_enabled = 14;
 }
 
 message GetStatusRequest {}
@@ -864,6 +866,8 @@ message UpdateSettingsRequest {
   // given in the same request are stored on top of the defaults.
   bool reset_history_ttl = 14;
   optional bool require_file_confirmation = 15;
+  // The user allows the app and the daemon to send errors to the developer.
+  optional bool sentry_enabled = 16;
 }
 
 message UpdateSettingsResponse {

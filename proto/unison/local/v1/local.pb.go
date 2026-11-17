@@ -2059,8 +2059,10 @@ type Settings struct {
 	HistoryTtlFilesSeconds int64 `protobuf:"varint,12,opt,name=history_ttl_files_seconds,json=historyTtlFilesSeconds,proto3" json:"history_ttl_files_seconds,omitempty"`
 	// This device asks before it accepts a file transfer of any device.
 	RequireFileConfirmation bool `protobuf:"varint,13,opt,name=require_file_confirmation,json=requireFileConfirmation,proto3" json:"require_file_confirmation,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// The user allows the app and the daemon to send errors to the developer.
+	SentryEnabled bool `protobuf:"varint,14,opt,name=sentry_enabled,json=sentryEnabled,proto3" json:"sentry_enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Settings) Reset() {
@@ -2180,6 +2182,13 @@ func (x *Settings) GetHistoryTtlFilesSeconds() int64 {
 func (x *Settings) GetRequireFileConfirmation() bool {
 	if x != nil {
 		return x.RequireFileConfirmation
+	}
+	return false
+}
+
+func (x *Settings) GetSentryEnabled() bool {
+	if x != nil {
+		return x.SentryEnabled
 	}
 	return false
 }
@@ -5811,8 +5820,10 @@ type UpdateSettingsRequest struct {
 	// given in the same request are stored on top of the defaults.
 	ResetHistoryTtl         bool  `protobuf:"varint,14,opt,name=reset_history_ttl,json=resetHistoryTtl,proto3" json:"reset_history_ttl,omitempty"`
 	RequireFileConfirmation *bool `protobuf:"varint,15,opt,name=require_file_confirmation,json=requireFileConfirmation,proto3,oneof" json:"require_file_confirmation,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// The user allows the app and the daemon to send errors to the developer.
+	SentryEnabled *bool `protobuf:"varint,16,opt,name=sentry_enabled,json=sentryEnabled,proto3,oneof" json:"sentry_enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateSettingsRequest) Reset() {
@@ -5946,6 +5957,13 @@ func (x *UpdateSettingsRequest) GetResetHistoryTtl() bool {
 func (x *UpdateSettingsRequest) GetRequireFileConfirmation() bool {
 	if x != nil && x.RequireFileConfirmation != nil {
 		return *x.RequireFileConfirmation
+	}
+	return false
+}
+
+func (x *UpdateSettingsRequest) GetSentryEnabled() bool {
+	if x != nil && x.SentryEnabled != nil {
+		return *x.SentryEnabled
 	}
 	return false
 }
@@ -6461,7 +6479,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x05image\x18\x02 \x01(\v2\x1b.unison.local.v1.PolicyCellR\x05image\x121\n" +
 	"\x05files\x18\x03 \x01(\v2\x1b.unison.local.v1.PolicyCellR\x05files\x12\x19\n" +
 	"\x05relay\x18\x04 \x01(\bH\x00R\x05relay\x88\x01\x01B\b\n" +
-	"\x06_relay\"\xaf\x05\n" +
+	"\x06_relay\"\xd6\x05\n" +
 	"\bSettings\x12\x1f\n" +
 	"\vdevice_name\x18\x01 \x01(\tR\n" +
 	"deviceName\x121\n" +
@@ -6478,7 +6496,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	" \x01(\x03R\x15historyTtlTextSeconds\x129\n" +
 	"\x19history_ttl_image_seconds\x18\v \x01(\x03R\x16historyTtlImageSeconds\x129\n" +
 	"\x19history_ttl_files_seconds\x18\f \x01(\x03R\x16historyTtlFilesSeconds\x12:\n" +
-	"\x19require_file_confirmation\x18\r \x01(\bR\x17requireFileConfirmation\"\x12\n" +
+	"\x19require_file_confirmation\x18\r \x01(\bR\x17requireFileConfirmation\x12%\n" +
+	"\x0esentry_enabled\x18\x0e \x01(\bR\rsentryEnabled\"\x12\n" +
 	"\x10GetStatusRequest\"\xb9\x03\n" +
 	"\x11GetStatusResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
@@ -6663,7 +6682,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x05pause\x18\x01 \x01(\v2\x16.unison.local.v1.PauseR\x05pause\"\x14\n" +
 	"\x12GetSettingsRequest\"L\n" +
 	"\x13GetSettingsResponse\x125\n" +
-	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\x9b\b\n" +
+	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xda\b\n" +
 	"\x15UpdateSettingsRequest\x12$\n" +
 	"\vdevice_name\x18\x01 \x01(\tH\x00R\n" +
 	"deviceName\x88\x01\x01\x126\n" +
@@ -6682,7 +6701,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x19history_ttl_image_seconds\x18\f \x01(\x03H\x06R\x16historyTtlImageSeconds\x88\x01\x01\x12>\n" +
 	"\x19history_ttl_files_seconds\x18\r \x01(\x03H\aR\x16historyTtlFilesSeconds\x88\x01\x01\x12*\n" +
 	"\x11reset_history_ttl\x18\x0e \x01(\bR\x0fresetHistoryTtl\x12?\n" +
-	"\x19require_file_confirmation\x18\x0f \x01(\bH\bR\x17requireFileConfirmation\x88\x01\x01B\x0e\n" +
+	"\x19require_file_confirmation\x18\x0f \x01(\bH\bR\x17requireFileConfirmation\x88\x01\x01\x12*\n" +
+	"\x0esentry_enabled\x18\x10 \x01(\bH\tR\rsentryEnabled\x88\x01\x01B\x0e\n" +
 	"\f_device_nameB\x17\n" +
 	"\x15_require_confirmationB\x16\n" +
 	"\x14_blob_max_size_bytesB\x10\n" +
@@ -6691,7 +6711,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x19_history_ttl_text_secondsB\x1c\n" +
 	"\x1a_history_ttl_image_secondsB\x1c\n" +
 	"\x1a_history_ttl_files_secondsB\x1c\n" +
-	"\x1a_require_file_confirmation\"O\n" +
+	"\x1a_require_file_confirmationB\x11\n" +
+	"\x0f_sentry_enabled\"O\n" +
 	"\x16UpdateSettingsResponse\x125\n" +
 	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xea\x01\n" +
 	"\x05Relay\x12\x10\n" +

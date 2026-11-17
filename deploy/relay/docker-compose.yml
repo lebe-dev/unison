@@ -8,6 +8,7 @@ services:
       dockerfile: deploy/relay/Dockerfile
       args:
         VERSION: ${RELAY_VERSION:-dev}
+        SENTRY_DSN: ${SENTRY_DSN:-}
     container_name: unison-relay
     restart: unless-stopped
     ports:
