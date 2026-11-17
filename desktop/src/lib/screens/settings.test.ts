@@ -32,6 +32,18 @@ vi.mock("../sentry", () => ({
   setSentryEnabled: vi.fn(),
 }));
 
+vi.mock("../journalIO", () => ({
+  copyText: vi.fn(),
+  journalEnabled: vi.fn().mockResolvedValue(false),
+  readAllLines: vi.fn().mockResolvedValue([]),
+  readLines: vi.fn().mockResolvedValue([]),
+  recordFailure: vi.fn(),
+  saveLog: vi.fn(),
+  shareLog: vi.fn(),
+  shellInfo: vi.fn().mockResolvedValue({ appVersion: "0.1.0", os: "macOS 14.5" }),
+  writeLog: vi.fn(),
+}));
+
 const pickFolderMock = vi.mocked(pickFolder);
 const setSentryEnabledMock = vi.mocked(setSentryEnabled);
 
@@ -143,6 +155,19 @@ describe("settings screen", () => {
     await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
 
     expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it("opens the application log page", async () => {
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: /Application log/ }));
+
+    expect(await screen.findByRole("button", { name: "Back" })).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /Record the application log/ })).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(await screen.findByText("Network policy")).toBeTruthy();
   });
 
   it("goes back to the default folder", async () => {

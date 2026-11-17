@@ -34,6 +34,7 @@
     type HistoryTTL,
     type TTLKind,
   } from "../ttl";
+  import JournalSettings from "./JournalSettings.svelte";
   import RelaySection from "./RelaySection.svelte";
   import { theme } from "../theme.svelte";
 
@@ -59,6 +60,7 @@
   let busy = $state(false);
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
   let clock = $state(Date.now());
+  let page = $state<"index" | "journal">("index");
 
   const loginEnabled = $derived(
     login?.status === "enabled" || login?.status === "requires_approval",
@@ -462,8 +464,33 @@
   </section>
 {/snippet}
 
+{#snippet applicationLog()}
+  <section class="section">
+    <div class="list">
+      <button class="nav-row" type="button" onclick={() => (page = "journal")}>
+        <span class="label">
+          {t("settings.applicationLog")}
+          <small>{t("settings.applicationLogHint")}</small>
+        </span>
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path
+            d="m6 3 5 5-5 5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  </section>
+{/snippet}
+
 <div class="settings">
-  {#if !daemon.connected}
+  {#if page === "journal"}
+    <JournalSettings onback={() => (page = "index")} />
+  {:else if !daemon.connected}
     <section class="state">
       {#if daemon.loading}
         <p class="muted">{t("devices.connecting")}</p>
@@ -477,6 +504,7 @@
 
     {@render appearance()}
     {@render startup()}
+    {@render applicationLog()}
   {:else}
     {#if notice}
       <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
@@ -776,6 +804,8 @@
       </div>
     </section>
 
+    {@render applicationLog()}
+
     {@render startup()}
 
     <RelaySection />
@@ -806,6 +836,30 @@
 
   .relay-label {
     font-size: 12px;
+    color: var(--muted);
+  }
+
+  .nav-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 40px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 0;
+    color: var(--text);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+  }
+
+  .nav-row:hover {
+    background-color: var(--hover);
+  }
+
+  .nav-row svg {
+    flex: none;
     color: var(--muted);
   }
 </style>

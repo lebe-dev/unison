@@ -352,10 +352,25 @@ fn platform_endpoint() -> Result<String, String> {
     }
 }
 
-/// unix_endpoint returns the socket of the daemon in the data directory under
-/// the given home directory.
+/// data_dir returns the directory of the database, the logs and the lock file,
+/// the same way the daemon resolves it.
+pub fn data_dir() -> Result<PathBuf, String> {
+    #[cfg(unix)]
+    {
+        unix_data_dir(std::env::var_os("HOME"))
+    }
+    #[cfg(windows)]
+    {
+        let root = std::env::var_os("LOCALAPPDATA")
+            .filter(|root| !root.is_empty())
+            .ok_or_else(|| "the local application data directory is not set".to_string())?;
+        Ok(PathBuf::from(root).join("Unison"))
+    }
+}
+
+/// unix_data_dir returns the data directory under the given home directory.
 #[cfg(unix)]
-fn unix_endpoint(home: Option<OsString>) -> Result<String, String> {
+fn unix_data_dir(home: Option<OsString>) -> Result<PathBuf, String> {
     let home = home
         .filter(|home| !home.is_empty())
         .ok_or_else(|| "the home directory is not set".to_string())?;
@@ -364,6 +379,14 @@ fn unix_endpoint(home: Option<OsString>) -> Result<String, String> {
     dir.push("Library/Application Support/Unison");
     #[cfg(not(target_os = "macos"))]
     dir.push(".local/share/unison");
+    Ok(dir)
+}
+
+/// unix_endpoint returns the socket of the daemon in the data directory under
+/// the given home directory.
+#[cfg(unix)]
+fn unix_endpoint(home: Option<OsString>) -> Result<String, String> {
+    let mut dir = unix_data_dir(home)?;
     dir.push("unisond.sock");
     Ok(dir.to_string_lossy().into_owned())
 }

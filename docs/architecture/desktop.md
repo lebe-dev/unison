@@ -81,7 +81,9 @@ a page that is gone does not keep a `WatchEvents` stream open.
 | `tray.rs` | the tray icon, its menu and the file pickers |
 | `prompt.rs` | the frameless prompt window |
 | `files.rs` | show a file in the folder, open files |
+| `journal.rs` | the application log of the shell and its export |
 | `observability.rs` | error reporting of the shell |
+| `redact.rs` | the paths removed from reports and logs |
 | `i18n.rs` | the locale of the shell messages |
 
 ### Daemon supervision
@@ -112,6 +114,23 @@ delivered to the frontend as a `tray-action` event.
 The prompt window is a second frameless webview of 360 by 150 pixels in the top right corner, above
 the other windows, without a taskbar entry. It asks whether to apply a clipboard item or to accept
 files, and can be put away with `Later`.
+
+### Application log
+
+Settings > Application log turns on a log for support. The daemon marks it with `logs/journal.on` in
+the data directory (`~/Library/Application Support/Unison`); it writes `logs/journal.log`, and the
+shell writes `logs/app.log` next to it. Both files rotate and use the same line format: a UTC
+timestamp with milliseconds, the level, the message and attributes. The shell checks the marker for
+every record, so the toggle applies without a restart, and records only daemon start failures,
+failed shell commands, failed copies or shares and panics.
+
+- The export is plain text named `unison-log-YYYYMMDD-HHMMSS.log`. Its header carries the app and
+  daemon versions, the macOS version, the device, the network condition, the addresses and every
+  setting without secrets; `downloads_dir` is always `[path]`.
+- Copy and Share always include all levels, including DEBUG, while the page display level only
+  changes what the window shows.
+- The file is written to the temporary directory and offered by the macOS share sheet. When the
+  sheet cannot be shown, the app asks where to save the file and reveals it in Finder.
 
 ## Packaging
 

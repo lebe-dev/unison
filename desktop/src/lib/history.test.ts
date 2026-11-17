@@ -251,6 +251,7 @@ describe("tray entries", () => {
         historyTtlFilesSeconds: 0n,
         sentryEnabled: false,
         stripTracking: true,
+        journalEnabled: false,
       },
     });
 

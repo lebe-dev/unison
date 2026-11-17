@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "Capability for the main window and the prompt window",
   "windows": ["main", "prompt"],
-  "permissions": ["core:default", "core:window:allow-start-dragging", "notification:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "notification:default",
+    "clipboard-manager:allow-write-text",
+    "dialog:allow-save"
+  ]
 }
