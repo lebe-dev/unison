@@ -88,6 +88,9 @@ const (
 	// UnisonServiceGetHistoryItemProcedure is the fully-qualified name of the UnisonService's
 	// GetHistoryItem RPC.
 	UnisonServiceGetHistoryItemProcedure = "/unison.local.v1.UnisonService/GetHistoryItem"
+	// UnisonServiceGetHistoryThumbnailProcedure is the fully-qualified name of the UnisonService's
+	// GetHistoryThumbnail RPC.
+	UnisonServiceGetHistoryThumbnailProcedure = "/unison.local.v1.UnisonService/GetHistoryThumbnail"
 	// UnisonServiceDeleteHistoryItemProcedure is the fully-qualified name of the UnisonService's
 	// DeleteHistoryItem RPC.
 	UnisonServiceDeleteHistoryItemProcedure = "/unison.local.v1.UnisonService/DeleteHistoryItem"
@@ -175,6 +178,9 @@ type UnisonServiceClient interface {
 	// History of clip items.
 	ListHistory(context.Context, *connect.Request[v1.ListHistoryRequest]) (*connect.Response[v1.ListHistoryResponse], error)
 	GetHistoryItem(context.Context, *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error)
+	// A scaled down copy of the image of an item, decoded by the daemon. The
+	// payload must be stored on this device.
+	GetHistoryThumbnail(context.Context, *connect.Request[v1.GetHistoryThumbnailRequest]) (*connect.Response[v1.GetHistoryThumbnailResponse], error)
 	DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error)
 	// Download the payloads of an item. They are written to path when it is set.
 	FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error)
@@ -343,6 +349,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("GetHistoryItem")),
 			connect.WithClientOptions(opts...),
 		),
+		getHistoryThumbnail: connect.NewClient[v1.GetHistoryThumbnailRequest, v1.GetHistoryThumbnailResponse](
+			httpClient,
+			baseURL+UnisonServiceGetHistoryThumbnailProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("GetHistoryThumbnail")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteHistoryItem: connect.NewClient[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse](
 			httpClient,
 			baseURL+UnisonServiceDeleteHistoryItemProcedure,
@@ -482,6 +494,7 @@ type unisonServiceClient struct {
 	setClip               *connect.Client[v1.SetClipRequest, v1.SetClipResponse]
 	listHistory           *connect.Client[v1.ListHistoryRequest, v1.ListHistoryResponse]
 	getHistoryItem        *connect.Client[v1.GetHistoryItemRequest, v1.GetHistoryItemResponse]
+	getHistoryThumbnail   *connect.Client[v1.GetHistoryThumbnailRequest, v1.GetHistoryThumbnailResponse]
 	deleteHistoryItem     *connect.Client[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse]
 	fetchHistoryItem      *connect.Client[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse]
 	copyHistoryItem       *connect.Client[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse]
@@ -601,6 +614,11 @@ func (c *unisonServiceClient) ListHistory(ctx context.Context, req *connect.Requ
 // GetHistoryItem calls unison.local.v1.UnisonService.GetHistoryItem.
 func (c *unisonServiceClient) GetHistoryItem(ctx context.Context, req *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error) {
 	return c.getHistoryItem.CallUnary(ctx, req)
+}
+
+// GetHistoryThumbnail calls unison.local.v1.UnisonService.GetHistoryThumbnail.
+func (c *unisonServiceClient) GetHistoryThumbnail(ctx context.Context, req *connect.Request[v1.GetHistoryThumbnailRequest]) (*connect.Response[v1.GetHistoryThumbnailResponse], error) {
+	return c.getHistoryThumbnail.CallUnary(ctx, req)
 }
 
 // DeleteHistoryItem calls unison.local.v1.UnisonService.DeleteHistoryItem.
@@ -732,6 +750,9 @@ type UnisonServiceHandler interface {
 	// History of clip items.
 	ListHistory(context.Context, *connect.Request[v1.ListHistoryRequest]) (*connect.Response[v1.ListHistoryResponse], error)
 	GetHistoryItem(context.Context, *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error)
+	// A scaled down copy of the image of an item, decoded by the daemon. The
+	// payload must be stored on this device.
+	GetHistoryThumbnail(context.Context, *connect.Request[v1.GetHistoryThumbnailRequest]) (*connect.Response[v1.GetHistoryThumbnailResponse], error)
 	DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error)
 	// Download the payloads of an item. They are written to path when it is set.
 	FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error)
@@ -896,6 +917,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("GetHistoryItem")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceGetHistoryThumbnailHandler := connect.NewUnaryHandler(
+		UnisonServiceGetHistoryThumbnailProcedure,
+		svc.GetHistoryThumbnail,
+		connect.WithSchema(unisonServiceMethods.ByName("GetHistoryThumbnail")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceDeleteHistoryItemHandler := connect.NewUnaryHandler(
 		UnisonServiceDeleteHistoryItemProcedure,
 		svc.DeleteHistoryItem,
@@ -1052,6 +1079,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceListHistoryHandler.ServeHTTP(w, r)
 		case UnisonServiceGetHistoryItemProcedure:
 			unisonServiceGetHistoryItemHandler.ServeHTTP(w, r)
+		case UnisonServiceGetHistoryThumbnailProcedure:
+			unisonServiceGetHistoryThumbnailHandler.ServeHTTP(w, r)
 		case UnisonServiceDeleteHistoryItemProcedure:
 			unisonServiceDeleteHistoryItemHandler.ServeHTTP(w, r)
 		case UnisonServiceFetchHistoryItemProcedure:
@@ -1177,6 +1206,10 @@ func (UnimplementedUnisonServiceHandler) ListHistory(context.Context, *connect.R
 
 func (UnimplementedUnisonServiceHandler) GetHistoryItem(context.Context, *connect.Request[v1.GetHistoryItemRequest]) (*connect.Response[v1.GetHistoryItemResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetHistoryItem is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) GetHistoryThumbnail(context.Context, *connect.Request[v1.GetHistoryThumbnailRequest]) (*connect.Response[v1.GetHistoryThumbnailResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.GetHistoryThumbnail is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error) {

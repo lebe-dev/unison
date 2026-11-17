@@ -6,13 +6,20 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/model"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
-// maxPathLength bounds the destination path of a history download.
-const maxPathLength = 4096
+// Limits of the history requests.
+const (
+	// maxPathLength bounds the destination path of a history download.
+	maxPathLength = 4096
+	// defaultThumbnailSide is the side of a thumbnail when the request sets
+	// none.
+	defaultThumbnailSide = 256
+)
 
 // ListHistory returns the live items of the history, newest first.
 func (s *Service) ListHistory(ctx context.Context, req *connect.Request[localv1.ListHistoryRequest]) (*connect.Response[localv1.ListHistoryResponse], error) {
@@ -57,6 +64,44 @@ func (s *Service) GetHistoryItem(ctx context.Context, req *connect.Request[local
 		return nil, errorOf(err)
 	}
 	return connect.NewResponse(&localv1.GetHistoryItemResponse{Item: historyItemToProto(item)}), nil
+}
+
+// GetHistoryThumbnail returns a scaled down copy of the image of one item. The
+// image is decoded here, so the app never hands the payload of a peer to the
+// image decoders of the platform.
+func (s *Service) GetHistoryThumbnail(ctx context.Context, req *connect.Request[localv1.GetHistoryThumbnailRequest]) (*connect.Response[localv1.GetHistoryThumbnailResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	id, err := historyID(req.Msg.GetId())
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	item, err := s.node.History().Get(ctx, id)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	pixels, err := s.node.Clip().Thumbnail(ctx, item.ClipItem, thumbnailSide(req.Msg.GetMaxSide()))
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.GetHistoryThumbnailResponse{
+		Width:  uint32(pixels.Width),  //nolint:gosec // The side is bounded by clip.MaxThumbnailSide.
+		Height: uint32(pixels.Height), //nolint:gosec // The side is bounded by clip.MaxThumbnailSide.
+		Rgba:   pixels.RGBA,
+	}), nil
+}
+
+// thumbnailSide returns the requested side of a thumbnail within the limits.
+func thumbnailSide(requested uint32) int {
+	switch {
+	case requested == 0:
+		return defaultThumbnailSide
+	case requested > clip.MaxThumbnailSide:
+		return clip.MaxThumbnailSide
+	default:
+		return int(requested)
+	}
 }
 
 // DeleteHistoryItem marks one item as deleted on every device.

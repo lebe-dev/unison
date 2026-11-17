@@ -18,6 +18,12 @@ const (
 	candidateBuffer = 16
 	// maxHosts bounds the address cache of a browser.
 	maxHosts = 64
+	// maxInstances bounds the service instances a browser remembers.
+	maxInstances = 64
+	// maxHostIPs bounds the addresses of one host on one interface.
+	maxHostIPs = 8
+	// maxRecordTTL bounds the lifetime of a record, whatever TTL it announces.
+	maxRecordTTL = ttlService * time.Second
 	// maxHostQueries bounds the extra address queries of one round.
 	maxHostQueries = 8
 )
@@ -166,31 +172,65 @@ func (b *browserCache) update(msg *dns.Msg, typ, ifaceName string, now time.Time
 	}
 }
 
+// instance returns the entry of a service instance. A full cache drops the
+// entry seen least recently, so a flood of the local network cannot keep a
+// device that announces itself again out.
 func (b *browserCache) instance(name string, now time.Time, ttl uint32) *instance {
 	inst, ok := b.instances[name]
 	if !ok {
+		if len(b.instances) >= maxInstances {
+			b.dropInstance(oldest(b.instances, func(i *instance) time.Time { return i.seen }))
+		}
 		inst = &instance{}
 		b.instances[name] = inst
 	}
 	inst.seen = now
-	inst.ttl = time.Duration(ttl) * time.Second
+	inst.ttl = recordTTL(ttl)
 	return inst
 }
 
-// host returns the address entry of name. It returns nil when the cache is
-// full.
+// host returns the address entry of name. A full cache drops the entry seen
+// least recently.
 func (b *browserCache) host(name string, now time.Time, ttl uint32) *host {
 	h, ok := b.hosts[name]
 	if !ok {
 		if len(b.hosts) >= maxHosts {
-			return nil
+			delete(b.hosts, oldest(b.hosts, func(h *host) time.Time { return h.seen }))
 		}
 		h = &host{ips: make(map[string][]net.IP)}
 		b.hosts[name] = h
 	}
 	h.seen = now
-	h.ttl = time.Duration(ttl) * time.Second
+	h.ttl = recordTTL(ttl)
 	return h
+}
+
+// dropInstance removes an instance and the candidates emitted for it.
+func (b *browserCache) dropInstance(name string) {
+	delete(b.instances, name)
+	prefix := name + "\x00"
+	for key := range b.emitted {
+		if strings.HasPrefix(key, prefix) {
+			delete(b.emitted, key)
+		}
+	}
+}
+
+// oldest returns the key of the entry seen least recently.
+func oldest[T any](entries map[string]T, seen func(T) time.Time) string {
+	var name string
+	var at time.Time
+	for key, entry := range entries {
+		if name == "" || seen(entry).Before(at) {
+			name, at = key, seen(entry)
+		}
+	}
+	return name
+}
+
+// recordTTL returns the lifetime of a record within maxRecordTTL.
+func recordTTL(ttl uint32) time.Duration {
+	return min(time.Duration(ttl)*time.Second, maxRecordTTL)
 }
 
 // candidates returns the addresses of the known instances that were not
@@ -202,7 +242,7 @@ func (b *browserCache) candidates(typ string, now time.Time, isOwn func(string) 
 			continue
 		}
 		if expired(now, inst.seen, inst.ttl) {
-			delete(b.instances, name)
+			b.dropInstance(name)
 			continue
 		}
 		if inst.port == 0 || inst.host == "" {
@@ -261,11 +301,16 @@ func address(ip net.IP, ifaceName string, port int) string {
 	return net.JoinHostPort(host, strconv.Itoa(port))
 }
 
+// appendIP adds an address once. A host keeps at most maxHostIPs addresses
+// per interface.
 func appendIP(ips []net.IP, ip net.IP) []net.IP {
 	for _, known := range ips {
 		if known.Equal(ip) {
 			return ips
 		}
+	}
+	if len(ips) >= maxHostIPs {
+		return ips
 	}
 	return append(ips, ip)
 }

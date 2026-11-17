@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -297,7 +298,7 @@ func (s *Session) serveRequest(stream *quic.Stream) {
 	}
 
 	req := &Request{stream: stream, frames: frames, header: header}
-	if err := route.handler(s.ctx, req); err != nil {
+	if err := s.guard("request "+header.GetPayloadType(), func() error { return route.handler(s.ctx, req) }); err != nil && !errors.Is(err, ErrHandlerPanic) {
 		s.log.Warn("session: request handler failed", "peer", s.peerID, "type", header.GetPayloadType(), "error", err)
 	}
 }
@@ -329,7 +330,7 @@ func (s *Session) serveTransfer(stream *quic.ReceiveStream) {
 	}
 
 	transfer := &Transfer{stream: stream, frames: frames, header: header}
-	if err := route.handler(s.ctx, transfer); err != nil {
+	if err := s.guard("transfer "+header.GetPayloadType(), func() error { return route.handler(s.ctx, transfer) }); err != nil && !errors.Is(err, ErrHandlerPanic) {
 		s.log.Warn("session: transfer handler failed", "peer", s.peerID, "type", header.GetPayloadType(), "error", err)
 	}
 }

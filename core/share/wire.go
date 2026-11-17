@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/lebe-dev/unison/core/download"
 	"github.com/lebe-dev/unison/core/session"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
@@ -110,7 +111,7 @@ func filesOf(metas []*wirev1.FileMeta) ([]File, error) {
 			return nil, fmt.Errorf("%w: zero hash", ErrInvalidFile)
 		}
 		files = append(files, File{
-			Name:  SafeName(meta.GetName()),
+			Name:  download.SafeName(meta.GetName()),
 			Size:  int64(meta.GetSize()),
 			Hash:  hash,
 			MTime: timeFromUnixMilli(meta.GetMtimeUnixMs()),

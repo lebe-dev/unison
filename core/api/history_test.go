@@ -1,7 +1,11 @@
 package api_test
 
 import (
+	"bytes"
 	"context"
+	"image"
+	"image/color"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -191,4 +195,75 @@ func TestApplyHistoryItem(t *testing.T) {
 
 	_, err = client.ApplyHistoryItem(ctx, connect.NewRequest(&localv1.ApplyHistoryItemRequest{Id: model.ClipID{1}.String()}))
 	requireCode(t, err, connect.CodeNotFound)
+}
+
+func TestGetHistoryThumbnail(t *testing.T) {
+	client, n := historyClient(t)
+	ctx := callTimeout(t)
+
+	source := image.NewNRGBA(image.Rect(0, 0, 64, 32))
+	for x := range 64 {
+		for y := range 32 {
+			source.SetNRGBA(x, y, color.NRGBA{R: 0x10, G: 0x20, B: 0x30, A: 0xff})
+		}
+	}
+	var buffer bytes.Buffer
+	if err := png.Encode(&buffer, source); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	n.clipboard.Emit(ports.Snapshot{Content: ports.Content{
+		Representations: []ports.Representation{{MIME: clip.MIMEImagePNG, Data: buffer.Bytes()}},
+	}})
+	var id string
+	deadline := time.Now().Add(testTimeout)
+	for id == "" && time.Now().Before(deadline) {
+		response, err := client.ListHistory(ctx, connect.NewRequest(&localv1.ListHistoryRequest{Kind: localv1.Kind_KIND_IMAGE}))
+		if err != nil {
+			t.Fatalf("list history: %v", err)
+		}
+		if items := response.Msg.GetItems(); len(items) > 0 {
+			id = items[0].GetItem().GetId()
+			break
+		}
+		n.clock.Advance(clip.DefaultDebounce)
+		time.Sleep(5 * time.Millisecond)
+	}
+	if id == "" {
+		t.Fatal("the image did not reach the history")
+	}
+
+	thumb, err := client.GetHistoryThumbnail(ctx, connect.NewRequest(&localv1.GetHistoryThumbnailRequest{Id: id, MaxSide: 16}))
+	if err != nil {
+		t.Fatalf("get thumbnail: %v", err)
+	}
+	if thumb.Msg.GetWidth() != 16 || thumb.Msg.GetHeight() != 8 {
+		t.Fatalf("thumbnail is %dx%d, want 16x8", thumb.Msg.GetWidth(), thumb.Msg.GetHeight())
+	}
+	if len(thumb.Msg.GetRgba()) != 16*8*4 {
+		t.Fatalf("thumbnail holds %d bytes", len(thumb.Msg.GetRgba()))
+	}
+	if got := thumb.Msg.GetRgba()[:4]; !bytes.Equal(got, []byte{0x10, 0x20, 0x30, 0xff}) {
+		t.Fatalf("first pixel is %v", got)
+	}
+
+	capped, err := client.GetHistoryThumbnail(ctx, connect.NewRequest(&localv1.GetHistoryThumbnailRequest{Id: id, MaxSide: 1 << 20}))
+	if err != nil {
+		t.Fatalf("get a capped thumbnail: %v", err)
+	}
+	if capped.Msg.GetWidth() != 64 || capped.Msg.GetHeight() != 32 {
+		t.Fatalf("capped thumbnail is %dx%d, want 64x32", capped.Msg.GetWidth(), capped.Msg.GetHeight())
+	}
+
+	texts := emitHistory(t, client, n, "text", 2)
+	textID := ""
+	for _, item := range texts {
+		if item.GetItem().GetKind() == localv1.Kind_KIND_TEXT {
+			textID = item.GetItem().GetId()
+		}
+	}
+	_, err = client.GetHistoryThumbnail(ctx, connect.NewRequest(&localv1.GetHistoryThumbnailRequest{Id: textID}))
+	requireCode(t, err, connect.CodeInvalidArgument)
+
+	_, err = client.GetHistoryThumbnail(ctx, connect.NewRequest(&localv1.GetHistoryThumbnailRequest{Id: "bad"}))
+	requireCode(t, err, connect.CodeInvalidArgument)
 }

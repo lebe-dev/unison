@@ -29956,6 +29956,843 @@ java.lang.String defaultValue) {
     }
   }
 
+  public interface GetHistoryThumbnailRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetHistoryThumbnailRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    java.lang.String getId();
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+
+    /**
+     * <pre>
+     * Longer side of the thumbnail in pixels. Zero uses the default, the server
+     * caps it. A smaller image keeps its size.
+     * </pre>
+     *
+     * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+     * @return The maxSide.
+     */
+    int getMaxSide();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetHistoryThumbnailRequest}
+   */
+  public  static final class GetHistoryThumbnailRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetHistoryThumbnailRequest, GetHistoryThumbnailRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetHistoryThumbnailRequest)
+      GetHistoryThumbnailRequestOrBuilder {
+    private GetHistoryThumbnailRequest() {
+      id_ = "";
+    }
+    public static final int ID_FIELD_NUMBER = 1;
+    private java.lang.String id_;
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The id.
+     */
+    @java.lang.Override
+    public java.lang.String getId() {
+      return id_;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @return The bytes for id.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(id_);
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The id to set.
+     */
+    private void setId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      id_ = value;
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     */
+    private void clearId() {
+
+      id_ = getDefaultInstance().getId();
+    }
+    /**
+     * <pre>
+     * UUID of the item.
+     * </pre>
+     *
+     * <code>string id = 1 [json_name = "id"];</code>
+     * @param value The bytes for id to set.
+     */
+    private void setIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      id_ = value.toStringUtf8();
+
+    }
+
+    public static final int MAX_SIDE_FIELD_NUMBER = 2;
+    private int maxSide_;
+    /**
+     * <pre>
+     * Longer side of the thumbnail in pixels. Zero uses the default, the server
+     * caps it. A smaller image keeps its size.
+     * </pre>
+     *
+     * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+     * @return The maxSide.
+     */
+    @java.lang.Override
+    public int getMaxSide() {
+      return maxSide_;
+    }
+    /**
+     * <pre>
+     * Longer side of the thumbnail in pixels. Zero uses the default, the server
+     * caps it. A smaller image keeps its size.
+     * </pre>
+     *
+     * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+     * @param value The maxSide to set.
+     */
+    private void setMaxSide(int value) {
+      
+      maxSide_ = value;
+    }
+    /**
+     * <pre>
+     * Longer side of the thumbnail in pixels. Zero uses the default, the server
+     * caps it. A smaller image keeps its size.
+     * </pre>
+     *
+     * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+     */
+    private void clearMaxSide() {
+
+      maxSide_ = 0;
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetHistoryThumbnailRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetHistoryThumbnailRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetHistoryThumbnailRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetHistoryThumbnailRequest)
+        unison.local.v1.Local.GetHistoryThumbnailRequestOrBuilder {
+      // Construct using unison.local.v1.Local.GetHistoryThumbnailRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The id.
+       */
+      @java.lang.Override
+      public java.lang.String getId() {
+        return instance.getId();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return The bytes for id.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        return instance.getIdBytes();
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearId() {
+        copyOnWrite();
+        instance.clearId();
+        return this;
+      }
+      /**
+       * <pre>
+       * UUID of the item.
+       * </pre>
+       *
+       * <code>string id = 1 [json_name = "id"];</code>
+       * @param value The bytes for id to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Longer side of the thumbnail in pixels. Zero uses the default, the server
+       * caps it. A smaller image keeps its size.
+       * </pre>
+       *
+       * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+       * @return The maxSide.
+       */
+      @java.lang.Override
+      public int getMaxSide() {
+        return instance.getMaxSide();
+      }
+      /**
+       * <pre>
+       * Longer side of the thumbnail in pixels. Zero uses the default, the server
+       * caps it. A smaller image keeps its size.
+       * </pre>
+       *
+       * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+       * @param value The maxSide to set.
+       * @return This builder for chaining.
+       */
+      public Builder setMaxSide(int value) {
+        copyOnWrite();
+        instance.setMaxSide(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Longer side of the thumbnail in pixels. Zero uses the default, the server
+       * caps it. A smaller image keeps its size.
+       * </pre>
+       *
+       * <code>uint32 max_side = 2 [json_name = "maxSide"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearMaxSide() {
+        copyOnWrite();
+        instance.clearMaxSide();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetHistoryThumbnailRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetHistoryThumbnailRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "id_",
+              "maxSide_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u000b" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetHistoryThumbnailRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetHistoryThumbnailRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetHistoryThumbnailRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetHistoryThumbnailRequest)
+    private static final unison.local.v1.Local.GetHistoryThumbnailRequest DEFAULT_INSTANCE;
+    static {
+      GetHistoryThumbnailRequest defaultInstance = new GetHistoryThumbnailRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetHistoryThumbnailRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetHistoryThumbnailRequest> PARSER;
+
+    public static com.google.protobuf.Parser<GetHistoryThumbnailRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface GetHistoryThumbnailResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.GetHistoryThumbnailResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>uint32 width = 1 [json_name = "width"];</code>
+     * @return The width.
+     */
+    int getWidth();
+
+    /**
+     * <code>uint32 height = 2 [json_name = "height"];</code>
+     * @return The height.
+     */
+    int getHeight();
+
+    /**
+     * <pre>
+     * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+     * </pre>
+     *
+     * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+     * @return The rgba.
+     */
+    com.google.protobuf.ByteString getRgba();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.GetHistoryThumbnailResponse}
+   */
+  public  static final class GetHistoryThumbnailResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          GetHistoryThumbnailResponse, GetHistoryThumbnailResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.GetHistoryThumbnailResponse)
+      GetHistoryThumbnailResponseOrBuilder {
+    private GetHistoryThumbnailResponse() {
+      rgba_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    public static final int WIDTH_FIELD_NUMBER = 1;
+    private int width_;
+    /**
+     * <code>uint32 width = 1 [json_name = "width"];</code>
+     * @return The width.
+     */
+    @java.lang.Override
+    public int getWidth() {
+      return width_;
+    }
+    /**
+     * <code>uint32 width = 1 [json_name = "width"];</code>
+     * @param value The width to set.
+     */
+    private void setWidth(int value) {
+      
+      width_ = value;
+    }
+    /**
+     * <code>uint32 width = 1 [json_name = "width"];</code>
+     */
+    private void clearWidth() {
+
+      width_ = 0;
+    }
+
+    public static final int HEIGHT_FIELD_NUMBER = 2;
+    private int height_;
+    /**
+     * <code>uint32 height = 2 [json_name = "height"];</code>
+     * @return The height.
+     */
+    @java.lang.Override
+    public int getHeight() {
+      return height_;
+    }
+    /**
+     * <code>uint32 height = 2 [json_name = "height"];</code>
+     * @param value The height to set.
+     */
+    private void setHeight(int value) {
+      
+      height_ = value;
+    }
+    /**
+     * <code>uint32 height = 2 [json_name = "height"];</code>
+     */
+    private void clearHeight() {
+
+      height_ = 0;
+    }
+
+    public static final int RGBA_FIELD_NUMBER = 3;
+    private com.google.protobuf.ByteString rgba_;
+    /**
+     * <pre>
+     * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+     * </pre>
+     *
+     * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+     * @return The rgba.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getRgba() {
+      return rgba_;
+    }
+    /**
+     * <pre>
+     * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+     * </pre>
+     *
+     * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+     * @param value The rgba to set.
+     */
+    private void setRgba(com.google.protobuf.ByteString value) {
+      java.util.Objects.requireNonNull(value);
+  
+      rgba_ = value;
+    }
+    /**
+     * <pre>
+     * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+     * </pre>
+     *
+     * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+     */
+    private void clearRgba() {
+
+      rgba_ = getDefaultInstance().getRgba();
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.GetHistoryThumbnailResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.GetHistoryThumbnailResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.GetHistoryThumbnailResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.GetHistoryThumbnailResponse)
+        unison.local.v1.Local.GetHistoryThumbnailResponseOrBuilder {
+      // Construct using unison.local.v1.Local.GetHistoryThumbnailResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>uint32 width = 1 [json_name = "width"];</code>
+       * @return The width.
+       */
+      @java.lang.Override
+      public int getWidth() {
+        return instance.getWidth();
+      }
+      /**
+       * <code>uint32 width = 1 [json_name = "width"];</code>
+       * @param value The width to set.
+       * @return This builder for chaining.
+       */
+      public Builder setWidth(int value) {
+        copyOnWrite();
+        instance.setWidth(value);
+        return this;
+      }
+      /**
+       * <code>uint32 width = 1 [json_name = "width"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearWidth() {
+        copyOnWrite();
+        instance.clearWidth();
+        return this;
+      }
+
+      /**
+       * <code>uint32 height = 2 [json_name = "height"];</code>
+       * @return The height.
+       */
+      @java.lang.Override
+      public int getHeight() {
+        return instance.getHeight();
+      }
+      /**
+       * <code>uint32 height = 2 [json_name = "height"];</code>
+       * @param value The height to set.
+       * @return This builder for chaining.
+       */
+      public Builder setHeight(int value) {
+        copyOnWrite();
+        instance.setHeight(value);
+        return this;
+      }
+      /**
+       * <code>uint32 height = 2 [json_name = "height"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearHeight() {
+        copyOnWrite();
+        instance.clearHeight();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+       * </pre>
+       *
+       * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+       * @return The rgba.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getRgba() {
+        return instance.getRgba();
+      }
+      /**
+       * <pre>
+       * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+       * </pre>
+       *
+       * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+       * @param value The rgba to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRgba(com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setRgba(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+       * </pre>
+       *
+       * <code>bytes rgba = 3 [json_name = "rgba"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRgba() {
+        copyOnWrite();
+        instance.clearRgba();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.GetHistoryThumbnailResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.GetHistoryThumbnailResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "width_",
+              "height_",
+              "rgba_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u000b\u0002\u000b" +
+                "\u0003\n";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.GetHistoryThumbnailResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.GetHistoryThumbnailResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.GetHistoryThumbnailResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.GetHistoryThumbnailResponse)
+    private static final unison.local.v1.Local.GetHistoryThumbnailResponse DEFAULT_INSTANCE;
+    static {
+      GetHistoryThumbnailResponse defaultInstance = new GetHistoryThumbnailResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        GetHistoryThumbnailResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.GetHistoryThumbnailResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<GetHistoryThumbnailResponse> PARSER;
+
+    public static com.google.protobuf.Parser<GetHistoryThumbnailResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
   public interface DeleteHistoryItemRequestOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.DeleteHistoryItemRequest)
       com.google.protobuf.MessageLiteOrBuilder {

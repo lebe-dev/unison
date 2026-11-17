@@ -649,13 +649,24 @@ func (d *Discovery) dispatch(tr *transport) {
 		case <-tr.done:
 			return
 		case p := <-tr.packets:
-			if p.msg.Response {
-				d.deliver(p)
-				continue
-			}
-			d.handleQuery(tr, p)
+			d.handlePacket(tr, p)
 		}
 	}
+}
+
+// handlePacket handles one message of the local network. A panic drops the
+// message instead of stopping the process.
+func (d *Discovery) handlePacket(tr *transport, p packet) {
+	defer func() {
+		if recovered := recover(); recovered != nil && d.log != nil {
+			d.log.Error("an mDNS message broke the handler", "panic", fmt.Sprint(recovered))
+		}
+	}()
+	if p.msg.Response {
+		d.deliver(p)
+		return
+	}
+	d.handleQuery(tr, p)
 }
 
 // deliver passes a response to every browser.

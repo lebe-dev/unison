@@ -168,8 +168,15 @@ func (t *transport) read6() {
 	}
 }
 
-// dispatch parses a message and hands it to the reader of the transport.
+// dispatch parses a message and hands it to the reader of the transport. Any
+// host of the local network can send one, so a panic of the parser drops the
+// message instead of stopping the process.
 func (t *transport) dispatch(data []byte, ifIndex int, from net.Addr) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			debugf(t.log, "dropped an mDNS message that broke the parser: %v", recovered)
+		}
+	}()
 	msg := new(dns.Msg)
 	if err := msg.Unpack(data); err != nil {
 		return

@@ -79,6 +79,7 @@ fuzz time="10m":
     just fuzz-target ./core/session FuzzParseHello {{time}}
     just fuzz-target ./core/session FuzzStreamHeader {{time}}
     just fuzz-target ./core/clip FuzzClipAnnounce {{time}}
+    just fuzz-target ./core/clip FuzzSanitizeImage {{time}}
     just fuzz-target ./core/history FuzzHistorySync {{time}}
     just fuzz-target ./core/history FuzzHistoryBatch {{time}}
     just fuzz-target ./core/trust FuzzIntroduction {{time}}
@@ -92,6 +93,10 @@ fuzz time="10m":
     just fuzz-target ./core/blob/transfer FuzzBlobTree {{time}}
     just fuzz-target ./core/blob/transfer FuzzHaveBlob {{time}}
     just fuzz-target ./core/discovery FuzzParseTXT {{time}}
+    just fuzz-target ./core/discovery FuzzMDNSPacket {{time}}
+    just fuzz-target ./core/transport FuzzPeerCertificate {{time}}
+    just fuzz-target ./core/transport FuzzAuthProof {{time}}
+    just fuzz-target ./core/identity FuzzPublicIdentity {{time}}
     just fuzz-target ./core/pairing FuzzPairingFrame {{time}}
     just fuzz-target ./core/pairing FuzzParseQR {{time}}
     just fuzz-target ./core/relay FuzzRelayFrame {{time}}

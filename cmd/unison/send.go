@@ -11,7 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/lebe-dev/unison/core/share"
+	"github.com/lebe-dev/unison/core/download"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -114,7 +114,7 @@ func (a *app) send(ctx context.Context, args []string) error {
 // writeStdin copies standard input to a temporary file and returns its path and
 // the function that removes it.
 func (a *app) writeStdin(name string) (string, func(), error) {
-	name = share.SafeName(strings.TrimSpace(name))
+	name = download.SafeName(strings.TrimSpace(name))
 	if name == "" || name == "file" {
 		name = stdinName
 	}

@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 
 	"lukechampine.com/blake3"
 
+	"github.com/lebe-dev/unison/core/download"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
 )
@@ -20,10 +20,6 @@ import (
 const (
 	// downloadsDirName is the directory of received files inside the user home.
 	downloadsDirName = "Unison"
-	// maxFileNameLength bounds a file name taken from an item.
-	maxFileNameLength = 200
-	// maxDownloadAttempts bounds the lookups of a free file name.
-	maxDownloadAttempts = 100
 )
 
 // DefaultDownloadsDir returns the directory that receives incoming files.
@@ -223,7 +219,8 @@ func (p *Pipeline) textContent(ctx context.Context, item model.ClipItem) (ports.
 	return ports.Content{Representations: reps}, nil
 }
 
-// imageContent returns the PNG representation of the item.
+// imageContent returns the image of the item, decoded and encoded again as
+// PNG.
 func (p *Pipeline) imageContent(ctx context.Context, item model.ClipItem) (ports.Content, error) {
 	rep, ok := primaryImage(item)
 	if !ok {
@@ -233,11 +230,33 @@ func (p *Pipeline) imageContent(ctx context.Context, item model.ClipItem) (ports
 	if err != nil {
 		return ports.Content{}, err
 	}
-	data, err = toPNG(data)
+	data, err = sanitizeImage(data)
 	if err != nil {
 		return ports.Content{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
 	}
 	return ports.Content{Representations: []ports.Representation{{MIME: MIMEImagePNG, Data: data}}}, nil
+}
+
+// Thumbnail returns a scaled down copy of the image of an item. Only a payload
+// stored on this device is read; a missing one is reported as
+// ErrPayloadMissing.
+func (p *Pipeline) Thumbnail(ctx context.Context, item model.ClipItem, maxSide int) (Pixels, error) {
+	if item.Kind != model.KindImage {
+		return Pixels{}, fmt.Errorf("%w: kind %s has no image", ErrUnsupportedContent, item.Kind)
+	}
+	rep, ok := primaryImage(item)
+	if !ok {
+		return Pixels{}, fmt.Errorf("%w: no image representation", ErrUnsupportedContent)
+	}
+	data, err := p.payloadData(ctx, rep)
+	if err != nil {
+		return Pixels{}, err
+	}
+	pixels, err := Thumbnail(data, maxSide)
+	if err != nil {
+		return Pixels{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
+	}
+	return pixels, nil
 }
 
 // fileContent writes the files of the item to the downloads directory and
@@ -255,8 +274,8 @@ func (p *Pipeline) fileContent(ctx context.Context, item model.ClipItem) (ports.
 		if rep.FileName == "" {
 			continue
 		}
-		target := p.downloadPath(rep, i)
-		if err := p.writeFile(ctx, rep, target); err != nil {
+		target, err := p.writeFile(ctx, rep, downloadName(rep, i))
+		if err != nil {
 			return ports.Content{}, err
 		}
 		p.log.Info("saved incoming file", "mime", rep.MIME, "size", rep.Size)
@@ -268,31 +287,31 @@ func (p *Pipeline) fileContent(ctx context.Context, item model.ClipItem) (ports.
 	return ports.Content{Representations: reps}, nil
 }
 
-// writeFile copies one payload into a new file.
-func (p *Pipeline) writeFile(ctx context.Context, rep model.Representation, target string) error {
-	//nolint:gosec // The name comes from the download directory and the sanitized file name.
-	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+// writeFile copies one payload into a new file of the downloads directory and
+// returns its path.
+func (p *Pipeline) writeFile(ctx context.Context, rep model.Representation, name string) (string, error) {
+	target, file, err := download.Create(p.downloads, name)
 	if err != nil {
-		return fmt.Errorf("clip: create file: %w", err)
+		return "", fmt.Errorf("clip: %w", err)
 	}
 
 	written, err := p.copyPayload(ctx, rep, file)
 	closeErr := file.Close()
 	if err != nil {
 		_ = os.Remove(target)
-		return err
+		return "", err
 	}
 	if closeErr != nil {
 		_ = os.Remove(target)
-		return fmt.Errorf("clip: close file: %w", closeErr)
+		return "", fmt.Errorf("clip: close file: %w", closeErr)
 	}
 	// The announced size is only checked for an inline payload, which is
 	// already verified against its hash. A stored payload carries its own size.
 	if len(rep.Inline) > 0 && written != int64(len(rep.Inline)) {
 		_ = os.Remove(target)
-		return fmt.Errorf("clip: wrote %d bytes of a %d byte file", written, len(rep.Inline))
+		return "", fmt.Errorf("clip: wrote %d bytes of a %d byte file", written, len(rep.Inline))
 	}
-	return nil
+	return target, nil
 }
 
 // copyPayload copies one payload into w.
@@ -318,43 +337,13 @@ func (p *Pipeline) copyPayload(ctx context.Context, rep model.Representation, w 
 	return written, nil
 }
 
-// downloadPath returns a free file name in the downloads directory.
-func (p *Pipeline) downloadPath(rep model.Representation, index int) string {
-	name := downloadName(rep, index)
-	for attempt := range maxDownloadAttempts {
-		candidate := filepath.Join(p.downloads, numberedName(name, attempt))
-		if _, err := os.Lstat(candidate); errors.Is(err, os.ErrNotExist) {
-			return candidate
-		}
-	}
-	return filepath.Join(p.downloads, numberedName(name, maxDownloadAttempts))
-}
-
-// downloadName returns a safe file name for one payload.
+// downloadName returns the file name of one payload. A payload without a name
+// gets a numbered one.
 func downloadName(rep model.Representation, index int) string {
-	name := strings.Map(func(r rune) rune {
-		if r == '/' || r == '\\' || unicode.IsControl(r) {
-			return '-'
-		}
-		return r
-	}, rep.FileName)
-	name = strings.TrimSpace(filepath.Base(name))
-	if name == "" || name == "." || name == ".." {
+	if strings.TrimSpace(rep.FileName) == "" {
 		return fmt.Sprintf("file-%d.bin", index+1)
 	}
-	if len(name) > maxFileNameLength {
-		name = strings.ToValidUTF8(name[:maxFileNameLength], "")
-	}
-	return name
-}
-
-// numberedName adds a counter to a file name that is already taken.
-func numberedName(name string, attempt int) string {
-	if attempt == 0 {
-		return name
-	}
-	extension := filepath.Ext(name)
-	return fmt.Sprintf("%s (%d)%s", strings.TrimSuffix(name, extension), attempt, extension)
+	return download.SafeName(rep.FileName)
 }
 
 // primaryImage returns the PNG representation of the item, or its first image.

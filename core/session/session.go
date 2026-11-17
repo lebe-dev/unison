@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,6 +28,9 @@ const (
 	// CodeProtocolViolation closes a session whose peer broke the protocol or
 	// exceeded a limit.
 	CodeProtocolViolation quic.ApplicationErrorCode = 0x11
+	// CodeInternalError closes a session whose message hit a failure of this
+	// device.
+	CodeInternalError quic.ApplicationErrorCode = 0x12
 )
 
 // Errors reported by the session.
@@ -51,6 +55,9 @@ var (
 	ErrTooManyViolations = errors.New("session: too many violations")
 	// ErrHandler reports an unusable handler registration.
 	ErrHandler = errors.New("session: invalid handler")
+	// ErrHandlerPanic reports a handler that panicked on a message of the
+	// peer. The session ends, the process keeps running.
+	ErrHandlerPanic = errors.New("session: handler panicked")
 )
 
 // Trust is the peer store the session reads peers from. *trust.Store
@@ -426,7 +433,10 @@ func (s *Session) dispatch(msg *wirev1.ControlMessage) {
 		s.log.Debug("session: dropped a message without a handler", "peer", s.peerID, "kind", kind.String())
 		return
 	}
-	if err := handler(s.ctx, msg); err != nil {
+	if err := s.guard(kind.String(), func() error { return handler(s.ctx, msg) }); err != nil {
+		if errors.Is(err, ErrHandlerPanic) {
+			return
+		}
 		if s.ctx.Err() != nil {
 			s.log.Debug("session: handler stopped", "peer", s.peerID, "kind", kind.String(), "error", err)
 			return
@@ -519,6 +529,22 @@ func (s *Session) violate(reason string) {
 	}
 }
 
+// guard runs a handler and turns its panic into the end of the session, so a
+// message of the peer that hits a bug cannot stop the process.
+func (s *Session) guard(name string, fn func() error) (err error) {
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			return
+		}
+		s.log.Error("session: handler panicked", "peer", s.peerID, "handler", name,
+			"panic", fmt.Sprint(recovered), "stack", string(debug.Stack()))
+		err = fmt.Errorf("%w: %s", ErrHandlerPanic, name)
+		s.shutdown(err, CodeInternalError)
+	}()
+	return fn()
+}
+
 // setHello stores what the peer announced.
 func (s *Session) setHello(hello PeerHello) {
 	s.mu.Lock()
@@ -596,6 +622,8 @@ func closeMessage(code quic.ApplicationErrorCode) string {
 		return "protocol version not supported"
 	case CodeProtocolViolation:
 		return "protocol violation"
+	case CodeInternalError:
+		return "internal error"
 	default:
 		return ""
 	}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/lebe-dev/unison/core/blob/transfer"
+	"github.com/lebe-dev/unison/core/download"
 	"github.com/lebe-dev/unison/core/model"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
@@ -159,7 +160,7 @@ func (s *Service) store(ctx context.Context, path string) (File, error) {
 	if err != nil {
 		return File{}, fmt.Errorf("share: store %s: %w", filepath.Base(path), err)
 	}
-	name := SafeName(filepath.Base(path))
+	name := download.SafeName(filepath.Base(path))
 	return File{
 		Name:  name,
 		Size:  info.Size(),

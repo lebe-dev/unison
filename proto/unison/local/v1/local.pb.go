@@ -4152,6 +4152,122 @@ func (x *GetHistoryItemResponse) GetItem() *HistoryItem {
 	return nil
 }
 
+type GetHistoryThumbnailRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// UUID of the item.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Longer side of the thumbnail in pixels. Zero uses the default, the server
+	// caps it. A smaller image keeps its size.
+	MaxSide       uint32 `protobuf:"varint,2,opt,name=max_side,json=maxSide,proto3" json:"max_side,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHistoryThumbnailRequest) Reset() {
+	*x = GetHistoryThumbnailRequest{}
+	mi := &file_unison_local_v1_local_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHistoryThumbnailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHistoryThumbnailRequest) ProtoMessage() {}
+
+func (x *GetHistoryThumbnailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_local_v1_local_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetHistoryThumbnailRequest.ProtoReflect.Descriptor instead.
+func (*GetHistoryThumbnailRequest) Descriptor() ([]byte, []int) {
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *GetHistoryThumbnailRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetHistoryThumbnailRequest) GetMaxSide() uint32 {
+	if x != nil {
+		return x.MaxSide
+	}
+	return 0
+}
+
+type GetHistoryThumbnailResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Width  uint32                 `protobuf:"varint,1,opt,name=width,proto3" json:"width,omitempty"`
+	Height uint32                 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	// Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+	Rgba          []byte `protobuf:"bytes,3,opt,name=rgba,proto3" json:"rgba,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHistoryThumbnailResponse) Reset() {
+	*x = GetHistoryThumbnailResponse{}
+	mi := &file_unison_local_v1_local_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHistoryThumbnailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHistoryThumbnailResponse) ProtoMessage() {}
+
+func (x *GetHistoryThumbnailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_local_v1_local_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetHistoryThumbnailResponse.ProtoReflect.Descriptor instead.
+func (*GetHistoryThumbnailResponse) Descriptor() ([]byte, []int) {
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *GetHistoryThumbnailResponse) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *GetHistoryThumbnailResponse) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *GetHistoryThumbnailResponse) GetRgba() []byte {
+	if x != nil {
+		return x.Rgba
+	}
+	return nil
+}
+
 type DeleteHistoryItemRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// UUID of the item.
@@ -4162,7 +4278,7 @@ type DeleteHistoryItemRequest struct {
 
 func (x *DeleteHistoryItemRequest) Reset() {
 	*x = DeleteHistoryItemRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[57]
+	mi := &file_unison_local_v1_local_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4174,7 +4290,7 @@ func (x *DeleteHistoryItemRequest) String() string {
 func (*DeleteHistoryItemRequest) ProtoMessage() {}
 
 func (x *DeleteHistoryItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[57]
+	mi := &file_unison_local_v1_local_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4187,7 +4303,7 @@ func (x *DeleteHistoryItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteHistoryItemRequest.ProtoReflect.Descriptor instead.
 func (*DeleteHistoryItemRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{57}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *DeleteHistoryItemRequest) GetId() string {
@@ -4205,7 +4321,7 @@ type DeleteHistoryItemResponse struct {
 
 func (x *DeleteHistoryItemResponse) Reset() {
 	*x = DeleteHistoryItemResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[58]
+	mi := &file_unison_local_v1_local_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4217,7 +4333,7 @@ func (x *DeleteHistoryItemResponse) String() string {
 func (*DeleteHistoryItemResponse) ProtoMessage() {}
 
 func (x *DeleteHistoryItemResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[58]
+	mi := &file_unison_local_v1_local_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4230,7 +4346,7 @@ func (x *DeleteHistoryItemResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteHistoryItemResponse.ProtoReflect.Descriptor instead.
 func (*DeleteHistoryItemResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{58}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{60}
 }
 
 type FetchHistoryItemRequest struct {
@@ -4245,7 +4361,7 @@ type FetchHistoryItemRequest struct {
 
 func (x *FetchHistoryItemRequest) Reset() {
 	*x = FetchHistoryItemRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[59]
+	mi := &file_unison_local_v1_local_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4257,7 +4373,7 @@ func (x *FetchHistoryItemRequest) String() string {
 func (*FetchHistoryItemRequest) ProtoMessage() {}
 
 func (x *FetchHistoryItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[59]
+	mi := &file_unison_local_v1_local_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4270,7 +4386,7 @@ func (x *FetchHistoryItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FetchHistoryItemRequest.ProtoReflect.Descriptor instead.
 func (*FetchHistoryItemRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{59}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *FetchHistoryItemRequest) GetId() string {
@@ -4298,7 +4414,7 @@ type FetchHistoryItemResponse struct {
 
 func (x *FetchHistoryItemResponse) Reset() {
 	*x = FetchHistoryItemResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[60]
+	mi := &file_unison_local_v1_local_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4310,7 +4426,7 @@ func (x *FetchHistoryItemResponse) String() string {
 func (*FetchHistoryItemResponse) ProtoMessage() {}
 
 func (x *FetchHistoryItemResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[60]
+	mi := &file_unison_local_v1_local_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4323,7 +4439,7 @@ func (x *FetchHistoryItemResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FetchHistoryItemResponse.ProtoReflect.Descriptor instead.
 func (*FetchHistoryItemResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{60}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *FetchHistoryItemResponse) GetItem() *HistoryItem {
@@ -4350,7 +4466,7 @@ type CopyHistoryItemRequest struct {
 
 func (x *CopyHistoryItemRequest) Reset() {
 	*x = CopyHistoryItemRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[61]
+	mi := &file_unison_local_v1_local_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4362,7 +4478,7 @@ func (x *CopyHistoryItemRequest) String() string {
 func (*CopyHistoryItemRequest) ProtoMessage() {}
 
 func (x *CopyHistoryItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[61]
+	mi := &file_unison_local_v1_local_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4375,7 +4491,7 @@ func (x *CopyHistoryItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyHistoryItemRequest.ProtoReflect.Descriptor instead.
 func (*CopyHistoryItemRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{61}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *CopyHistoryItemRequest) GetId() string {
@@ -4393,7 +4509,7 @@ type CopyHistoryItemResponse struct {
 
 func (x *CopyHistoryItemResponse) Reset() {
 	*x = CopyHistoryItemResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[62]
+	mi := &file_unison_local_v1_local_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4405,7 +4521,7 @@ func (x *CopyHistoryItemResponse) String() string {
 func (*CopyHistoryItemResponse) ProtoMessage() {}
 
 func (x *CopyHistoryItemResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[62]
+	mi := &file_unison_local_v1_local_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4418,7 +4534,7 @@ func (x *CopyHistoryItemResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyHistoryItemResponse.ProtoReflect.Descriptor instead.
 func (*CopyHistoryItemResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{62}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{64}
 }
 
 type ApplyHistoryItemRequest struct {
@@ -4431,7 +4547,7 @@ type ApplyHistoryItemRequest struct {
 
 func (x *ApplyHistoryItemRequest) Reset() {
 	*x = ApplyHistoryItemRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[63]
+	mi := &file_unison_local_v1_local_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4443,7 +4559,7 @@ func (x *ApplyHistoryItemRequest) String() string {
 func (*ApplyHistoryItemRequest) ProtoMessage() {}
 
 func (x *ApplyHistoryItemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[63]
+	mi := &file_unison_local_v1_local_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4456,7 +4572,7 @@ func (x *ApplyHistoryItemRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyHistoryItemRequest.ProtoReflect.Descriptor instead.
 func (*ApplyHistoryItemRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{63}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *ApplyHistoryItemRequest) GetId() string {
@@ -4474,7 +4590,7 @@ type ApplyHistoryItemResponse struct {
 
 func (x *ApplyHistoryItemResponse) Reset() {
 	*x = ApplyHistoryItemResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[64]
+	mi := &file_unison_local_v1_local_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4486,7 +4602,7 @@ func (x *ApplyHistoryItemResponse) String() string {
 func (*ApplyHistoryItemResponse) ProtoMessage() {}
 
 func (x *ApplyHistoryItemResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[64]
+	mi := &file_unison_local_v1_local_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4499,7 +4615,7 @@ func (x *ApplyHistoryItemResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyHistoryItemResponse.ProtoReflect.Descriptor instead.
 func (*ApplyHistoryItemResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{64}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{66}
 }
 
 // One file of a transfer.
@@ -4519,7 +4635,7 @@ type TransferFile struct {
 
 func (x *TransferFile) Reset() {
 	*x = TransferFile{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[65]
+	mi := &file_unison_local_v1_local_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4531,7 +4647,7 @@ func (x *TransferFile) String() string {
 func (*TransferFile) ProtoMessage() {}
 
 func (x *TransferFile) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[65]
+	mi := &file_unison_local_v1_local_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4544,7 +4660,7 @@ func (x *TransferFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransferFile.ProtoReflect.Descriptor instead.
 func (*TransferFile) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{65}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *TransferFile) GetName() string {
@@ -4608,7 +4724,7 @@ type Transfer struct {
 
 func (x *Transfer) Reset() {
 	*x = Transfer{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[66]
+	mi := &file_unison_local_v1_local_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4620,7 +4736,7 @@ func (x *Transfer) String() string {
 func (*Transfer) ProtoMessage() {}
 
 func (x *Transfer) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[66]
+	mi := &file_unison_local_v1_local_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4633,7 +4749,7 @@ func (x *Transfer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Transfer.ProtoReflect.Descriptor instead.
 func (*Transfer) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{66}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *Transfer) GetId() string {
@@ -4725,7 +4841,7 @@ type SendFilesRequest struct {
 
 func (x *SendFilesRequest) Reset() {
 	*x = SendFilesRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[67]
+	mi := &file_unison_local_v1_local_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4737,7 +4853,7 @@ func (x *SendFilesRequest) String() string {
 func (*SendFilesRequest) ProtoMessage() {}
 
 func (x *SendFilesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[67]
+	mi := &file_unison_local_v1_local_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4750,7 +4866,7 @@ func (x *SendFilesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendFilesRequest.ProtoReflect.Descriptor instead.
 func (*SendFilesRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{67}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *SendFilesRequest) GetPaths() []string {
@@ -4776,7 +4892,7 @@ type SendFilesResponse struct {
 
 func (x *SendFilesResponse) Reset() {
 	*x = SendFilesResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[68]
+	mi := &file_unison_local_v1_local_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4788,7 +4904,7 @@ func (x *SendFilesResponse) String() string {
 func (*SendFilesResponse) ProtoMessage() {}
 
 func (x *SendFilesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[68]
+	mi := &file_unison_local_v1_local_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4801,7 +4917,7 @@ func (x *SendFilesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendFilesResponse.ProtoReflect.Descriptor instead.
 func (*SendFilesResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{68}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *SendFilesResponse) GetTransfers() []*Transfer {
@@ -4819,7 +4935,7 @@ type ListTransfersRequest struct {
 
 func (x *ListTransfersRequest) Reset() {
 	*x = ListTransfersRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[69]
+	mi := &file_unison_local_v1_local_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4831,7 +4947,7 @@ func (x *ListTransfersRequest) String() string {
 func (*ListTransfersRequest) ProtoMessage() {}
 
 func (x *ListTransfersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[69]
+	mi := &file_unison_local_v1_local_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4844,7 +4960,7 @@ func (x *ListTransfersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTransfersRequest.ProtoReflect.Descriptor instead.
 func (*ListTransfersRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{69}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{71}
 }
 
 type ListTransfersResponse struct {
@@ -4856,7 +4972,7 @@ type ListTransfersResponse struct {
 
 func (x *ListTransfersResponse) Reset() {
 	*x = ListTransfersResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[70]
+	mi := &file_unison_local_v1_local_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4868,7 +4984,7 @@ func (x *ListTransfersResponse) String() string {
 func (*ListTransfersResponse) ProtoMessage() {}
 
 func (x *ListTransfersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[70]
+	mi := &file_unison_local_v1_local_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4881,7 +4997,7 @@ func (x *ListTransfersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTransfersResponse.ProtoReflect.Descriptor instead.
 func (*ListTransfersResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{70}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *ListTransfersResponse) GetTransfers() []*Transfer {
@@ -4901,7 +5017,7 @@ type CancelTransferRequest struct {
 
 func (x *CancelTransferRequest) Reset() {
 	*x = CancelTransferRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[71]
+	mi := &file_unison_local_v1_local_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4913,7 +5029,7 @@ func (x *CancelTransferRequest) String() string {
 func (*CancelTransferRequest) ProtoMessage() {}
 
 func (x *CancelTransferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[71]
+	mi := &file_unison_local_v1_local_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4926,7 +5042,7 @@ func (x *CancelTransferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelTransferRequest.ProtoReflect.Descriptor instead.
 func (*CancelTransferRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{71}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *CancelTransferRequest) GetId() string {
@@ -4944,7 +5060,7 @@ type CancelTransferResponse struct {
 
 func (x *CancelTransferResponse) Reset() {
 	*x = CancelTransferResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[72]
+	mi := &file_unison_local_v1_local_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4956,7 +5072,7 @@ func (x *CancelTransferResponse) String() string {
 func (*CancelTransferResponse) ProtoMessage() {}
 
 func (x *CancelTransferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[72]
+	mi := &file_unison_local_v1_local_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4969,7 +5085,7 @@ func (x *CancelTransferResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelTransferResponse.ProtoReflect.Descriptor instead.
 func (*CancelTransferResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{72}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{74}
 }
 
 type AcceptTransferRequest struct {
@@ -4982,7 +5098,7 @@ type AcceptTransferRequest struct {
 
 func (x *AcceptTransferRequest) Reset() {
 	*x = AcceptTransferRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[73]
+	mi := &file_unison_local_v1_local_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4994,7 +5110,7 @@ func (x *AcceptTransferRequest) String() string {
 func (*AcceptTransferRequest) ProtoMessage() {}
 
 func (x *AcceptTransferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[73]
+	mi := &file_unison_local_v1_local_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5007,7 +5123,7 @@ func (x *AcceptTransferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptTransferRequest.ProtoReflect.Descriptor instead.
 func (*AcceptTransferRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{73}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *AcceptTransferRequest) GetId() string {
@@ -5025,7 +5141,7 @@ type AcceptTransferResponse struct {
 
 func (x *AcceptTransferResponse) Reset() {
 	*x = AcceptTransferResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[74]
+	mi := &file_unison_local_v1_local_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5037,7 +5153,7 @@ func (x *AcceptTransferResponse) String() string {
 func (*AcceptTransferResponse) ProtoMessage() {}
 
 func (x *AcceptTransferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[74]
+	mi := &file_unison_local_v1_local_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5050,7 +5166,7 @@ func (x *AcceptTransferResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptTransferResponse.ProtoReflect.Descriptor instead.
 func (*AcceptTransferResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{74}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{76}
 }
 
 type RejectTransferRequest struct {
@@ -5063,7 +5179,7 @@ type RejectTransferRequest struct {
 
 func (x *RejectTransferRequest) Reset() {
 	*x = RejectTransferRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[75]
+	mi := &file_unison_local_v1_local_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5075,7 +5191,7 @@ func (x *RejectTransferRequest) String() string {
 func (*RejectTransferRequest) ProtoMessage() {}
 
 func (x *RejectTransferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[75]
+	mi := &file_unison_local_v1_local_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5088,7 +5204,7 @@ func (x *RejectTransferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RejectTransferRequest.ProtoReflect.Descriptor instead.
 func (*RejectTransferRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{75}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *RejectTransferRequest) GetId() string {
@@ -5106,7 +5222,7 @@ type RejectTransferResponse struct {
 
 func (x *RejectTransferResponse) Reset() {
 	*x = RejectTransferResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[76]
+	mi := &file_unison_local_v1_local_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5118,7 +5234,7 @@ func (x *RejectTransferResponse) String() string {
 func (*RejectTransferResponse) ProtoMessage() {}
 
 func (x *RejectTransferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[76]
+	mi := &file_unison_local_v1_local_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5131,7 +5247,7 @@ func (x *RejectTransferResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RejectTransferResponse.ProtoReflect.Descriptor instead.
 func (*RejectTransferResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{76}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{78}
 }
 
 // An incoming file transfer request of a Friends device. Nothing is written to
@@ -5156,7 +5272,7 @@ type ShareRequest struct {
 
 func (x *ShareRequest) Reset() {
 	*x = ShareRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[77]
+	mi := &file_unison_local_v1_local_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5168,7 +5284,7 @@ func (x *ShareRequest) String() string {
 func (*ShareRequest) ProtoMessage() {}
 
 func (x *ShareRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[77]
+	mi := &file_unison_local_v1_local_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5181,7 +5297,7 @@ func (x *ShareRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShareRequest.ProtoReflect.Descriptor instead.
 func (*ShareRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{77}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *ShareRequest) GetId() string {
@@ -5241,7 +5357,7 @@ type ListRequestsRequest struct {
 
 func (x *ListRequestsRequest) Reset() {
 	*x = ListRequestsRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[78]
+	mi := &file_unison_local_v1_local_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5253,7 +5369,7 @@ func (x *ListRequestsRequest) String() string {
 func (*ListRequestsRequest) ProtoMessage() {}
 
 func (x *ListRequestsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[78]
+	mi := &file_unison_local_v1_local_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5266,7 +5382,7 @@ func (x *ListRequestsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequestsRequest.ProtoReflect.Descriptor instead.
 func (*ListRequestsRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{78}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{80}
 }
 
 type ListRequestsResponse struct {
@@ -5278,7 +5394,7 @@ type ListRequestsResponse struct {
 
 func (x *ListRequestsResponse) Reset() {
 	*x = ListRequestsResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[79]
+	mi := &file_unison_local_v1_local_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5290,7 +5406,7 @@ func (x *ListRequestsResponse) String() string {
 func (*ListRequestsResponse) ProtoMessage() {}
 
 func (x *ListRequestsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[79]
+	mi := &file_unison_local_v1_local_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5303,7 +5419,7 @@ func (x *ListRequestsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequestsResponse.ProtoReflect.Descriptor instead.
 func (*ListRequestsResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{79}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *ListRequestsResponse) GetRequests() []*ShareRequest {
@@ -5325,7 +5441,7 @@ type DecideRequestRequest struct {
 
 func (x *DecideRequestRequest) Reset() {
 	*x = DecideRequestRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[80]
+	mi := &file_unison_local_v1_local_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5337,7 +5453,7 @@ func (x *DecideRequestRequest) String() string {
 func (*DecideRequestRequest) ProtoMessage() {}
 
 func (x *DecideRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[80]
+	mi := &file_unison_local_v1_local_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5350,7 +5466,7 @@ func (x *DecideRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecideRequestRequest.ProtoReflect.Descriptor instead.
 func (*DecideRequestRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{80}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *DecideRequestRequest) GetId() string {
@@ -5377,7 +5493,7 @@ type DecideRequestResponse struct {
 
 func (x *DecideRequestResponse) Reset() {
 	*x = DecideRequestResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[81]
+	mi := &file_unison_local_v1_local_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5389,7 +5505,7 @@ func (x *DecideRequestResponse) String() string {
 func (*DecideRequestResponse) ProtoMessage() {}
 
 func (x *DecideRequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[81]
+	mi := &file_unison_local_v1_local_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5402,7 +5518,7 @@ func (x *DecideRequestResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecideRequestResponse.ProtoReflect.Descriptor instead.
 func (*DecideRequestResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{81}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *DecideRequestResponse) GetRequest() *ShareRequest {
@@ -5420,7 +5536,7 @@ type GetPauseRequest struct {
 
 func (x *GetPauseRequest) Reset() {
 	*x = GetPauseRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[82]
+	mi := &file_unison_local_v1_local_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5432,7 +5548,7 @@ func (x *GetPauseRequest) String() string {
 func (*GetPauseRequest) ProtoMessage() {}
 
 func (x *GetPauseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[82]
+	mi := &file_unison_local_v1_local_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5445,7 +5561,7 @@ func (x *GetPauseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPauseRequest.ProtoReflect.Descriptor instead.
 func (*GetPauseRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{82}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{84}
 }
 
 type GetPauseResponse struct {
@@ -5457,7 +5573,7 @@ type GetPauseResponse struct {
 
 func (x *GetPauseResponse) Reset() {
 	*x = GetPauseResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[83]
+	mi := &file_unison_local_v1_local_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5469,7 +5585,7 @@ func (x *GetPauseResponse) String() string {
 func (*GetPauseResponse) ProtoMessage() {}
 
 func (x *GetPauseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[83]
+	mi := &file_unison_local_v1_local_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5482,7 +5598,7 @@ func (x *GetPauseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPauseResponse.ProtoReflect.Descriptor instead.
 func (*GetPauseResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{83}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *GetPauseResponse) GetPause() *Pause {
@@ -5503,7 +5619,7 @@ type SetPauseRequest struct {
 
 func (x *SetPauseRequest) Reset() {
 	*x = SetPauseRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[84]
+	mi := &file_unison_local_v1_local_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5515,7 +5631,7 @@ func (x *SetPauseRequest) String() string {
 func (*SetPauseRequest) ProtoMessage() {}
 
 func (x *SetPauseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[84]
+	mi := &file_unison_local_v1_local_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5528,7 +5644,7 @@ func (x *SetPauseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetPauseRequest.ProtoReflect.Descriptor instead.
 func (*SetPauseRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{84}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *SetPauseRequest) GetMode() PauseMode {
@@ -5554,7 +5670,7 @@ type SetPauseResponse struct {
 
 func (x *SetPauseResponse) Reset() {
 	*x = SetPauseResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[85]
+	mi := &file_unison_local_v1_local_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5566,7 +5682,7 @@ func (x *SetPauseResponse) String() string {
 func (*SetPauseResponse) ProtoMessage() {}
 
 func (x *SetPauseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[85]
+	mi := &file_unison_local_v1_local_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5579,7 +5695,7 @@ func (x *SetPauseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetPauseResponse.ProtoReflect.Descriptor instead.
 func (*SetPauseResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{85}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *SetPauseResponse) GetPause() *Pause {
@@ -5597,7 +5713,7 @@ type GetSettingsRequest struct {
 
 func (x *GetSettingsRequest) Reset() {
 	*x = GetSettingsRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[86]
+	mi := &file_unison_local_v1_local_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5609,7 +5725,7 @@ func (x *GetSettingsRequest) String() string {
 func (*GetSettingsRequest) ProtoMessage() {}
 
 func (x *GetSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[86]
+	mi := &file_unison_local_v1_local_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5622,7 +5738,7 @@ func (x *GetSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSettingsRequest.ProtoReflect.Descriptor instead.
 func (*GetSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{86}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{88}
 }
 
 type GetSettingsResponse struct {
@@ -5634,7 +5750,7 @@ type GetSettingsResponse struct {
 
 func (x *GetSettingsResponse) Reset() {
 	*x = GetSettingsResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[87]
+	mi := &file_unison_local_v1_local_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5646,7 +5762,7 @@ func (x *GetSettingsResponse) String() string {
 func (*GetSettingsResponse) ProtoMessage() {}
 
 func (x *GetSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[87]
+	mi := &file_unison_local_v1_local_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5659,7 +5775,7 @@ func (x *GetSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSettingsResponse.ProtoReflect.Descriptor instead.
 func (*GetSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{87}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *GetSettingsResponse) GetSettings() *Settings {
@@ -5701,7 +5817,7 @@ type UpdateSettingsRequest struct {
 
 func (x *UpdateSettingsRequest) Reset() {
 	*x = UpdateSettingsRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[88]
+	mi := &file_unison_local_v1_local_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5713,7 +5829,7 @@ func (x *UpdateSettingsRequest) String() string {
 func (*UpdateSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[88]
+	mi := &file_unison_local_v1_local_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5726,7 +5842,7 @@ func (x *UpdateSettingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{88}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *UpdateSettingsRequest) GetDeviceName() string {
@@ -5843,7 +5959,7 @@ type UpdateSettingsResponse struct {
 
 func (x *UpdateSettingsResponse) Reset() {
 	*x = UpdateSettingsResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[89]
+	mi := &file_unison_local_v1_local_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5855,7 +5971,7 @@ func (x *UpdateSettingsResponse) String() string {
 func (*UpdateSettingsResponse) ProtoMessage() {}
 
 func (x *UpdateSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[89]
+	mi := &file_unison_local_v1_local_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5868,7 +5984,7 @@ func (x *UpdateSettingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSettingsResponse.ProtoReflect.Descriptor instead.
 func (*UpdateSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{89}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *UpdateSettingsResponse) GetSettings() *Settings {
@@ -5900,7 +6016,7 @@ type Relay struct {
 
 func (x *Relay) Reset() {
 	*x = Relay{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[90]
+	mi := &file_unison_local_v1_local_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5912,7 +6028,7 @@ func (x *Relay) String() string {
 func (*Relay) ProtoMessage() {}
 
 func (x *Relay) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[90]
+	mi := &file_unison_local_v1_local_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5925,7 +6041,7 @@ func (x *Relay) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Relay.ProtoReflect.Descriptor instead.
 func (*Relay) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{90}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *Relay) GetUrl() string {
@@ -5978,7 +6094,7 @@ type GetRelayRequest struct {
 
 func (x *GetRelayRequest) Reset() {
 	*x = GetRelayRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[91]
+	mi := &file_unison_local_v1_local_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5990,7 +6106,7 @@ func (x *GetRelayRequest) String() string {
 func (*GetRelayRequest) ProtoMessage() {}
 
 func (x *GetRelayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[91]
+	mi := &file_unison_local_v1_local_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6003,7 +6119,7 @@ func (x *GetRelayRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelayRequest.ProtoReflect.Descriptor instead.
 func (*GetRelayRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{91}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{93}
 }
 
 type GetRelayResponse struct {
@@ -6015,7 +6131,7 @@ type GetRelayResponse struct {
 
 func (x *GetRelayResponse) Reset() {
 	*x = GetRelayResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[92]
+	mi := &file_unison_local_v1_local_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6027,7 +6143,7 @@ func (x *GetRelayResponse) String() string {
 func (*GetRelayResponse) ProtoMessage() {}
 
 func (x *GetRelayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[92]
+	mi := &file_unison_local_v1_local_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6040,7 +6156,7 @@ func (x *GetRelayResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelayResponse.ProtoReflect.Descriptor instead.
 func (*GetRelayResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{92}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *GetRelayResponse) GetRelay() *Relay {
@@ -6066,7 +6182,7 @@ type SetRelayRequest struct {
 
 func (x *SetRelayRequest) Reset() {
 	*x = SetRelayRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[93]
+	mi := &file_unison_local_v1_local_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6078,7 +6194,7 @@ func (x *SetRelayRequest) String() string {
 func (*SetRelayRequest) ProtoMessage() {}
 
 func (x *SetRelayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[93]
+	mi := &file_unison_local_v1_local_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6091,7 +6207,7 @@ func (x *SetRelayRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetRelayRequest.ProtoReflect.Descriptor instead.
 func (*SetRelayRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{93}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *SetRelayRequest) GetUrl() string {
@@ -6124,7 +6240,7 @@ type SetRelayResponse struct {
 
 func (x *SetRelayResponse) Reset() {
 	*x = SetRelayResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[94]
+	mi := &file_unison_local_v1_local_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6136,7 +6252,7 @@ func (x *SetRelayResponse) String() string {
 func (*SetRelayResponse) ProtoMessage() {}
 
 func (x *SetRelayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[94]
+	mi := &file_unison_local_v1_local_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6149,7 +6265,7 @@ func (x *SetRelayResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetRelayResponse.ProtoReflect.Descriptor instead.
 func (*SetRelayResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{94}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *SetRelayResponse) GetRelay() *Relay {
@@ -6167,7 +6283,7 @@ type RelayOffRequest struct {
 
 func (x *RelayOffRequest) Reset() {
 	*x = RelayOffRequest{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[95]
+	mi := &file_unison_local_v1_local_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6179,7 +6295,7 @@ func (x *RelayOffRequest) String() string {
 func (*RelayOffRequest) ProtoMessage() {}
 
 func (x *RelayOffRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[95]
+	mi := &file_unison_local_v1_local_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6192,7 +6308,7 @@ func (x *RelayOffRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelayOffRequest.ProtoReflect.Descriptor instead.
 func (*RelayOffRequest) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{95}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{97}
 }
 
 type RelayOffResponse struct {
@@ -6204,7 +6320,7 @@ type RelayOffResponse struct {
 
 func (x *RelayOffResponse) Reset() {
 	*x = RelayOffResponse{}
-	mi := &file_unison_local_v1_local_proto_msgTypes[96]
+	mi := &file_unison_local_v1_local_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6216,7 +6332,7 @@ func (x *RelayOffResponse) String() string {
 func (*RelayOffResponse) ProtoMessage() {}
 
 func (x *RelayOffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_local_v1_local_proto_msgTypes[96]
+	mi := &file_unison_local_v1_local_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6229,7 +6345,7 @@ func (x *RelayOffResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelayOffResponse.ProtoReflect.Descriptor instead.
 func (*RelayOffResponse) Descriptor() ([]byte, []int) {
-	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{96}
+	return file_unison_local_v1_local_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *RelayOffResponse) GetRelay() *Relay {
@@ -6457,7 +6573,14 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x15GetHistoryItemRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"J\n" +
 	"\x16GetHistoryItemResponse\x120\n" +
-	"\x04item\x18\x01 \x01(\v2\x1c.unison.local.v1.HistoryItemR\x04item\"*\n" +
+	"\x04item\x18\x01 \x01(\v2\x1c.unison.local.v1.HistoryItemR\x04item\"G\n" +
+	"\x1aGetHistoryThumbnailRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bmax_side\x18\x02 \x01(\rR\amaxSide\"_\n" +
+	"\x1bGetHistoryThumbnailResponse\x12\x14\n" +
+	"\x05width\x18\x01 \x01(\rR\x05width\x12\x16\n" +
+	"\x06height\x18\x02 \x01(\rR\x06height\x12\x12\n" +
+	"\x04rgba\x18\x03 \x01(\fR\x04rgba\"*\n" +
 	"\x18DeleteHistoryItemRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1b\n" +
 	"\x19DeleteHistoryItemResponse\"=\n" +
@@ -6680,7 +6803,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x1bRELAY_TRANSPORT_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14RELAY_TRANSPORT_NONE\x10\x01\x12\x18\n" +
 	"\x14RELAY_TRANSPORT_QUIC\x10\x02\x12\x17\n" +
-	"\x13RELAY_TRANSPORT_WSS\x10\x032\x87\x1d\n" +
+	"\x13RELAY_TRANSPORT_WSS\x10\x032\xf9\x1d\n" +
 	"\rUnisonService\x12R\n" +
 	"\tGetStatus\x12!.unison.local.v1.GetStatusRequest\x1a\".unison.local.v1.GetStatusResponse\x12Z\n" +
 	"\vWatchEvents\x12#.unison.local.v1.WatchEventsRequest\x1a$.unison.local.v1.WatchEventsResponse0\x01\x12X\n" +
@@ -6702,7 +6825,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\aGetClip\x12\x1f.unison.local.v1.GetClipRequest\x1a .unison.local.v1.GetClipResponse\x12L\n" +
 	"\aSetClip\x12\x1f.unison.local.v1.SetClipRequest\x1a .unison.local.v1.SetClipResponse\x12X\n" +
 	"\vListHistory\x12#.unison.local.v1.ListHistoryRequest\x1a$.unison.local.v1.ListHistoryResponse\x12a\n" +
-	"\x0eGetHistoryItem\x12&.unison.local.v1.GetHistoryItemRequest\x1a'.unison.local.v1.GetHistoryItemResponse\x12j\n" +
+	"\x0eGetHistoryItem\x12&.unison.local.v1.GetHistoryItemRequest\x1a'.unison.local.v1.GetHistoryItemResponse\x12p\n" +
+	"\x13GetHistoryThumbnail\x12+.unison.local.v1.GetHistoryThumbnailRequest\x1a,.unison.local.v1.GetHistoryThumbnailResponse\x12j\n" +
 	"\x11DeleteHistoryItem\x12).unison.local.v1.DeleteHistoryItemRequest\x1a*.unison.local.v1.DeleteHistoryItemResponse\x12g\n" +
 	"\x10FetchHistoryItem\x12(.unison.local.v1.FetchHistoryItemRequest\x1a).unison.local.v1.FetchHistoryItemResponse\x12d\n" +
 	"\x0fCopyHistoryItem\x12'.unison.local.v1.CopyHistoryItemRequest\x1a(.unison.local.v1.CopyHistoryItemResponse\x12g\n" +
@@ -6736,7 +6860,7 @@ func file_unison_local_v1_local_proto_rawDescGZIP() []byte {
 }
 
 var file_unison_local_v1_local_proto_enumTypes = make([]protoimpl.EnumInfo, 15)
-var file_unison_local_v1_local_proto_msgTypes = make([]protoimpl.MessageInfo, 98)
+var file_unison_local_v1_local_proto_msgTypes = make([]protoimpl.MessageInfo, 100)
 var file_unison_local_v1_local_proto_goTypes = []any{
 	(Role)(0),                             // 0: unison.local.v1.Role
 	(Platform)(0),                         // 1: unison.local.v1.Platform
@@ -6810,47 +6934,49 @@ var file_unison_local_v1_local_proto_goTypes = []any{
 	(*ListHistoryResponse)(nil),           // 69: unison.local.v1.ListHistoryResponse
 	(*GetHistoryItemRequest)(nil),         // 70: unison.local.v1.GetHistoryItemRequest
 	(*GetHistoryItemResponse)(nil),        // 71: unison.local.v1.GetHistoryItemResponse
-	(*DeleteHistoryItemRequest)(nil),      // 72: unison.local.v1.DeleteHistoryItemRequest
-	(*DeleteHistoryItemResponse)(nil),     // 73: unison.local.v1.DeleteHistoryItemResponse
-	(*FetchHistoryItemRequest)(nil),       // 74: unison.local.v1.FetchHistoryItemRequest
-	(*FetchHistoryItemResponse)(nil),      // 75: unison.local.v1.FetchHistoryItemResponse
-	(*CopyHistoryItemRequest)(nil),        // 76: unison.local.v1.CopyHistoryItemRequest
-	(*CopyHistoryItemResponse)(nil),       // 77: unison.local.v1.CopyHistoryItemResponse
-	(*ApplyHistoryItemRequest)(nil),       // 78: unison.local.v1.ApplyHistoryItemRequest
-	(*ApplyHistoryItemResponse)(nil),      // 79: unison.local.v1.ApplyHistoryItemResponse
-	(*TransferFile)(nil),                  // 80: unison.local.v1.TransferFile
-	(*Transfer)(nil),                      // 81: unison.local.v1.Transfer
-	(*SendFilesRequest)(nil),              // 82: unison.local.v1.SendFilesRequest
-	(*SendFilesResponse)(nil),             // 83: unison.local.v1.SendFilesResponse
-	(*ListTransfersRequest)(nil),          // 84: unison.local.v1.ListTransfersRequest
-	(*ListTransfersResponse)(nil),         // 85: unison.local.v1.ListTransfersResponse
-	(*CancelTransferRequest)(nil),         // 86: unison.local.v1.CancelTransferRequest
-	(*CancelTransferResponse)(nil),        // 87: unison.local.v1.CancelTransferResponse
-	(*AcceptTransferRequest)(nil),         // 88: unison.local.v1.AcceptTransferRequest
-	(*AcceptTransferResponse)(nil),        // 89: unison.local.v1.AcceptTransferResponse
-	(*RejectTransferRequest)(nil),         // 90: unison.local.v1.RejectTransferRequest
-	(*RejectTransferResponse)(nil),        // 91: unison.local.v1.RejectTransferResponse
-	(*ShareRequest)(nil),                  // 92: unison.local.v1.ShareRequest
-	(*ListRequestsRequest)(nil),           // 93: unison.local.v1.ListRequestsRequest
-	(*ListRequestsResponse)(nil),          // 94: unison.local.v1.ListRequestsResponse
-	(*DecideRequestRequest)(nil),          // 95: unison.local.v1.DecideRequestRequest
-	(*DecideRequestResponse)(nil),         // 96: unison.local.v1.DecideRequestResponse
-	(*GetPauseRequest)(nil),               // 97: unison.local.v1.GetPauseRequest
-	(*GetPauseResponse)(nil),              // 98: unison.local.v1.GetPauseResponse
-	(*SetPauseRequest)(nil),               // 99: unison.local.v1.SetPauseRequest
-	(*SetPauseResponse)(nil),              // 100: unison.local.v1.SetPauseResponse
-	(*GetSettingsRequest)(nil),            // 101: unison.local.v1.GetSettingsRequest
-	(*GetSettingsResponse)(nil),           // 102: unison.local.v1.GetSettingsResponse
-	(*UpdateSettingsRequest)(nil),         // 103: unison.local.v1.UpdateSettingsRequest
-	(*UpdateSettingsResponse)(nil),        // 104: unison.local.v1.UpdateSettingsResponse
-	(*Relay)(nil),                         // 105: unison.local.v1.Relay
-	(*GetRelayRequest)(nil),               // 106: unison.local.v1.GetRelayRequest
-	(*GetRelayResponse)(nil),              // 107: unison.local.v1.GetRelayResponse
-	(*SetRelayRequest)(nil),               // 108: unison.local.v1.SetRelayRequest
-	(*SetRelayResponse)(nil),              // 109: unison.local.v1.SetRelayResponse
-	(*RelayOffRequest)(nil),               // 110: unison.local.v1.RelayOffRequest
-	(*RelayOffResponse)(nil),              // 111: unison.local.v1.RelayOffResponse
-	nil,                                   // 112: unison.local.v1.PairingCandidate.TxtEntry
+	(*GetHistoryThumbnailRequest)(nil),    // 72: unison.local.v1.GetHistoryThumbnailRequest
+	(*GetHistoryThumbnailResponse)(nil),   // 73: unison.local.v1.GetHistoryThumbnailResponse
+	(*DeleteHistoryItemRequest)(nil),      // 74: unison.local.v1.DeleteHistoryItemRequest
+	(*DeleteHistoryItemResponse)(nil),     // 75: unison.local.v1.DeleteHistoryItemResponse
+	(*FetchHistoryItemRequest)(nil),       // 76: unison.local.v1.FetchHistoryItemRequest
+	(*FetchHistoryItemResponse)(nil),      // 77: unison.local.v1.FetchHistoryItemResponse
+	(*CopyHistoryItemRequest)(nil),        // 78: unison.local.v1.CopyHistoryItemRequest
+	(*CopyHistoryItemResponse)(nil),       // 79: unison.local.v1.CopyHistoryItemResponse
+	(*ApplyHistoryItemRequest)(nil),       // 80: unison.local.v1.ApplyHistoryItemRequest
+	(*ApplyHistoryItemResponse)(nil),      // 81: unison.local.v1.ApplyHistoryItemResponse
+	(*TransferFile)(nil),                  // 82: unison.local.v1.TransferFile
+	(*Transfer)(nil),                      // 83: unison.local.v1.Transfer
+	(*SendFilesRequest)(nil),              // 84: unison.local.v1.SendFilesRequest
+	(*SendFilesResponse)(nil),             // 85: unison.local.v1.SendFilesResponse
+	(*ListTransfersRequest)(nil),          // 86: unison.local.v1.ListTransfersRequest
+	(*ListTransfersResponse)(nil),         // 87: unison.local.v1.ListTransfersResponse
+	(*CancelTransferRequest)(nil),         // 88: unison.local.v1.CancelTransferRequest
+	(*CancelTransferResponse)(nil),        // 89: unison.local.v1.CancelTransferResponse
+	(*AcceptTransferRequest)(nil),         // 90: unison.local.v1.AcceptTransferRequest
+	(*AcceptTransferResponse)(nil),        // 91: unison.local.v1.AcceptTransferResponse
+	(*RejectTransferRequest)(nil),         // 92: unison.local.v1.RejectTransferRequest
+	(*RejectTransferResponse)(nil),        // 93: unison.local.v1.RejectTransferResponse
+	(*ShareRequest)(nil),                  // 94: unison.local.v1.ShareRequest
+	(*ListRequestsRequest)(nil),           // 95: unison.local.v1.ListRequestsRequest
+	(*ListRequestsResponse)(nil),          // 96: unison.local.v1.ListRequestsResponse
+	(*DecideRequestRequest)(nil),          // 97: unison.local.v1.DecideRequestRequest
+	(*DecideRequestResponse)(nil),         // 98: unison.local.v1.DecideRequestResponse
+	(*GetPauseRequest)(nil),               // 99: unison.local.v1.GetPauseRequest
+	(*GetPauseResponse)(nil),              // 100: unison.local.v1.GetPauseResponse
+	(*SetPauseRequest)(nil),               // 101: unison.local.v1.SetPauseRequest
+	(*SetPauseResponse)(nil),              // 102: unison.local.v1.SetPauseResponse
+	(*GetSettingsRequest)(nil),            // 103: unison.local.v1.GetSettingsRequest
+	(*GetSettingsResponse)(nil),           // 104: unison.local.v1.GetSettingsResponse
+	(*UpdateSettingsRequest)(nil),         // 105: unison.local.v1.UpdateSettingsRequest
+	(*UpdateSettingsResponse)(nil),        // 106: unison.local.v1.UpdateSettingsResponse
+	(*Relay)(nil),                         // 107: unison.local.v1.Relay
+	(*GetRelayRequest)(nil),               // 108: unison.local.v1.GetRelayRequest
+	(*GetRelayResponse)(nil),              // 109: unison.local.v1.GetRelayResponse
+	(*SetRelayRequest)(nil),               // 110: unison.local.v1.SetRelayRequest
+	(*SetRelayResponse)(nil),              // 111: unison.local.v1.SetRelayResponse
+	(*RelayOffRequest)(nil),               // 112: unison.local.v1.RelayOffRequest
+	(*RelayOffResponse)(nil),              // 113: unison.local.v1.RelayOffResponse
+	nil,                                   // 114: unison.local.v1.PairingCandidate.TxtEntry
 }
 var file_unison_local_v1_local_proto_depIdxs = []int32{
 	0,   // 0: unison.local.v1.Device.role:type_name -> unison.local.v1.Role
@@ -6865,10 +6991,10 @@ var file_unison_local_v1_local_proto_depIdxs = []int32{
 	2,   // 9: unison.local.v1.Event.path:type_name -> unison.local.v1.Path
 	20,  // 10: unison.local.v1.Event.item:type_name -> unison.local.v1.ClipItem
 	21,  // 11: unison.local.v1.Event.sas:type_name -> unison.local.v1.Sas
-	81,  // 12: unison.local.v1.Event.transfer:type_name -> unison.local.v1.Transfer
+	83,  // 12: unison.local.v1.Event.transfer:type_name -> unison.local.v1.Transfer
 	12,  // 13: unison.local.v1.Event.pairing_method:type_name -> unison.local.v1.PairingMethod
 	6,   // 14: unison.local.v1.Event.failure_reason:type_name -> unison.local.v1.FailureReason
-	112, // 15: unison.local.v1.PairingCandidate.txt:type_name -> unison.local.v1.PairingCandidate.TxtEntry
+	114, // 15: unison.local.v1.PairingCandidate.txt:type_name -> unison.local.v1.PairingCandidate.TxtEntry
 	13,  // 16: unison.local.v1.PolicyCell.action:type_name -> unison.local.v1.PolicyAction
 	26,  // 17: unison.local.v1.PolicyRow.text:type_name -> unison.local.v1.PolicyCell
 	26,  // 18: unison.local.v1.PolicyRow.image:type_name -> unison.local.v1.PolicyCell
@@ -6902,12 +7028,12 @@ var file_unison_local_v1_local_proto_depIdxs = []int32{
 	67,  // 46: unison.local.v1.FetchHistoryItemResponse.item:type_name -> unison.local.v1.HistoryItem
 	10,  // 47: unison.local.v1.Transfer.direction:type_name -> unison.local.v1.TransferDirection
 	11,  // 48: unison.local.v1.Transfer.state:type_name -> unison.local.v1.TransferState
-	80,  // 49: unison.local.v1.Transfer.files:type_name -> unison.local.v1.TransferFile
-	81,  // 50: unison.local.v1.SendFilesResponse.transfers:type_name -> unison.local.v1.Transfer
-	81,  // 51: unison.local.v1.ListTransfersResponse.transfers:type_name -> unison.local.v1.Transfer
-	80,  // 52: unison.local.v1.ShareRequest.files:type_name -> unison.local.v1.TransferFile
-	92,  // 53: unison.local.v1.ListRequestsResponse.requests:type_name -> unison.local.v1.ShareRequest
-	92,  // 54: unison.local.v1.DecideRequestResponse.request:type_name -> unison.local.v1.ShareRequest
+	82,  // 49: unison.local.v1.Transfer.files:type_name -> unison.local.v1.TransferFile
+	83,  // 50: unison.local.v1.SendFilesResponse.transfers:type_name -> unison.local.v1.Transfer
+	83,  // 51: unison.local.v1.ListTransfersResponse.transfers:type_name -> unison.local.v1.Transfer
+	82,  // 52: unison.local.v1.ShareRequest.files:type_name -> unison.local.v1.TransferFile
+	94,  // 53: unison.local.v1.ListRequestsResponse.requests:type_name -> unison.local.v1.ShareRequest
+	94,  // 54: unison.local.v1.DecideRequestResponse.request:type_name -> unison.local.v1.ShareRequest
 	18,  // 55: unison.local.v1.GetPauseResponse.pause:type_name -> unison.local.v1.Pause
 	9,   // 56: unison.local.v1.SetPauseRequest.mode:type_name -> unison.local.v1.PauseMode
 	18,  // 57: unison.local.v1.SetPauseResponse.pause:type_name -> unison.local.v1.Pause
@@ -6918,9 +7044,9 @@ var file_unison_local_v1_local_proto_depIdxs = []int32{
 	27,  // 62: unison.local.v1.UpdateSettingsRequest.data_saver:type_name -> unison.local.v1.PolicyRow
 	28,  // 63: unison.local.v1.UpdateSettingsResponse.settings:type_name -> unison.local.v1.Settings
 	14,  // 64: unison.local.v1.Relay.transport:type_name -> unison.local.v1.RelayTransport
-	105, // 65: unison.local.v1.GetRelayResponse.relay:type_name -> unison.local.v1.Relay
-	105, // 66: unison.local.v1.SetRelayResponse.relay:type_name -> unison.local.v1.Relay
-	105, // 67: unison.local.v1.RelayOffResponse.relay:type_name -> unison.local.v1.Relay
+	107, // 65: unison.local.v1.GetRelayResponse.relay:type_name -> unison.local.v1.Relay
+	107, // 66: unison.local.v1.SetRelayResponse.relay:type_name -> unison.local.v1.Relay
+	107, // 67: unison.local.v1.RelayOffResponse.relay:type_name -> unison.local.v1.Relay
 	29,  // 68: unison.local.v1.UnisonService.GetStatus:input_type -> unison.local.v1.GetStatusRequest
 	31,  // 69: unison.local.v1.UnisonService.WatchEvents:input_type -> unison.local.v1.WatchEventsRequest
 	33,  // 70: unison.local.v1.UnisonService.ListDevices:input_type -> unison.local.v1.ListDevicesRequest
@@ -6941,66 +7067,68 @@ var file_unison_local_v1_local_proto_depIdxs = []int32{
 	65,  // 85: unison.local.v1.UnisonService.SetClip:input_type -> unison.local.v1.SetClipRequest
 	68,  // 86: unison.local.v1.UnisonService.ListHistory:input_type -> unison.local.v1.ListHistoryRequest
 	70,  // 87: unison.local.v1.UnisonService.GetHistoryItem:input_type -> unison.local.v1.GetHistoryItemRequest
-	72,  // 88: unison.local.v1.UnisonService.DeleteHistoryItem:input_type -> unison.local.v1.DeleteHistoryItemRequest
-	74,  // 89: unison.local.v1.UnisonService.FetchHistoryItem:input_type -> unison.local.v1.FetchHistoryItemRequest
-	76,  // 90: unison.local.v1.UnisonService.CopyHistoryItem:input_type -> unison.local.v1.CopyHistoryItemRequest
-	78,  // 91: unison.local.v1.UnisonService.ApplyHistoryItem:input_type -> unison.local.v1.ApplyHistoryItemRequest
-	82,  // 92: unison.local.v1.UnisonService.SendFiles:input_type -> unison.local.v1.SendFilesRequest
-	84,  // 93: unison.local.v1.UnisonService.ListTransfers:input_type -> unison.local.v1.ListTransfersRequest
-	86,  // 94: unison.local.v1.UnisonService.CancelTransfer:input_type -> unison.local.v1.CancelTransferRequest
-	88,  // 95: unison.local.v1.UnisonService.AcceptTransfer:input_type -> unison.local.v1.AcceptTransferRequest
-	90,  // 96: unison.local.v1.UnisonService.RejectTransfer:input_type -> unison.local.v1.RejectTransferRequest
-	43,  // 97: unison.local.v1.UnisonService.SetFriendsDiscovery:input_type -> unison.local.v1.SetFriendsDiscoveryRequest
-	93,  // 98: unison.local.v1.UnisonService.ListRequests:input_type -> unison.local.v1.ListRequestsRequest
-	95,  // 99: unison.local.v1.UnisonService.DecideRequest:input_type -> unison.local.v1.DecideRequestRequest
-	97,  // 100: unison.local.v1.UnisonService.GetPause:input_type -> unison.local.v1.GetPauseRequest
-	99,  // 101: unison.local.v1.UnisonService.SetPause:input_type -> unison.local.v1.SetPauseRequest
-	101, // 102: unison.local.v1.UnisonService.GetSettings:input_type -> unison.local.v1.GetSettingsRequest
-	103, // 103: unison.local.v1.UnisonService.UpdateSettings:input_type -> unison.local.v1.UpdateSettingsRequest
-	106, // 104: unison.local.v1.UnisonService.GetRelay:input_type -> unison.local.v1.GetRelayRequest
-	108, // 105: unison.local.v1.UnisonService.SetRelay:input_type -> unison.local.v1.SetRelayRequest
-	110, // 106: unison.local.v1.UnisonService.RelayOff:input_type -> unison.local.v1.RelayOffRequest
-	30,  // 107: unison.local.v1.UnisonService.GetStatus:output_type -> unison.local.v1.GetStatusResponse
-	32,  // 108: unison.local.v1.UnisonService.WatchEvents:output_type -> unison.local.v1.WatchEventsResponse
-	34,  // 109: unison.local.v1.UnisonService.ListDevices:output_type -> unison.local.v1.ListDevicesResponse
-	36,  // 110: unison.local.v1.UnisonService.RenameDevice:output_type -> unison.local.v1.RenameDeviceResponse
-	38,  // 111: unison.local.v1.UnisonService.RevokeDevice:output_type -> unison.local.v1.RevokeDeviceResponse
-	40,  // 112: unison.local.v1.UnisonService.SetDeviceConfirmation:output_type -> unison.local.v1.SetDeviceConfirmationResponse
-	42,  // 113: unison.local.v1.UnisonService.SetPeerAddress:output_type -> unison.local.v1.SetPeerAddressResponse
-	46,  // 114: unison.local.v1.UnisonService.OpenPairingWindow:output_type -> unison.local.v1.OpenPairingWindowResponse
-	48,  // 115: unison.local.v1.UnisonService.ExtendPairingWindow:output_type -> unison.local.v1.ExtendPairingWindowResponse
-	50,  // 116: unison.local.v1.UnisonService.ClosePairingWindow:output_type -> unison.local.v1.ClosePairingWindowResponse
-	52,  // 117: unison.local.v1.UnisonService.ListPairingCandidates:output_type -> unison.local.v1.ListPairingCandidatesResponse
-	54,  // 118: unison.local.v1.UnisonService.StartSas:output_type -> unison.local.v1.StartSasResponse
-	56,  // 119: unison.local.v1.UnisonService.ConfirmSas:output_type -> unison.local.v1.ConfirmSasResponse
-	58,  // 120: unison.local.v1.UnisonService.RejectSas:output_type -> unison.local.v1.RejectSasResponse
-	60,  // 121: unison.local.v1.UnisonService.GetPairingQr:output_type -> unison.local.v1.GetPairingQrResponse
-	62,  // 122: unison.local.v1.UnisonService.ScanPairingQr:output_type -> unison.local.v1.ScanPairingQrResponse
-	64,  // 123: unison.local.v1.UnisonService.GetClip:output_type -> unison.local.v1.GetClipResponse
-	66,  // 124: unison.local.v1.UnisonService.SetClip:output_type -> unison.local.v1.SetClipResponse
-	69,  // 125: unison.local.v1.UnisonService.ListHistory:output_type -> unison.local.v1.ListHistoryResponse
-	71,  // 126: unison.local.v1.UnisonService.GetHistoryItem:output_type -> unison.local.v1.GetHistoryItemResponse
-	73,  // 127: unison.local.v1.UnisonService.DeleteHistoryItem:output_type -> unison.local.v1.DeleteHistoryItemResponse
-	75,  // 128: unison.local.v1.UnisonService.FetchHistoryItem:output_type -> unison.local.v1.FetchHistoryItemResponse
-	77,  // 129: unison.local.v1.UnisonService.CopyHistoryItem:output_type -> unison.local.v1.CopyHistoryItemResponse
-	79,  // 130: unison.local.v1.UnisonService.ApplyHistoryItem:output_type -> unison.local.v1.ApplyHistoryItemResponse
-	83,  // 131: unison.local.v1.UnisonService.SendFiles:output_type -> unison.local.v1.SendFilesResponse
-	85,  // 132: unison.local.v1.UnisonService.ListTransfers:output_type -> unison.local.v1.ListTransfersResponse
-	87,  // 133: unison.local.v1.UnisonService.CancelTransfer:output_type -> unison.local.v1.CancelTransferResponse
-	89,  // 134: unison.local.v1.UnisonService.AcceptTransfer:output_type -> unison.local.v1.AcceptTransferResponse
-	91,  // 135: unison.local.v1.UnisonService.RejectTransfer:output_type -> unison.local.v1.RejectTransferResponse
-	44,  // 136: unison.local.v1.UnisonService.SetFriendsDiscovery:output_type -> unison.local.v1.SetFriendsDiscoveryResponse
-	94,  // 137: unison.local.v1.UnisonService.ListRequests:output_type -> unison.local.v1.ListRequestsResponse
-	96,  // 138: unison.local.v1.UnisonService.DecideRequest:output_type -> unison.local.v1.DecideRequestResponse
-	98,  // 139: unison.local.v1.UnisonService.GetPause:output_type -> unison.local.v1.GetPauseResponse
-	100, // 140: unison.local.v1.UnisonService.SetPause:output_type -> unison.local.v1.SetPauseResponse
-	102, // 141: unison.local.v1.UnisonService.GetSettings:output_type -> unison.local.v1.GetSettingsResponse
-	104, // 142: unison.local.v1.UnisonService.UpdateSettings:output_type -> unison.local.v1.UpdateSettingsResponse
-	107, // 143: unison.local.v1.UnisonService.GetRelay:output_type -> unison.local.v1.GetRelayResponse
-	109, // 144: unison.local.v1.UnisonService.SetRelay:output_type -> unison.local.v1.SetRelayResponse
-	111, // 145: unison.local.v1.UnisonService.RelayOff:output_type -> unison.local.v1.RelayOffResponse
-	107, // [107:146] is the sub-list for method output_type
-	68,  // [68:107] is the sub-list for method input_type
+	72,  // 88: unison.local.v1.UnisonService.GetHistoryThumbnail:input_type -> unison.local.v1.GetHistoryThumbnailRequest
+	74,  // 89: unison.local.v1.UnisonService.DeleteHistoryItem:input_type -> unison.local.v1.DeleteHistoryItemRequest
+	76,  // 90: unison.local.v1.UnisonService.FetchHistoryItem:input_type -> unison.local.v1.FetchHistoryItemRequest
+	78,  // 91: unison.local.v1.UnisonService.CopyHistoryItem:input_type -> unison.local.v1.CopyHistoryItemRequest
+	80,  // 92: unison.local.v1.UnisonService.ApplyHistoryItem:input_type -> unison.local.v1.ApplyHistoryItemRequest
+	84,  // 93: unison.local.v1.UnisonService.SendFiles:input_type -> unison.local.v1.SendFilesRequest
+	86,  // 94: unison.local.v1.UnisonService.ListTransfers:input_type -> unison.local.v1.ListTransfersRequest
+	88,  // 95: unison.local.v1.UnisonService.CancelTransfer:input_type -> unison.local.v1.CancelTransferRequest
+	90,  // 96: unison.local.v1.UnisonService.AcceptTransfer:input_type -> unison.local.v1.AcceptTransferRequest
+	92,  // 97: unison.local.v1.UnisonService.RejectTransfer:input_type -> unison.local.v1.RejectTransferRequest
+	43,  // 98: unison.local.v1.UnisonService.SetFriendsDiscovery:input_type -> unison.local.v1.SetFriendsDiscoveryRequest
+	95,  // 99: unison.local.v1.UnisonService.ListRequests:input_type -> unison.local.v1.ListRequestsRequest
+	97,  // 100: unison.local.v1.UnisonService.DecideRequest:input_type -> unison.local.v1.DecideRequestRequest
+	99,  // 101: unison.local.v1.UnisonService.GetPause:input_type -> unison.local.v1.GetPauseRequest
+	101, // 102: unison.local.v1.UnisonService.SetPause:input_type -> unison.local.v1.SetPauseRequest
+	103, // 103: unison.local.v1.UnisonService.GetSettings:input_type -> unison.local.v1.GetSettingsRequest
+	105, // 104: unison.local.v1.UnisonService.UpdateSettings:input_type -> unison.local.v1.UpdateSettingsRequest
+	108, // 105: unison.local.v1.UnisonService.GetRelay:input_type -> unison.local.v1.GetRelayRequest
+	110, // 106: unison.local.v1.UnisonService.SetRelay:input_type -> unison.local.v1.SetRelayRequest
+	112, // 107: unison.local.v1.UnisonService.RelayOff:input_type -> unison.local.v1.RelayOffRequest
+	30,  // 108: unison.local.v1.UnisonService.GetStatus:output_type -> unison.local.v1.GetStatusResponse
+	32,  // 109: unison.local.v1.UnisonService.WatchEvents:output_type -> unison.local.v1.WatchEventsResponse
+	34,  // 110: unison.local.v1.UnisonService.ListDevices:output_type -> unison.local.v1.ListDevicesResponse
+	36,  // 111: unison.local.v1.UnisonService.RenameDevice:output_type -> unison.local.v1.RenameDeviceResponse
+	38,  // 112: unison.local.v1.UnisonService.RevokeDevice:output_type -> unison.local.v1.RevokeDeviceResponse
+	40,  // 113: unison.local.v1.UnisonService.SetDeviceConfirmation:output_type -> unison.local.v1.SetDeviceConfirmationResponse
+	42,  // 114: unison.local.v1.UnisonService.SetPeerAddress:output_type -> unison.local.v1.SetPeerAddressResponse
+	46,  // 115: unison.local.v1.UnisonService.OpenPairingWindow:output_type -> unison.local.v1.OpenPairingWindowResponse
+	48,  // 116: unison.local.v1.UnisonService.ExtendPairingWindow:output_type -> unison.local.v1.ExtendPairingWindowResponse
+	50,  // 117: unison.local.v1.UnisonService.ClosePairingWindow:output_type -> unison.local.v1.ClosePairingWindowResponse
+	52,  // 118: unison.local.v1.UnisonService.ListPairingCandidates:output_type -> unison.local.v1.ListPairingCandidatesResponse
+	54,  // 119: unison.local.v1.UnisonService.StartSas:output_type -> unison.local.v1.StartSasResponse
+	56,  // 120: unison.local.v1.UnisonService.ConfirmSas:output_type -> unison.local.v1.ConfirmSasResponse
+	58,  // 121: unison.local.v1.UnisonService.RejectSas:output_type -> unison.local.v1.RejectSasResponse
+	60,  // 122: unison.local.v1.UnisonService.GetPairingQr:output_type -> unison.local.v1.GetPairingQrResponse
+	62,  // 123: unison.local.v1.UnisonService.ScanPairingQr:output_type -> unison.local.v1.ScanPairingQrResponse
+	64,  // 124: unison.local.v1.UnisonService.GetClip:output_type -> unison.local.v1.GetClipResponse
+	66,  // 125: unison.local.v1.UnisonService.SetClip:output_type -> unison.local.v1.SetClipResponse
+	69,  // 126: unison.local.v1.UnisonService.ListHistory:output_type -> unison.local.v1.ListHistoryResponse
+	71,  // 127: unison.local.v1.UnisonService.GetHistoryItem:output_type -> unison.local.v1.GetHistoryItemResponse
+	73,  // 128: unison.local.v1.UnisonService.GetHistoryThumbnail:output_type -> unison.local.v1.GetHistoryThumbnailResponse
+	75,  // 129: unison.local.v1.UnisonService.DeleteHistoryItem:output_type -> unison.local.v1.DeleteHistoryItemResponse
+	77,  // 130: unison.local.v1.UnisonService.FetchHistoryItem:output_type -> unison.local.v1.FetchHistoryItemResponse
+	79,  // 131: unison.local.v1.UnisonService.CopyHistoryItem:output_type -> unison.local.v1.CopyHistoryItemResponse
+	81,  // 132: unison.local.v1.UnisonService.ApplyHistoryItem:output_type -> unison.local.v1.ApplyHistoryItemResponse
+	85,  // 133: unison.local.v1.UnisonService.SendFiles:output_type -> unison.local.v1.SendFilesResponse
+	87,  // 134: unison.local.v1.UnisonService.ListTransfers:output_type -> unison.local.v1.ListTransfersResponse
+	89,  // 135: unison.local.v1.UnisonService.CancelTransfer:output_type -> unison.local.v1.CancelTransferResponse
+	91,  // 136: unison.local.v1.UnisonService.AcceptTransfer:output_type -> unison.local.v1.AcceptTransferResponse
+	93,  // 137: unison.local.v1.UnisonService.RejectTransfer:output_type -> unison.local.v1.RejectTransferResponse
+	44,  // 138: unison.local.v1.UnisonService.SetFriendsDiscovery:output_type -> unison.local.v1.SetFriendsDiscoveryResponse
+	96,  // 139: unison.local.v1.UnisonService.ListRequests:output_type -> unison.local.v1.ListRequestsResponse
+	98,  // 140: unison.local.v1.UnisonService.DecideRequest:output_type -> unison.local.v1.DecideRequestResponse
+	100, // 141: unison.local.v1.UnisonService.GetPause:output_type -> unison.local.v1.GetPauseResponse
+	102, // 142: unison.local.v1.UnisonService.SetPause:output_type -> unison.local.v1.SetPauseResponse
+	104, // 143: unison.local.v1.UnisonService.GetSettings:output_type -> unison.local.v1.GetSettingsResponse
+	106, // 144: unison.local.v1.UnisonService.UpdateSettings:output_type -> unison.local.v1.UpdateSettingsResponse
+	109, // 145: unison.local.v1.UnisonService.GetRelay:output_type -> unison.local.v1.GetRelayResponse
+	111, // 146: unison.local.v1.UnisonService.SetRelay:output_type -> unison.local.v1.SetRelayResponse
+	113, // 147: unison.local.v1.UnisonService.RelayOff:output_type -> unison.local.v1.RelayOffResponse
+	108, // [108:148] is the sub-list for method output_type
+	68,  // [68:108] is the sub-list for method input_type
 	68,  // [68:68] is the sub-list for extension type_name
 	68,  // [68:68] is the sub-list for extension extendee
 	0,   // [0:68] is the sub-list for field type_name
@@ -7013,15 +7141,15 @@ func file_unison_local_v1_local_proto_init() {
 	}
 	file_unison_local_v1_local_proto_msgTypes[11].OneofWrappers = []any{}
 	file_unison_local_v1_local_proto_msgTypes[12].OneofWrappers = []any{}
-	file_unison_local_v1_local_proto_msgTypes[88].OneofWrappers = []any{}
-	file_unison_local_v1_local_proto_msgTypes[93].OneofWrappers = []any{}
+	file_unison_local_v1_local_proto_msgTypes[90].OneofWrappers = []any{}
+	file_unison_local_v1_local_proto_msgTypes[95].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_local_v1_local_proto_rawDesc), len(file_unison_local_v1_local_proto_rawDesc)),
 			NumEnums:      15,
-			NumMessages:   98,
+			NumMessages:   100,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

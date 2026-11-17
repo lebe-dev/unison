@@ -6,19 +6,25 @@
     fileNames,
     formatBytes,
     formatDateTime,
-    imagePreview,
     itemSize,
     kindLabel,
     shortDeviceID,
     textSnippet,
   } from "../format";
   import { history } from "../history.svelte";
+  import ImageCanvas from "../ImageCanvas.svelte";
 
   /** Height of one row of the feed, in pixels. */
   const ROW_HEIGHT = 88;
 
   /** Rows rendered outside the visible area. */
   const OVERSCAN = 4;
+
+  /** Longer side of the pixels of a row thumbnail. */
+  const THUMB_SIDE = 128;
+
+  /** Longer side of the pixels of the full preview. */
+  const PREVIEW_SIDE = 1024;
 
   const kinds: { value: Kind; label: string }[] = [
     { value: Kind.UNSPECIFIED, label: "All types" },
@@ -31,7 +37,7 @@
   let scrollTop = $state(0);
   let feed: HTMLDivElement | null = $state(null);
   let deleting = $state<string | null>(null);
-  let preview = $state<{ title: string; url: string } | null>(null);
+  let preview = $state<{ title: string; id: string } | null>(null);
   let startedAt = $state<Record<string, number>>({});
   let now = $state(Date.now());
 
@@ -107,17 +113,18 @@
     return `Stored as ${info.representations[0]?.mimeType ?? "an image"}`;
   }
 
-  function thumbnail(item: HistoryItem): string | null {
-    return imagePreview(item.item);
+  /** hasThumbnail reports an image whose payload is stored on this device, so
+   * the daemon can decode it. */
+  function hasThumbnail(item: HistoryItem): boolean {
+    return item.item?.kind === Kind.IMAGE && item.complete;
   }
 
   function openPreview(item: HistoryItem): void {
     const info = item.item;
-    const url = thumbnail(item);
-    if (!info || !url) {
+    if (!info || !hasThumbnail(item)) {
       return;
     }
-    preview = { title: `Image from ${originName(info.origin)}`, url };
+    preview = { title: `Image from ${originName(info.origin)}`, id: info.id };
   }
 
   async function download(item: HistoryItem): Promise<void> {
@@ -219,19 +226,22 @@
           {@const info = item.item}
           <article class="row" class:pending={!item.complete}>
             <div class="preview">
-              {#if thumbnail(item)}
+              {#snippet kindBadge()}
+                <span class="kind" title={kindLabel(info?.kind ?? Kind.UNSPECIFIED)}>
+                  {kindLabel(info?.kind ?? Kind.UNSPECIFIED).slice(0, 1)}
+                </span>
+              {/snippet}
+              {#if info && hasThumbnail(item)}
                 <button
                   type="button"
                   class="thumb"
                   aria-label="Show the image"
                   onclick={() => openPreview(item)}
                 >
-                  <img src={thumbnail(item) ?? ""} alt="" />
+                  <ImageCanvas id={info.id} maxSide={THUMB_SIDE} fallback={kindBadge} />
                 </button>
               {:else}
-                <span class="kind" title={kindLabel(info?.kind ?? Kind.UNSPECIFIED)}>
-                  {kindLabel(info?.kind ?? Kind.UNSPECIFIED).slice(0, 1)}
-                </span>
+                {@render kindBadge()}
               {/if}
             </div>
 
@@ -325,7 +335,7 @@
       onclick={() => (preview = null)}
     ></button>
     <figure>
-      <img src={preview.url} alt={preview.title} />
+      <ImageCanvas id={preview.id} maxSide={PREVIEW_SIDE} label={preview.title} />
       <figcaption>
         <span>{preview.title}</span>
         <button class="button small" type="button" onclick={() => (preview = null)}>Close</button>
@@ -400,7 +410,7 @@
     cursor: zoom-in;
   }
 
-  .thumb img {
+  .thumb :global(canvas) {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -495,7 +505,7 @@
     background-color: var(--surface);
   }
 
-  .overlay img {
+  .overlay :global(canvas) {
     max-width: 100%;
     max-height: 75vh;
     object-fit: contain;

@@ -33,6 +33,11 @@ func certificateIdentity(cert *x509.Certificate) (model.DeviceID, ed25519.Public
 	if err != nil {
 		return model.DeviceID{}, nil, fmt.Errorf("subject: %w", err)
 	}
+	// One device has exactly one name: a certificate that spells the ID in
+	// another form is not one this code produced.
+	if cert.Subject.CommonName != id.String() {
+		return model.DeviceID{}, nil, errors.New("subject: device id is not in canonical form")
+	}
 	return id, key, nil
 }
 
