@@ -482,16 +482,37 @@ func TestSetDiscoveryKeyMarksChange(t *testing.T) {
 func TestDerivedRendezvousKey(t *testing.T) {
 	a := testIdentity(t, 1).DeviceID()
 	b := testIdentity(t, 2).DeviceID()
+	secret := []byte("group secret")
 
-	ab := DerivedRendezvousKey(a, b)
-	ba := DerivedRendezvousKey(b, a)
+	ab := DerivedRendezvousKey(secret, a, b)
+	ba := DerivedRendezvousKey(secret, b, a)
 	if len(ab) != secretSize {
 		t.Fatalf("rendezvous key of %d bytes", len(ab))
 	}
 	if !slices.Equal(ab, ba) {
 		t.Fatal("the two devices derive different rendezvous keys")
 	}
-	if slices.Equal(ab, DerivedRendezvousKey(a, testIdentity(t, 3).DeviceID())) {
+	if slices.Equal(ab, DerivedRendezvousKey(secret, a, testIdentity(t, 3).DeviceID())) {
 		t.Fatal("different pairs share a rendezvous key")
+	}
+}
+
+// TestDerivedRendezvousKeyNeedsSecret keeps the key out of reach of anyone who
+// knows the device IDs only: another secret gives another key.
+func TestDerivedRendezvousKeyNeedsSecret(t *testing.T) {
+	a := testIdentity(t, 1).DeviceID()
+	b := testIdentity(t, 2).DeviceID()
+
+	key := DerivedRendezvousKey([]byte("group secret"), a, b)
+	if slices.Equal(key, DerivedRendezvousKey([]byte("other secret"), a, b)) {
+		t.Fatal("the key does not depend on the group secret")
+	}
+	if slices.Equal(key, DerivedRendezvousKey(nil, a, b)) {
+		t.Fatal("the key does not depend on the group secret")
+	}
+	// The length of the secret is part of the input, so moving bytes between
+	// the secret and the device IDs gives another key.
+	if slices.Equal(DerivedRendezvousKey([]byte("ab"), a, b), DerivedRendezvousKey([]byte("a"), a, b)) {
+		t.Fatal("secrets of different length give the same key")
 	}
 }

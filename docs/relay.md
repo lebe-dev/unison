@@ -58,6 +58,10 @@ day:
 
     mailbox = BLAKE3(rendezvous_key || day)[:16]
 
+Two devices that paired directly agree on the rendezvous key during pairing. Two Personal devices
+that know each other through the group derive it from the relay token of the group and both device
+IDs, so the device IDs alone do not reveal the mailboxes of a pair.
+
 The id changes every day and reveals nothing about the pair, so the relay cannot follow a device
 across days. Around midnight UTC a device registers the mailbox of the next day as well, so a pair
 stays reachable across the boundary.

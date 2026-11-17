@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"time"
@@ -206,14 +207,20 @@ func (s *Store) SetRelaySettings(ctx context.Context, relay RelaySettings) error
 }
 
 // DerivedRendezvousKey returns the relay rendezvous key of a pair that never
-// paired directly. Both devices of the pair derive the same value, so no other
-// device has to hand it over.
-func DerivedRendezvousKey(a, b model.DeviceID) []byte {
+// paired directly. Both devices of the pair derive the same value from a secret
+// of the group and their device IDs, so no other device has to hand it over,
+// and the device IDs alone do not reveal the mailboxes of the pair.
+func DerivedRendezvousKey(groupSecret []byte, a, b model.DeviceID) []byte {
 	if bytes.Compare(a[:], b[:]) > 0 {
 		a, b = b, a
 	}
+	var size [8]byte
+	binary.BigEndian.PutUint64(size[:], uint64(len(groupSecret)))
+
 	hash := blake3.New(secretSize, nil)
 	_, _ = hash.Write([]byte(pairRendezvousLabel))
+	_, _ = hash.Write(size[:])
+	_, _ = hash.Write(groupSecret)
 	_, _ = hash.Write(a.Bytes())
 	_, _ = hash.Write(b.Bytes())
 	return hash.Sum(nil)

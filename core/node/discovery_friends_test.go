@@ -319,7 +319,7 @@ func pairFriends(t *testing.T, n *testNode, other *testNode) {
 // pairKey returns the rendezvous key of two devices. Pairing derives it from the
 // session, a test derives it from both device IDs.
 func pairKey(a, b *testNode) []byte {
-	return trust.DerivedRendezvousKey(a.DeviceID(), b.DeviceID())
+	return trust.DerivedRendezvousKey([]byte("friends test"), a.DeviceID(), b.DeviceID())
 }
 
 // useFriends enables the friends discovery and makes the test wait for it.

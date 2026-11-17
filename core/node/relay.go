@@ -443,15 +443,24 @@ func (n *Node) relayConnect(ctx context.Context, l *link, listener *transport.Li
 }
 
 // rendezvousKey returns the mailbox secret of the pair. A pair that never
-// exchanged one derives it from both device IDs.
+// exchanged one derives it from the relay token of the group and both device
+// IDs: the relay is used only with that token, and a device outside the group
+// cannot compute the mailboxes of the pair.
 func (n *Node) rendezvousKey(ctx context.Context, id model.DeviceID) ([]byte, error) {
 	key, err := n.trust.RendezvousKey(ctx, id)
 	switch {
 	case err == nil:
 		return key, nil
-	case errors.Is(err, trust.ErrSecretNotFound):
-		return trust.DerivedRendezvousKey(n.identity.DeviceID(), id), nil
-	default:
+	case !errors.Is(err, trust.ErrSecretNotFound):
 		return nil, err
 	}
+
+	data, err := n.trust.GroupData(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if data.Relay.Token == "" {
+		return nil, errRelayOff
+	}
+	return trust.DerivedRendezvousKey([]byte(data.Relay.Token), n.identity.DeviceID(), id), nil
 }

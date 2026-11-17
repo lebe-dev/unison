@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -9,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -485,4 +487,47 @@ func TestRelayPathReconnects(t *testing.T) {
 
 	submitText(t, b, "hello after the reconnect")
 	waitClipboard(t, a.clipboard, "hello after the reconnect")
+}
+
+// TestDerivedRendezvousKeyUsesGroupToken derives the mailbox secret of a pair
+// that never paired directly from the relay token of the group, so the device
+// IDs alone do not reveal the mailboxes of the pair.
+func TestDerivedRendezvousKeyUsesGroupToken(t *testing.T) {
+	network := vnet.NewNetwork()
+	bus := fake.NewBus()
+	a := newRelayNode(t, network, bus, 21060, Config{})
+	b := newRelayNode(t, network, bus, 21064, Config{})
+	a.start(t)
+	b.start(t)
+	a.pair(t, b)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	if _, err := a.rendezvousKey(ctx, b.DeviceID()); !errors.Is(err, errRelayOff) {
+		t.Fatalf("key without relay access: got %v, want %v", err, errRelayOff)
+	}
+
+	if err := a.SetRelay(ctx, trust.RelaySettings{URL: "relay.example.com:443", Token: relayTestToken}); err != nil {
+		t.Fatalf("set relay: %v", err)
+	}
+	key, err := a.rendezvousKey(ctx, b.DeviceID())
+	if err != nil {
+		t.Fatalf("rendezvous key: %v", err)
+	}
+	want := trust.DerivedRendezvousKey([]byte(relayTestToken), a.DeviceID(), b.DeviceID())
+	if !bytes.Equal(key, want) {
+		t.Fatal("the key is not derived from the relay token of the group")
+	}
+
+	if err := a.SetRelay(ctx, trust.RelaySettings{URL: "relay.example.com:443", Token: "another-token"}); err != nil {
+		t.Fatalf("set relay: %v", err)
+	}
+	other, err := a.rendezvousKey(ctx, b.DeviceID())
+	if err != nil {
+		t.Fatalf("rendezvous key: %v", err)
+	}
+	if bytes.Equal(key, other) {
+		t.Fatal("a new relay token keeps the old mailbox secret")
+	}
 }
