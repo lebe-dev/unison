@@ -250,7 +250,10 @@ type ClipPayload struct {
 	// File name, set for file payloads.
 	FileName string `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
 	// Every representation at once. When set, the fields above are ignored.
-	Parts         []*ClipPart `protobuf:"bytes,4,rep,name=parts,proto3" json:"parts,omitempty"`
+	Parts []*ClipPart `protobuf:"bytes,4,rep,name=parts,proto3" json:"parts,omitempty"`
+	// ID of the clip item being written, the same as ClipItem.id of the local
+	// API. Empty when the content is not a recorded item.
+	ItemId        string `protobuf:"bytes,5,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -311,6 +314,13 @@ func (x *ClipPayload) GetParts() []*ClipPart {
 		return x.Parts
 	}
 	return nil
+}
+
+func (x *ClipPayload) GetItemId() string {
+	if x != nil {
+		return x.ItemId
+	}
+	return ""
 }
 
 // Network conditions reported by the host.
@@ -793,12 +803,13 @@ const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\bClipPart\x12\x1b\n" +
 	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x1b\n" +
-	"\tfile_name\x18\x03 \x01(\tR\bfileName\"\x8d\x01\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\"\xa6\x01\n" +
 	"\vClipPayload\x12\x1b\n" +
 	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x1b\n" +
 	"\tfile_name\x18\x03 \x01(\tR\bfileName\x120\n" +
-	"\x05parts\x18\x04 \x03(\v2\x1a.unison.mobile.v1.ClipPartR\x05parts\"\x8b\x01\n" +
+	"\x05parts\x18\x04 \x03(\v2\x1a.unison.mobile.v1.ClipPartR\x05parts\x12\x17\n" +
+	"\aitem_id\x18\x05 \x01(\tR\x06itemId\"\x8b\x01\n" +
 	"\fNetworkState\x12\x16\n" +
 	"\x06online\x18\x01 \x01(\bR\x06online\x12\x18\n" +
 	"\ametered\x18\x02 \x01(\bR\ametered\x12\x18\n" +

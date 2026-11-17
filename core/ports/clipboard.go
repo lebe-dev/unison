@@ -16,6 +16,10 @@ type Representation struct {
 type Content struct {
 	// Representations holds every representation the platform can provide.
 	Representations []Representation
+	// ItemID is the string form of the clip item being written. It is empty
+	// for content read from the clipboard. A platform may tag the clipboard
+	// with it so other apps can tell the write from a copy of the user.
+	ItemID string
 }
 
 // Snapshot is an observed state of the local clipboard.

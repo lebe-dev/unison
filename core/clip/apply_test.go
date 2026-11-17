@@ -175,6 +175,23 @@ func TestApplyWritesACopyOfThePayload(t *testing.T) {
 	}
 }
 
+func TestApplyNamesTheItemInTheClipboard(t *testing.T) {
+	f := newFixture(t)
+
+	item := textItem("hello", "")
+	if err := f.pipe.Apply(t.Context(), testPeer, item); err != nil {
+		t.Fatalf("apply item: %v", err)
+	}
+
+	content, ok := f.board.LastWrite()
+	if !ok {
+		t.Fatal("clipboard was not written")
+	}
+	if content.ItemID != item.ID.String() {
+		t.Fatalf("clipboard names item %q, want %q", content.ItemID, item.ID.String())
+	}
+}
+
 func TestApplyHistoryWritesClipboard(t *testing.T) {
 	f := newFixture(t)
 	item := textItem("recorded", "")
@@ -189,6 +206,9 @@ func TestApplyHistoryWritesClipboard(t *testing.T) {
 	}
 	if len(content.Representations) != 1 || string(content.Representations[0].Data) != "recorded" {
 		t.Fatal("the clipboard does not hold the item")
+	}
+	if content.ItemID != item.ID.String() {
+		t.Fatalf("clipboard names item %q, want %q", content.ItemID, item.ID.String())
 	}
 	if _, ok := f.pipe.Last(); ok {
 		t.Fatal("applying a recorded item recorded another one")

@@ -266,7 +266,7 @@ private fun watchPackages() {
         addDataScheme("package")
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        registerReceiver(packages, filter, Context.RECEIVER_EXPORTED)
+        registerReceiver(packages, filter, Context.RECEIVER_NOT_EXPORTED)
     } else {
         @Suppress("UnspecifiedRegisterReceiverFlag")
         registerReceiver(packages, filter)
@@ -276,6 +276,10 @@ private fun watchPackages() {
 
 The data scheme `package` is required, otherwise no package broadcast matches the filter. Unregister
 the receiver in `onDestroy`.
+
+`ACTION_PACKAGE_ADDED` and `ACTION_PACKAGE_REPLACED` are protected broadcasts of the system, which
+reach a receiver registered with `RECEIVER_NOT_EXPORTED`. Keep the flag: an exported receiver can be
+triggered by any other app.
 
 ### Death of the service
 
@@ -629,9 +633,11 @@ The parcelables are plain Java classes with public final fields and a constructo
 | `mimeTypes` | `String[]` | Types of the available representations, never null |
 | `createdAtMs` | `long` | Capture time on the origin device in Unix milliseconds |
 
-The preview is the text of a text item shortened to 160 characters with whitespace collapsed, and the
-names of the first two files for a file item with a count of the rest. An image has an empty preview;
-use `kind` and draw an icon.
+The preview of a text item is `BridgeContract.preview(text)`: whitespace runs collapse into one space,
+the ends are trimmed, and a text longer than `BridgeContract.PREVIEW_LIMIT` (160) characters is cut
+and ends with `"..."`. Call the same method on a clip to compare it with a summary instead of
+repeating the rule. A file item shows the names of the first two files with a count of the rest. An
+image has an empty preview; use `kind` and draw an icon.
 
 ### BridgeState
 
@@ -700,6 +706,8 @@ Skip the whole capture when any of these is true:
   `TYPE_TEXT_VARIATION_NUMBER_PASSWORD`.
 - The focused editor is not a text editor, for example `TYPE_NULL`, or `currentInputEditorInfo` is
   null, which means no editor is attached.
+- `primaryClipDescription.extras` carries `BridgeContract.EXTRA_ITEM_ID`. Unison wrote the clip
+  itself, see [Clips the app writes](#clips-the-app-writes).
 - The content is empty, or it is the content that this keyboard just committed from an incoming
   item.
 
@@ -758,14 +766,51 @@ contentResolver.openInputStream(uri)?.use { stream ->
 Do not pass the URI to the app. The grant belongs to the keyboard and cannot be handed to another
 process, which is exactly why the contract takes a pipe.
 
+### Clips the app writes
+
+Unison writes an incoming item into the system clipboard only when the item is applied:
+
+- automatically, when the clipboard policy of the device it came from is **Automatic** and the item
+  fits the size limit of the current network;
+- when the user applies it: from the notification of an item under **Ask first**, or from the
+  history of the app.
+
+An item under **On request** or **Ask first** that the user has not applied stays out of the
+clipboard. Files never reach the clipboard. Every item from a Personal device reaches the keyboard
+through `onRemoteItem` whether or not it was written, so draw chips from the listener, not from the
+clipboard.
+
+A clip that Unison writes carries two marks:
+
+| Mark | Value |
+|------|-------|
+| `ClipDescription.getLabel()` | `BridgeContract.CLIP_LABEL`, the string `"Unison"`, never localized |
+| `ClipDescription.getExtras()` | `BridgeContract.EXTRA_ITEM_ID`: the id of the item, equal to `ClipSummary.id` |
+
+Use the extra to skip the capture and to match the clip to the chip of the same item, so one item is
+not shown both as a local clip and as a remote one:
+
+```kotlin
+val itemId = clipboard.primaryClipDescription?.extras?.getString(BridgeContract.EXTRA_ITEM_ID)
+if (itemId != null) {
+    // Unison wrote this clip; itemId names the chip.
+    return
+}
+```
+
+Versions of Unison released before the extra do not set it. A keyboard that supports them falls
+back to the label and to the digest of the content described below.
+
 ### Rate limits and echo
 
 - Publish at most one item per clipboard change. Duplicate changes with the same content are wasted
   work; remember the hash of the last content and skip it within a few seconds.
 - Never publish content that arrived from Unison. The app writes an applied item into the system
   clipboard, which fires `onPrimaryClipChanged` again; without suppression the item travels back to
-  the device it came from. Keep the digest of the text you commit from a chip for about ten seconds
-  and skip it, and skip the preview of a summary the same way.
+  the device it came from. Skip a clip whose description carries `BridgeContract.EXTRA_ITEM_ID`. As
+  a fallback for older versions of the app and for the text you commit from a chip yourself, keep the
+  digest of that text for about ten seconds and skip it, and compare `BridgeContract.preview(text)`
+  with the preview of a recent summary.
 - Never publish while `BridgeState.paused` is true. The app refuses the content with
   `PUBLISH_PAUSED`, and the keyboard avoids the binder call and the clipboard read.
 - Do not replay the clipboard in a loop. A peer accepts five clipboard announcements per second with
@@ -1260,6 +1305,9 @@ class MyKeyboardService : InputMethodService(), ClipboardManager.OnPrimaryClipCh
         if (description.extras?.getBoolean(EXTRA_IS_SENSITIVE, false) == true) {
             return
         }
+        if (description.extras?.getString(BridgeContract.EXTRA_ITEM_ID) != null) {
+            return
+        }
         val clip = clipboard.primaryClip ?: return
         if (clip.itemCount == 0) {
             return
@@ -1422,7 +1470,7 @@ class MyKeyboardService : InputMethodService(), ClipboardManager.OnPrimaryClipCh
             addDataScheme("package")
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(packages, filter, Context.RECEIVER_EXPORTED)
+            registerReceiver(packages, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
             @Suppress("UnspecifiedRegisterReceiverFlag")
             registerReceiver(packages, filter)

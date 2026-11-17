@@ -1,5 +1,6 @@
 package app.unison.history
 
+import app.unison.bridge.BridgeContract
 import java.util.Locale
 import unison.local.v1.Local
 
@@ -50,20 +51,14 @@ object HistoryText {
         return String.format(Locale.US, "%.1f %s", value, UNITS[unit])
     }
 
-    private fun shorten(text: String, limit: Int): String {
-        val source = text.trim().replace(WHITESPACE, " ")
-        if (source.length <= limit) {
-            return source
-        }
-        return source.take(limit).trimEnd() + "..."
-    }
+    /** The rule is part of the bridge contract, so a keyboard can repeat it exactly. */
+    private fun shorten(text: String, limit: Int): String = BridgeContract.preview(text, limit)
 
     /** Length of the preview in characters. */
-    const val PREVIEW_LIMIT = 160
+    const val PREVIEW_LIMIT = BridgeContract.PREVIEW_LIMIT
 
     private const val MAX_NAMES = 2
     private const val KIB = 1024.0
     private const val MIME_TEXT_PLAIN = "text/plain"
     private val UNITS = listOf("KB", "MB", "GB", "TB")
-    private val WHITESPACE = Regex("\\s+")
 }

@@ -62,7 +62,7 @@ func writeClipboard(platform Platform, data []byte) {
 
 // contentToPayload converts clipboard content to its mobile form.
 func contentToPayload(content ports.Content) *mobilev1.ClipPayload {
-	payload := &mobilev1.ClipPayload{}
+	payload := &mobilev1.ClipPayload{ItemId: content.ItemID}
 	for _, rep := range content.Representations {
 		payload.Parts = append(payload.Parts, &mobilev1.ClipPart{
 			MimeType: rep.MIME,

@@ -8,10 +8,12 @@ import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import app.unison.bridge.BridgeContract
 import com.google.protobuf.ByteString
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,6 +62,58 @@ class ClipboardWriterTest {
         assertEquals("hello", clip!!.getItemAt(0).text.toString())
     }
 
+    @Test
+    fun textNamesTheItemAndTheApp() {
+        val payload = Mobile.ClipPayload.newBuilder()
+            .setItemId(ITEM_ID)
+            .addParts(
+                Mobile.ClipPart.newBuilder()
+                    .setMimeType("text/plain")
+                    .setData(ByteString.copyFromUtf8("tagged")),
+            )
+            .build()
+
+        ClipboardWriter.write(context, payload.toByteArray())
+
+        val clip = primaryClip()
+        assertNotNull(clip)
+        assertEquals(BridgeContract.CLIP_LABEL, clip!!.description.label.toString())
+        assertEquals(ITEM_ID, clip.description.extras?.getString(BridgeContract.EXTRA_ITEM_ID))
+    }
+
+    @Test
+    fun imageNamesTheItemAndTheApp() {
+        val payload = Mobile.ClipPayload.newBuilder()
+            .setItemId(ITEM_ID)
+            .setMimeType("image/png")
+            .setData(ByteString.copyFrom(PNG))
+            .build()
+
+        ClipboardWriter.write(context, payload.toByteArray())
+
+        val clip = primaryClip()
+        assertNotNull(clip)
+        assertEquals(BridgeContract.CLIP_LABEL, clip!!.description.label.toString())
+        assertEquals(ITEM_ID, clip.description.extras?.getString(BridgeContract.EXTRA_ITEM_ID))
+    }
+
+    @Test
+    fun contentWithoutAnItemHasNoItemExtra() {
+        val payload = Mobile.ClipPayload.newBuilder()
+            .addParts(
+                Mobile.ClipPart.newBuilder()
+                    .setMimeType("text/plain")
+                    .setData(ByteString.copyFromUtf8("untagged")),
+            )
+            .build()
+
+        ClipboardWriter.write(context, payload.toByteArray())
+
+        val clip = primaryClip()
+        assertNotNull(clip)
+        assertNull(clip!!.description.extras?.getString(BridgeContract.EXTRA_ITEM_ID))
+    }
+
     /** Reads the primary clip, asking the shell for background access if needed. */
     private fun primaryClip(): ClipData? {
         val manager = context.getSystemService(ClipboardManager::class.java)
@@ -77,6 +131,8 @@ class ClipboardWriterTest {
     private companion object {
         /** Shell permission that lifts the background read restriction. */
         const val READ_CLIPBOARD_IN_BACKGROUND = "android.permission.READ_CLIPBOARD_IN_BACKGROUND"
+
+        const val ITEM_ID = "0f8fad5b-d9cb-469f-a165-70867728950e"
 
         /** One transparent pixel. */
         val PNG: ByteArray = Base64.decode(

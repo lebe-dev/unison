@@ -95,5 +95,5 @@ func cloneContent(content ports.Content) ports.Content {
 		rep.Data = slices.Clone(rep.Data)
 		reps[i] = rep
 	}
-	return ports.Content{Representations: reps}
+	return ports.Content{Representations: reps, ItemID: content.ItemID}
 }

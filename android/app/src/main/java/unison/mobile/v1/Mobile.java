@@ -1645,6 +1645,28 @@ public final class Mobile {
      * <code>repeated .unison.mobile.v1.ClipPart parts = 4 [json_name = "parts"];</code>
      */
     int getPartsCount();
+
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     * @return The itemId.
+     */
+    java.lang.String getItemId();
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     * @return The bytes for itemId.
+     */
+    com.google.protobuf.ByteString
+        getItemIdBytes();
   }
   /**
    * <pre>
@@ -1663,6 +1685,7 @@ public final class Mobile {
       data_ = com.google.protobuf.ByteString.EMPTY;
       fileName_ = "";
       parts_ = emptyProtobufList();
+      itemId_ = "";
     }
     public static final int MIME_TYPE_FIELD_NUMBER = 1;
     private java.lang.String mimeType_;
@@ -1941,6 +1964,78 @@ public final class Mobile {
     private void removeParts(int index) {
       ensurePartsIsMutable();
       parts_.remove(index);
+    }
+
+    public static final int ITEM_ID_FIELD_NUMBER = 5;
+    private java.lang.String itemId_;
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     * @return The itemId.
+     */
+    @java.lang.Override
+    public java.lang.String getItemId() {
+      return itemId_;
+    }
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     * @return The bytes for itemId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getItemIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(itemId_);
+    }
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     * @param value The itemId to set.
+     */
+    private void setItemId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      itemId_ = value;
+    }
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     */
+    private void clearItemId() {
+
+      itemId_ = getDefaultInstance().getItemId();
+    }
+    /**
+     * <pre>
+     * ID of the clip item being written, the same as ClipItem.id of the local
+     * API. Empty when the content is not a recorded item.
+     * </pre>
+     *
+     * <code>string item_id = 5 [json_name = "itemId"];</code>
+     * @param value The bytes for itemId to set.
+     */
+    private void setItemIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      itemId_ = value.toStringUtf8();
+
     }
 
     public static unison.mobile.v1.Mobile.ClipPayload parseFrom(
@@ -2340,6 +2435,80 @@ public final class Mobile {
         return this;
       }
 
+      /**
+       * <pre>
+       * ID of the clip item being written, the same as ClipItem.id of the local
+       * API. Empty when the content is not a recorded item.
+       * </pre>
+       *
+       * <code>string item_id = 5 [json_name = "itemId"];</code>
+       * @return The itemId.
+       */
+      @java.lang.Override
+      public java.lang.String getItemId() {
+        return instance.getItemId();
+      }
+      /**
+       * <pre>
+       * ID of the clip item being written, the same as ClipItem.id of the local
+       * API. Empty when the content is not a recorded item.
+       * </pre>
+       *
+       * <code>string item_id = 5 [json_name = "itemId"];</code>
+       * @return The bytes for itemId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getItemIdBytes() {
+        return instance.getItemIdBytes();
+      }
+      /**
+       * <pre>
+       * ID of the clip item being written, the same as ClipItem.id of the local
+       * API. Empty when the content is not a recorded item.
+       * </pre>
+       *
+       * <code>string item_id = 5 [json_name = "itemId"];</code>
+       * @param value The itemId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setItemId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setItemId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * ID of the clip item being written, the same as ClipItem.id of the local
+       * API. Empty when the content is not a recorded item.
+       * </pre>
+       *
+       * <code>string item_id = 5 [json_name = "itemId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearItemId() {
+        copyOnWrite();
+        instance.clearItemId();
+        return this;
+      }
+      /**
+       * <pre>
+       * ID of the clip item being written, the same as ClipItem.id of the local
+       * API. Empty when the content is not a recorded item.
+       * </pre>
+       *
+       * <code>string item_id = 5 [json_name = "itemId"];</code>
+       * @param value The bytes for itemId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setItemIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setItemIdBytes(value);
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.mobile.v1.ClipPayload)
     }
     @java.lang.Override
@@ -2361,10 +2530,11 @@ public final class Mobile {
               "fileName_",
               "parts_",
               unison.mobile.v1.Mobile.ClipPart.class,
+              "itemId_",
             };
             java.lang.String info =
-                "\u0000\u0004\u0000\u0000\u0001\u0004\u0004\u0000\u0001\u0000\u0001\u0208\u0002\n" +
-                "\u0003\u0208\u0004\u001b";
+                "\u0000\u0005\u0000\u0000\u0001\u0005\u0005\u0000\u0001\u0000\u0001\u0208\u0002\n" +
+                "\u0003\u0208\u0004\u001b\u0005\u0208";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

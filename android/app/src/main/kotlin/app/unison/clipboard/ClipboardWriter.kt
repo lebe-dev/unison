@@ -4,8 +4,9 @@ import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.PersistableBundle
 import android.util.Log
-import app.unison.R
+import app.unison.bridge.BridgeContract
 import app.unison.service.UnisonSettings
 import com.google.protobuf.InvalidProtocolBufferException
 import unison.mobile.v1.Mobile
@@ -26,29 +27,31 @@ object ClipboardWriter {
             return
         }
 
+        val itemId = payload.itemId
         val draft = ClipboardDraft.fromPayload(payload)
         if (draft != null) {
-            writeText(context, draft)
+            writeText(context, draft, itemId)
             return
         }
 
         val image = imagePart(payload)
         if (image != null) {
-            writeImage(context, image)
+            writeImage(context, image, itemId)
             return
         }
         Log.i(TAG, "content without text or image is skipped")
     }
 
     /** Writes plain and HTML text into the clipboard. */
-    private fun writeText(context: Context, draft: ClipboardDraft) {
-        val label = context.getString(R.string.app_name)
+    private fun writeText(context: Context, draft: ClipboardDraft, itemId: String) {
+        val label = BridgeContract.CLIP_LABEL
         val plain = draft.text ?: ClipboardReader.plainTextOf(draft.html.orEmpty())
         val clip = if (draft.html.isNullOrEmpty()) {
             ClipData.newPlainText(label, plain)
         } else {
             ClipData.newHtmlText(label, plain, draft.html)
         }
+        tag(clip, itemId)
 
         if (!apply(context, clip)) {
             return
@@ -62,20 +65,33 @@ object ClipboardWriter {
      * get a temporary read grant from the clipboard service, so the image is
      * never stored in a shared collection.
      */
-    private fun writeImage(context: Context, part: Mobile.ClipPart) {
+    private fun writeImage(context: Context, part: Mobile.ClipPart, itemId: String) {
         val uri = ClipboardMedia.storeImage(context, part.mimeType, part.data.toByteArray())
         if (uri == null) {
             Log.w(TAG, "cannot store the image of ${part.mimeType}")
             return
         }
 
-        val label = context.getString(R.string.app_name)
-        val description = ClipDescription(label, arrayOf(part.mimeType))
+        val description = ClipDescription(BridgeContract.CLIP_LABEL, arrayOf(part.mimeType))
         val clip = ClipData(description, ClipData.Item(uri))
+        tag(clip, itemId)
         if (!apply(context, clip)) {
             return
         }
         Log.i(TAG, "clipboard updated with ${part.mimeType} of ${part.data.size()} bytes")
+    }
+
+    /**
+     * Names the item in the clip description, so a keyboard can tell the write from a copy of
+     * the user. Content that is not a recorded item stays untagged.
+     */
+    private fun tag(clip: ClipData, itemId: String) {
+        if (itemId.isEmpty()) {
+            return
+        }
+        clip.description.extras = PersistableBundle().apply {
+            putString(BridgeContract.EXTRA_ITEM_ID, itemId)
+        }
     }
 
     /** Sets the primary clip, reporting whether it worked. */

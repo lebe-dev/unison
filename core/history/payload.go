@@ -57,6 +57,7 @@ func (s *Store) Copy(ctx context.Context, id model.ClipID) error {
 	if err != nil {
 		return err
 	}
+	content.ItemID = item.ID.String()
 	if err := s.clip.Write(ctx, content); err != nil {
 		return fmt.Errorf("history: write clipboard: %w", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lebe-dev/unison/core/node"
+	"github.com/lebe-dev/unison/core/ports"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -28,5 +29,20 @@ func TestEventKindToProto(t *testing.T) {
 		if got := eventKindToProto(kind); got != want {
 			t.Errorf("eventKindToProto(%v) = %v, want %v", kind, got, want)
 		}
+	}
+}
+
+// TestContentToPayloadCarriesTheItemID checks that the host learns which item
+// it writes, so a keyboard can tell the write from a copy of the user.
+func TestContentToPayloadCarriesTheItemID(t *testing.T) {
+	content := ports.Content{
+		ItemID:          "0f8fad5b-d9cb-469f-a165-70867728950e",
+		Representations: []ports.Representation{{MIME: "text/plain", Data: []byte("hello")}},
+	}
+
+	payload := contentToPayload(content)
+
+	if got := payload.GetItemId(); got != content.ItemID {
+		t.Fatalf("payload names item %q, want %q", got, content.ItemID)
 	}
 }

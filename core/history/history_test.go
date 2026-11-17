@@ -324,6 +324,9 @@ func TestCopyWritesClipboard(t *testing.T) {
 	if got := string(content.Representations[0].Data); got != "hello" {
 		t.Fatalf("clipboard text is %q", got)
 	}
+	if content.ItemID != text.ID.String() {
+		t.Fatalf("clipboard names item %q, want %q", content.ItemID, text.ID.String())
+	}
 
 	data := []byte("png payload")
 	image := blobItem(testID(2), f.origin, 2, data, testTime, time.Hour)

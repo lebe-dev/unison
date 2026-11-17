@@ -51,6 +51,9 @@ message ClipPayload {
   string file_name = 3;
   // Every representation at once. When set, the fields above are ignored.
   repeated ClipPart parts = 4;
+  // ID of the clip item being written, the same as ClipItem.id of the local
+  // API. Empty when the content is not a recorded item.
+  string item_id = 5;
 }
 
 // Network conditions reported by the host.

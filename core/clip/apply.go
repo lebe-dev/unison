@@ -140,6 +140,7 @@ func (p *Pipeline) ApplyHistory(ctx context.Context, item model.ClipItem) error 
 func (p *Pipeline) writeItem(ctx context.Context, from model.DeviceID, item model.ClipItem, content ports.Content) error {
 	// The hashes are registered before the write so a watcher that reports the
 	// change from inside Write already sees it as own content.
+	content.ItemID = item.ID.String()
 	p.echo.register(content)
 	if err := p.clipboard.Write(ctx, content); err != nil {
 		return fmt.Errorf("clip: write clipboard: %w", err)
