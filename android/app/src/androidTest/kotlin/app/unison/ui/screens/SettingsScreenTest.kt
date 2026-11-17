@@ -11,11 +11,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
 import app.unison.clipboard.PauseRequest
 import app.unison.history.HistoryTtl
 import app.unison.history.HistoryTtlDefaults
 import app.unison.policy.PolicyDefaults
 import app.unison.service.OperatingMode
+import app.unison.testString
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertEquals
@@ -37,7 +39,7 @@ class SettingsScreenTest {
         var selected: OperatingMode? = null
         setContent(operatingMode = OperatingMode.ALWAYS, onOperatingModeChange = { selected = it })
 
-        compose.onNodeWithText("Wi-Fi only").performClick()
+        compose.onNodeWithText(testString(R.string.mode_wifi_only)).performClick()
 
         assertEquals(OperatingMode.WIFI_ONLY, selected)
     }
@@ -47,7 +49,7 @@ class SettingsScreenTest {
         var saved: String? = null
         setContent(deviceName = "Pixel", onDeviceNameChange = { saved = it })
 
-        compose.onNodeWithText("Name shown to other devices").performTextReplacement("Desk")
+        compose.onNodeWithText(testString(R.string.settings_name_hint)).performTextReplacement("Desk")
         compose.onNodeWithTag(NAME_SAVE_TAG).performClick()
 
         assertEquals("Desk", saved)
@@ -68,7 +70,7 @@ class SettingsScreenTest {
         var request: PauseRequest? = null
         setContent(operatingMode = OperatingMode.ALWAYS, onPause = { request = it })
 
-        compose.onNodeWithText("5 minutes").performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.pause_five_minutes)).performScrollTo().performClick()
 
         assertEquals(Local.PauseMode.PAUSE_MODE_UNTIL, request?.mode)
     }
@@ -84,8 +86,8 @@ class SettingsScreenTest {
             onPause = { request = it },
         )
 
-        compose.onAllNodesWithText("Until turned off").assertCountEquals(2)
-        compose.onNodeWithText("Resume").performScrollTo().performClick()
+        compose.onAllNodesWithText(testString(R.string.pause_indefinite)).assertCountEquals(2)
+        compose.onNodeWithText(testString(R.string.pause_resume)).performScrollTo().performClick()
 
         assertEquals(Local.PauseMode.PAUSE_MODE_OFF, request?.mode)
     }
@@ -121,7 +123,7 @@ class SettingsScreenTest {
         compose.onNodeWithTag(ttlTag(Local.Kind.KIND_IMAGE)).performTextReplacement("soon")
         compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_IMAGE)).performScrollTo().performClick()
 
-        compose.onNodeWithText("Use a lifetime like 24h or 7d, up to 365d")
+        compose.onNodeWithText(testString(R.string.history_ttl_invalid))
             .performScrollTo()
             .assertIsDisplayed()
         assertEquals(null, saved)
@@ -132,7 +134,7 @@ class SettingsScreenTest {
         var reset = false
         setContent(onTtlReset = { reset = true })
 
-        compose.onNodeWithText("Reset lifetimes").performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.history_ttl_reset)).performScrollTo().performClick()
 
         assertTrue(reset)
     }
@@ -141,7 +143,7 @@ class SettingsScreenTest {
     fun defaultDownloadsFolderIsNamed() {
         setContent(downloadsFolder = null)
 
-        compose.onNodeWithText("Download/Unison").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.settings_downloads_default)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag(DOWNLOADS_RESET_TAG).assertIsNotEnabled()
     }
 
@@ -161,11 +163,11 @@ class SettingsScreenTest {
         var left = false
         setContent(onLeaveGroup = { left = true })
 
-        compose.onNodeWithText("Remove this device from the group").performScrollTo().performClick()
-        compose.onNodeWithText("Remove this device from the group?").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.settings_leave_group)).performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.settings_leave_title)).assertIsDisplayed()
         assertFalse(left)
 
-        compose.onNodeWithText("Remove").performClick()
+        compose.onNodeWithText(testString(R.string.action_remove)).performClick()
 
         assertTrue(left)
     }

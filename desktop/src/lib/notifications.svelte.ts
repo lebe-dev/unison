@@ -8,8 +8,9 @@ import {
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
 import { openFiles, showInFolder } from "./files";
-import { formatBytes, kindLabel, transferFilesText } from "./format";
+import { filesCountText, formatBytes, kindLabel, transferFilesText } from "./format";
 import { history } from "./history.svelte";
+import { translate } from "./i18n";
 import {
   notify,
   onNotificationAction,
@@ -24,19 +25,25 @@ import { requests } from "./requests.svelte";
 const SEEN_LIMIT = 256;
 
 /** Buttons of the notification of a Friends request. */
-const REQUEST_ACTIONS: NotificationAction[] = [
-  { id: "accept", title: "Accept" },
-  { id: "decline", title: "Decline" },
-];
+function requestActions(): NotificationAction[] {
+  return [
+    { id: "accept", title: translate("common.accept") },
+    { id: "decline", title: translate("common.decline") },
+  ];
+}
 
 /** Button of the notification of an item that waits for confirmation. */
-const APPLY_ACTIONS: NotificationAction[] = [{ id: "apply", title: "Apply" }];
+function applyActions(): NotificationAction[] {
+  return [{ id: "apply", title: translate("common.apply") }];
+}
 
 /** Buttons of the notification of the received files. */
-const RECEIVED_ACTIONS: NotificationAction[] = [
-  { id: "show-in-folder", title: "Show in folder" },
-  { id: "open", title: "Open" },
-];
+function receivedActions(): NotificationAction[] {
+  return [
+    { id: "show-in-folder", title: translate("notifications.showInFolder") },
+    { id: "open", title: translate("common.open") },
+  ];
+}
 
 /**
  * NotificationStore shows the OS notifications of the daemon events: an
@@ -88,8 +95,11 @@ class NotificationStore {
           return;
         }
         this.#show(`clip:${event.item.id}`, {
-          title: "Item available for download",
-          body: `${kindLabel(event.item.kind)} from ${event.name || "a device"} waits in the history.`,
+          title: translate("notifications.itemAvailableTitle"),
+          body: translate("notifications.itemAvailableBody", {
+            kind: kindLabel(event.item.kind),
+            device: event.name || translate("common.aDeviceLower"),
+          }),
         });
         break;
       case EventKind.CLIP_APPLY:
@@ -97,9 +107,13 @@ class NotificationStore {
           return;
         }
         this.#show(`hold:${event.item.id}`, {
-          title: `Clipboard from ${event.name || "a device"}`,
-          body: `${kindLabel(event.item.kind)} - apply it when you need it.`,
-          actions: APPLY_ACTIONS,
+          title: translate("notifications.clipboardFrom", {
+            device: event.name || translate("common.aDeviceLower"),
+          }),
+          body: translate("notifications.clipboardBody", {
+            kind: kindLabel(event.item.kind),
+          }),
+          actions: applyActions(),
           extra: { id: event.item.id },
         });
         break;
@@ -150,17 +164,22 @@ class NotificationStore {
   }
 
   #onTransfer(transfer: Transfer): void {
-    const peer = transfer.deviceName || "a device";
-    const files = transfer.files.length === 1 ? "1 file" : `${transfer.files.length} files`;
+    const count = transfer.files.length;
+    const peer = transfer.deviceName || translate("common.aDeviceLower");
+    const files = filesCountText(count);
     switch (transfer.state) {
       case TransferState.PENDING:
         if (transfer.direction !== TransferDirection.INCOMING) {
           return;
         }
         this.#show(`request:${transfer.id}`, {
-          title: `Files from ${peer}`,
-          body: `${transferFilesText(transfer)} (${formatBytes(transfer.totalBytes)}) waits for your answer.`,
-          actions: REQUEST_ACTIONS,
+          title: translate("notifications.filesFrom", { device: peer }),
+          body: translate("notifications.waitingBody", {
+            count,
+            files: transferFilesText(transfer),
+            size: formatBytes(transfer.totalBytes),
+          }),
+          actions: requestActions(),
           extra: { id: transfer.id },
         });
         break;
@@ -168,16 +187,25 @@ class NotificationStore {
         const incoming = transfer.direction === TransferDirection.INCOMING;
         const received = incoming && transfer.paths.length > 0;
         this.#show(`transfer:${transfer.id}:done`, {
-          title: incoming ? "Files received" : "Files sent",
-          body: incoming ? `${files} from ${peer} is saved.` : `${files} is sent to ${peer}.`,
-          ...(received ? { actions: RECEIVED_ACTIONS, extra: { paths: transfer.paths } } : {}),
+          title: translate(incoming ? "notifications.receivedTitle" : "notifications.sentTitle"),
+          body: translate(incoming ? "notifications.receivedBody" : "notifications.sentBody", {
+            count,
+            files,
+            peer,
+          }),
+          ...(received ? { actions: receivedActions(), extra: { paths: transfer.paths } } : {}),
         });
         break;
       }
       case TransferState.FAILED:
         this.#show(`transfer:${transfer.id}:failed`, {
-          title: "Transfer failed",
-          body: `${files} with ${peer}: ${transfer.error || "the transfer stopped."}`,
+          title: translate("notifications.failedTitle"),
+          body: translate("notifications.failedBody", {
+            count,
+            files,
+            peer,
+            error: transfer.error || translate("notifications.transferStopped"),
+          }),
         });
         break;
     }

@@ -12,6 +12,90 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, State, Wry};
 use tauri_plugin_dialog::DialogExt;
 
+use crate::i18n::Locale;
+
+/// TrayText is the text of the menu in one language.
+struct TrayText {
+    daemon_offline: &'static str,
+    no_devices_online: &'static str,
+    one_device_online: &'static str,
+    devices_online: &'static str,
+    clipboard_on: &'static str,
+    clipboard_paused: &'static str,
+    clipboard_pause: &'static str,
+    pause_5m: &'static str,
+    pause_1h: &'static str,
+    pause_indefinite: &'static str,
+    resume: &'static str,
+    recent_items: &'static str,
+    no_recent_items: &'static str,
+    send_file_to: &'static str,
+    send_files: &'static str,
+    open: &'static str,
+    quit: &'static str,
+}
+
+const EN: TrayText = TrayText {
+    daemon_offline: "Daemon offline",
+    no_devices_online: "No devices online",
+    one_device_online: "1 device online",
+    devices_online: "{count} devices online",
+    clipboard_on: "Clipboard on",
+    clipboard_paused: "Clipboard paused",
+    clipboard_pause: "Clipboard pause",
+    pause_5m: "Pause for 5 minutes",
+    pause_1h: "Pause for 1 hour",
+    pause_indefinite: "Pause until I resume",
+    resume: "Resume",
+    recent_items: "Recent items",
+    no_recent_items: "No recent items",
+    send_file_to: "Send file to",
+    send_files: "Send files",
+    open: "Open Unison",
+    quit: "Quit Unison",
+};
+
+const RU: TrayText = TrayText {
+    daemon_offline: "Служба не запущена",
+    no_devices_online: "Нет устройств в сети",
+    one_device_online: "1 устройство в сети",
+    devices_online: "{count} устройств в сети",
+    clipboard_on: "Буфер обмена включен",
+    clipboard_paused: "Буфер обмена на паузе",
+    clipboard_pause: "Пауза буфера обмена",
+    pause_5m: "Пауза на 5 минут",
+    pause_1h: "Пауза на 1 час",
+    pause_indefinite: "Пауза до возобновления",
+    resume: "Продолжить",
+    recent_items: "Недавние элементы",
+    no_recent_items: "Нет недавних элементов",
+    send_file_to: "Отправить файл на",
+    send_files: "Отправить файлы",
+    open: "Открыть Unison",
+    quit: "Выйти из Unison",
+};
+
+/// text returns the menu text of a locale.
+fn text(locale: Locale) -> &'static TrayText {
+    match locale {
+        Locale::En => &EN,
+        Locale::Ru => &RU,
+    }
+}
+
+/// ru_plural picks the form of a noun for a Russian count.
+fn ru_plural<'a>(count: usize, one: &'a str, few: &'a str, many: &'a str) -> &'a str {
+    let rest = count % 100;
+    if (11..=14).contains(&rest) {
+        return many;
+    }
+    match count % 10 {
+        1 => one,
+        2..=4 => few,
+        _ => many,
+    }
+}
+
 /// EVENT_TRAY_ACTION is emitted to the webview when the user picks a tray item
 /// that the webview has to act on.
 pub const EVENT_TRAY_ACTION: &str = "tray-action";
@@ -91,6 +175,8 @@ pub struct TrayMenu {
     pause: MenuItem<Wry>,
     recent: Submenu<Wry>,
     send: Submenu<Wry>,
+    /// Locale the menu was built with.
+    locale: Locale,
     /// Entries the recent menu shows, to keep an unchanged state from
     /// rebuilding it.
     recent_entries: Mutex<Vec<(String, String)>>,
@@ -100,46 +186,48 @@ pub struct TrayMenu {
 
 /// install adds the tray icon with its menu.
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
-    let status = MenuItem::with_id(app, "status", "Daemon offline", false, None::<&str>)?;
-    let pause_state = MenuItem::with_id(app, "pause-state", "Clipboard on", false, None::<&str>)?;
-    let five_minutes =
-        MenuItem::with_id(app, "pause-5m", "Pause for 5 minutes", true, None::<&str>)?;
-    let one_hour = MenuItem::with_id(app, "pause-1h", "Pause for 1 hour", true, None::<&str>)?;
+    let locale = Locale::detect();
+    let labels = text(locale);
+    let status = MenuItem::with_id(app, "status", labels.daemon_offline, false, None::<&str>)?;
+    let pause_state =
+        MenuItem::with_id(app, "pause-state", labels.clipboard_on, false, None::<&str>)?;
+    let five_minutes = MenuItem::with_id(app, "pause-5m", labels.pause_5m, true, None::<&str>)?;
+    let one_hour = MenuItem::with_id(app, "pause-1h", labels.pause_1h, true, None::<&str>)?;
     let indefinite = MenuItem::with_id(
         app,
         "pause-indefinite",
-        "Pause until I resume",
+        labels.pause_indefinite,
         true,
         None::<&str>,
     )?;
-    let off = MenuItem::with_id(app, "pause-off", "Resume", true, None::<&str>)?;
+    let off = MenuItem::with_id(app, "pause-off", labels.resume, true, None::<&str>)?;
     let pause_menu = Submenu::with_items(
         app,
-        "Clipboard pause",
+        labels.clipboard_pause,
         true,
         &[&five_minutes, &one_hour, &indefinite, &off],
     )?;
 
-    let recent = Submenu::new(app, "Recent items", true)?;
+    let recent = Submenu::new(app, labels.recent_items, true)?;
     recent.append(&MenuItem::with_id(
         app,
         "recent-empty",
-        "No recent items",
+        labels.no_recent_items,
         false,
         None::<&str>,
     )?)?;
 
-    let send = Submenu::new(app, "Send file to", true)?;
+    let send = Submenu::new(app, labels.send_file_to, true)?;
     send.append(&MenuItem::with_id(
         app,
         "send-empty",
-        "No devices online",
+        labels.no_devices_online,
         false,
         None::<&str>,
     )?)?;
 
-    let open = MenuItem::with_id(app, "open", "Open Unison", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Unison", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", labels.open, true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", labels.quit, true, None::<&str>)?;
 
     let menu = Menu::with_items(
         app,
@@ -173,6 +261,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         pause: pause_state,
         recent,
         send,
+        locale,
         recent_entries: Mutex::new(Vec::new()),
         send_entries: Mutex::new(Vec::new()),
     });
@@ -210,13 +299,13 @@ pub fn set_tray_state(
     state: TrayState,
 ) -> Result<(), String> {
     menu.status
-        .set_text(status_text(&state))
+        .set_text(status_text(&state, menu.locale))
         .map_err(|err| err.to_string())?;
     menu.pause
-        .set_text(pause_text(state.paused))
+        .set_text(pause_text(state.paused, menu.locale))
         .map_err(|err| err.to_string())?;
-    fill_recent(&app, &menu, &state.recent).map_err(|err| err.to_string())?;
-    fill_send(&app, &menu, &state.devices).map_err(|err| err.to_string())
+    fill_recent(&app, &menu, &state.recent, menu.locale).map_err(|err| err.to_string())?;
+    fill_send(&app, &menu, &state.devices, menu.locale).map_err(|err| err.to_string())
 }
 
 /// pick_files opens the native file dialog and returns the picked paths.
@@ -301,7 +390,7 @@ fn send_files(app: &AppHandle, device: &str) {
     app.clone()
         .dialog()
         .file()
-        .set_title("Send files")
+        .set_title(text(Locale::detect()).send_files)
         .pick_files(move |paths| {
             let files: Vec<String> = paths
                 .unwrap_or_default()
@@ -336,7 +425,12 @@ fn show_window(app: &AppHandle) {
 }
 
 /// fill_recent replaces the entries of the recent items menu.
-fn fill_recent(app: &AppHandle, menu: &TrayMenu, items: &[TrayItem]) -> tauri::Result<()> {
+fn fill_recent(
+    app: &AppHandle,
+    menu: &TrayMenu,
+    items: &[TrayItem],
+    locale: Locale,
+) -> tauri::Result<()> {
     let next = entries(
         HISTORY_PREFIX,
         items
@@ -352,7 +446,7 @@ fn fill_recent(app: &AppHandle, menu: &TrayMenu, items: &[TrayItem]) -> tauri::R
         menu.recent.append(&MenuItem::with_id(
             app,
             "recent-empty",
-            "No recent items",
+            text(locale).no_recent_items,
             false,
             None::<&str>,
         )?)?;
@@ -366,7 +460,12 @@ fn fill_recent(app: &AppHandle, menu: &TrayMenu, items: &[TrayItem]) -> tauri::R
 }
 
 /// fill_send replaces the targets of the send menu.
-fn fill_send(app: &AppHandle, menu: &TrayMenu, devices: &[TrayDevice]) -> tauri::Result<()> {
+fn fill_send(
+    app: &AppHandle,
+    menu: &TrayMenu,
+    devices: &[TrayDevice],
+    locale: Locale,
+) -> tauri::Result<()> {
     let next = entries(
         SEND_PREFIX,
         devices
@@ -382,7 +481,7 @@ fn fill_send(app: &AppHandle, menu: &TrayMenu, devices: &[TrayDevice]) -> tauri:
         menu.send.append(&MenuItem::with_id(
             app,
             "send-empty",
-            "No devices online",
+            text(locale).no_devices_online,
             false,
             None::<&str>,
         )?)?;
@@ -436,22 +535,33 @@ fn menu_label(text: &str) -> String {
     label.replace(['\n', '\r'], " ")
 }
 
-fn status_text(state: &TrayState) -> String {
+fn status_text(state: &TrayState, locale: Locale) -> String {
+    let labels = text(locale);
     if !state.connected {
-        return "Daemon offline".to_string();
+        return labels.daemon_offline.to_string();
     }
-    match state.online_peers {
-        0 => "No devices online".to_string(),
-        1 => "1 device online".to_string(),
-        peers => format!("{peers} devices online"),
+    let peers = state.online_peers;
+    if peers == 0 {
+        return labels.no_devices_online.to_string();
+    }
+    if peers == 1 {
+        return labels.one_device_online.to_string();
+    }
+    match locale {
+        Locale::En => labels.devices_online.replace("{count}", &peers.to_string()),
+        Locale::Ru => format!(
+            "{peers} {} в сети",
+            ru_plural(peers, "устройство", "устройства", "устройств")
+        ),
     }
 }
 
-fn pause_text(paused: bool) -> &'static str {
+fn pause_text(paused: bool, locale: Locale) -> &'static str {
+    let labels = text(locale);
     if paused {
-        "Clipboard paused"
+        labels.clipboard_paused
     } else {
-        "Clipboard on"
+        labels.clipboard_on
     }
 }
 
@@ -488,16 +598,63 @@ mod tests {
 
     #[test]
     fn status_text_counts_devices() {
-        assert_eq!(status_text(&state(false, 3)), "Daemon offline");
-        assert_eq!(status_text(&state(true, 0)), "No devices online");
-        assert_eq!(status_text(&state(true, 1)), "1 device online");
-        assert_eq!(status_text(&state(true, 4)), "4 devices online");
+        assert_eq!(status_text(&state(false, 3), Locale::En), "Daemon offline");
+        assert_eq!(
+            status_text(&state(true, 0), Locale::En),
+            "No devices online"
+        );
+        assert_eq!(status_text(&state(true, 1), Locale::En), "1 device online");
+        assert_eq!(status_text(&state(true, 4), Locale::En), "4 devices online");
+    }
+
+    #[test]
+    fn status_text_follows_the_russian_plural() {
+        assert_eq!(
+            status_text(&state(false, 0), Locale::Ru),
+            "Служба не запущена"
+        );
+        assert_eq!(
+            status_text(&state(true, 0), Locale::Ru),
+            "Нет устройств в сети"
+        );
+        assert_eq!(
+            status_text(&state(true, 1), Locale::Ru),
+            "1 устройство в сети"
+        );
+        assert_eq!(
+            status_text(&state(true, 3), Locale::Ru),
+            "3 устройства в сети"
+        );
+        assert_eq!(
+            status_text(&state(true, 5), Locale::Ru),
+            "5 устройств в сети"
+        );
+        assert_eq!(
+            status_text(&state(true, 11), Locale::Ru),
+            "11 устройств в сети"
+        );
+        assert_eq!(
+            status_text(&state(true, 21), Locale::Ru),
+            "21 устройство в сети"
+        );
     }
 
     #[test]
     fn pause_text_names_the_state() {
-        assert_eq!(pause_text(true), "Clipboard paused");
-        assert_eq!(pause_text(false), "Clipboard on");
+        assert_eq!(pause_text(true, Locale::En), "Clipboard paused");
+        assert_eq!(pause_text(false, Locale::En), "Clipboard on");
+        assert_eq!(pause_text(true, Locale::Ru), "Буфер обмена на паузе");
+        assert_eq!(pause_text(false, Locale::Ru), "Буфер обмена включен");
+    }
+
+    #[test]
+    fn menu_labels_follow_the_locale() {
+        assert_eq!(text(Locale::En).recent_items, "Recent items");
+        assert_eq!(text(Locale::Ru).recent_items, "Недавние элементы");
+        assert_eq!(text(Locale::En).send_file_to, "Send file to");
+        assert_eq!(text(Locale::Ru).send_file_to, "Отправить файл на");
+        assert_eq!(text(Locale::En).quit, "Quit Unison");
+        assert_eq!(text(Locale::Ru).quit, "Выйти из Unison");
     }
 
     #[test]

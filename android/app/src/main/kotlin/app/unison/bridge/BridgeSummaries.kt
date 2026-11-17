@@ -1,5 +1,7 @@
 package app.unison.bridge
 
+import android.content.Context
+import app.unison.R
 import app.unison.history.HistoryText
 import unison.local.v1.Local
 
@@ -15,9 +17,22 @@ object BridgeSummaries {
     }
 
     /** Summary of an entry. The content itself stays behind openItem. */
-    fun of(item: Local.ClipItem, deviceName: String): ClipSummary {
+    fun of(context: Context, item: Local.ClipItem, deviceName: String): ClipSummary {
         val preview = when (item.kind) {
-            Local.Kind.KIND_FILES -> HistoryText.fileNames(item)
+            Local.Kind.KIND_FILES -> {
+                val names = HistoryText.fileNames(item)
+                val summary = if (names.rest > 0) {
+                    context.resources.getQuantityString(
+                        R.plurals.names_more,
+                        names.rest,
+                        names.shown,
+                        names.rest,
+                    )
+                } else {
+                    names.shown
+                }
+                HistoryText.preview(summary)
+            }
             else -> HistoryText.text(item)
         }
         val mimeTypes = item.representationsList

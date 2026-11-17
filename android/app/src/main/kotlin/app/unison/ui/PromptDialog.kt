@@ -64,7 +64,7 @@ fun PromptDialog(prompts: List<PendingPrompt>, onAnswer: (PendingPrompt, PromptA
             Column {
                 Text(text = question(prompt), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = HistoryText.formatSize(prompt.sizeBytes),
+                    text = HistoryText.formatSize(prompt.sizeBytes, sizeUnits()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

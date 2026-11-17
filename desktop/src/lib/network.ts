@@ -1,6 +1,7 @@
 import { FailureReason, type Device, type Event } from "./api/gen/unison/local/v1/local_pb";
 import { cleanError } from "./errors";
 import { formatDateTime } from "./format";
+import { translate } from "./i18n";
 
 /**
  * NetworkIssueText is a connectivity problem in two levels: a short message in
@@ -28,16 +29,14 @@ export function pairingFailure(event: Event): PairingFailure {
   if (event.failureReason === FailureReason.UNREACHABLE) {
     return {
       paired: false,
-      message: "Could not reach the other device.",
-      hint:
-        "Keep both devices on the same network. Guest Wi-Fi and some routers keep their " +
-        "devices apart, and a VPN can do the same.",
+      message: translate("network.unreachable"),
+      hint: translate("network.unreachableHint"),
       details: event.error,
     };
   }
   return {
     paired: false,
-    message: cleanError(event.error) || "The pairing exchange failed.",
+    message: cleanError(event.error) || translate("network.pairingFailed"),
   };
 }
 
@@ -46,19 +45,21 @@ export function unreachableDeviceIssue(device: Device): NetworkIssueText | null 
   if (device.online || !device.unreachable) {
     return null;
   }
-  const name = device.name || "The device";
+  const name = device.name || translate("common.theDevice");
   const lines = [];
   if (device.unreachableSinceUnixMs) {
-    lines.push(`Not answering since ${formatDateTime(device.unreachableSinceUnixMs)}.`);
+    lines.push(
+      translate("network.notAnsweringSince", {
+        time: formatDateTime(device.unreachableSinceUnixMs),
+      }),
+    );
   }
   if (device.unreachableDetail) {
     lines.push(device.unreachableDetail);
   }
   return {
-    summary: `${name} does not answer.`,
-    hint:
-      "It may be turned off. If it is on, check that both devices are on the same network " +
-      "and that the network does not keep its devices apart.",
+    summary: translate("network.deviceDoesNotAnswer", { name }),
+    hint: translate("network.deviceOffHint"),
     details: lines.join("\n") || undefined,
   };
 }
@@ -72,15 +73,13 @@ export function quietWindowIssue(openFor: number, addr: string): NetworkIssueTex
     return null;
   }
   const seconds = Math.floor(openFor / 1000);
-  const lines = [`No pairing announcement arrived in ${seconds} seconds.`];
+  const lines = [translate("network.noAnnouncement", { count: seconds })];
   if (addr) {
-    lines.push(`This window listens at ${addr}.`);
+    lines.push(translate("network.windowListensAt", { addr }));
   }
   return {
-    summary: "No devices found on this network yet.",
-    hint:
-      "Open the pairing window on the other device. If it is open, this network may keep the " +
-      "devices apart: connect both to another network, or to the same VPN.",
+    summary: translate("network.noDevicesFound"),
+    hint: translate("network.noDevicesFoundHint"),
     details: lines.join("\n"),
   };
 }

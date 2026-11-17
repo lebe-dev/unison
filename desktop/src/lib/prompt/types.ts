@@ -11,7 +11,7 @@ export interface Prompt {
   device: string;
   /** Short description: the kind of a clip, the names of the files. */
   summary: string;
-  /** Size in plain English. */
+  /** Size in the locale the main window picked at startup. */
   size: string;
 }
 

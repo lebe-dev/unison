@@ -11,11 +11,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
 import app.unison.policy.PolicyCondition
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyDefaults
 import app.unison.policy.PolicyKind
 import app.unison.policy.PolicyMode
+import app.unison.testString
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -36,8 +38,8 @@ class PolicySectionTest {
         var saved: PolicyConfig? = null
         setContent(onChange = { saved = it })
 
-        compose.onAllNodesWithText("Automatic")[0].performScrollTo().performClick()
-        compose.onNodeWithText("Ask first").performClick()
+        compose.onAllNodesWithText(testString(R.string.policy_mode_auto))[0].performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.policy_mode_confirm)).performClick()
 
         val text = saved?.get(PolicyCondition.UNMETERED)?.get(PolicyKind.TEXT)
         assertEquals(PolicyMode.CONFIRM, text?.mode)
@@ -58,7 +60,7 @@ class PolicySectionTest {
         var reset = false
         setContent(onReset = { reset = true })
 
-        compose.onNodeWithText("Reset to defaults").performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.policy_reset)).performScrollTo().performClick()
 
         assertTrue(reset)
     }
@@ -73,7 +75,9 @@ class PolicySectionTest {
                 .build(),
         )
 
-        compose.onNodeWithText("Now: Data Saver").assertExists()
+        compose.onNodeWithText(
+            testString(R.string.policy_now, testString(R.string.policy_condition_data_saver)),
+        ).assertExists()
     }
 
     private fun setContent(

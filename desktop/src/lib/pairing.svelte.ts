@@ -13,6 +13,7 @@ import {
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
 import { errorText } from "./errors";
+import { translate } from "./i18n";
 import { pairingFailure } from "./network";
 
 /** Interval of the candidate list while the pairing window is open. */
@@ -116,7 +117,7 @@ class PairingStore {
       this.dialing = null;
       await Promise.all([this.refreshCandidates(), this.loadQr()]);
     } catch (error) {
-      this.error = errorText(error, "The pairing window could not be opened.");
+      this.error = errorText(error, translate("pairing.openFailed"));
     } finally {
       this.busy = false;
     }
@@ -131,7 +132,7 @@ class PairingStore {
       this.#applyWindow(response.window);
       await this.loadQr();
     } catch (error) {
-      this.error = errorText(error, "The pairing window could not be extended.");
+      this.error = errorText(error, translate("pairing.extendFailed"));
       if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
         this.#closeWindow();
       }
@@ -146,7 +147,7 @@ class PairingStore {
     try {
       await client.closePairingWindow({});
     } catch (error) {
-      this.error = errorText(error, "The pairing window could not be closed.");
+      this.error = errorText(error, translate("pairing.closeFailed"));
     } finally {
       this.#closeWindow();
       this.busy = false;
@@ -164,7 +165,7 @@ class PairingStore {
       this.candidates = response.candidates;
     } catch (error) {
       if (!(error instanceof ConnectError && error.code === Code.Unavailable)) {
-        this.error = errorText(error, "The candidate list could not be loaded.");
+        this.error = errorText(error, translate("pairing.candidatesFailed"));
       }
     } finally {
       this.#refreshing = false;
@@ -182,7 +183,7 @@ class PairingStore {
       this.qr = response.qr ?? null;
     } catch (error) {
       if (!(error instanceof ConnectError && error.code === Code.Unavailable)) {
-        this.error = errorText(error, "The pairing code could not be loaded.");
+        this.error = errorText(error, translate("pairing.codeFailed"));
       }
     }
   }
@@ -196,7 +197,7 @@ class PairingStore {
       await client.startSas({ addr });
     } catch (error) {
       this.dialing = null;
-      this.error = errorText(error, "The pairing exchange could not be started.");
+      this.error = errorText(error, translate("pairing.exchangeFailed"));
     }
   }
 
@@ -212,7 +213,7 @@ class PairingStore {
       await client.confirmSas({ deviceId: request.deviceID });
       this.confirmed = true;
     } catch (error) {
-      this.error = errorText(error, "The code could not be confirmed.");
+      this.error = errorText(error, translate("pairing.confirmFailed"));
     } finally {
       this.busy = false;
     }
@@ -229,9 +230,9 @@ class PairingStore {
     try {
       await client.rejectSas({ deviceId: request.deviceID });
       this.request = null;
-      this.result = { paired: false, message: "Pairing was rejected." };
+      this.result = { paired: false, message: translate("pairing.rejected") };
     } catch (error) {
-      this.error = errorText(error, "The request could not be rejected.");
+      this.error = errorText(error, translate("pairing.rejectFailed"));
     } finally {
       this.busy = false;
       this.confirmed = false;
@@ -264,7 +265,9 @@ class PairingStore {
         this.dialing = null;
         this.result = {
           paired: true,
-          message: event.name ? `${event.name} is paired.` : "The device is paired.",
+          message: event.name
+            ? translate("pairing.paired", { name: event.name })
+            : translate("pairing.pairedGeneric"),
         };
         void daemon.refresh();
         this.qrSpent = true;

@@ -21,6 +21,10 @@ android {
         compose = true
     }
 
+    androidResources {
+        localeFilters += listOf("en", "ru")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

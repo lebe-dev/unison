@@ -47,6 +47,7 @@ import app.unison.ui.groupShape
 import app.unison.ui.pathLabel
 import app.unison.ui.platformLabel
 import app.unison.ui.screenColor
+import app.unison.ui.sizeUnits
 import app.unison.ui.state.CoreState
 import unison.local.v1.Local
 
@@ -207,7 +208,7 @@ private fun ShareSummary(content: ShareContent) {
                             R.plurals.share_files_summary,
                             content.files.size,
                             content.files.size,
-                            HistoryText.formatSize(total),
+                            HistoryText.formatSize(total, sizeUnits()),
                         ),
                         style = MaterialTheme.typography.titleMedium,
                     )
@@ -227,11 +228,16 @@ private fun ShareSummary(content: ShareContent) {
     }
 }
 
-/** First file names of the request, one per line. */
+/** First file names of the request and the number that did not fit. */
+@Composable
 private fun fileNames(content: ShareContent.Files, limit: Int = SUMMARY_NAMES): String {
     val names = content.files.take(limit).joinToString(", ") { it.name }
-    val rest = content.files.size - limit
-    return if (rest > 0) "$names and $rest more" else names
+    val rest = (content.files.size - limit).coerceAtLeast(0)
+    return if (rest > 0) {
+        pluralStringResource(R.plurals.names_more, rest, names, rest)
+    } else {
+        names
+    }
 }
 
 /** Recipients of a text share, which are not selectable. */

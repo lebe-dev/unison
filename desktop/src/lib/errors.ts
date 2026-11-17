@@ -1,4 +1,5 @@
 import { Code, ConnectError } from "@connectrpc/connect";
+import { translate } from "./i18n";
 
 /** Domain prefixes of the error messages of the daemon. */
 const PREFIXES = ["api: ", "node: ", "pairing: ", "trust: ", "clip: ", "history: "];
@@ -36,7 +37,7 @@ export function cleanError(message: string): string {
 export function errorText(error: unknown, fallback: string): string {
   if (error instanceof ConnectError) {
     if (error.code === Code.Unavailable) {
-      return "The daemon is not reachable.";
+      return translate("errors.daemonUnreachable");
     }
     const message = stripPrefix(error.rawMessage.trim());
     return message || fallback;

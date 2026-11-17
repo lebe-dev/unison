@@ -12,6 +12,7 @@
     textSnippet,
   } from "../format";
   import { history } from "../history.svelte";
+  import { t } from "../i18n";
   import ImageCanvas from "../ImageCanvas.svelte";
 
   /** Height of one row of the feed, in pixels. */
@@ -26,12 +27,12 @@
   /** Longer side of the pixels of the full preview. */
   const PREVIEW_SIDE = 1024;
 
-  const kinds: { value: Kind; label: string }[] = [
-    { value: Kind.UNSPECIFIED, label: "All types" },
-    { value: Kind.TEXT, label: "Text" },
-    { value: Kind.IMAGE, label: "Images" },
-    { value: Kind.FILES, label: "Files" },
-  ];
+  const kinds = [
+    { value: Kind.UNSPECIFIED, labelKey: "history.allTypes" },
+    { value: Kind.TEXT, labelKey: "format.kind.text" },
+    { value: Kind.IMAGE, labelKey: "format.kind.image" },
+    { value: Kind.FILES, labelKey: "format.kind.files" },
+  ] as const;
 
   let viewportHeight = $state(360);
   let scrollTop = $state(0);
@@ -42,8 +43,8 @@
   let now = $state(Date.now());
 
   const origins = $derived([
-    { value: "", label: "All devices" },
-    { value: daemon.deviceID, label: "This device" },
+    { value: "", label: t("history.allDevices") },
+    { value: daemon.deviceID, label: t("common.thisDevice") },
     ...daemon.devices.map((device) => ({
       value: device.deviceId,
       label: device.name || shortDeviceID(device.deviceId),
@@ -93,7 +94,7 @@
 
   function originName(origin: string): string {
     if (origin === daemon.deviceID) {
-      return "This device";
+      return t("common.thisDevice");
     }
     const device = daemon.devices.find((candidate) => candidate.deviceId === origin);
     return device?.name || shortDeviceID(origin);
@@ -110,7 +111,9 @@
     if (info.kind === Kind.TEXT) {
       return textSnippet(info, 140);
     }
-    return `Stored as ${info.representations[0]?.mimeType ?? "an image"}`;
+    return t("history.storedAs", {
+      mime: info.representations[0]?.mimeType ?? t("history.anImage"),
+    });
   }
 
   /** hasThumbnail reports an image whose payload is stored on this device, so
@@ -124,7 +127,7 @@
     if (!info || !hasThumbnail(item)) {
       return;
     }
-    preview = { title: `Image from ${originName(info.origin)}`, id: info.id };
+    preview = { title: t("history.imageFrom", { name: originName(info.origin) }), id: info.id };
   }
 
   async function download(item: HistoryItem): Promise<void> {
@@ -145,38 +148,40 @@
       return "";
     }
     const seconds = Math.max(0, Math.round((now - start) / 1000));
-    return `${seconds} s`;
+    return t("history.elapsedSeconds", { seconds });
   }
 </script>
 
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
-      <p class="muted">Connecting to the daemon...</p>
+      <p class="muted">{t("devices.connecting")}</p>
     {:else}
-      <p class="notice error">The daemon is not running, so the history is unavailable.</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+      <p class="notice error">{t("history.daemonNotRunning")}</p>
+      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+        {t("common.tryAgain")}
+      </button>
     {/if}
   </section>
 {:else}
   <div class="history">
     <div class="toolbar">
       <label class="field">
-        <span>Type</span>
+        <span>{t("history.type")}</span>
         <select
-          aria-label="Type"
+          aria-label={t("history.type")}
           value={history.kind}
           onchange={(event) => void history.setKind(Number(event.currentTarget.value))}
         >
           {#each kinds as option (option.value)}
-            <option value={option.value}>{option.label}</option>
+            <option value={option.value}>{t(option.labelKey)}</option>
           {/each}
         </select>
       </label>
       <label class="field">
-        <span>Device</span>
+        <span>{t("history.device")}</span>
         <select
-          aria-label="Device"
+          aria-label={t("history.device")}
           value={history.origin}
           onchange={(event) => void history.setOrigin(event.currentTarget.value)}
         >
@@ -185,14 +190,16 @@
           {/each}
         </select>
       </label>
-      <span class="count muted">{history.items.length} items</span>
+      <span class="count muted">
+        {t("history.itemsCount", { count: history.items.length })}
+      </span>
       <button
         class="button small ghost"
         type="button"
         onclick={() => void history.load()}
         disabled={history.loading}
       >
-        Refresh
+        {t("common.refresh")}
       </button>
     </div>
 
@@ -212,7 +219,7 @@
 
     {#if history.items.length === 0}
       <p class="empty">
-        {history.loading ? "Loading the history..." : "No items match this filter."}
+        {history.loading ? t("history.loading") : t("history.emptyFilter")}
       </p>
     {:else}
       <div
@@ -235,7 +242,7 @@
                 <button
                   type="button"
                   class="thumb"
-                  aria-label="Show the image"
+                  aria-label={t("history.showImageAria")}
                   onclick={() => openPreview(item)}
                 >
                   <ImageCanvas id={info.id} maxSide={THUMB_SIDE} fallback={kindBadge} />
@@ -247,11 +254,11 @@
 
             <div class="body">
               <div class="line">
-                <span class="title">{description(item) || "Item"}</span>
+                <span class="title">{description(item) || t("common.item")}</span>
                 {#if info && history.held.includes(info.id)}
-                  <span class="badge confirm">Waits for you</span>
+                  <span class="badge confirm">{t("history.waitsForYou")}</span>
                 {:else if info && !item.complete}
-                  <span class="badge confirm">Not downloaded</span>
+                  <span class="badge confirm">{t("history.notDownloaded")}</span>
                 {/if}
               </div>
               <div class="line meta">
@@ -261,7 +268,9 @@
                   <span>{formatBytes(itemSize(info))}</span>
                 {/if}
                 {#if history.downloading.includes(info?.id ?? "")}
-                  <span class="downloading">Downloading... {elapsed(info?.id ?? "")}</span>
+                  <span class="downloading">
+                    {t("history.downloading", { time: elapsed(info?.id ?? "") })}
+                  </span>
                 {/if}
               </div>
             </div>
@@ -274,7 +283,7 @@
                   onclick={() => void history.apply(info?.id ?? "")}
                   disabled={!info}
                 >
-                  Apply
+                  {t("common.apply")}
                 </button>
               {:else}
                 <button
@@ -283,7 +292,7 @@
                   onclick={() => void history.copy(info?.id ?? "")}
                   disabled={!info}
                 >
-                  Copy
+                  {t("common.copy")}
                 </button>
               {/if}
               <button
@@ -294,7 +303,9 @@
                   history.downloading.includes(info.id) ||
                   (item.complete && info.kind !== Kind.FILES)}
               >
-                {item.complete && info?.kind !== Kind.FILES ? "Downloaded" : "Download"}
+                {item.complete && info?.kind !== Kind.FILES
+                  ? t("history.downloaded")
+                  : t("common.download")}
               </button>
               {#if deleting === info?.id}
                 <button
@@ -302,10 +313,10 @@
                   type="button"
                   onclick={() => void history.remove(info?.id ?? "")}
                 >
-                  Delete
+                  {t("history.delete")}
                 </button>
                 <button class="button ghost small" type="button" onclick={() => (deleting = null)}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               {:else}
                 <button
@@ -314,7 +325,7 @@
                   onclick={() => (deleting = info?.id ?? null)}
                   disabled={!info}
                 >
-                  Delete
+                  {t("history.delete")}
                 </button>
               {/if}
             </div>
@@ -327,18 +338,20 @@
 {/if}
 
 {#if preview}
-  <div class="overlay" role="dialog" aria-modal="true" aria-label="Image preview">
+  <div class="overlay" role="dialog" aria-modal="true" aria-label={t("history.previewAria")}>
     <button
       class="backdrop"
       type="button"
-      aria-label="Close the preview"
+      aria-label={t("history.closePreviewAria")}
       onclick={() => (preview = null)}
     ></button>
     <figure>
       <ImageCanvas id={preview.id} maxSide={PREVIEW_SIDE} label={preview.title} />
       <figcaption>
         <span>{preview.title}</span>
-        <button class="button small" type="button" onclick={() => (preview = null)}>Close</button>
+        <button class="button small" type="button" onclick={() => (preview = null)}>
+          {t("common.close")}
+        </button>
       </figcaption>
     </figure>
   </div>

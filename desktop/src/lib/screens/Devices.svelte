@@ -5,6 +5,7 @@
   import { confirmation, type Scope, type Side } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
+  import { t } from "../i18n";
   import NetworkIssue from "../NetworkIssue.svelte";
   import { unreachableDeviceIssue } from "../network";
   import {
@@ -21,12 +22,12 @@
   const groups = $derived([
     {
       role: Role.PERSONAL,
-      title: "Personal",
+      titleKey: "devices.personal" as const,
       devices: daemon.devices.filter((device) => device.role === Role.PERSONAL),
     },
     {
       role: Role.FRIENDS,
-      title: "Friends",
+      titleKey: "devices.friends" as const,
       devices: daemon.devices.filter((device) => device.role === Role.FRIENDS),
     },
   ]);
@@ -56,9 +57,9 @@
 
   function statusText(device: Device): string {
     if (device.online) {
-      return "Online";
+      return t("common.online");
     }
-    return device.unreachable ? "Not reachable" : "Offline";
+    return device.unreachable ? t("common.notReachable") : t("common.offline");
   }
 
   function select(device: Device): void {
@@ -89,7 +90,7 @@
   async function rename(device: Device): Promise<void> {
     const name = draftName.trim();
     if (!name) {
-      notice = { kind: "error", text: "The name cannot be empty." };
+      notice = { kind: "error", text: t("devices.renameEmpty") };
       return;
     }
     busy = true;
@@ -98,11 +99,11 @@
       await client.renameDevice({ deviceId: device.deviceId, name });
       editing = null;
       await daemon.refresh();
-      notice = { kind: "info", text: `The device is now called ${name}.` };
+      notice = { kind: "info", text: t("devices.renamed", { name }) };
     } catch (error) {
       notice = {
         kind: "error",
-        text: errorText(error, "The device could not be renamed."),
+        text: errorText(error, t("devices.renameFailed")),
       };
     } finally {
       busy = false;
@@ -119,15 +120,16 @@
 
   /** flagLabel names one switch for a screen reader. */
   function flagLabel(device: Device, side: Side, scope: Scope): string {
-    const name = device.name || "The device";
+    const name = device.name || t("common.theDevice");
+    const fromName = device.name || t("common.theDeviceGenitive");
     if (side === "local") {
-      return scope === "clipboard"
-        ? `This device asks before applying the clipboard of ${name}`
-        : `This device asks before accepting files from ${name}`;
+      return t(scope === "clipboard" ? "devices.flagLocalClipboard" : "devices.flagLocalFiles", {
+        name: fromName,
+      });
     }
-    return scope === "clipboard"
-      ? `${name} asks before applying the clipboard of this device`
-      : `${name} asks before accepting files from this device`;
+    return t(scope === "clipboard" ? "devices.flagPeerClipboard" : "devices.flagPeerFiles", {
+      name,
+    });
   }
 
   async function setConfirmation(
@@ -153,10 +155,12 @@
       await daemon.refresh();
       notice = {
         kind: "info",
-        text: `${device.name || "The device"} is revoked and cannot reconnect.`,
+        text: t("devices.revoked", {
+          name: device.name || t("common.theDeviceGenitive"),
+        }),
       };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The device could not be revoked.") };
+      notice = { kind: "error", text: errorText(error, t("devices.revokeFailed")) };
     } finally {
       busy = false;
     }
@@ -166,23 +170,25 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
-      <p class="muted">Connecting to the daemon...</p>
+      <p class="muted">{t("devices.connecting")}</p>
     {:else}
-      <p class="notice error">The daemon is not running, so paired devices cannot be shown.</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+      <p class="notice error">{t("devices.daemonNotRunning")}</p>
+      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+        {t("common.tryAgain")}
+      </button>
     {/if}
   </section>
 {:else}
   <div class="devices">
-    <section class="column" aria-label="Device list">
+    <section class="column" aria-label={t("devices.deviceListAria")}>
       <div class="column-head">
-        <span class="column-title">Paired devices</span>
+        <span class="column-title">{t("devices.pairedDevices")}</span>
         {#if onAdd}
           <button
             class="icon-button"
             type="button"
-            aria-label="Add device"
-            title="Add device"
+            aria-label={t("devices.addDeviceAria")}
+            title={t("devices.addDeviceAria")}
             onclick={onAdd}
           >
             <Icon name="plus" stroke={1.6} />
@@ -191,7 +197,7 @@
       </div>
 
       <div class="scroll">
-        <h3 class="group-title">This Mac</h3>
+        <h3 class="group-title">{t("common.thisMac")}</h3>
         <div class="entry self">
           <span class="avatar"><Icon name="laptop" size={20} stroke={1.2} /></span>
           <span class="text">
@@ -202,11 +208,11 @@
 
         {#each groups as group (group.role)}
           <h3 class="group-title">
-            {group.title} <span class="count">{group.devices.length}</span>
+            {t(group.titleKey)} <span class="count">{group.devices.length}</span>
           </h3>
           {#if group.devices.length === 0}
             <p class="placeholder">
-              {group.role === Role.PERSONAL ? "No Personal devices yet." : "No Friends yet."}
+              {group.role === Role.PERSONAL ? t("devices.noPersonal") : t("devices.noFriends")}
             </p>
           {:else}
             <ul>
@@ -223,7 +229,7 @@
                       <Icon name={platformIcon(device)} size={20} stroke={1.2} />
                     </span>
                     <span class="text">
-                      <strong>{device.name || "Unnamed device"}</strong>
+                      <strong>{device.name || t("common.unnamedDevice")}</strong>
                       <span class="sub">
                         {platformLabel(
                           device.platform,
@@ -231,7 +237,9 @@
                           · {pathLabel(
                             device.path,
                           )}{:else if !device.online && device.lastSeenAtUnixMs}
-                          · seen {formatTime(device.lastSeenAtUnixMs)}{/if}
+                          · {t("devices.seen", {
+                            time: formatTime(device.lastSeenAtUnixMs),
+                          })}{/if}
                       </span>
                     </span>
                     <span
@@ -250,7 +258,7 @@
       </div>
     </section>
 
-    <section class="detail" aria-label="Device details">
+    <section class="detail" aria-label={t("devices.deviceDetailsAria")}>
       {#if notice}
         <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
           {notice.text}
@@ -260,10 +268,12 @@
       {#if !selected}
         <div class="state">
           <span class="hero-icon"><Icon name="devices" size={34} stroke={1} /></span>
-          <p>No paired devices yet.</p>
-          <p class="muted">Pair a phone or another computer to share the clipboard and files.</p>
+          <p>{t("devices.noPaired")}</p>
+          <p class="muted">{t("devices.pairHint")}</p>
           {#if onAdd}
-            <button class="button primary large" type="button" onclick={onAdd}>Add device</button>
+            <button class="button primary large" type="button" onclick={onAdd}>
+              {t("common.addDevice")}
+            </button>
           {/if}
         </div>
       {:else}
@@ -275,7 +285,7 @@
               <div class="rename">
                 <input
                   type="text"
-                  aria-label="New device name"
+                  aria-label={t("devices.newDeviceNameAria")}
                   bind:value={draftName}
                   maxlength="128"
                   onkeydown={(event) => {
@@ -289,14 +299,14 @@
                   onclick={() => void rename(device)}
                   disabled={busy}
                 >
-                  Save
+                  {t("common.save")}
                 </button>
                 <button class="button" type="button" onclick={cancelRename} disabled={busy}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             {:else}
-              <h2>{device.name || "Unnamed device"}</h2>
+              <h2>{device.name || t("common.unnamedDevice")}</h2>
             {/if}
             <span class="hero-status">
               <span
@@ -319,22 +329,29 @@
         {/if}
 
         {#if device.role === Role.PERSONAL}
-          <div class="section" role="group" aria-label="Ask before taking">
-            <h3 class="section-title">Ask before taking</h3>
+          <div class="section" role="group" aria-label={t("devices.askBeforeTaking")}>
+            <h3 class="section-title">{t("devices.askBeforeTaking")}</h3>
             <div class="list">
               {#each ["local", "peer"] as const as side (side)}
+                {@const name = device.name || t("common.theDevice")}
+                {@const fromName = device.name || t("common.theDeviceGenitive")}
+                {@const onName = device.name || t("common.theDevicePrepositional")}
                 <div class="form-row">
                   <span class="label">
                     {side === "local"
-                      ? `On this Mac, from ${device.name || "the device"}`
-                      : `On ${device.name || "the device"}, from this Mac`}
+                      ? t("devices.onThisMacFrom", { name: fromName })
+                      : t("devices.onDeviceFromThisMac", { name: onName })}
                     {#if side === "peer" && !device.online}
-                      <small>Changes while {device.name || "the device"} is online.</small>
+                      <small>{t("devices.changesWhileOnline", { name })}</small>
                     {/if}
                   </span>
                   {#each flags.filter((flag) => flag.side === side) as flag (`${flag.side}:${flag.scope}`)}
                     <label class="switch-cell">
-                      <span>{flag.scope === "clipboard" ? "Clipboard" : "Files"}</span>
+                      <span>
+                        {flag.scope === "clipboard"
+                          ? t("common.clipboard")
+                          : t("format.kind.files")}
+                      </span>
                       <input
                         class="switch"
                         type="checkbox"
@@ -356,34 +373,34 @@
                 </div>
               {/each}
             </div>
-            <p class="section-footer">What waits for an answer shows up in a prompt.</p>
+            <p class="section-footer">{t("devices.promptFooter")}</p>
           </div>
         {/if}
 
         <div class="section">
-          <h3 class="section-title">Details</h3>
+          <h3 class="section-title">{t("common.details")}</h3>
           <dl class="list">
             <div class="form-row">
-              <dt class="label">Role</dt>
+              <dt class="label">{t("devices.role")}</dt>
               <dd>{roleLabel(device.role)}</dd>
             </div>
             <div class="form-row">
-              <dt class="label">System</dt>
+              <dt class="label">{t("devices.system")}</dt>
               <dd>{platformLabel(device.platform)}</dd>
             </div>
             <div class="form-row">
-              <dt class="label">Device ID</dt>
+              <dt class="label">{t("devices.deviceID")}</dt>
               <dd class="mono">{shortDeviceID(device.deviceId)}</dd>
             </div>
             {#if device.addedAtUnixMs}
               <div class="form-row">
-                <dt class="label">Added</dt>
+                <dt class="label">{t("devices.added")}</dt>
                 <dd>{formatDateTime(device.addedAtUnixMs)}</dd>
               </div>
             {/if}
             {#if !device.online && device.lastSeenAtUnixMs}
               <div class="form-row">
-                <dt class="label">Last seen</dt>
+                <dt class="label">{t("devices.lastSeen")}</dt>
                 <dd>{formatTime(device.lastSeenAtUnixMs)}</dd>
               </div>
             {/if}
@@ -391,10 +408,11 @@
         </div>
 
         {#if revoking === device.deviceId}
-          <div class="panel revoke" role="alertdialog" aria-label="Revoke the device">
+          <div class="panel revoke" role="alertdialog" aria-label={t("devices.revokeDialogAria")}>
             <p>
-              Revoke {device.name || "the device"}? Every Personal device of the group stops
-              trusting it, and it cannot reconnect until it is paired again.
+              {t("devices.revokeQuestion", {
+                name: device.name || t("common.theDeviceLower"),
+              })}
             </p>
             <div class="toolbar end">
               <button
@@ -403,7 +421,7 @@
                 onclick={() => (revoking = null)}
                 disabled={busy}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 class="button danger"
@@ -411,13 +429,15 @@
                 onclick={() => void revoke(device)}
                 disabled={busy}
               >
-                Revoke device
+                {t("devices.revokeDevice")}
               </button>
             </div>
           </div>
         {:else if editing !== device.deviceId}
           <div class="toolbar">
-            <button class="button" type="button" onclick={() => beginRename(device)}>Rename</button>
+            <button class="button" type="button" onclick={() => beginRename(device)}>
+              {t("devices.rename")}
+            </button>
             <button
               class="button danger"
               type="button"
@@ -427,7 +447,7 @@
                 notice = null;
               }}
             >
-              Revoke
+              {t("devices.revoke")}
             </button>
           </div>
         {/if}

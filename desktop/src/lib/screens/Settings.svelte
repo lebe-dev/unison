@@ -4,6 +4,7 @@
   import { errorText } from "../errors";
   import { history } from "../history.svelte";
   import { shortDeviceID } from "../format";
+  import { t, type MessageKey } from "../i18n";
   import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
   import {
@@ -35,11 +36,11 @@
   import RelaySection from "./RelaySection.svelte";
   import { theme } from "../theme.svelte";
 
-  const pauses: { choice: PauseChoice; label: string }[] = [
-    { choice: "five_minutes", label: "Pause for 5 minutes" },
-    { choice: "one_hour", label: "Pause for 1 hour" },
-    { choice: "indefinite", label: "Pause until I resume" },
-    { choice: "off", label: "Resume" },
+  const pauses: { choice: PauseChoice; labelKey: MessageKey }[] = [
+    { choice: "five_minutes", labelKey: "settings.pause5" },
+    { choice: "one_hour", labelKey: "settings.pause1h" },
+    { choice: "indefinite", labelKey: "settings.pauseIndefinite" },
+    { choice: "off", labelKey: "common.resume" },
   ];
 
   let name = $state("");
@@ -73,18 +74,18 @@
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
   });
 
-  const loginHint = $derived.by(() => {
+  const loginHint = $derived.by((): MessageKey => {
     switch (login?.status) {
       case "enabled":
-        return "The background service starts when you log in.";
+        return "settings.loginHint.enabled";
       case "requires_approval":
-        return "Allow Unison in System Settings > General > Login Items.";
+        return "settings.loginHint.requiresApproval";
       case "not_registered":
-        return "The background service starts only while the app asks for it.";
+        return "settings.loginHint.notRegistered";
       case "not_found":
-        return "The system does not know the background service of this build.";
+        return "settings.loginHint.notFound";
       default:
-        return "Automatic startup is available in the packaged app.";
+        return "settings.loginHint.default";
     }
   });
 
@@ -129,7 +130,7 @@
       loaded = true;
       notice = null;
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The settings could not be loaded.") };
+      notice = { kind: "error", text: errorText(error, t("settings.loadFailed")) };
     } finally {
       busy = false;
     }
@@ -138,7 +139,7 @@
   async function saveName(): Promise<void> {
     const value = name.trim();
     if (!value) {
-      notice = { kind: "error", text: "The device name cannot be empty." };
+      notice = { kind: "error", text: t("settings.nameEmpty") };
       return;
     }
     busy = true;
@@ -147,9 +148,9 @@
       const response = await client.renameDevice({ deviceId: daemon.deviceID, name: value });
       name = response.device?.name ?? value;
       await daemon.refresh();
-      notice = { kind: "info", text: "The name is announced to the paired devices." };
+      notice = { kind: "info", text: t("settings.nameSaved") };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The device name could not be saved.") };
+      notice = { kind: "error", text: errorText(error, t("settings.nameFailed")) };
     } finally {
       busy = false;
     }
@@ -180,7 +181,7 @@
       requireFileConfirmation = previous.files;
       notice = {
         kind: "error",
-        text: errorText(error, "The confirmation setting could not be changed."),
+        text: errorText(error, t("settings.confirmationFailed")),
       };
     } finally {
       busy = false;
@@ -195,9 +196,9 @@
       const response = await client.updateSettings({ downloadsDir: path });
       downloadsDir = response.settings?.downloadsDir ?? path;
       history.downloadsDir = downloadsDir;
-      notice = { kind: "info", text: "Files that arrive from now on are saved there." };
+      notice = { kind: "info", text: t("settings.folderSaved") };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The folder could not be saved.") };
+      notice = { kind: "error", text: errorText(error, t("settings.folderFailed")) };
     } finally {
       busy = false;
     }
@@ -208,7 +209,7 @@
     try {
       path = await pickFolder();
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The folder dialog could not be opened.") };
+      notice = { kind: "error", text: errorText(error, t("settings.dialogFailed")) };
       return;
     }
     if (!path) {
@@ -236,7 +237,7 @@
       policy = previous;
       notice = {
         kind: "error",
-        text: errorText(error, "The network policy could not be saved."),
+        text: errorText(error, t("settings.policyFailed")),
       };
     } finally {
       busy = false;
@@ -275,11 +276,11 @@
     try {
       const response = await client.updateSettings({ resetPolicy: true });
       policy = policyFromSettings(response.settings);
-      notice = { kind: "info", text: "The network policy is back to its defaults." };
+      notice = { kind: "info", text: t("settings.policyReset") };
     } catch (error) {
       notice = {
         kind: "error",
-        text: errorText(error, "The network policy could not be reset."),
+        text: errorText(error, t("settings.policyResetFailed")),
       };
     } finally {
       busy = false;
@@ -301,7 +302,7 @@
   async function saveTTL(kind: TTLKind): Promise<void> {
     const seconds = parseLifetime(ttlDrafts[kind]);
     if (seconds === null) {
-      notice = { kind: "error", text: "Use a lifetime like 24h or 7d, up to 365d." };
+      notice = { kind: "error", text: t("settings.badLifetime") };
       showTTL(ttl);
       return;
     }
@@ -310,9 +311,9 @@
     try {
       const response = await client.updateSettings(ttlRequest(kind, seconds));
       showTTL(ttlFromSettings(response.settings));
-      notice = { kind: "info", text: "The lifetime applies to the next item you copy." };
+      notice = { kind: "info", text: t("settings.lifetimeSaved") };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The lifetime could not be saved.") };
+      notice = { kind: "error", text: errorText(error, t("settings.lifetimeFailed")) };
       showTTL(ttl);
     } finally {
       busy = false;
@@ -325,9 +326,9 @@
     try {
       const response = await client.updateSettings({ resetHistoryTtl: true });
       showTTL(ttlFromSettings(response.settings));
-      notice = { kind: "info", text: "The lifetimes are back to their defaults." };
+      notice = { kind: "info", text: t("settings.lifetimesReset") };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The lifetimes could not be reset.") };
+      notice = { kind: "error", text: errorText(error, t("settings.lifetimesResetFailed")) };
     } finally {
       busy = false;
     }
@@ -342,7 +343,7 @@
     } catch (error) {
       notice = {
         kind: "error",
-        text: errorText(error, "The search for friends could not be changed."),
+        text: errorText(error, t("settings.friendsFailed")),
       };
     } finally {
       busy = false;
@@ -355,7 +356,7 @@
     try {
       login = await setLoginItem(enabled);
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The login item could not be changed.") };
+      notice = { kind: "error", text: errorText(error, t("settings.loginFailed")) };
     } finally {
       busy = false;
     }
@@ -371,14 +372,14 @@
 
 {#snippet appearance()}
   <section class="section">
-    <h3 class="section-title">Appearance</h3>
+    <h3 class="section-title">{t("settings.appearance")}</h3>
     <div class="list">
       <label class="form-row">
-        <span class="label">Theme</span>
-        <select aria-label="Theme" value={theme.mode} onchange={changeTheme}>
-          <option value="system">Auto</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
+        <span class="label">{t("settings.theme")}</span>
+        <select aria-label={t("settings.theme")} value={theme.mode} onchange={changeTheme}>
+          <option value="system">{t("settings.themeAuto")}</option>
+          <option value="light">{t("settings.themeLight")}</option>
+          <option value="dark">{t("settings.themeDark")}</option>
         </select>
       </label>
     </div>
@@ -387,7 +388,7 @@
 
 {#snippet startup()}
   <section class="section">
-    <h3 class="section-title">Startup</h3>
+    <h3 class="section-title">{t("settings.startup")}</h3>
     <div class="list">
       <label class="toggle form-row">
         <input
@@ -397,8 +398,8 @@
           onchange={(event) => void setLogin(event.currentTarget.checked)}
         />
         <span>
-          Start Unison at login
-          <small>{loginHint}</small>
+          {t("settings.startAtLogin")}
+          <small>{t(loginHint)}</small>
         </span>
       </label>
     </div>
@@ -409,11 +410,12 @@
   {#if !daemon.connected}
     <section class="state">
       {#if daemon.loading}
-        <p class="muted">Connecting to the daemon...</p>
+        <p class="muted">{t("devices.connecting")}</p>
       {:else}
-        <p class="notice error">The daemon is not running, so the settings are unavailable.</p>
-        <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button
-        >
+        <p class="notice error">{t("settings.daemonNotRunning")}</p>
+        <button class="button" type="button" onclick={() => void daemon.refresh()}>
+          {t("common.tryAgain")}
+        </button>
       {/if}
     </section>
 
@@ -428,12 +430,12 @@
 
     <section class="section">
       <h3 class="section-title">
-        <span class="grow">This Mac</span>
+        <span class="grow">{t("common.thisMac")}</span>
         <span class="mono count">{shortDeviceID(daemon.deviceID)}</span>
       </h3>
       <div class="list">
         <div class="form-row">
-          <label class="label" for="device-name">Device name</label>
+          <label class="label" for="device-name">{t("settings.deviceName")}</label>
           <input
             id="device-name"
             class="name-input"
@@ -451,7 +453,7 @@
             onclick={() => void saveName()}
             disabled={busy || !loaded}
           >
-            Save
+            {t("common.save")}
           </button>
         </div>
         <label class="toggle form-row">
@@ -462,11 +464,8 @@
             onchange={(event) => void setConfirmation("clipboard", event.currentTarget.checked)}
           />
           <span>
-            Ask before applying the clipboard of new devices
-            <small>
-              Items wait in the history and a prompt asks whether to apply them. This is the default
-              for devices you pair from now on; change it for a device on the Devices screen.
-            </small>
+            {t("settings.askClipboard")}
+            <small>{t("settings.askClipboardHint")}</small>
           </span>
         </label>
         <label class="toggle form-row">
@@ -477,25 +476,22 @@
             onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
           />
           <span>
-            Ask before accepting files from new devices
-            <small>
-              Nothing is downloaded until you accept the files in the prompt or on the Requests
-              screen.
-            </small>
+            {t("settings.askFiles")}
+            <small>{t("settings.askFilesHint")}</small>
           </span>
         </label>
       </div>
-      <p class="section-footer">Peers see this name. They learn it the next time they connect.</p>
+      <p class="section-footer">{t("settings.nameFooter")}</p>
     </section>
 
     {@render appearance()}
 
     <section class="section">
-      <h3 class="section-title">Received Files</h3>
+      <h3 class="section-title">{t("settings.receivedFiles")}</h3>
       <div class="list">
         <div class="form-row">
           <span class="label">
-            Save to
+            {t("settings.saveTo")}
             <span class="mono path hint">{downloadsDir}</span>
           </span>
           <button
@@ -504,7 +500,7 @@
             onclick={() => void saveDownloadsDir("")}
             disabled={busy || !loaded}
           >
-            Use default folder
+            {t("settings.useDefaultFolder")}
           </button>
           <button
             class="button"
@@ -512,15 +508,15 @@
             onclick={() => void chooseDownloadsDir()}
             disabled={busy || !loaded}
           >
-            Choose folder
+            {t("settings.chooseFolder")}
           </button>
         </div>
       </div>
-      <p class="section-footer">Files that other devices send are saved in this folder.</p>
+      <p class="section-footer">{t("settings.receivedFooter")}</p>
     </section>
 
     <section class="section">
-      <h3 class="section-title">Friends</h3>
+      <h3 class="section-title">{t("devices.friends")}</h3>
       <div class="list">
         <label class="toggle form-row">
           <input
@@ -530,13 +526,12 @@
             onchange={(event) => void setFriends(event.currentTarget.checked)}
           />
           <span>
-            Find friends
+            {t("settings.findFriends")}
             <small>
               {#if friendsOn}
-                Searching for {friendsLeft}. Turn it on on the other device too; the search stops by
-                itself.
+                {t("settings.searchingFor", { time: friendsLeft })}
               {:else}
-                Both devices have to turn it on. The search stops by itself after 15 minutes.
+                {t("settings.searchingOff")}
               {/if}
             </small>
           </span>
@@ -545,7 +540,7 @@
     </section>
 
     <section class="section">
-      <h3 class="section-title">Clipboard</h3>
+      <h3 class="section-title">{t("common.clipboard")}</h3>
       <div class="list">
         <div class="form-row">
           <span class="label">{daemon.pauseText}</span>
@@ -557,7 +552,7 @@
                 type="button"
                 onclick={() => void setPause(option.choice)}
               >
-                {option.label}
+                {t(option.labelKey)}
               </button>
             {/each}
           </div>
@@ -568,25 +563,25 @@
     {#if ttl}
       <section class="section">
         <h3 class="section-title">
-          <span class="grow">History</span>
+          <span class="grow">{t("nav.history")}</span>
           <button
             class="button small"
             type="button"
             onclick={() => void resetTTL()}
             disabled={busy}
           >
-            Reset lifetimes
+            {t("settings.resetLifetimes")}
           </button>
         </h3>
         <div class="list">
           {#each ttlKinds as kind (kind.key)}
             <label class="form-row">
-              <span class="label">{kind.label}</span>
+              <span class="label">{t(kind.label)}</span>
               <input
                 class="short"
                 type="text"
                 value={ttlDrafts[kind.key]}
-                aria-label={`${kind.label} lifetime`}
+                aria-label={t("settings.lifetimeAria", { kind: t(kind.label) })}
                 disabled={busy}
                 onchange={(event) => {
                   ttlDrafts = { ...ttlDrafts, [kind.key]: event.currentTarget.value };
@@ -596,11 +591,7 @@
             </label>
           {/each}
         </div>
-        <p class="section-footer">
-          How long this device keeps the items it copies. The lifetime is set on the item when it is
-          copied, so the items that already exist keep their own. Days and hours are accepted, for
-          example 7d or 24h, up to 365d.
-        </p>
+        <p class="section-footer">{t("settings.lifetimeFooter")}</p>
       </section>
     {/if}
 
@@ -608,39 +599,43 @@
       {@const table = policy}
       <section class="section">
         <h3 class="section-title">
-          <span class="grow">Network policy</span>
+          <span class="grow">{t("settings.networkPolicy")}</span>
           <button
             class="button small"
             type="button"
             onclick={() => void resetPolicy()}
             disabled={busy}
           >
-            Reset to defaults
+            {t("settings.resetDefaults")}
           </button>
         </h3>
         {#each conditions as condition (condition.key)}
+          {@const conditionLabel = t(condition.label)}
           <div class="list">
             <label class="toggle form-row">
               <input
                 type="checkbox"
-                aria-label={`${condition.label} relay`}
+                aria-label={t("settings.conditionRelayAria", { condition: conditionLabel })}
                 checked={table[condition.key].relay}
                 disabled={busy}
                 onchange={(event) => setRelay(condition.key, event.currentTarget.checked)}
               />
-              <span class="relay-label">Relay</span>
+              <span class="relay-label">{t("settings.relay")}</span>
               <span>
-                <strong>{condition.label}</strong>
-                <small>{condition.hint}</small>
+                <strong>{conditionLabel}</strong>
+                <small>{t(condition.hint)}</small>
               </span>
             </label>
             {#each kinds as kind (kind.key)}
               {@const cell = table[condition.key][kind.key]}
               <div class="form-row">
-                <span class="label">{kind.label}</span>
+                <span class="label">{t(kind.label)}</span>
                 <select
                   value={cell.action}
-                  aria-label={`${condition.label} ${kind.label} action`}
+                  aria-label={t("settings.kindActionAria", {
+                    condition: conditionLabel,
+                    kind: t(kind.label),
+                  })}
                   disabled={busy}
                   onchange={(event) =>
                     setCell(condition.key, kind.key, {
@@ -648,7 +643,7 @@
                     })}
                 >
                   {#each actions as action (action.value)}
-                    <option value={action.value}>{action.label}</option>
+                    <option value={action.value}>{t(action.label)}</option>
                   {/each}
                 </select>
                 <input
@@ -657,7 +652,10 @@
                   min="1"
                   max="102400"
                   step="1"
-                  aria-label={`${condition.label} ${kind.label} limit`}
+                  aria-label={t("settings.kindLimitAria", {
+                    condition: conditionLabel,
+                    kind: t(kind.label),
+                  })}
                   value={megabytesOf(cell.maxSizeBytes)}
                   disabled={busy || cell.action !== PolicyAction.AUTO}
                   onchange={(event) =>
@@ -671,8 +669,8 @@
         <div class="list">
           <label class="form-row">
             <span class="label">
-              Relay limit
-              <small>Items larger than this are not fetched over the relay.</small>
+              {t("settings.relayLimit")}
+              <small>{t("settings.relayLimitHint")}</small>
             </span>
             <input
               class="short"
@@ -680,7 +678,7 @@
               min="1"
               max="102400"
               step="1"
-              aria-label="Relay limit"
+              aria-label={t("settings.relayLimitAria")}
               value={megabytesOf(table.relayMaxSizeBytes)}
               disabled={busy}
               onchange={(event) => setRelayLimit(event.currentTarget.valueAsNumber)}
@@ -688,10 +686,7 @@
             <span class="muted">MiB</span>
           </label>
         </div>
-        <p class="section-footer">
-          What arrives by itself on every kind of network. The limit applies to the items fetched
-          without asking.
-        </p>
+        <p class="section-footer">{t("settings.policyFooter")}</p>
       </section>
     {/if}
 

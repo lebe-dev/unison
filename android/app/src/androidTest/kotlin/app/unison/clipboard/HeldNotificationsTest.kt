@@ -4,6 +4,8 @@ import android.app.Notification
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.testString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,10 +21,10 @@ class HeldNotificationsTest {
         val notification = HeldNotifications.held(context, item(), "Mac")
 
         assertEquals(1, notification.actions.size)
-        assertEquals("Apply", notification.actions[0].title.toString())
+        assertEquals(testString(R.string.action_apply), notification.actions[0].title.toString())
         assertEquals("Mac", notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
         assertEquals(
-            "Clipboard arrived - apply it to use it",
+            testString(R.string.clipboard_held_body),
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
         )
     }

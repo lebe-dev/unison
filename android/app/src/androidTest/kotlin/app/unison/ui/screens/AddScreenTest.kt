@@ -6,6 +6,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.testString
 import app.unison.ui.pairing.PAIRING_CODE_TAG
 import app.unison.ui.state.PairingLinkOffer
 import app.unison.ui.state.PairingRequest
@@ -30,11 +32,11 @@ class AddScreenTest {
     fun closedWindowOffersTheActions() {
         setContent(PairingState())
 
-        compose.onNodeWithText("Pair a device").assertIsDisplayed()
-        compose.onNodeWithText("Scan a code").assertIsDisplayed()
-        compose.onNodeWithText("Open pairing window").assertIsDisplayed()
-        compose.onNodeWithText("Personal").assertIsDisplayed()
-        compose.onNodeWithText("Friends").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.add_title)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_scan_action)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_open_window)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_role_personal)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_role_friends)).assertIsDisplayed()
     }
 
     @Test
@@ -54,11 +56,11 @@ class AddScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Your code").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_code_title)).assertIsDisplayed()
         compose.onNodeWithTag(PAIRING_CODE_TAG).assertIsDisplayed()
-        compose.onNodeWithText("Extend for 3 minutes").assertIsDisplayed()
-        compose.onNodeWithText("Close window").assertIsDisplayed()
-        compose.onNodeWithText("No devices found yet").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_extend)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_close)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_nearby_empty)).assertIsDisplayed()
     }
 
     @Test
@@ -92,7 +94,7 @@ class AddScreenTest {
         }
 
         compose.onNodeWithText("192.168.1.7:41234").assertIsDisplayed()
-        compose.onNodeWithText("Pair").performClick()
+        compose.onNodeWithText(testString(R.string.pairing_pair)).performClick()
 
         assertTrue(paired.get())
     }
@@ -108,11 +110,11 @@ class AddScreenTest {
         )
 
         compose.onNodeWithTag(PAIRING_LINK_TAG).assertIsDisplayed()
-        compose.onNodeWithText("Pair with the device of this link?").assertIsDisplayed()
-        compose.onNodeWithText("will join as Personal", substring = true).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_link_title)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_link_body_personal)).assertIsDisplayed()
         assertFalse(accepted.get())
 
-        compose.onNodeWithText("Pair").performClick()
+        compose.onNodeWithText(testString(R.string.pairing_pair)).performClick()
         assertTrue(accepted.get())
         assertFalse(dismissed.get())
     }
@@ -127,8 +129,8 @@ class AddScreenTest {
             onDismiss = { dismissed.set(true) },
         )
 
-        compose.onNodeWithText("will join as Friends", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithText(testString(R.string.pairing_link_body_friends)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.action_cancel)).performClick()
         assertTrue(dismissed.get())
         assertFalse(accepted.get())
     }
@@ -187,9 +189,11 @@ class AddScreenTest {
             }
         }
 
-        compose.onNodeWithText("Add Mac as Personal?").assertIsDisplayed()
-        compose.onNodeWithText("The other device scanned your code.").assertIsDisplayed()
-        compose.onNodeWithText("Add").performClick()
+        compose.onNodeWithText(
+            testString(R.string.pairing_add_title, "Mac", testString(R.string.pairing_role_personal)),
+        ).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_add_body_qr)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_confirm)).performClick()
 
         assertTrue(confirmed.get())
     }
@@ -228,7 +232,9 @@ class AddScreenTest {
             }
         }
 
-        compose.onNodeWithText("Add Pixel as Friends?").assertIsDisplayed()
+        compose.onNodeWithText(
+            testString(R.string.pairing_add_title, "Pixel", testString(R.string.pairing_role_friends)),
+        ).assertIsDisplayed()
         compose.onNodeWithText("123 456").assertIsDisplayed()
         compose.onNodeWithText("\uD83D\uDC15 \uD83C\uDF3F").assertIsDisplayed()
     }
@@ -237,7 +243,7 @@ class AddScreenTest {
     fun resultOfThePairIsShown() {
         setContent(PairingState(result = PairingResult(paired = true, name = "Mac")))
 
-        compose.onNodeWithText("Paired with Mac").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.pairing_paired, "Mac")).assertIsDisplayed()
     }
 
     private fun setContent(state: PairingState) {

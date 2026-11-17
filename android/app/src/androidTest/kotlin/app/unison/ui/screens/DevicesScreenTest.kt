@@ -13,7 +13,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
 import app.unison.clipboard.ClipboardDraft
+import app.unison.testString
 import app.unison.ui.state.CoreFailure
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
@@ -43,12 +45,12 @@ class DevicesScreenTest {
         )
         setContent(state)
 
-        compose.onNodeWithText("Personal").assertIsDisplayed()
-        compose.onNodeWithText("Friends").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_section_personal)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_section_friends)).assertIsDisplayed()
         compose.onNodeWithText("Mac").assertIsDisplayed()
         compose.onNodeWithText("Friend").assertIsDisplayed()
-        compose.onNodeWithText("Online · macOS, LAN").assertIsDisplayed()
-        compose.onNodeWithText("Online · macOS, Relay").assertIsDisplayed()
+        compose.onNodeWithText(summary(R.string.device_path_lan)).assertIsDisplayed()
+        compose.onNodeWithText(summary(R.string.device_path_relay)).assertIsDisplayed()
     }
 
     @Test
@@ -59,8 +61,8 @@ class DevicesScreenTest {
         )
         setContent(state)
 
-        compose.onNodeWithText("No personal devices yet").assertIsDisplayed()
-        compose.onNodeWithText("No friends yet").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_empty_personal)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_empty_friends)).assertIsDisplayed()
     }
 
     @Test
@@ -81,8 +83,8 @@ class DevicesScreenTest {
             }
         }
 
-        compose.onNodeWithText("Unison is not running").assertIsDisplayed()
-        compose.onNodeWithText("Retry").performClick()
+        compose.onNodeWithText(testString(R.string.error_core_stopped)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.action_retry)).performClick()
 
         assertTrue(retried)
     }
@@ -106,8 +108,8 @@ class DevicesScreenTest {
             }
         }
 
-        compose.onNodeWithText("Send the clipboard?").assertIsDisplayed()
-        compose.onNodeWithText("Send").performClick()
+        compose.onNodeWithText(testString(R.string.clipboard_offer_title)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.action_send)).performClick()
 
         assertEquals(draft, sent)
     }
@@ -141,7 +143,7 @@ class DevicesScreenTest {
         compose.onAllNodes(isToggleable()).assertCountEquals(0)
         compose.onNodeWithText("Mac").performClick()
         compose.onAllNodes(isToggleable()).assertCountEquals(4)
-        compose.onNodeWithContentDescription("Mac asks before accepting files from this device").performClick()
+        compose.onNodeWithContentDescription(testString(R.string.devices_confirm_peer_files, "Mac")).performClick()
 
         assertEquals(
             Triple(
@@ -169,10 +171,10 @@ class DevicesScreenTest {
         setContent(state)
         compose.onNodeWithText("Mac").performClick()
 
-        compose.onNodeWithContentDescription("Mac asks before applying the clipboard of this device")
+        compose.onNodeWithContentDescription(testString(R.string.devices_confirm_peer_clipboard, "Mac"))
             .assertIsOn()
             .assertIsNotEnabled()
-        compose.onNodeWithContentDescription("This device asks before accepting files from Mac")
+        compose.onNodeWithContentDescription(testString(R.string.devices_confirm_local_files, "Mac"))
             .assertIsOff()
             .assertIsEnabled()
     }
@@ -203,11 +205,11 @@ class DevicesScreenTest {
         }
 
         compose.onNodeWithText("Mac").performClick()
-        compose.onNodeWithText("Remove device").performScrollTo().performClick()
-        compose.onNodeWithText("Remove Mac?").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_remove)).performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.devices_remove_title, "Mac")).assertIsDisplayed()
         assertNull(removed)
 
-        compose.onNodeWithText("Remove").performClick()
+        compose.onNodeWithText(testString(R.string.action_remove)).performClick()
 
         assertEquals("Mac", removed?.name)
     }
@@ -228,6 +230,12 @@ class DevicesScreenTest {
             }
         }
     }
+
+    private fun summary(path: Int): String = testString(
+        R.string.device_row_summary,
+        testString(R.string.device_online),
+        testString(R.string.device_detail, testString(R.string.platform_macos), testString(path)),
+    )
 
     private fun device(name: String, role: Local.Role, path: Local.Path, online: Boolean): Local.Device =
         Local.Device.newBuilder()

@@ -2,6 +2,7 @@
   import Icon from "../Icon.svelte";
   import { onDestroy, onMount } from "svelte";
   import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
+  import { t } from "../i18n";
   import {
     PROMPT_ANSWER_EVENT,
     PROMPT_READY_EVENT,
@@ -50,19 +51,21 @@
   {#if current}
     <header>
       <span class="app-icon"><Icon name={current.kind === "files" ? "file" : "clipboard"} /></span>
-      <span class="title"
-        >{current.kind === "files" ? "Files" : "Clipboard"} from {current.device}</span
-      >
+      <span class="title">
+        {current.kind === "files"
+          ? t("prompt.filesFrom", { device: current.device })
+          : t("prompt.clipboardFrom", { device: current.device })}
+      </span>
       {#if waiting.length > 1}
-        <span class="count">1 of {waiting.length}</span>
+        <span class="count">{t("prompt.countOf", { total: waiting.length })}</span>
       {/if}
     </header>
 
     <p class="question">
       {#if current.kind === "files"}
-        Accept <strong>{current.summary}</strong>?
+        {t("prompt.acceptPrefix")} <strong>{current.summary}</strong>{t("prompt.acceptSuffix")}
       {:else}
-        Apply <strong>{current.summary.toLowerCase()}</strong> to the clipboard?
+        {t("prompt.applyPrefix")} <strong>{current.summary}</strong>{t("prompt.applySuffix")}
       {/if}
       {#if current.size}
         <span class="size">{current.size}</span>
@@ -70,25 +73,27 @@
     </p>
 
     <div class="actions">
-      <button class="button ghost" type="button" onclick={() => answer(current, "later")}
-        >Later</button
-      >
+      <button class="button ghost" type="button" onclick={() => answer(current, "later")}>
+        {t("common.later")}
+      </button>
       {#if current.kind === "files"}
-        <button class="button danger" type="button" onclick={() => answer(current, "decline")}
-          >Decline</button
-        >
-        <button class="button primary" type="button" onclick={() => answer(current, "accept")}
-          >Accept</button
-        >
+        <button class="button danger" type="button" onclick={() => answer(current, "decline")}>
+          {t("common.decline")}
+        </button>
+        <button class="button primary" type="button" onclick={() => answer(current, "accept")}>
+          {t("common.accept")}
+        </button>
       {:else}
-        <button class="button" type="button" onclick={() => answer(current, "skip")}>Skip</button>
-        <button class="button primary" type="button" onclick={() => answer(current, "apply")}
-          >Apply</button
-        >
+        <button class="button" type="button" onclick={() => answer(current, "skip")}>
+          {t("common.skip")}
+        </button>
+        <button class="button primary" type="button" onclick={() => answer(current, "apply")}>
+          {t("common.apply")}
+        </button>
       {/if}
     </div>
   {:else}
-    <p class="question muted">Nothing waits for an answer.</p>
+    <p class="question muted">{t("prompt.nothingWaits")}</p>
   {/if}
 </main>
 

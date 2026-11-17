@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import type { PairingCandidate } from "../api/gen/unison/local/v1/local_pb";
+  import { t } from "../i18n";
   import NetworkIssue from "../NetworkIssue.svelte";
   import { quietWindowIssue } from "../network";
 
@@ -34,20 +35,18 @@
 </script>
 
 <section class="panel">
-  <h3>Devices open for pairing</h3>
+  <h3>{t("pairing.openDevicesHeading")}</h3>
   {#if quiet}
     <NetworkIssue summary={quiet.summary} hint={quiet.hint} details={quiet.details} />
   {:else if candidates.length === 0}
-    <p class="muted">
-      No devices yet. Open the pairing window on the other device and keep both on the same network.
-    </p>
+    <p class="muted">{t("pairing.noDevices")}</p>
   {:else}
     <ul>
       {#each candidates as candidate (candidate.addr)}
         <li>
           <span class="addr mono">{candidate.addr}</span>
           {#if dialing === candidate.addr}
-            <span class="badge">Waiting</span>
+            <span class="badge">{t("pairing.waiting")}</span>
           {:else}
             <button
               class="button small"
@@ -55,13 +54,13 @@
               onclick={() => onSelect(candidate.addr)}
               disabled={disabled || dialing !== null}
             >
-              Compare code
+              {t("pairing.compareCode")}
             </button>
           {/if}
         </li>
       {/each}
     </ul>
-    <p class="muted">One device can appear under several addresses for IPv4 and IPv6.</p>
+    <p class="muted">{t("pairing.severalAddresses")}</p>
   {/if}
 </section>
 

@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
 import app.unison.ui.groupItemColor
 import app.unison.ui.groupShape
+import app.unison.ui.sizeUnits
 import app.unison.ui.state.HistoryState
 import unison.local.v1.Local
 
@@ -285,7 +287,7 @@ private fun HistoryRow(
                     )
                 }
 
-                val size = HistoryText.formatSize(HistoryText.size(item))
+                val size = HistoryText.formatSize(HistoryText.size(item), sizeUnits())
                 Text(
                     text = stringResource(
                         if (entry.complete) R.string.history_item_detail else R.string.history_item_detail_incomplete,
@@ -402,9 +404,17 @@ private fun devicesOf(
 }
 
 /** Short preview of the item content. */
+@Composable
 private fun previewOf(item: Local.ClipItem): String = when (item.kind) {
     Local.Kind.KIND_TEXT -> HistoryText.text(item)
-    Local.Kind.KIND_FILES -> HistoryText.fileNames(item)
+    Local.Kind.KIND_FILES -> {
+        val names = HistoryText.fileNames(item)
+        if (names.rest > 0) {
+            pluralStringResource(R.plurals.names_more, names.rest, names.shown, names.rest)
+        } else {
+            names.shown
+        }
+    }
     else -> ""
 }
 

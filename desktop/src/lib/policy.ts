@@ -4,6 +4,7 @@ import type {
   Settings,
 } from "./api/gen/unison/local/v1/local_pb";
 import { PolicyAction } from "./api/gen/unison/local/v1/local_pb";
+import type { MessageKey } from "./i18n";
 
 /** One cell of the policy table. */
 export type PolicyCell = {
@@ -35,26 +36,26 @@ export type PolicyCondition = "unmetered" | "metered" | "roaming" | "dataSaver";
 export type PolicyKind = "text" | "image" | "files";
 
 /** Rows of the table in the order of the screen. */
-export const conditions: { key: PolicyCondition; label: string; hint: string }[] = [
-  { key: "unmetered", label: "Unmetered", hint: "Wi-Fi or a wired network" },
-  { key: "metered", label: "Metered", hint: "A network billed by volume" },
-  { key: "roaming", label: "Roaming", hint: "A roaming network" },
-  { key: "dataSaver", label: "Data saver", hint: "The system data saver is on" },
+export const conditions: { key: PolicyCondition; label: MessageKey; hint: MessageKey }[] = [
+  { key: "unmetered", label: "policy.condition.unmetered", hint: "policy.hint.unmetered" },
+  { key: "metered", label: "policy.condition.metered", hint: "policy.hint.metered" },
+  { key: "roaming", label: "policy.condition.roaming", hint: "policy.hint.roaming" },
+  { key: "dataSaver", label: "policy.condition.dataSaver", hint: "policy.hint.dataSaver" },
 ];
 
 /** Cells of a row in the order of the screen. */
-export const kinds: { key: PolicyKind; label: string }[] = [
-  { key: "text", label: "Text" },
-  { key: "image", label: "Images" },
-  { key: "files", label: "Files" },
+export const kinds: { key: PolicyKind; label: MessageKey }[] = [
+  { key: "text", label: "policy.kind.text" },
+  { key: "image", label: "policy.kind.image" },
+  { key: "files", label: "policy.kind.files" },
 ];
 
 /** Outcomes of a cell. */
-export const actions: { value: PolicyAction; label: string }[] = [
-  { value: PolicyAction.REJECT, label: "Reject" },
-  { value: PolicyAction.METADATA, label: "Metadata only" },
-  { value: PolicyAction.CONFIRM, label: "Confirm" },
-  { value: PolicyAction.AUTO, label: "Automatic" },
+export const actions: { value: PolicyAction; label: MessageKey }[] = [
+  { value: PolicyAction.REJECT, label: "policy.action.reject" },
+  { value: PolicyAction.METADATA, label: "policy.action.metadata" },
+  { value: PolicyAction.CONFIRM, label: "policy.action.confirm" },
+  { value: PolicyAction.AUTO, label: "policy.action.auto" },
 ];
 
 /** Bytes in one megabyte, the unit of the size fields. */

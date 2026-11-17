@@ -5,6 +5,8 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.testString
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -26,8 +28,8 @@ class OnboardingScreenTest {
             }
         }
 
-        compose.onNodeWithText("Welcome to Unison").assertIsDisplayed()
-        compose.onNodeWithText("Turn on").performClick()
+        compose.onNodeWithText(testString(R.string.onboarding_title)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.onboarding_action)).performClick()
 
         assertTrue(enabled)
     }

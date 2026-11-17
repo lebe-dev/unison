@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from "./i18n";
+
   let {
     summary,
     hint = "",
@@ -19,7 +21,9 @@
   <div class="head">
     <strong>{summary}</strong>
     {#if onDismiss}
-      <button class="button ghost small" type="button" onclick={onDismiss}>Dismiss</button>
+      <button class="button ghost small" type="button" onclick={onDismiss}>
+        {t("common.dismiss")}
+      </button>
     {/if}
   </div>
   {#if hint}
@@ -27,7 +31,7 @@
   {/if}
   {#if details}
     <details>
-      <summary>Details</summary>
+      <summary>{t("common.details")}</summary>
       <pre class="mono">{details}</pre>
     </details>
   {/if}

@@ -8,7 +8,13 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
 import app.unison.clipboard.ClipboardDraft
+import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
+import app.unison.testContext
+import app.unison.testQuantity
+import app.unison.testString
 import app.unison.share.ShareContent
 import app.unison.share.SharedFile
 import app.unison.ui.state.CoreState
@@ -30,11 +36,18 @@ class ShareScreenTest {
     fun filesOfferPersonalAndFriendsSeparately() {
         setContent(files(), selection = emptySet())
 
-        compose.onNodeWithText("Personal").assertIsDisplayed()
-        compose.onNodeWithText("Friends").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_section_personal)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_section_friends)).assertIsDisplayed()
         compose.onNodeWithText("Laptop").assertIsDisplayed()
         compose.onNodeWithText("Friend").assertIsDisplayed()
-        compose.onNodeWithText("1 file - 1 KB").assertIsDisplayed()
+        compose.onNodeWithText(
+            testQuantity(
+                R.plurals.share_files_summary,
+                1,
+                1,
+                HistoryText.formatSize(1024, SizeUnits.of(testContext)),
+            ),
+        ).assertIsDisplayed()
     }
 
     @Test
@@ -57,14 +70,14 @@ class ShareScreenTest {
     fun sendNeedsAnOnlineSelection() {
         setContent(files(), selection = emptySet())
 
-        compose.onNodeWithText("Send").assertIsNotEnabled()
+        compose.onNodeWithText(testString(R.string.action_send)).assertIsNotEnabled()
     }
 
     @Test
     fun sendStartsWithOnlineDevicesPicked() {
         setContent(files(), selection = setOf(PERSONAL_ID))
 
-        compose.onNodeWithText("Send").assertIsEnabled().performClick()
+        compose.onNodeWithText(testString(R.string.action_send)).assertIsEnabled().performClick()
 
         assertTrue(sent)
     }
@@ -73,10 +86,10 @@ class ShareScreenTest {
     fun textHidesFriendsAndListsRecipients() {
         setContent(text(), selection = emptySet())
 
-        compose.onNodeWithText("Text goes to every online personal device.").assertIsDisplayed()
-        compose.onNodeWithText("Sends to Laptop").assertIsDisplayed()
-        compose.onNodeWithText("Friends").assertDoesNotExist()
-        compose.onNodeWithText("Send").assertIsEnabled()
+        compose.onNodeWithText(testString(R.string.share_text_note)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.share_text_recipients, "Laptop")).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.devices_section_friends)).assertDoesNotExist()
+        compose.onNodeWithText(testString(R.string.action_send)).assertIsEnabled()
     }
 
     private var toggled: Pair<String, Boolean>? = null
