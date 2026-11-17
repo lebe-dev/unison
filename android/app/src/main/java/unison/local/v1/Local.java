@@ -13526,6 +13526,17 @@ java.lang.String defaultValue) {
      * @return The stripTracking.
      */
     boolean getStripTracking();
+
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    boolean getJournalEnabled();
   }
   /**
    * <pre>
@@ -14289,6 +14300,47 @@ java.lang.String defaultValue) {
     private void clearStripTracking() {
 
       stripTracking_ = false;
+    }
+
+    public static final int JOURNAL_ENABLED_FIELD_NUMBER = 16;
+    private boolean journalEnabled_;
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    @java.lang.Override
+    public boolean getJournalEnabled() {
+      return journalEnabled_;
+    }
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     * @param value The journalEnabled to set.
+     */
+    private void setJournalEnabled(boolean value) {
+      
+      journalEnabled_ = value;
+    }
+    /**
+     * <pre>
+     * The user turned on the application log. It records at debug level until the
+     * user turns it off again.
+     * </pre>
+     *
+     * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+     */
+    private void clearJournalEnabled() {
+
+      journalEnabled_ = false;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -15177,6 +15229,49 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user turned on the application log. It records at debug level until the
+       * user turns it off again.
+       * </pre>
+       *
+       * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+       * @return The journalEnabled.
+       */
+      @java.lang.Override
+      public boolean getJournalEnabled() {
+        return instance.getJournalEnabled();
+      }
+      /**
+       * <pre>
+       * The user turned on the application log. It records at debug level until the
+       * user turns it off again.
+       * </pre>
+       *
+       * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+       * @param value The journalEnabled to set.
+       * @return This builder for chaining.
+       */
+      public Builder setJournalEnabled(boolean value) {
+        copyOnWrite();
+        instance.setJournalEnabled(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user turned on the application log. It records at debug level until the
+       * user turns it off again.
+       * </pre>
+       *
+       * <code>bool journal_enabled = 16 [json_name = "journalEnabled"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearJournalEnabled() {
+        copyOnWrite();
+        instance.clearJournalEnabled();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -15209,12 +15304,13 @@ java.lang.String defaultValue) {
               "requireFileConfirmation_",
               "sentryEnabled_",
               "stripTracking_",
+              "journalEnabled_",
             };
             java.lang.String info =
-                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
                 "\u0003\u0002\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b" +
                 "\u1009\u0003\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007\u000e\u0007\u000f\u0007" +
-                "";
+                "\u0010\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -43775,6 +43871,25 @@ java.lang.String defaultValue) {
      * @return The stripTracking.
      */
     boolean getStripTracking();
+
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return Whether the journalEnabled field is set.
+     */
+    boolean hasJournalEnabled();
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    boolean getJournalEnabled();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -44578,6 +44693,56 @@ java.lang.String defaultValue) {
     private void clearStripTracking() {
       bitField0_ = (bitField0_ & ~0x00004000);
       stripTracking_ = false;
+    }
+
+    public static final int JOURNAL_ENABLED_FIELD_NUMBER = 18;
+    private boolean journalEnabled_;
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return Whether the journalEnabled field is set.
+     */
+    @java.lang.Override
+    public boolean hasJournalEnabled() {
+      return ((bitField0_ & 0x00008000) != 0);
+    }
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @return The journalEnabled.
+     */
+    @java.lang.Override
+    public boolean getJournalEnabled() {
+      return journalEnabled_;
+    }
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     * @param value The journalEnabled to set.
+     */
+    private void setJournalEnabled(boolean value) {
+      bitField0_ |= 0x00008000;
+      journalEnabled_ = value;
+    }
+    /**
+     * <pre>
+     * The user turns the application log on or off.
+     * </pre>
+     *
+     * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+     */
+    private void clearJournalEnabled() {
+      bitField0_ = (bitField0_ & ~0x00008000);
+      journalEnabled_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -45499,6 +45664,58 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @return Whether the journalEnabled field is set.
+       */
+      @java.lang.Override
+      public boolean hasJournalEnabled() {
+        return instance.hasJournalEnabled();
+      }
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @return The journalEnabled.
+       */
+      @java.lang.Override
+      public boolean getJournalEnabled() {
+        return instance.getJournalEnabled();
+      }
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @param value The journalEnabled to set.
+       * @return This builder for chaining.
+       */
+      public Builder setJournalEnabled(boolean value) {
+        copyOnWrite();
+        instance.setJournalEnabled(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user turns the application log on or off.
+       * </pre>
+       *
+       * <code>optional bool journal_enabled = 18 [json_name = "journalEnabled"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearJournalEnabled() {
+        copyOnWrite();
+        instance.clearJournalEnabled();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -45533,12 +45750,14 @@ java.lang.String defaultValue) {
               "requireFileConfirmation_",
               "sentryEnabled_",
               "stripTracking_",
+              "journalEnabled_",
             };
             java.lang.String info =
-                "\u0000\u0011\u0000\u0001\u0001\u0011\u0011\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u0000\u0012\u0000\u0001\u0001\u0012\u0012\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
                 "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
                 "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
-                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r\u0011\u1007\u000e";
+                "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r\u0011\u1007\u000e\u0012\u1007\u000f" +
+                "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -48634,6 +48853,531 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<RelayOffResponse> PARSER;
 
     public static com.google.protobuf.Parser<RelayOffResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RetryDeviceRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.RetryDeviceRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    java.lang.String getDeviceId();
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.RetryDeviceRequest}
+   */
+  public  static final class RetryDeviceRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          RetryDeviceRequest, RetryDeviceRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.RetryDeviceRequest)
+      RetryDeviceRequestOrBuilder {
+    private RetryDeviceRequest() {
+      deviceId_ = "";
+    }
+    public static final int DEVICE_ID_FIELD_NUMBER = 1;
+    private java.lang.String deviceId_;
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceId() {
+      return deviceId_;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceId_);
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The deviceId to set.
+     */
+    private void setDeviceId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceId_ = value;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     */
+    private void clearDeviceId() {
+
+      deviceId_ = getDefaultInstance().getDeviceId();
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex. Every paired device is retried when empty.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The bytes for deviceId to set.
+     */
+    private void setDeviceIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceId_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.RetryDeviceRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.RetryDeviceRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RetryDeviceRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.RetryDeviceRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.RetryDeviceRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.RetryDeviceRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.RetryDeviceRequest)
+        unison.local.v1.Local.RetryDeviceRequestOrBuilder {
+      // Construct using unison.local.v1.Local.RetryDeviceRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Device ID in lowercase hex. Every paired device is retried when empty.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The deviceId.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceId() {
+        return instance.getDeviceId();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex. Every paired device is retried when empty.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The bytes for deviceId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdBytes() {
+        return instance.getDeviceIdBytes();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex. Every paired device is retried when empty.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex. Every paired device is retried when empty.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceId() {
+        copyOnWrite();
+        instance.clearDeviceId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex. Every paired device is retried when empty.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The bytes for deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.RetryDeviceRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.RetryDeviceRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "deviceId_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.RetryDeviceRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.RetryDeviceRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.RetryDeviceRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.RetryDeviceRequest)
+    private static final unison.local.v1.Local.RetryDeviceRequest DEFAULT_INSTANCE;
+    static {
+      RetryDeviceRequest defaultInstance = new RetryDeviceRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        RetryDeviceRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.RetryDeviceRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<RetryDeviceRequest> PARSER;
+
+    public static com.google.protobuf.Parser<RetryDeviceRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RetryDeviceResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.RetryDeviceResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.RetryDeviceResponse}
+   */
+  public  static final class RetryDeviceResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          RetryDeviceResponse, RetryDeviceResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.RetryDeviceResponse)
+      RetryDeviceResponseOrBuilder {
+    private RetryDeviceResponse() {
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.RetryDeviceResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.RetryDeviceResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RetryDeviceResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.RetryDeviceResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.RetryDeviceResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.RetryDeviceResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.RetryDeviceResponse)
+        unison.local.v1.Local.RetryDeviceResponseOrBuilder {
+      // Construct using unison.local.v1.Local.RetryDeviceResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.RetryDeviceResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.RetryDeviceResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.RetryDeviceResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.RetryDeviceResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.RetryDeviceResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.RetryDeviceResponse)
+    private static final unison.local.v1.Local.RetryDeviceResponse DEFAULT_INSTANCE;
+    static {
+      RetryDeviceResponse defaultInstance = new RetryDeviceResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        RetryDeviceResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.RetryDeviceResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<RetryDeviceResponse> PARSER;
+
+    public static com.google.protobuf.Parser<RetryDeviceResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }

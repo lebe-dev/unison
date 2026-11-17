@@ -7,20 +7,12 @@
 package observability
 
 import (
-	"regexp"
 	"sync/atomic"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-)
 
-// pathPattern matches absolute paths of common system directories and Windows
-// drive paths. The first token has no spaces; a following token continues the
-// path only while it carries a separator, so prose after a path stays. The
-// leading character is kept, so a path inside a URL is not touched when no
-// separator precedes it.
-var pathPattern = regexp.MustCompile(
-	`(?i)(^|[\s"'(<]|\[)((?:/(?:Users|home|root|tmp|private|var|opt|mnt|data|storage)/|[A-Za-z]:[\\/])[^\s"'<>|:)\]},;]*(?:[ \t]+[^\s"'<>|:)\]},;]*[\\/][^\s"'<>|:)\]},;]*)*)`,
+	"github.com/lebe-dev/unison/internal/redact"
 )
 
 // Values set at build time with -ldflags.
@@ -109,9 +101,9 @@ func beforeSend(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 	event.Modules = nil
 	delete(event.Contexts, "device")
 	delete(event.Contexts, "browser")
-	event.Message = redactPaths(event.Message)
+	event.Message = redact.Paths(event.Message)
 	for i := range event.Exception {
-		event.Exception[i].Value = redactPaths(event.Exception[i].Value)
+		event.Exception[i].Value = redact.Paths(event.Exception[i].Value)
 	}
 	if component != "" {
 		if event.Tags == nil {
@@ -120,11 +112,6 @@ func beforeSend(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 		event.Tags["component"] = component
 	}
 	return event
-}
-
-// redactPaths replaces the absolute paths of a text with "[path]".
-func redactPaths(text string) string {
-	return pathPattern.ReplaceAllString(text, "${1}[path]")
 }
 
 // Configured reports whether the build has a DSN and the SDK started.
