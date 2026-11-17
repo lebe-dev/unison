@@ -12,6 +12,7 @@
   import { PromptHost } from "./lib/prompt/host";
   import { prompts } from "./lib/prompts.svelte";
   import { requests } from "./lib/requests.svelte";
+  import { SentrySync } from "./lib/sentry";
   import AddDevice from "./lib/screens/AddDevice.svelte";
   import Devices from "./lib/screens/Devices.svelte";
   import History from "./lib/screens/History.svelte";
@@ -44,9 +45,18 @@
   // The prompt window asks the questions that wait for the user, so a held
   // item or an offer does not stay unnoticed while this window is hidden.
   const promptHost = new PromptHost((answer) => void prompts.answer(answer.id, answer.action));
+  const sentry = new SentrySync();
 
   $effect(() => {
     promptHost.sync($state.snapshot(prompts.queue));
+  });
+
+  // The daemon keeps polling its status, so a failed read of the consent is
+  // tried again without asking for the settings on every update.
+  $effect(() => {
+    if (daemon.connected) {
+      void sentry.sync();
+    }
   });
 
   onMount(() => {

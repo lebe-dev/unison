@@ -30,11 +30,11 @@ fn absolute_paths(paths: Vec<String>) -> Result<Vec<String>, String> {
     Ok(paths)
 }
 
-/// unexpected returns the message of a file operation the system could not
-/// perform and reports it.
+/// unexpected reports a file command the system could not run and returns the
+/// message with the details the window shows.
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 fn unexpected(message: String) -> String {
-    crate::observability::capture_error(&message);
+    crate::observability::capture_error("the file command could not run");
     message
 }
 

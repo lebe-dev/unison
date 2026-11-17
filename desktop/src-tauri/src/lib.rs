@@ -162,7 +162,7 @@ async fn set_login_item(
     let status = match agent::set(enabled) {
         Ok(status) => status,
         Err(err) => {
-            observability::capture_error(&format!("the login item could not be changed: {err}"));
+            observability::capture_error("the login item could not be changed");
             if let Some(path) = endpoint {
                 tauri::async_runtime::spawn(async move {
                     if let Err(err) = daemon::ensure_running(&path).await {
@@ -195,9 +195,7 @@ pub fn run() {
         .setup(|app| {
             if let Some(Err(err)) = agent::register_at_launch() {
                 eprintln!("unison: the login item could not be registered: {err}");
-                observability::capture_error(&format!(
-                    "the login item could not be registered: {err}"
-                ));
+                observability::capture_error("the login item could not be registered");
             }
             let endpoint = daemon::resolve_endpoint();
             match &endpoint {
@@ -211,9 +209,7 @@ pub fn run() {
                 }
                 // The window still has to tell why the app knows no daemon.
                 Err(err) => {
-                    observability::capture_error(&format!(
-                        "the endpoint of the daemon is unknown: {err}"
-                    ));
+                    observability::capture_error("the endpoint of the daemon is unknown");
                     daemon::set_failed(err);
                 }
             }

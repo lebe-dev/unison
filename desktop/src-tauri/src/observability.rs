@@ -56,12 +56,13 @@ pub fn set_enabled(enabled: bool) {
     ENABLED.store(enabled, Ordering::Relaxed);
 }
 
-/// capture_error reports a critical error when the consent is granted.
-pub fn capture_error(message: &str) {
+/// capture_error reports a fixed category of a critical error when the consent
+/// is granted. The category must not carry details such as paths or addresses.
+pub fn capture_error(category: &str) {
     if !ENABLED.load(Ordering::Relaxed) {
         return;
     }
-    sentry::capture_message(message, sentry::Level::Error);
+    sentry::capture_message(category, sentry::Level::Error);
 }
 
 /// before_send drops the events without consent and keeps only what describes

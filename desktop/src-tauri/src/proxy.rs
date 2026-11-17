@@ -113,12 +113,12 @@ pub async fn connect(endpoint: &str) -> io::Result<EndpointStream> {
     }
 }
 
-/// transport_error returns the message of a failed exchange with the daemon and
-/// reports it, since a failure of the transport is not an error of the user.
-fn transport_error(message: impl Into<String>) -> String {
-    let message = message.into();
-    observability::capture_error(&message);
-    message
+/// transport_error reports the category of a failed exchange with the daemon
+/// and returns its message, which keeps the details for the window. The
+/// category stays free of paths and addresses.
+fn transport_error(category: &str, message: impl Into<String>) -> String {
+    observability::capture_error(category);
+    message.into()
 }
 
 /// check_endpoint verifies that the endpoint is a socket of the current user
@@ -187,7 +187,12 @@ async fn call_within(
     let status = response.status();
     let body = tokio::time::timeout(limit, read_body(response.into_body(), MAX_RESPONSE_BYTES))
         .await
-        .map_err(|_| transport_error("the daemon did not finish the response in time"))??;
+        .map_err(|_| {
+            transport_error(
+                "the daemon did not finish the response in time",
+                "the daemon did not finish the response in time",
+            )
+        })??;
     Ok(ApiResponse {
         status: status.as_u16(),
         body: BASE64.encode(body),
@@ -228,8 +233,12 @@ pub async fn stream(
 
     let mut body = response.into_body();
     while let Some(frame) = body.frame().await {
-        let frame = frame
-            .map_err(|err| transport_error(format!("reading the event stream failed: {err}")))?;
+        let frame = frame.map_err(|err| {
+            transport_error(
+                "reading the event stream failed",
+                format!("reading the event stream failed: {err}"),
+            )
+        })?;
         if let Ok(data) = frame.into_data()
             && !data.is_empty()
         {
@@ -250,12 +259,20 @@ async fn open(
     timeout: Option<Duration>,
 ) -> Result<(hyper::Response<Incoming>, http2::SendRequest<Full<Bytes>>), String> {
     let uri = procedure(service, method)?;
-    let stream = connect(endpoint)
-        .await
-        .map_err(|err| transport_error(format!("cannot reach the daemon: {err}")))?;
+    let stream = connect(endpoint).await.map_err(|err| {
+        transport_error(
+            "cannot reach the daemon",
+            format!("cannot reach the daemon: {err}"),
+        )
+    })?;
     let (mut sender, connection) = http2::handshake(TokioExecutor::new(), TokioIo::new(stream))
         .await
-        .map_err(|err| transport_error(format!("cannot open a session with the daemon: {err}")))?;
+        .map_err(|err| {
+            transport_error(
+                "cannot open a session with the daemon",
+                format!("cannot open a session with the daemon: {err}"),
+            )
+        })?;
     tokio::spawn(async move {
         let _ = connection.await;
     });
@@ -270,12 +287,20 @@ async fn open(
 
     let pending = sender.send_request(request);
     let response = match timeout {
-        Some(limit) => tokio::time::timeout(limit, pending)
-            .await
-            .map_err(|_| transport_error("the daemon did not answer in time"))?,
+        Some(limit) => tokio::time::timeout(limit, pending).await.map_err(|_| {
+            transport_error(
+                "the daemon did not answer in time",
+                "the daemon did not answer in time",
+            )
+        })?,
         None => pending.await,
     }
-    .map_err(|err| transport_error(format!("the request to the daemon failed: {err}")))?;
+    .map_err(|err| {
+        transport_error(
+            "the request to the daemon failed",
+            format!("the request to the daemon failed: {err}"),
+        )
+    })?;
     Ok((response, sender))
 }
 
@@ -304,9 +329,15 @@ async fn read_body(body: Incoming, limit: usize) -> Result<Vec<u8>, String> {
         .await
         .map_err(|err| {
             if err.is::<LengthLimitError>() {
-                transport_error(format!("the response is larger than {limit} bytes"))
+                transport_error(
+                    "the response is larger than the limit",
+                    format!("the response is larger than {limit} bytes"),
+                )
             } else {
-                transport_error(format!("reading the response failed: {err}"))
+                transport_error(
+                    "reading the response failed",
+                    format!("reading the response failed: {err}"),
+                )
             }
         })?
         .to_bytes();
