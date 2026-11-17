@@ -42,7 +42,7 @@ pub enum TrayAction {
 }
 
 /// PauseChoice is the pause mode of the clipboard the user picked.
-#[derive(Clone, Copy, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PauseChoice {
     FiveMinutes,
@@ -250,32 +250,48 @@ fn path_string(path: tauri_plugin_dialog::FilePath) -> Option<String> {
         .map(|path| path.to_string_lossy().into_owned())
 }
 
-fn on_menu_event(app: &AppHandle, id: &str) {
+/// MenuCommand is what a picked menu item asks for.
+#[derive(Debug, PartialEq)]
+enum MenuCommand<'a> {
+    Pause(PauseChoice),
+    CopyItem(&'a str),
+    SendFiles(&'a str),
+    Open,
+    Quit,
+}
+
+/// menu_command returns the command of a menu item id. Items that only show a
+/// state, and dynamic items without a target, ask for nothing.
+fn menu_command(id: &str) -> Option<MenuCommand<'_>> {
     if let Some(item) = id.strip_prefix(HISTORY_PREFIX) {
-        copy_item(app, item);
-        return;
+        return (!item.is_empty()).then_some(MenuCommand::CopyItem(item));
     }
     if let Some(device) = id.strip_prefix(SEND_PREFIX) {
-        send_files(app, device);
+        return (!device.is_empty()).then_some(MenuCommand::SendFiles(device));
+    }
+    let command = match id {
+        "pause-5m" => MenuCommand::Pause(PauseChoice::FiveMinutes),
+        "pause-1h" => MenuCommand::Pause(PauseChoice::OneHour),
+        "pause-indefinite" => MenuCommand::Pause(PauseChoice::Indefinite),
+        "pause-off" => MenuCommand::Pause(PauseChoice::Off),
+        "open" => MenuCommand::Open,
+        "quit" => MenuCommand::Quit,
+        _ => return None,
+    };
+    Some(command)
+}
+
+fn on_menu_event(app: &AppHandle, id: &str) {
+    let Some(command) = menu_command(id) else {
         return;
+    };
+    match command {
+        MenuCommand::Pause(mode) => emit(app, TrayAction::Pause { mode }),
+        MenuCommand::CopyItem(id) => emit(app, TrayAction::CopyItem { id: id.to_string() }),
+        MenuCommand::SendFiles(device) => send_files(app, device),
+        MenuCommand::Open => show_window(app),
+        MenuCommand::Quit => app.exit(0),
     }
-    match id {
-        "pause-5m" => pause(app, PauseChoice::FiveMinutes),
-        "pause-1h" => pause(app, PauseChoice::OneHour),
-        "pause-indefinite" => pause(app, PauseChoice::Indefinite),
-        "pause-off" => pause(app, PauseChoice::Off),
-        "open" => show_window(app),
-        "quit" => app.exit(0),
-        _ => {}
-    }
-}
-
-fn pause(app: &AppHandle, mode: PauseChoice) {
-    emit(app, TrayAction::Pause { mode });
-}
-
-fn copy_item(app: &AppHandle, id: &str) {
-    emit(app, TrayAction::CopyItem { id: id.to_string() });
 }
 
 /// send_files asks for the files of an offer and passes them to the webview.
@@ -321,15 +337,12 @@ fn show_window(app: &AppHandle) {
 
 /// fill_recent replaces the entries of the recent items menu.
 fn fill_recent(app: &AppHandle, menu: &TrayMenu, items: &[TrayItem]) -> tauri::Result<()> {
-    let next: Vec<(String, String)> = items
-        .iter()
-        .map(|item| {
-            (
-                format!("{HISTORY_PREFIX}{}", item.id),
-                menu_label(&item.label),
-            )
-        })
-        .collect();
+    let next = entries(
+        HISTORY_PREFIX,
+        items
+            .iter()
+            .map(|item| (item.id.as_str(), item.label.as_str())),
+    );
     if !replace_entries(&menu.recent_entries, &next) {
         return Ok(());
     }
@@ -354,15 +367,12 @@ fn fill_recent(app: &AppHandle, menu: &TrayMenu, items: &[TrayItem]) -> tauri::R
 
 /// fill_send replaces the targets of the send menu.
 fn fill_send(app: &AppHandle, menu: &TrayMenu, devices: &[TrayDevice]) -> tauri::Result<()> {
-    let next: Vec<(String, String)> = devices
-        .iter()
-        .map(|device| {
-            (
-                format!("{SEND_PREFIX}{}", device.id),
-                menu_label(&device.name),
-            )
-        })
-        .collect();
+    let next = entries(
+        SEND_PREFIX,
+        devices
+            .iter()
+            .map(|device| (device.id.as_str(), device.name.as_str())),
+    );
     if !replace_entries(&menu.send_entries, &next) {
         return Ok(());
     }
@@ -383,6 +393,18 @@ fn fill_send(app: &AppHandle, menu: &TrayMenu, devices: &[TrayDevice]) -> tauri:
             .append(&MenuItem::with_id(app, id, label, true, None::<&str>)?)?;
     }
     Ok(())
+}
+
+/// entries returns the menu ids and labels of a dynamic list. An entry without
+/// an id has no target, so it is left out.
+fn entries<'a>(
+    prefix: &str,
+    items: impl Iterator<Item = (&'a str, &'a str)>,
+) -> Vec<(String, String)> {
+    items
+        .filter(|(id, _)| !id.is_empty())
+        .map(|(id, label)| (format!("{prefix}{id}"), menu_label(label)))
+        .collect()
 }
 
 /// replace_entries stores the entries of a list. It reports whether they
@@ -476,6 +498,151 @@ mod tests {
     fn pause_text_names_the_state() {
         assert_eq!(pause_text(true), "Clipboard paused");
         assert_eq!(pause_text(false), "Clipboard on");
+    }
+
+    #[test]
+    fn menu_command_routes_the_fixed_items() {
+        assert_eq!(
+            menu_command("pause-5m"),
+            Some(MenuCommand::Pause(PauseChoice::FiveMinutes))
+        );
+        assert_eq!(
+            menu_command("pause-1h"),
+            Some(MenuCommand::Pause(PauseChoice::OneHour))
+        );
+        assert_eq!(
+            menu_command("pause-indefinite"),
+            Some(MenuCommand::Pause(PauseChoice::Indefinite))
+        );
+        assert_eq!(
+            menu_command("pause-off"),
+            Some(MenuCommand::Pause(PauseChoice::Off))
+        );
+        assert_eq!(menu_command("open"), Some(MenuCommand::Open));
+        assert_eq!(menu_command("quit"), Some(MenuCommand::Quit));
+    }
+
+    #[test]
+    fn menu_command_routes_the_dynamic_items() {
+        assert_eq!(
+            menu_command("history:01HX"),
+            Some(MenuCommand::CopyItem("01HX"))
+        );
+        assert_eq!(
+            menu_command("send:dev:1"),
+            Some(MenuCommand::SendFiles("dev:1")),
+            "only the prefix is cut from the id"
+        );
+    }
+
+    #[test]
+    fn menu_command_ignores_items_without_a_command() {
+        for id in [
+            "status",
+            "pause-state",
+            "recent-empty",
+            "send-empty",
+            "history:",
+            "send:",
+            "",
+            "QUIT",
+        ] {
+            assert_eq!(menu_command(id), None, "{id:?} asked for a command");
+        }
+    }
+
+    #[test]
+    fn entries_build_the_ids_of_the_menu() {
+        let long = "x".repeat(MENU_LABEL_LIMIT + 1);
+        let built = entries(
+            SEND_PREFIX,
+            [("a", "Laptop"), ("", "No id"), ("b", long.as_str())].into_iter(),
+        );
+        assert_eq!(
+            built,
+            vec![
+                ("send:a".to_string(), "Laptop".to_string()),
+                (
+                    "send:b".to_string(),
+                    format!("{}...", "x".repeat(MENU_LABEL_LIMIT))
+                ),
+            ]
+        );
+        for (id, _) in &built {
+            assert!(matches!(menu_command(id), Some(MenuCommand::SendFiles(_))));
+        }
+        let recent = entries(HISTORY_PREFIX, [("7", "text")].into_iter());
+        assert_eq!(menu_command(&recent[0].0), Some(MenuCommand::CopyItem("7")));
+    }
+
+    #[test]
+    fn tray_state_reads_the_state_of_the_webview() {
+        let state: TrayState = serde_json::from_str(
+            r#"{
+                "connected": true,
+                "onlinePeers": 2,
+                "paused": true,
+                "devices": [{"id": "d1", "name": "Laptop"}],
+                "recent": [{"id": "h1", "label": "copied text"}]
+            }"#,
+        )
+        .expect("parse the state");
+        assert!(state.connected && state.paused);
+        assert_eq!(state.online_peers, 2);
+        assert_eq!(state.devices[0].id, "d1");
+        assert_eq!(state.devices[0].name, "Laptop");
+        assert_eq!(state.recent[0].id, "h1");
+        assert_eq!(state.recent[0].label, "copied text");
+    }
+
+    #[test]
+    fn tray_state_lists_are_optional() {
+        let state: TrayState =
+            serde_json::from_str(r#"{"connected": false, "onlinePeers": 0, "paused": false}"#)
+                .expect("parse the state");
+        assert!(state.devices.is_empty() && state.recent.is_empty());
+    }
+
+    #[test]
+    fn tray_actions_serialize_for_the_webview() {
+        let json = |action: TrayAction| serde_json::to_string(&action).unwrap();
+        assert_eq!(
+            json(TrayAction::Pause {
+                mode: PauseChoice::FiveMinutes
+            }),
+            r#"{"action":"pause","mode":"five_minutes"}"#
+        );
+        assert_eq!(
+            json(TrayAction::Pause {
+                mode: PauseChoice::OneHour
+            }),
+            r#"{"action":"pause","mode":"one_hour"}"#
+        );
+        assert_eq!(
+            json(TrayAction::Pause {
+                mode: PauseChoice::Indefinite
+            }),
+            r#"{"action":"pause","mode":"indefinite"}"#
+        );
+        assert_eq!(
+            json(TrayAction::Pause {
+                mode: PauseChoice::Off
+            }),
+            r#"{"action":"pause","mode":"off"}"#
+        );
+        assert_eq!(
+            json(TrayAction::CopyItem {
+                id: "h1".to_string()
+            }),
+            r#"{"action":"copy_item","id":"h1"}"#
+        );
+        assert_eq!(
+            json(TrayAction::SendFiles {
+                device_id: "d1".to_string(),
+                paths: vec!["/a b.txt".to_string()],
+            }),
+            r#"{"action":"send_files","deviceId":"d1","paths":["/a b.txt"]}"#
+        );
     }
 
     #[test]

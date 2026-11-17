@@ -152,6 +152,18 @@ pub async fn call(
     method: &str,
     body: &[u8],
 ) -> Result<ApiResponse, String> {
+    call_within(endpoint, service, method, body, REQUEST_TIMEOUT).await
+}
+
+/// call_within performs a unary call that has limit for the response head and
+/// limit again for the response body.
+async fn call_within(
+    endpoint: &str,
+    service: &str,
+    method: &str,
+    body: &[u8],
+    limit: Duration,
+) -> Result<ApiResponse, String> {
     let request = Bytes::copy_from_slice(body);
     let (response, _sender) = open(
         endpoint,
@@ -159,16 +171,13 @@ pub async fn call(
         method,
         UNARY_CONTENT_TYPE,
         request,
-        Some(REQUEST_TIMEOUT),
+        Some(limit),
     )
     .await?;
     let status = response.status();
-    let body = tokio::time::timeout(
-        REQUEST_TIMEOUT,
-        read_body(response.into_body(), MAX_RESPONSE_BYTES),
-    )
-    .await
-    .map_err(|_| "the daemon did not finish the response in time".to_string())??;
+    let body = tokio::time::timeout(limit, read_body(response.into_body(), MAX_RESPONSE_BYTES))
+        .await
+        .map_err(|_| "the daemon did not finish the response in time".to_string())??;
     Ok(ApiResponse {
         status: status.as_u16(),
         body: BASE64.encode(body),
@@ -573,6 +582,219 @@ mod tests {
                 .expect("the daemon still holds the connection of a cancelled stream")
                 .expect("the server stopped");
         });
+    }
+
+    /// serve_with answers every request of one connection with handler.
+    fn serve_with<F, Fut>(path: &Path, handler: F)
+    where
+        F: Fn() -> Fut + Clone + Send + 'static,
+        Fut: std::future::Future<Output = hyper::Response<BoxBody<Bytes, io::Error>>>
+            + Send
+            + 'static,
+    {
+        let listener = bind_socket(path);
+        listener.set_nonblocking(true).expect("nonblocking");
+        let listener = tokio::net::UnixListener::from_std(listener).expect("listener");
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let service = service_fn(move |_request: Request<Incoming>| {
+                let handler = handler.clone();
+                async move { Ok::<_, Infallible>(handler().await) }
+            });
+            let _ = server::Builder::new(TokioExecutor::new())
+                .serve_connection(TokioIo::new(stream), service)
+                .await;
+        });
+    }
+
+    /// Broken is a response body that sends one chunk and fails a moment
+    /// later, like a daemon that stops in the middle of a stream.
+    struct Broken {
+        sent: bool,
+        pause: Pin<Box<tokio::time::Sleep>>,
+    }
+
+    impl Broken {
+        fn new() -> Self {
+            Self {
+                sent: false,
+                pause: Box::pin(tokio::time::sleep(Duration::from_millis(100))),
+            }
+        }
+    }
+
+    impl Body for Broken {
+        type Data = Bytes;
+        type Error = io::Error;
+
+        fn poll_frame(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+        ) -> Poll<Option<Result<Frame<Bytes>, io::Error>>> {
+            if !self.sent {
+                self.sent = true;
+                return Poll::Ready(Some(Ok(Frame::data(Bytes::from_static(b"first")))));
+            }
+            match self.pause.as_mut().poll(cx) {
+                Poll::Ready(()) => Poll::Ready(Some(Err(io::Error::other("the daemon stopped")))),
+                Poll::Pending => Poll::Pending,
+            }
+        }
+    }
+
+    #[test]
+    fn call_gives_up_on_a_daemon_that_does_not_answer() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            serve_with(&path, || async { std::future::pending().await });
+            let started = std::time::Instant::now();
+            let err = call_within(
+                path.to_str().unwrap(),
+                "unison.S",
+                "Get",
+                b"",
+                Duration::from_millis(300),
+            )
+            .await
+            .err()
+            .expect("a silent daemon answered");
+            assert_eq!(err, "the daemon did not answer in time");
+            assert!(started.elapsed() < Duration::from_secs(2));
+        });
+    }
+
+    #[test]
+    fn call_gives_up_on_a_response_that_does_not_end() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            serve_with(&path, || async {
+                hyper::Response::new(Endless.map_err(|never| match never {}).boxed())
+            });
+            let err = call_within(
+                path.to_str().unwrap(),
+                "unison.S",
+                "Get",
+                b"",
+                Duration::from_millis(300),
+            )
+            .await
+            .err()
+            .expect("an endless response was accepted");
+            assert_eq!(err, "the daemon did not finish the response in time");
+        });
+    }
+
+    #[test]
+    fn call_reports_a_response_that_breaks_off() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            serve_with(&path, || async {
+                hyper::Response::new(Broken::new().boxed())
+            });
+            let err = call(path.to_str().unwrap(), "unison.S", "Get", b"")
+                .await
+                .err()
+                .expect("a broken response was accepted");
+            assert!(err.starts_with("reading the response failed"), "{err}");
+        });
+    }
+
+    #[test]
+    fn call_reports_an_endpoint_that_does_not_speak_http2() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let listener = bind_socket(&path);
+        block_on(async {
+            listener.set_nonblocking(true).expect("nonblocking");
+            let listener = tokio::net::UnixListener::from_std(listener).expect("listener");
+            tokio::spawn(async move {
+                // The peer reads nothing and closes the connection at once.
+                let (stream, _) = listener.accept().await.expect("accept");
+                drop(stream);
+            });
+            let err = tokio::time::timeout(
+                Duration::from_secs(5),
+                call(path.to_str().unwrap(), "unison.S", "Get", b""),
+            )
+            .await
+            .expect("the call hung on a closed connection")
+            .err()
+            .expect("a closed connection answered");
+            assert!(
+                err.starts_with("cannot open a session with the daemon")
+                    || err.starts_with("the request to the daemon failed"),
+                "{err}"
+            );
+        });
+    }
+
+    #[test]
+    fn call_refuses_an_invalid_procedure_before_connecting() {
+        let err = block_on(call("/nonexistent/unisond.sock", "unison.S", "Get/x", b""))
+            .err()
+            .expect("an invalid procedure was called");
+        assert_eq!(err, "the procedure name is not valid");
+    }
+
+    #[test]
+    fn stream_reports_a_stream_that_breaks_off() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            serve_with(&path, || async {
+                hyper::Response::new(Broken::new().boxed())
+            });
+            let mut chunks = Vec::new();
+            let err = stream(path.to_str().unwrap(), "unison.S", "Watch", b"", |data| {
+                chunks.extend_from_slice(data);
+                Ok(())
+            })
+            .await
+            .expect_err("a broken stream ended cleanly");
+            assert!(err.starts_with("reading the event stream failed"), "{err}");
+            assert_eq!(chunks, b"first", "the chunk before the break was lost");
+        });
+    }
+
+    #[test]
+    fn stream_waits_for_the_first_event_without_a_limit() {
+        // The daemon answers a stream with the first event, which may come
+        // later than the limit of a unary call.
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            serve_with(&path, || async {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                hyper::Response::new(
+                    Full::new(Bytes::from_static(b"event"))
+                        .map_err(|never| match never {})
+                        .boxed(),
+                )
+            });
+            let mut chunks = Vec::new();
+            stream(path.to_str().unwrap(), "unison.S", "Watch", b"", |data| {
+                chunks.extend_from_slice(data);
+                Ok(())
+            })
+            .await
+            .expect("stream");
+            assert_eq!(chunks, b"event");
+        });
+    }
+
+    #[test]
+    fn api_response_serializes_for_the_webview() {
+        let response = ApiResponse {
+            status: 200,
+            body: BASE64.encode(b"\x00\xff"),
+        };
+        assert_eq!(
+            serde_json::to_string(&response).unwrap(),
+            r#"{"status":200,"body":"AP8="}"#
+        );
     }
 
     #[test]

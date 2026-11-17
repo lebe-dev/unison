@@ -71,12 +71,42 @@ fn place(window: &WebviewWindow) {
         },
     };
     let area = monitor.work_area();
-    let scale = monitor.scale_factor();
-    let width = (WIDTH * scale) as i32;
-    let margin = (MARGIN * scale) as i32;
-    let x = area.position.x + area.size.width as i32 - width - margin;
-    let y = area.position.y + margin;
-    if let Err(err) = window.set_position(PhysicalPosition::new(x, y)) {
+    let position = corner(area.position, area.size.width, monitor.scale_factor());
+    if let Err(err) = window.set_position(position) {
         eprintln!("unison: placing the prompt window failed: {err}");
+    }
+}
+
+/// corner returns the position of the window in the top right corner of the
+/// work area that starts at origin and is width physical pixels wide.
+fn corner(origin: PhysicalPosition<i32>, width: u32, scale: f64) -> PhysicalPosition<i32> {
+    let window = (WIDTH * scale) as i32;
+    let margin = (MARGIN * scale) as i32;
+    let x = origin.x + width as i32 - window - margin;
+    let y = origin.y + margin;
+    PhysicalPosition::new(x, y)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn corner_keeps_the_margin_from_the_top_right_edges() {
+        let position = corner(PhysicalPosition::new(0, 25), 1440, 1.0);
+        assert_eq!(position, PhysicalPosition::new(1440 - 360 - 16, 25 + 16));
+    }
+
+    #[test]
+    fn corner_scales_to_physical_pixels() {
+        let position = corner(PhysicalPosition::new(0, 50), 2880, 2.0);
+        assert_eq!(position, PhysicalPosition::new(2880 - 720 - 32, 50 + 32));
+    }
+
+    #[test]
+    fn corner_follows_a_monitor_left_of_the_main_one() {
+        let position = corner(PhysicalPosition::new(-1920, 0), 1920, 1.0);
+        assert_eq!(position, PhysicalPosition::new(-360 - 16, 16));
+        assert!(position.x < 0, "the window left its monitor");
     }
 }

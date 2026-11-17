@@ -1,5 +1,6 @@
 //! Discovery and startup of the daemon.
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 use std::sync::{Mutex, MutexGuard};
@@ -37,8 +38,10 @@ const BINARY_NAME: &str = if cfg!(windows) {
 /// login item takes over.
 static STARTED: Mutex<Option<u32>> = Mutex::new(None);
 
-/// LAST_EXIT is the exit status of the last daemon the app started itself.
-static LAST_EXIT: Mutex<Option<ExitStatus>> = Mutex::new(None);
+/// LAST_EXIT is the process id and the exit status of the last daemon the app
+/// started itself that exited. The id keeps the exit of an older daemon, which
+/// the app stopped, from ending the wait for a newer one.
+static LAST_EXIT: Mutex<Option<(u32, ExitStatus)>> = Mutex::new(None);
 
 /// STATUS is what the app knows about the daemon, which the window reads.
 static STATUS: Mutex<Status> = Mutex::new(Status {
@@ -92,21 +95,57 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 
 /// resolve_endpoint returns the endpoint of the local API.
 pub fn resolve_endpoint() -> Result<String, String> {
-    if let Some(path) = std::env::var_os(ENDPOINT_ENV) {
+    endpoint_from(std::env::var_os(ENDPOINT_ENV), platform_endpoint)
+}
+
+/// endpoint_from returns the endpoint the override names, or the endpoint of
+/// the platform when the override is absent or empty.
+fn endpoint_from(
+    custom: Option<OsString>,
+    platform: impl FnOnce() -> Result<String, String>,
+) -> Result<String, String> {
+    if let Some(path) = custom {
         let path = path.to_string_lossy().into_owned();
         if !path.is_empty() {
             return Ok(path);
         }
     }
-    platform_endpoint()
+    platform()
+}
+
+/// Startup is what the app consults to bring the daemon up: the login item,
+/// the binary it may start itself and the limits of the waits.
+struct Startup {
+    login: fn() -> crate::agent::LoginItemStatus,
+    binary: Box<dyn Fn() -> Option<PathBuf> + Send + Sync>,
+    login_wait: Duration,
+    start_timeout: Duration,
+}
+
+impl Startup {
+    /// system is the startup of the app: the login item of the system and the
+    /// binary of the bundle.
+    fn system() -> Self {
+        Self {
+            login: crate::agent::status,
+            binary: Box::new(binary),
+            login_wait: LOGIN_WAIT,
+            start_timeout: START_TIMEOUT,
+        }
+    }
 }
 
 /// ensure_running starts the daemon when it does not answer on the endpoint and
 /// keeps the reason of a start that failed.
 pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
+    ensure_running_with(endpoint, &Startup::system()).await
+}
+
+/// ensure_running_with is ensure_running with the given startup.
+async fn ensure_running_with(endpoint: &str, startup: &Startup) -> Result<(), String> {
     // A new attempt drops the reason of the previous one.
     set_status(State::Offline, None);
-    match start_if_needed(endpoint).await {
+    match start_if_needed(endpoint, startup).await {
         Ok(()) => {
             set_status(State::Running, None);
             Ok(())
@@ -121,22 +160,22 @@ pub async fn ensure_running(endpoint: &str) -> Result<(), String> {
 /// start_if_needed starts the daemon when it does not answer on the endpoint. A
 /// login item that the system manages owns the daemon, so the app only waits
 /// for it.
-async fn start_if_needed(endpoint: &str) -> Result<(), String> {
+async fn start_if_needed(endpoint: &str, startup: &Startup) -> Result<(), String> {
     if probe(endpoint).await {
         return Ok(());
     }
 
-    match crate::agent::status() {
+    match (startup.login)() {
         crate::agent::LoginItemStatus::Enabled => {
-            if wait_for(endpoint, LOGIN_WAIT).await.is_ok() {
+            if wait_for(endpoint, startup.login_wait).await.is_ok() {
                 return Ok(());
             }
             // A login item that the system cannot start must not leave the app
             // without a daemon.
-            match binary() {
+            match (startup.binary)() {
                 Some(binary) => {
-                    start(&binary)?;
-                    wait_started(endpoint, START_TIMEOUT).await
+                    let pid = start(&binary)?;
+                    wait_started(endpoint, startup.start_timeout, pid).await
                 }
                 None => Err(format!(
                     "the login item does not start the daemon on {endpoint}"
@@ -146,10 +185,10 @@ async fn start_if_needed(endpoint: &str) -> Result<(), String> {
         crate::agent::LoginItemStatus::RequiresApproval => {
             Err("the login item waits for approval in System Settings".to_string())
         }
-        _ => match binary() {
+        _ => match (startup.binary)() {
             Some(binary) => {
-                start(&binary)?;
-                wait_started(endpoint, START_TIMEOUT).await
+                let pid = start(&binary)?;
+                wait_started(endpoint, startup.start_timeout, pid).await
             }
             None => Err(format!("the daemon is not running on {endpoint}")),
         },
@@ -168,10 +207,18 @@ async fn wait_for(endpoint: &str, limit: Duration) -> Result<(), String> {
     Err(format!("the daemon did not answer on {endpoint}"))
 }
 
-/// wait_started waits for the daemon the app started and reports why it did not
-/// come up.
-async fn wait_started(endpoint: &str, limit: Duration) -> Result<(), String> {
-    wait_child(endpoint, limit, || *lock(&LAST_EXIT)).await
+/// wait_started waits for the daemon the app started as pid and reports why it
+/// did not come up.
+async fn wait_started(endpoint: &str, limit: Duration, pid: u32) -> Result<(), String> {
+    wait_child(endpoint, limit, || exit_of(pid)).await
+}
+
+/// exit_of returns the exit status of the started daemon pid once it exited.
+fn exit_of(pid: u32) -> Option<ExitStatus> {
+    match *lock(&LAST_EXIT) {
+        Some((exited, status)) if exited == pid => Some(status),
+        _ => None,
+    }
 }
 
 /// wait_child waits for a started daemon to answer on the endpoint. A daemon
@@ -226,18 +273,29 @@ async fn probe(endpoint: &str) -> bool {
 /// autostart entry of the system, and from next to the app binary when that
 /// entry is turned off. Development builds start the daemon from `bin/`.
 pub fn binary() -> Option<PathBuf> {
-    if let Some(path) = std::env::var_os(BINARY_ENV) {
+    binary_from(std::env::var_os(BINARY_ENV), || {
+        if cfg!(debug_assertions) {
+            return Some(
+                PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../bin")
+                    .join(BINARY_NAME),
+            );
+        }
+        let exe = std::env::current_exe().ok()?;
+        Some(exe.parent()?.join(BINARY_NAME))
+    })
+}
+
+/// binary_from returns the binary the override names, or the default binary
+/// when it exists.
+fn binary_from(
+    custom: Option<OsString>,
+    default: impl FnOnce() -> Option<PathBuf>,
+) -> Option<PathBuf> {
+    if let Some(path) = custom {
         return Some(PathBuf::from(path));
     }
-    let path = if cfg!(debug_assertions) {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../bin")
-            .join(BINARY_NAME)
-    } else {
-        let exe = std::env::current_exe().ok()?;
-        exe.parent()?.join(BINARY_NAME)
-    };
-    path.is_file().then_some(path)
+    default().filter(|path| path.is_file())
 }
 
 /// stop_started stops the daemon the app started, so the login item can run its
@@ -254,10 +312,10 @@ pub fn stop_started() -> bool {
     true
 }
 
-/// start runs the daemon next to the app. The daemon outlives the app, so the
-/// child is waited on in the background and never killed.
-fn start(binary: &PathBuf) -> Result<(), String> {
-    *lock(&LAST_EXIT) = None;
+/// start runs the daemon next to the app and returns its process id. The
+/// daemon outlives the app, so the child is waited on in the background and
+/// never killed.
+fn start(binary: &PathBuf) -> Result<u32, String> {
     let mut child = Command::new(binary)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -270,7 +328,7 @@ fn start(binary: &PathBuf) -> Result<(), String> {
     }
     std::thread::spawn(move || {
         if let Ok(status) = child.wait() {
-            *lock(&LAST_EXIT) = Some(status);
+            *lock(&LAST_EXIT) = Some((pid, status));
         }
         if let Ok(mut slot) = STARTED.lock()
             && *slot == Some(pid)
@@ -278,27 +336,35 @@ fn start(binary: &PathBuf) -> Result<(), String> {
             *slot = None;
         }
     });
-    Ok(())
+    Ok(pid)
 }
 
 /// platform_endpoint returns the endpoint the daemon of this user serves.
 fn platform_endpoint() -> Result<String, String> {
     #[cfg(unix)]
     {
-        let home =
-            std::env::var_os("HOME").ok_or_else(|| "the home directory is not set".to_string())?;
-        let mut dir = PathBuf::from(home);
-        #[cfg(target_os = "macos")]
-        dir.push("Library/Application Support/Unison");
-        #[cfg(not(target_os = "macos"))]
-        dir.push(".local/share/unison");
-        dir.push("unisond.sock");
-        Ok(dir.to_string_lossy().into_owned())
+        unix_endpoint(std::env::var_os("HOME"))
     }
     #[cfg(windows)]
     {
         windows_endpoint()
     }
+}
+
+/// unix_endpoint returns the socket of the daemon in the data directory under
+/// the given home directory.
+#[cfg(unix)]
+fn unix_endpoint(home: Option<OsString>) -> Result<String, String> {
+    let home = home
+        .filter(|home| !home.is_empty())
+        .ok_or_else(|| "the home directory is not set".to_string())?;
+    let mut dir = PathBuf::from(home);
+    #[cfg(target_os = "macos")]
+    dir.push("Library/Application Support/Unison");
+    #[cfg(not(target_os = "macos"))]
+    dir.push(".local/share/unison");
+    dir.push("unisond.sock");
+    Ok(dir.to_string_lossy().into_owned())
 }
 
 /// windows_endpoint returns the named pipe of the current user.
@@ -347,8 +413,82 @@ fn windows_endpoint() -> Result<String, String> {
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
-    use crate::testutil::{TempDir, bind_socket, block_on};
+    use crate::agent::LoginItemStatus;
+    use crate::testutil::{TempDir, bind_socket, block_on, set_mode};
     use std::os::unix::process::ExitStatusExt;
+    use std::path::Path;
+
+    /// GLOBALS serializes the tests that change the state the app keeps in
+    /// statics: the status, the started daemon and its exit.
+    static GLOBALS: Mutex<()> = Mutex::new(());
+
+    fn globals() -> MutexGuard<'static, ()> {
+        let guard = lock(&GLOBALS);
+        *lock(&STARTED) = None;
+        *lock(&LAST_EXIT) = None;
+        set_status(State::Offline, None);
+        guard
+    }
+
+    /// startup returns a startup with short waits, the given login item and
+    /// the given binary.
+    fn startup(login: fn() -> LoginItemStatus, binary: Option<PathBuf>) -> Startup {
+        Startup {
+            login,
+            binary: Box::new(move || binary.clone()),
+            login_wait: Duration::from_millis(400),
+            start_timeout: Duration::from_secs(5),
+        }
+    }
+
+    /// script writes an executable shell script that stands in for the daemon.
+    fn script(dir: &TempDir, name: &str, body: &str) -> PathBuf {
+        let path = dir.join(name);
+        std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).expect("write the script");
+        set_mode(&path, 0o755);
+        path
+    }
+
+    /// serve_later binds the socket of the daemon after a delay, like a
+    /// daemon that takes a moment to come up.
+    fn serve_later(
+        path: &Path,
+        delay: Duration,
+    ) -> tokio::task::JoinHandle<std::os::unix::net::UnixListener> {
+        let path = path.to_path_buf();
+        tokio::spawn(async move {
+            tokio::time::sleep(delay).await;
+            bind_socket(&path)
+        })
+    }
+
+    /// wait_exit waits for the started daemon pid to exit.
+    fn wait_exit(pid: u32) -> Option<ExitStatus> {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while Instant::now() < deadline {
+            if let Some(status) = exit_of(pid) {
+                return Some(status);
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        None
+    }
+
+    fn enabled() -> LoginItemStatus {
+        LoginItemStatus::Enabled
+    }
+
+    fn not_registered() -> LoginItemStatus {
+        LoginItemStatus::NotRegistered
+    }
+
+    fn requires_approval() -> LoginItemStatus {
+        LoginItemStatus::RequiresApproval
+    }
+
+    fn unreachable_login() -> LoginItemStatus {
+        panic!("the login item was consulted although the daemon answers")
+    }
 
     #[test]
     fn wait_child_returns_once_the_daemon_answers() {
@@ -379,6 +519,22 @@ mod tests {
     }
 
     #[test]
+    fn wait_child_accepts_a_daemon_that_answers_during_the_grace() {
+        // A daemon that exits because another instance takes the endpoint
+        // leaves that instance serving, which is a successful start.
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let result = block_on(async {
+            let _server = serve_later(&path, Duration::from_millis(300));
+            wait_child(path.to_str().unwrap(), START_TIMEOUT, || {
+                Some(ExitStatus::from_raw(1 << 8))
+            })
+            .await
+        });
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
     fn wait_child_reports_a_daemon_that_never_answers() {
         let dir = TempDir::new();
         let path = dir.join("unisond.sock");
@@ -398,5 +554,330 @@ mod tests {
         let started = Instant::now();
         block_on(wait_stopped(path.to_str().unwrap(), Duration::from_secs(5)));
         assert!(started.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn wait_stopped_returns_once_the_daemon_goes_away() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let listener = bind_socket(&path);
+        let started = Instant::now();
+        block_on(async {
+            let socket = path.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(300)).await;
+                drop(listener);
+                let _ = std::fs::remove_file(socket);
+            });
+            wait_stopped(path.to_str().unwrap(), Duration::from_secs(5)).await;
+        });
+        let elapsed = started.elapsed();
+        assert!(
+            elapsed >= Duration::from_millis(300) && elapsed < Duration::from_secs(2),
+            "the wait took {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn wait_stopped_gives_up_after_the_limit() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        let started = Instant::now();
+        block_on(wait_stopped(
+            path.to_str().unwrap(),
+            Duration::from_millis(300),
+        ));
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+
+    #[test]
+    fn probe_refuses_an_endpoint_other_users_can_reach() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        set_mode(&path, 0o666);
+        assert!(!block_on(probe(path.to_str().unwrap())));
+    }
+
+    #[test]
+    fn ensure_running_reports_a_daemon_that_already_answers() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        set_failed("an earlier failure");
+        let startup = Startup {
+            login: unreachable_login,
+            binary: Box::new(|| panic!("a binary was looked up although the daemon answers")),
+            login_wait: Duration::ZERO,
+            start_timeout: Duration::ZERO,
+        };
+        let result = block_on(ensure_running_with(path.to_str().unwrap(), &startup));
+        assert_eq!(result, Ok(()));
+        let status = status();
+        assert!(status.state == State::Running);
+        assert_eq!(
+            status.reason, None,
+            "the reason of an earlier failure stayed"
+        );
+        assert!(!stop_started(), "a running daemon was started again");
+    }
+
+    #[test]
+    fn ensure_running_keeps_the_reason_of_a_failed_start() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let result = block_on(ensure_running_with(
+            path.to_str().unwrap(),
+            &startup(not_registered, None),
+        ));
+        let err = result.expect_err("a missing daemon was reported as running");
+        assert!(err.contains("not running"), "{err}");
+        let status = status();
+        assert!(status.state == State::Failed);
+        assert_eq!(status.reason, Some(err));
+    }
+
+    #[test]
+    fn a_login_item_that_waits_for_approval_is_reported() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = script(&dir, "unisond", "exec sleep 30");
+        let err = block_on(start_if_needed(
+            path.to_str().unwrap(),
+            &startup(requires_approval, Some(binary)),
+        ))
+        .expect_err("a login item without approval started the daemon");
+        assert!(err.contains("approval"), "{err}");
+        assert!(!stop_started(), "the app started its own daemon");
+    }
+
+    #[test]
+    fn the_login_item_starts_the_daemon() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let result = block_on(async {
+            let server = serve_later(&path, Duration::from_millis(100));
+            let result = start_if_needed(path.to_str().unwrap(), &startup(enabled, None)).await;
+            (result, server.await)
+        });
+        assert_eq!(result.0, Ok(()));
+        assert!(!stop_started(), "the app started its own daemon");
+    }
+
+    #[test]
+    fn a_login_item_that_does_not_start_the_daemon_without_a_binary_is_reported() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let err = block_on(start_if_needed(
+            path.to_str().unwrap(),
+            &startup(enabled, None),
+        ))
+        .expect_err("a silent login item was reported as running");
+        assert!(err.contains("login item does not start"), "{err}");
+    }
+
+    #[test]
+    fn the_app_starts_its_daemon_when_the_login_item_does_not() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = script(&dir, "unisond", "exec sleep 30");
+        let started = Instant::now();
+        let result = block_on(async {
+            // The socket appears only after the wait for the login item.
+            let server = serve_later(&path, Duration::from_millis(800));
+            let result =
+                start_if_needed(path.to_str().unwrap(), &startup(enabled, Some(binary))).await;
+            (result, server.await)
+        });
+        assert_eq!(result.0, Ok(()));
+        assert!(started.elapsed() >= Duration::from_millis(400));
+
+        let pid = lock(&STARTED).expect("the started daemon is not kept");
+        assert!(stop_started(), "the started daemon was not stopped");
+        assert!(!stop_started(), "the daemon was stopped twice");
+        let status = wait_exit(pid).expect("the stopped daemon kept running");
+        assert_eq!(status.signal(), Some(libc::SIGTERM));
+    }
+
+    #[test]
+    fn the_app_starts_its_daemon_without_a_login_item() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = script(&dir, "unisond", "exec sleep 30");
+        let started = Instant::now();
+        let result = block_on(async {
+            let server = serve_later(&path, Duration::from_millis(100));
+            let result = start_if_needed(
+                path.to_str().unwrap(),
+                &startup(not_registered, Some(binary)),
+            )
+            .await;
+            (result, server.await)
+        });
+        assert_eq!(result.0, Ok(()));
+        assert!(
+            started.elapsed() < Duration::from_millis(400),
+            "the app waited for a login item that is not registered"
+        );
+        assert!(stop_started(), "the started daemon was not kept");
+    }
+
+    #[test]
+    fn a_daemon_that_exits_during_startup_is_reported_with_its_status() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = script(&dir, "unisond", "exit 3");
+        let started = Instant::now();
+        let err = block_on(start_if_needed(
+            path.to_str().unwrap(),
+            &startup(not_registered, Some(binary)),
+        ))
+        .expect_err("a daemon that exited was reported as running");
+        assert!(err.contains("stopped during startup"), "{err}");
+        assert!(err.contains('3'), "the exit status is missing: {err}");
+        assert!(started.elapsed() < Duration::from_secs(3));
+        assert!(!stop_started(), "an exited daemon is still kept");
+    }
+
+    #[test]
+    fn a_binary_that_cannot_run_is_reported() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = dir.join("missing");
+        let err = block_on(start_if_needed(
+            path.to_str().unwrap(),
+            &startup(not_registered, Some(binary)),
+        ))
+        .expect_err("a missing binary was started");
+        assert!(err.starts_with("cannot start the daemon"), "{err}");
+    }
+
+    #[test]
+    fn the_exit_of_an_older_daemon_does_not_end_the_wait_for_a_newer_one() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = script(&dir, "unisond", "exec sleep 30");
+        let older = start(&binary).expect("start the older daemon");
+        let newer = start(&binary).expect("start the newer daemon");
+        // The older daemon exits only after the newer one started, as when the
+        // app stops its daemon for the login item and starts it again.
+        // SAFETY: kill only sends a signal to the child the test started.
+        unsafe { libc::kill(older as libc::pid_t, libc::SIGTERM) };
+        wait_exit(older).expect("the older daemon kept running");
+        assert_eq!(exit_of(newer), None, "the newer daemon took the older exit");
+        let result = block_on(async {
+            let server = serve_later(&path, Duration::from_millis(1500));
+            let result = wait_started(path.to_str().unwrap(), START_TIMEOUT, newer).await;
+            (result, server.await)
+        });
+        assert_eq!(result.0, Ok(()));
+        assert!(stop_started());
+    }
+
+    #[test]
+    fn stop_started_without_a_started_daemon_does_nothing() {
+        let _globals = globals();
+        assert!(!stop_started());
+    }
+
+    #[test]
+    fn status_serializes_for_the_window() {
+        let status = Status {
+            state: State::Failed,
+            reason: Some("boom".to_string()),
+        };
+        assert_eq!(
+            serde_json::to_string(&status).unwrap(),
+            r#"{"state":"failed","reason":"boom"}"#
+        );
+        let status = Status {
+            state: State::Running,
+            reason: None,
+        };
+        assert_eq!(
+            serde_json::to_string(&status).unwrap(),
+            r#"{"state":"running","reason":null}"#
+        );
+        let status = Status {
+            state: State::Offline,
+            reason: None,
+        };
+        assert!(
+            serde_json::to_string(&status)
+                .unwrap()
+                .contains(r#""offline""#)
+        );
+    }
+
+    #[test]
+    fn endpoint_from_prefers_the_override() {
+        let platform = || -> Result<String, String> { panic!("the platform was consulted") };
+        assert_eq!(
+            endpoint_from(Some("/tmp/custom.sock".into()), platform),
+            Ok("/tmp/custom.sock".to_string())
+        );
+    }
+
+    #[test]
+    fn endpoint_from_ignores_an_empty_override() {
+        assert_eq!(
+            endpoint_from(Some(OsString::new()), || Ok("platform".to_string())),
+            Ok("platform".to_string())
+        );
+        assert_eq!(
+            endpoint_from(None, || Err("no home".to_string())),
+            Err("no home".to_string())
+        );
+    }
+
+    #[test]
+    fn unix_endpoint_lives_in_the_data_directory() {
+        let endpoint = unix_endpoint(Some("/Users/someone".into())).expect("endpoint");
+        #[cfg(target_os = "macos")]
+        assert_eq!(
+            endpoint,
+            "/Users/someone/Library/Application Support/Unison/unisond.sock"
+        );
+        #[cfg(not(target_os = "macos"))]
+        assert_eq!(endpoint, "/Users/someone/.local/share/unison/unisond.sock");
+    }
+
+    #[test]
+    fn unix_endpoint_needs_a_home_directory() {
+        assert!(unix_endpoint(None).is_err());
+        assert!(
+            unix_endpoint(Some(OsString::new())).is_err(),
+            "an empty home turned into a relative endpoint"
+        );
+    }
+
+    #[test]
+    fn binary_from_prefers_the_override() {
+        let binary = binary_from(Some("/opt/unisond".into()), || {
+            panic!("the default binary was consulted")
+        });
+        assert_eq!(binary, Some(PathBuf::from("/opt/unisond")));
+    }
+
+    #[test]
+    fn binary_from_needs_an_existing_default() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond");
+        assert_eq!(binary_from(None, || Some(path.clone())), None);
+        std::fs::write(&path, b"").unwrap();
+        assert_eq!(binary_from(None, || Some(path.clone())), Some(path.clone()));
+        assert_eq!(binary_from(None, || Some(dir.path().to_path_buf())), None);
+        assert_eq!(binary_from(None, || None), None);
     }
 }

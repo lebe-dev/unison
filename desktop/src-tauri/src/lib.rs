@@ -28,6 +28,13 @@ struct StreamChunk {
     chunk: String,
 }
 
+/// decode_body returns the bytes of a request body the webview sent as base64.
+fn decode_body(body: &str) -> Result<Vec<u8>, String> {
+    BASE64
+        .decode(body)
+        .map_err(|err| format!("the request body is not base64: {err}"))
+}
+
 /// api_call forwards a unary call of the local API to the daemon.
 #[tauri::command]
 async fn api_call(
@@ -37,9 +44,7 @@ async fn api_call(
     body: String,
 ) -> Result<proxy::ApiResponse, String> {
     let endpoint = state.endpoint.as_ref().map_err(|err| err.clone())?;
-    let body = BASE64
-        .decode(body)
-        .map_err(|err| format!("the request body is not base64: {err}"))?;
+    let body = decode_body(&body)?;
     proxy::call(endpoint, &service, &method, &body).await
 }
 
@@ -60,9 +65,7 @@ async fn api_stream(
     on_chunk: Channel<StreamChunk>,
 ) -> Result<(), String> {
     let endpoint = state.endpoint.as_ref().map_err(|err| err.clone())?;
-    let body = BASE64
-        .decode(body)
-        .map_err(|err| format!("the request body is not base64: {err}"))?;
+    let body = decode_body(&body)?;
     let stream = streams.open(webview.label(), id);
     stream
         .run(proxy::stream(endpoint, &service, &method, &body, |data| {
@@ -82,8 +85,6 @@ fn api_stream_cancel(streams: State<'_, streams::Streams>, webview: Webview, id:
     streams.cancel(webview.label(), id);
 }
 
-/// daemon_status reports the state of the daemon and the reason of the last
-/// failed start.
 /// LOCAL_NETWORK_PANE is the Local Network pane of the privacy settings.
 #[cfg(target_os = "macos")]
 const LOCAL_NETWORK_PANE: &str =
@@ -110,6 +111,8 @@ fn open_local_network_settings() -> Result<(), String> {
     }
 }
 
+/// daemon_status reports the state of the daemon and the reason of the last
+/// failed start.
 #[tauri::command]
 fn daemon_status() -> daemon::Status {
     daemon::status()
@@ -233,4 +236,34 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running Unison");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_body_reads_base64() {
+        assert_eq!(decode_body("CAE=").unwrap(), b"\x08\x01");
+        assert_eq!(decode_body("").unwrap(), b"");
+    }
+
+    #[test]
+    fn decode_body_refuses_other_text() {
+        for body in ["not base64!", "CAE", "CA E="] {
+            let err = decode_body(body).expect_err("a broken body was accepted");
+            assert!(err.starts_with("the request body is not base64"), "{err}");
+        }
+    }
+
+    #[test]
+    fn stream_chunk_serializes_for_the_webview() {
+        let chunk = StreamChunk {
+            chunk: BASE64.encode(b"\x00\x00\x00\x00\x01e"),
+        };
+        assert_eq!(
+            serde_json::to_string(&chunk).unwrap(),
+            r#"{"chunk":"AAAAAAFl"}"#
+        );
+    }
 }

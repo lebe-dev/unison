@@ -20,7 +20,7 @@ const VALUE_NAME: &str = "Unison";
 const ACTION_ARG: &str = "--login-item=";
 
 /// LoginItemStatus is the state of the login item in the system.
-#[derive(Clone, Copy, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LoginItemStatus {
     /// The platform has no login item for the daemon.
@@ -101,31 +101,60 @@ pub fn register_at_launch() -> Option<Result<LoginItemStatus, String>> {
     if cfg!(debug_assertions) || cfg!(windows) {
         return None;
     }
-    match status() {
-        LoginItemStatus::NotRegistered | LoginItemStatus::NotFound => Some(set(true)),
-        _ => None,
-    }
+    needs_registration(status()).then(|| set(true))
+}
+
+/// needs_registration reports whether the launch registers a login item in the
+/// given state. A login item that waits for approval or that is enabled is
+/// left as the user set it.
+fn needs_registration(current: LoginItemStatus) -> bool {
+    matches!(
+        current,
+        LoginItemStatus::NotRegistered | LoginItemStatus::NotFound
+    )
+}
+
+/// Action is a login item action of the command line.
+#[derive(Debug, PartialEq)]
+enum Action {
+    Status,
+    Register,
+    Unregister,
+}
+
+/// parse_action finds the login item action among the arguments that follow
+/// the program name. It returns None when no argument asks for one, and the
+/// unknown action as an error.
+fn parse_action(args: impl IntoIterator<Item = String>) -> Option<Result<Action, String>> {
+    let arg = args.into_iter().find(|arg| arg.starts_with(ACTION_ARG))?;
+    let action = match &arg[ACTION_ARG.len()..] {
+        "status" => Action::Status,
+        "register" => Action::Register,
+        "unregister" => Action::Unregister,
+        other => return Some(Err(other.to_string())),
+    };
+    Some(Ok(action))
 }
 
 /// run_arg handles the login item action of the command line. It returns the
 /// exit code, or None when the arguments ask for the regular start.
 pub fn run_arg() -> Option<i32> {
-    let arg = std::env::args()
-        .skip(1)
-        .find(|arg| arg.starts_with(ACTION_ARG))?;
-    let action = &arg[ACTION_ARG.len()..];
-    match action {
-        "status" => {
-            println!("{}", status().as_str());
-            Some(0)
-        }
-        "register" => Some(report(set(true))),
-        "unregister" => Some(report(set(false))),
-        other => {
+    let action = match parse_action(std::env::args().skip(1))? {
+        Ok(action) => action,
+        Err(other) => {
             eprintln!("unison: unknown login item action {other}");
-            Some(2)
+            return Some(2);
         }
-    }
+    };
+    let code = match action {
+        Action::Status => {
+            println!("{}", status().as_str());
+            0
+        }
+        Action::Register => report(set(true)),
+        Action::Unregister => report(set(false)),
+    };
+    Some(code)
 }
 
 /// report prints the result of a login item change and returns the exit code.
@@ -139,6 +168,107 @@ fn report(result: Result<LoginItemStatus, String>) -> i32 {
             eprintln!("unison: {err}");
             1
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ALL: [LoginItemStatus; 5] = [
+        LoginItemStatus::Unsupported,
+        LoginItemStatus::NotRegistered,
+        LoginItemStatus::Enabled,
+        LoginItemStatus::RequiresApproval,
+        LoginItemStatus::NotFound,
+    ];
+
+    fn args(list: &[&str]) -> Vec<String> {
+        list.iter().map(|arg| arg.to_string()).collect()
+    }
+
+    #[test]
+    fn parse_action_reads_the_known_actions() {
+        assert_eq!(
+            parse_action(args(&["--login-item=status"])),
+            Some(Ok(Action::Status))
+        );
+        assert_eq!(
+            parse_action(args(&["--verbose", "--login-item=register"])),
+            Some(Ok(Action::Register))
+        );
+        assert_eq!(
+            parse_action(args(&["--login-item=unregister"])),
+            Some(Ok(Action::Unregister))
+        );
+    }
+
+    #[test]
+    fn parse_action_leaves_the_regular_start_alone() {
+        assert_eq!(parse_action(args(&[])), None);
+        assert_eq!(
+            parse_action(args(&["--verbose", "login-item=status"])),
+            None
+        );
+    }
+
+    #[test]
+    fn parse_action_refuses_an_unknown_action() {
+        assert_eq!(
+            parse_action(args(&["--login-item=enable"])),
+            Some(Err("enable".to_string()))
+        );
+        assert_eq!(
+            parse_action(args(&["--login-item="])),
+            Some(Err(String::new()))
+        );
+        assert_eq!(
+            parse_action(args(&["--login-item=Status"])),
+            Some(Err("Status".to_string())),
+            "the action is case sensitive"
+        );
+    }
+
+    #[test]
+    fn report_returns_the_exit_code() {
+        assert_eq!(report(Ok(LoginItemStatus::Enabled)), 0);
+        assert_eq!(report(Err("denied".to_string())), 1);
+    }
+
+    #[test]
+    fn only_a_missing_login_item_is_registered_at_launch() {
+        for status in ALL {
+            let expected = matches!(
+                status,
+                LoginItemStatus::NotRegistered | LoginItemStatus::NotFound
+            );
+            assert_eq!(needs_registration(status), expected, "{status:?}");
+        }
+    }
+
+    #[test]
+    fn status_names_match_the_window_and_the_command_line() {
+        let names: Vec<(String, &str)> = ALL
+            .iter()
+            .map(|status| (serde_json::to_string(status).unwrap(), status.as_str()))
+            .collect();
+        assert_eq!(
+            names,
+            [
+                (r#""unsupported""#.to_string(), "unsupported"),
+                (r#""not_registered""#.to_string(), "not-registered"),
+                (r#""enabled""#.to_string(), "enabled"),
+                (r#""requires_approval""#.to_string(), "requires-approval"),
+                (r#""not_found""#.to_string(), "not-found"),
+            ]
+        );
+        assert_eq!(
+            serde_json::to_string(&LoginItem {
+                status: LoginItemStatus::Enabled
+            })
+            .unwrap(),
+            r#"{"status":"enabled"}"#
+        );
     }
 }
 
