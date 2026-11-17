@@ -50,8 +50,9 @@ The command line prints the code of its window next to the short code flow, and 
 screen of the app shows the same code. See [Command line](cli.md).
 
 On Android the code can be read by the Scan a code button of the Add screen or by the system
-camera: the camera opens the `unison://pair` link in Unison, which starts the pairing at once.
-The scanning device has to reach one of the addresses in the code. When none answers, for example
+camera: the camera opens the `unison://pair` link in Unison, which asks once more and names the
+role the other device will get. Any app or web page can open such a link, so a link never pairs on
+its own. The scanning device has to reach one of the addresses in the code. When none answers, for example
 on a Wi-Fi network that keeps its clients apart, the scan ends with an error instead of waiting. See
 [Connection problems](#connection-problems).
 
