@@ -65,6 +65,23 @@ pub fn capture_error(category: &str) {
     sentry::capture_message(category, sentry::Level::Error);
 }
 
+/// PATH_PLACEHOLDER marks where an absolute path was removed.
+const PATH_PLACEHOLDER: &str = "[path]";
+
+/// UNIX_ROOTS are the roots of the absolute paths that the events report.
+const UNIX_ROOTS: [&str; 10] = [
+    "/Users/",
+    "/home/",
+    "/root/",
+    "/tmp/",
+    "/private/",
+    "/var/",
+    "/opt/",
+    "/mnt/",
+    "/data/",
+    "/storage/",
+];
+
 /// before_send drops the events without consent and keeps only what describes
 /// the error of the shell.
 fn before_send(mut event: Event<'static>) -> Option<Event<'static>> {
@@ -81,13 +98,67 @@ fn before_send(mut event: Event<'static>) -> Option<Event<'static>> {
     event
         .tags
         .insert("component".to_string(), COMPONENT.to_string());
+    if let Some(message) = event.message.take() {
+        event.message = Some(redact_paths(&message));
+    }
+    for exception in &mut event.exception.values {
+        if let Some(value) = exception.value.take() {
+            exception.value = Some(redact_paths(&value));
+        }
+    }
     Some(event)
+}
+
+/// redact_paths replaces the absolute paths of a text with a placeholder, so
+/// the reports never carry the files of the user. The text is split into
+/// whitespace separated tokens, which keeps ordinary words and URLs.
+fn redact_paths(text: &str) -> String {
+    let mut redacted = String::with_capacity(text.len());
+    for part in text.split_inclusive(char::is_whitespace) {
+        let end = part.trim_end_matches(char::is_whitespace).len();
+        let (token, space) = part.split_at(end);
+        redacted.push_str(&redact_token(token));
+        redacted.push_str(space);
+    }
+    redacted
+}
+
+/// redact_token replaces the path of a token and keeps the punctuation around
+/// it.
+fn redact_token(token: &str) -> String {
+    let start = token
+        .char_indices()
+        .find(|(_, c)| !matches!(c, '(' | '[' | '{' | '\'' | '"' | '<'))
+        .map_or(0, |(index, _)| index);
+    let rest = &token[start..];
+    if !is_path(rest) {
+        return token.to_string();
+    }
+    let end = rest
+        .char_indices()
+        .rev()
+        .find(|(_, c)| !matches!(c, ')' | ']' | '}' | ',' | ';' | ':' | '\'' | '"' | '>'))
+        .map_or(rest.len(), |(index, c)| index + c.len_utf8());
+    format!("{}{PATH_PLACEHOLDER}{}", &token[..start], &rest[end..])
+}
+
+/// is_path reports whether a token starts an absolute path of the computer.
+fn is_path(token: &str) -> bool {
+    UNIX_ROOTS.iter().any(|root| token.starts_with(root)) || is_windows_path(token)
+}
+
+/// is_windows_path reports whether a token starts a path with a drive letter.
+fn is_windows_path(token: &str) -> bool {
+    let mut chars = token.chars();
+    matches!(chars.next(), Some(letter) if letter.is_ascii_alphabetic())
+        && chars.next() == Some(':')
+        && matches!(chars.next(), Some('\\') | Some('/'))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sentry::protocol::{Breadcrumb, Context, Request, User};
+    use sentry::protocol::{Breadcrumb, Context, Exception, Request, User};
     use std::sync::Mutex;
 
     /// CONSENT serializes the tests that change the consent.
@@ -146,5 +217,83 @@ mod tests {
             Some(COMPONENT)
         );
         assert_eq!(event.message.as_deref(), Some("the daemon did not start"));
+    }
+
+    #[test]
+    fn redaction_covers_a_unix_path() {
+        assert_eq!(
+            redact_paths("cannot open /tmp/unison/build.log now"),
+            "cannot open [path] now"
+        );
+        assert_eq!(
+            redact_paths("the store at /var/lib/unison is busy"),
+            "the store at [path] is busy"
+        );
+    }
+
+    #[test]
+    fn redaction_covers_a_macos_home() {
+        assert_eq!(
+            redact_paths("the file (/Users/someone/Documents/report.pdf) is missing"),
+            "the file ([path]) is missing"
+        );
+    }
+
+    #[test]
+    fn redaction_covers_windows_drives() {
+        assert_eq!(
+            redact_paths(r"cannot open C:\Users\Someone\AppData\Local\Unison\unison.log"),
+            "cannot open [path]"
+        );
+        assert_eq!(
+            redact_paths("cannot open D:/data/transfers/report.pdf"),
+            "cannot open [path]"
+        );
+    }
+
+    #[test]
+    fn redaction_leaves_words_and_urls_alone() {
+        let text = "the home page at https://example.com/home/page is open";
+        assert_eq!(redact_paths(text), text);
+        assert_eq!(
+            redact_paths("the daemon did not start"),
+            "the daemon did not start"
+        );
+    }
+
+    #[test]
+    fn events_lose_the_paths_of_the_user() {
+        let _consent = CONSENT.lock().unwrap_or_else(|err| err.into_inner());
+        set_enabled(true);
+        let mut event = event();
+        event.message = Some("cannot reach the daemon at /Users/someone/Library".to_string());
+        event.exception = vec![
+            Exception {
+                ty: "panic".to_string(),
+                value: Some("at /home/someone/unison/src/main.rs".to_string()),
+                ..Default::default()
+            },
+            Exception {
+                ty: "cause".to_string(),
+                value: Some(r"the file C:\Users\Someone\report.txt is missing".to_string()),
+                ..Default::default()
+            },
+        ]
+        .into();
+        let event = before_send(event).expect("the event was dropped with consent");
+        set_enabled(false);
+
+        assert_eq!(
+            event.message.as_deref(),
+            Some("cannot reach the daemon at [path]")
+        );
+        assert_eq!(
+            event.exception.values[0].value.as_deref(),
+            Some("at [path]")
+        );
+        assert_eq!(
+            event.exception.values[1].value.as_deref(),
+            Some("the file [path] is missing")
+        );
     }
 }
