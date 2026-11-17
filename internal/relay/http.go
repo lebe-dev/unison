@@ -33,8 +33,8 @@ func (s *Server) listenHTTP() error {
 		defer observability.Recover()
 		err := s.httpServer.Serve(ln)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.log.Error("health server stopped", "error", err)
-			observability.CaptureMessage("relay: health server stopped")
+			s.log.Error("health listener stopped", "error", err)
+			observability.CaptureMessage("relay: health listener stopped")
 		}
 	}()
 	return nil

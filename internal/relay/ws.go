@@ -44,8 +44,8 @@ func (s *Server) listenWS(cert tls.Certificate) error {
 		defer observability.Recover()
 		err := s.wsServer.Serve(tls.NewListener(ln, tlsConfig))
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.log.Error("websocket server stopped", "error", err)
-			observability.CaptureMessage("relay: websocket server stopped")
+			s.log.Error("websocket listener stopped", "error", err)
+			observability.CaptureMessage("relay: websocket listener stopped")
 		}
 	}()
 	return nil
@@ -55,6 +55,9 @@ func (s *Server) listenWS(cert tls.Certificate) error {
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	if !s.capacity() {
 		s.metrics.registration(relayv1.RelayStatus_RELAY_STATUS_UNAVAILABLE)
+		s.log.Debug("connection refused, the relay is at capacity",
+			"transport", transportLabels[transportWS],
+		)
 		http.Error(w, statusLabels[relayv1.RelayStatus_RELAY_STATUS_UNAVAILABLE], http.StatusServiceUnavailable)
 		return
 	}
@@ -63,9 +66,11 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		Subprotocols: []string{WSSubprotocol},
 	})
 	if err != nil {
+		s.log.Debug("websocket upgrade failed", "error", err)
 		return
 	}
 	if conn.Subprotocol() != WSSubprotocol {
+		s.log.Debug("websocket subprotocol rejected", "subprotocol", conn.Subprotocol())
 		_ = conn.Close(websocket.StatusPolicyViolation, "subprotocol required")
 		return
 	}
@@ -90,6 +95,11 @@ func (s *Server) serveWS(conn *websocket.Conn) {
 
 	typ, data, err := conn.Read(ctx)
 	if err != nil {
+		s.log.Debug("registration not received",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"error", err,
+		)
 		return
 	}
 	if typ != websocket.MessageBinary {
@@ -111,6 +121,11 @@ func (s *Server) serveWS(conn *websocket.Conn) {
 	}
 	if result := registerResultFrame(status, s.limits()); result != nil {
 		if err := conn.Write(ctx, websocket.MessageBinary, result); err != nil {
+			s.log.Debug("registration answer not written",
+				"conn", p.id,
+				"transport", transportLabels[p.transport],
+				"error", err,
+			)
 			return
 		}
 	}
@@ -125,6 +140,11 @@ func (s *Server) serveWS(conn *websocket.Conn) {
 	for {
 		typ, data, err := conn.Read(context.Background())
 		if err != nil {
+			s.log.Debug("websocket closed",
+				"conn", p.id,
+				"transport", transportLabels[p.transport],
+				"error", err,
+			)
 			return
 		}
 		if typ != websocket.MessageBinary {
@@ -150,6 +170,11 @@ func (s *Server) pingPeer(p *peer, conn *websocket.Conn) {
 			err := conn.Ping(ctx)
 			cancel()
 			if err != nil {
+				s.log.Debug("websocket ping failed",
+					"conn", p.id,
+					"transport", transportLabels[p.transport],
+					"error", err,
+				)
 				p.stop(relayv1.RelayStatus_RELAY_STATUS_UNSPECIFIED)
 				return
 			}

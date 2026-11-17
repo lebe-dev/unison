@@ -123,6 +123,7 @@ func (d *Dialer) Run(ctx context.Context) error {
 	}()
 
 	delay := d.cfg.ReconnectDelay
+	warned := false
 	for {
 		if ctx.Err() != nil {
 			return nil
@@ -142,12 +143,19 @@ func (d *Dialer) Run(ctx context.Context) error {
 		}
 		if registered {
 			delay = d.cfg.ReconnectDelay
+			warned = false
 		}
-		if errors.Is(err, errReconnect) || errors.Is(err, errRollover) {
+		switch {
+		case errors.Is(err, errReconnect):
 			continue
-		}
-		if err != nil {
-			d.log.Debug("relay connection ended", "error", err)
+		case errors.Is(err, errRollover):
+			d.log.Debug("relay connection rolled over at the day boundary")
+			continue
+		case err != nil && !warned:
+			d.log.Warn("relay connection failed", "error", err, "retry_in", delay)
+			warned = true
+		case err != nil:
+			d.log.Debug("relay connection failed", "error", err)
 		}
 		if !d.waitFor(ctx, delay) {
 			return nil
@@ -433,7 +441,7 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 		d.requestReconnect()
 	}
 
-	d.log.Debug("relay connected",
+	d.log.Info("relay connected",
 		"transport", conn.transport(),
 		"mailboxes", len(ids),
 		"max_datagram_bytes", limits.MaxDatagramBytes,
@@ -554,7 +562,7 @@ func (d *Dialer) dial(ctx context.Context) (carrier, error) {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		d.log.Debug("relay QUIC attempt failed", "error", err)
+		d.log.Debug("relay QUIC attempt failed, falling back to websocket", "error", err)
 		d.setWebsocketOnly()
 	}
 

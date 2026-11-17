@@ -56,6 +56,9 @@ type wsCarrier struct {
 	once sync.Once
 	wg   sync.WaitGroup
 	dead atomic.Bool
+
+	mu  sync.Mutex
+	err error
 }
 
 // wsCarrier implements carrier.
@@ -154,6 +157,9 @@ func (c *wsCarrier) receive(ctx context.Context, fn func([]byte)) error {
 	for {
 		typ, data, err := c.conn.Read(ctx)
 		if err != nil {
+			if cause := c.failure(); cause != nil {
+				return cause
+			}
 			return err
 		}
 		if typ != websocket.MessageBinary {
@@ -195,7 +201,7 @@ func (c *wsCarrier) writeLoop() {
 			return
 		case data := <-c.out:
 			if err := c.write(context.Background(), data); err != nil {
-				c.fail()
+				c.fail(fmt.Errorf("relay: write: %w", err))
 				return
 			}
 		}
@@ -218,18 +224,28 @@ func (c *wsCarrier) pingLoop() {
 			err := c.conn.Ping(ctx)
 			cancel()
 			if err != nil && !errors.Is(err, context.Canceled) {
-				c.fail()
+				c.fail(fmt.Errorf("relay: ping: %w", err))
 				return
 			}
 		}
 	}
 }
 
-// fail ends the connection after an error.
-func (c *wsCarrier) fail() {
+// fail ends the connection after an error and keeps the cause for receive.
+func (c *wsCarrier) fail(err error) {
 	c.once.Do(func() {
+		c.mu.Lock()
+		c.err = err
+		c.mu.Unlock()
 		c.dead.Store(true)
 		close(c.done)
 		_ = c.conn.CloseNow()
 	})
+}
+
+// failure returns the recorded cause of the end of the connection.
+func (c *wsCarrier) failure() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.err
 }

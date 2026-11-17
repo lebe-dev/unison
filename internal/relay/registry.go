@@ -2,6 +2,7 @@ package relay
 
 import (
 	"errors"
+	"log/slog"
 	"sync"
 )
 
@@ -18,6 +19,7 @@ type mailboxID [mailboxIDLen]byte
 // least one connection is a member of it.
 type registry struct {
 	metrics *metrics
+	log     *slog.Logger
 
 	mu     sync.Mutex
 	boxes  map[mailboxID][]*peer
@@ -26,9 +28,10 @@ type registry struct {
 }
 
 // newRegistry returns an empty registry.
-func newRegistry(limit int, m *metrics) *registry {
+func newRegistry(limit int, m *metrics, log *slog.Logger) *registry {
 	return &registry{
 		metrics: m,
+		log:     log,
 		boxes:   make(map[mailboxID][]*peer),
 		byPeer:  make(map[*peer]map[mailboxID]struct{}),
 		limit:   limit,
@@ -56,7 +59,12 @@ func (r *registry) join(p *peer, ids []mailboxID) error {
 		}
 		members, existed := r.boxes[id]
 		if len(members) >= maxMailboxMembers {
-			r.remove(members[0], id)
+			evicted := members[0]
+			r.log.Debug("mailbox member evicted",
+				"conn", evicted.id,
+				"transport", transportLabels[evicted.transport],
+			)
+			r.remove(evicted, id)
 			members = r.boxes[id]
 		}
 		r.boxes[id] = append(members, p)

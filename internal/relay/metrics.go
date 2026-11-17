@@ -57,6 +57,14 @@ var statusLabels = [numStatuses]string{
 	"shutting_down",
 }
 
+// statusLabel returns the label value of a status.
+func statusLabel(status relayv1.RelayStatus) string {
+	if index := int(status); index >= 0 && index < numStatuses {
+		return statusLabels[index]
+	}
+	return "unknown"
+}
+
 // metrics collects the server counters for the Prometheus endpoint. Labels
 // never carry mailbox ids, tokens or addresses.
 type metrics struct {

@@ -122,6 +122,9 @@ func (s *Server) serveQUIC() {
 		}
 		if !s.capacity() {
 			s.metrics.registration(relayv1.RelayStatus_RELAY_STATUS_UNAVAILABLE)
+			s.log.Debug("connection refused, the relay is at capacity",
+				"transport", transportLabels[transportQUIC],
+			)
 			_ = conn.CloseWithError(codeUnavailable, statusLabels[relayv1.RelayStatus_RELAY_STATUS_UNAVAILABLE])
 			continue
 		}
@@ -151,13 +154,28 @@ func (s *Server) serveQUICConn(conn *quic.Conn) {
 
 	stream, err := conn.AcceptStream(ctx)
 	if err != nil {
+		s.log.Debug("registration stream not received",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"error", err,
+		)
 		return
 	}
 	if err := stream.SetDeadline(time.Now().Add(s.cfg.RegisterTimeout)); err != nil {
+		s.log.Debug("registration deadline not set",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"error", err,
+		)
 		return
 	}
 	frame, err := readStreamFrame(bufio.NewReaderSize(stream, streamBufferSize), maxRegisterBytes)
 	if err != nil {
+		s.log.Debug("registration frame not read",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"error", err,
+		)
 		s.metrics.registration(relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT)
 		p.stop(relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT)
 		return
@@ -185,6 +203,11 @@ func (s *Server) serveQUICConn(conn *quic.Conn) {
 	for {
 		data, err := conn.ReceiveDatagram(conn.Context())
 		if err != nil {
+			s.log.Debug("datagram stream ended",
+				"conn", p.id,
+				"transport", transportLabels[p.transport],
+				"error", err,
+			)
 			return
 		}
 		s.forward(p, data)

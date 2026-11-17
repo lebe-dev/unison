@@ -63,9 +63,10 @@ type Server struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	mu     sync.Mutex
-	peers  map[*peer]struct{}
-	closed bool
+	mu       sync.Mutex
+	peers    map[*peer]struct{}
+	nextConn uint64
+	closed   bool
 }
 
 // New returns a server for a valid configuration. It binds no socket; Start
@@ -91,7 +92,7 @@ func New(cfg Config) (*Server, error) {
 		cfg:     cfg,
 		log:     logger,
 		metrics: m,
-		boxes:   newRegistry(cfg.MaxMailboxesTotal, m),
+		boxes:   newRegistry(cfg.MaxMailboxesTotal, m, logger),
 		ctx:     ctx,
 		cancel:  cancel,
 		peers:   make(map[*peer]struct{}),
@@ -211,8 +212,11 @@ func (s *Server) newPeer(transport int, w connWriter) *peer {
 		writer:    w,
 		out:       make(chan []byte, outQueue),
 		done:      make(chan struct{}),
+		started:   time.Now(),
 	}
 	s.mu.Lock()
+	s.nextConn++
+	p.id = s.nextConn
 	s.peers[p] = struct{}{}
 	s.mu.Unlock()
 	s.metrics.connect(transport)
@@ -244,13 +248,20 @@ func (s *Server) limits() *relayv1.Limits {
 func (s *Server) register(p *peer, reg *relayv1.Register) relayv1.RelayStatus {
 	status := s.authenticate(p, reg)
 	s.metrics.registration(status)
+	mailboxes := len(reg.GetMailboxIds())
 	if status == relayv1.RelayStatus_RELAY_STATUS_OK {
-		s.log.Debug("connection registered", "transport", transportLabels[p.transport])
+		s.log.Debug("connection registered",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"mailboxes", mailboxes,
+		)
 		return status
 	}
 	s.log.Debug("registration rejected",
+		"conn", p.id,
 		"transport", transportLabels[p.transport],
-		"status", statusLabels[int(status)],
+		"status", statusLabel(status),
+		"mailboxes", mailboxes,
 	)
 	return status
 }
@@ -293,6 +304,9 @@ func (s *Server) authenticate(p *peer, reg *relayv1.Register) relayv1.RelayStatu
 // rejection is counted and none of them ends the connection, except for a token
 // that ran out of quota.
 func (s *Server) forward(p *peer, data []byte) {
+	if p.stopped() {
+		return
+	}
 	if len(data) > s.cfg.MaxDatagramBytes+frameOverhead {
 		s.metrics.dropped(dropTooLarge)
 		return
@@ -328,7 +342,10 @@ func (s *Server) forward(p *peer, data []byte) {
 
 	switch err := p.token.take(time.Now(), len(payload)); {
 	case errors.Is(err, errQuotaExceeded):
-		s.log.Debug("token quota exceeded", "transport", transportLabels[p.transport])
+		s.log.Warn("token quota exceeded",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+		)
 		p.stop(relayv1.RelayStatus_RELAY_STATUS_QUOTA_EXCEEDED)
 		return
 	case err != nil:
@@ -359,9 +376,11 @@ type connWriter interface {
 // registration and leaves them when the connection ends.
 type peer struct {
 	srv       *Server
+	id        uint64
 	transport int
 	writer    connWriter
 	token     *tokenState
+	started   time.Time
 
 	out  chan []byte
 	done chan struct{}
@@ -394,6 +413,11 @@ func (p *peer) writeLoop() {
 					continue
 				}
 				p.srv.metrics.dropped(dropWrite)
+				p.srv.log.Debug("write to client failed",
+					"conn", p.id,
+					"transport", transportLabels[p.transport],
+					"error", err,
+				)
 				p.stop(relayv1.RelayStatus_RELAY_STATUS_UNSPECIFIED)
 				return
 			}
@@ -415,5 +439,21 @@ func (p *peer) stop(status relayv1.RelayStatus) {
 		p.srv.removePeer(p)
 		close(p.done)
 		_ = p.writer.close(status)
+		p.srv.log.Debug("connection closed",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"status", statusLabel(status),
+			"duration", time.Since(p.started).Round(time.Millisecond),
+		)
 	})
+}
+
+// stopped reports whether the connection already ended.
+func (p *peer) stopped() bool {
+	select {
+	case <-p.done:
+		return true
+	default:
+		return false
+	}
 }
