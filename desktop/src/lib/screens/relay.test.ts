@@ -6,8 +6,11 @@ import {
   GetStatusResponseSchema,
   RelaySchema,
   RelayTransport,
+  RelayCheckFailure,
+  RelayCheckSchema,
   RelayOffResponseSchema,
   SetRelayResponseSchema,
+  TestRelayResponseSchema,
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
@@ -18,12 +21,14 @@ vi.mock("../api/client", () => ({
     getRelay: vi.fn(),
     setRelay: vi.fn(),
     relayOff: vi.fn(),
+    testRelay: vi.fn(),
   },
 }));
 
 const getRelay = vi.mocked(client.getRelay);
 const setRelay = vi.mocked(client.setRelay);
 const relayOff = vi.mocked(client.relayOff);
+const testRelay = vi.mocked(client.testRelay);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -104,5 +109,63 @@ describe("relay settings", () => {
     await fireEvent.click(await screen.findByRole("button", { name: "Turn off" }));
 
     expect(relayOff).toHaveBeenCalledWith({});
+  });
+
+  it("checks the entered relay without storing it", async () => {
+    testRelay.mockResolvedValue(
+      create(TestRelayResponseSchema, {
+        quic: create(RelayCheckSchema, {
+          transport: RelayTransport.QUIC,
+          failure: RelayCheckFailure.TIMEOUT,
+          detail: "relay: dial relay.example.org:443: timeout: no recent network activity",
+        }),
+        websocket: create(RelayCheckSchema, {
+          transport: RelayTransport.WSS,
+          ok: true,
+          failure: RelayCheckFailure.NONE,
+          latencyMs: 85n,
+        }),
+      }),
+    );
+
+    render(RelaySection);
+
+    await fireEvent.input(await screen.findByLabelText(/Relay address/), {
+      target: { value: " relay.example.org:443 " },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Check connection" }));
+
+    expect(testRelay).toHaveBeenCalledWith({ url: "relay.example.org:443", token: undefined });
+    expect(setRelay).not.toHaveBeenCalled();
+    expect(await screen.findByText(/The relay works over WebSocket/)).toBeTruthy();
+    expect(screen.getByText("OK, 85 ms")).toBeTruthy();
+    expect(screen.getByText(/No answer in time/)).toBeTruthy();
+    expect(screen.getByText(/no recent network activity/)).toBeTruthy();
+  });
+
+  it("explains a token the relay refuses", async () => {
+    const refused = (transport: RelayTransport) =>
+      create(RelayCheckSchema, {
+        transport,
+        failure: RelayCheckFailure.UNAUTHORIZED,
+        detail: "relay: registration refused: unauthorized",
+      });
+    testRelay.mockResolvedValue(
+      create(TestRelayResponseSchema, {
+        quic: refused(RelayTransport.QUIC),
+        websocket: refused(RelayTransport.WSS),
+      }),
+    );
+
+    render(RelaySection);
+
+    await fireEvent.input(await screen.findByLabelText(/Access token/), {
+      target: { value: "new-token" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Check connection" }));
+
+    expect(testRelay).toHaveBeenCalledWith({ url: "relay.example.com:443", token: "new-token" });
+    expect(await screen.findByText(/cannot be reached with these settings/)).toBeTruthy();
+    expect(screen.getAllByText(/does not accept the access token/)).toHaveLength(2);
   });
 });

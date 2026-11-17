@@ -324,6 +324,29 @@ export const en = {
   "relay.filesOnRequest": "Files over the relay only when I ask for them",
   "relay.filesOnRequestHint": "Files stay in the history until you download them.",
   "relay.turnOff": "Turn off",
+  "relay.check": "Check connection",
+  "relay.checking": "Checking the relay…",
+  "relay.checkFailed": "The relay could not be checked.",
+  "relay.checkBoth": "The relay works over QUIC and WebSocket.",
+  "relay.checkWssOnly":
+    "The relay works over WebSocket. QUIC does not get through, so the devices use the slower fallback.",
+  "relay.checkQuicOnly": "The relay works over QUIC. The WebSocket fallback does not.",
+  "relay.checkNone": "The relay cannot be reached with these settings.",
+  "relay.checkQuic": "QUIC (UDP)",
+  "relay.checkWss": "WebSocket (TCP)",
+  "relay.checkOk": "OK, {ms} ms",
+  "relay.failAddress": "The host name does not resolve.",
+  "relay.failTimeout":
+    "No answer in time: the host is down, or a firewall or the network drops the traffic.",
+  "relay.failRefused": "The host refused the connection: nothing listens on this port.",
+  "relay.failCertificate": "The TLS certificate is not trusted or does not match the host.",
+  "relay.failNotRelay":
+    "The server answers, but it is not a relay. Check the address and the proxy in front of it.",
+  "relay.failUnavailable": "The relay is busy or shutting down, or the proxy cannot reach it.",
+  "relay.failUnauthorized": "The relay does not accept the access token.",
+  "relay.failQuota": "The access token used up its traffic quota.",
+  "relay.failDatagrams": "The relay datagrams are too small for the devices.",
+  "relay.failOther": "The check failed.",
 
   // Transfers screen and store.
   "transfers.sendFiles": "Send files",

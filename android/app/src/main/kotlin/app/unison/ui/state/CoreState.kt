@@ -21,6 +21,10 @@ data class CoreState(
     val settings: Local.Settings? = null,
     /** Relay access of the group, absent until the first load. */
     val relay: Local.Relay? = null,
+    /** A relay check runs. */
+    val relayChecking: Boolean = false,
+    /** Outcome of the last relay check, absent until one finishes. */
+    val relayCheck: Local.TestRelayResponse? = null,
     val failure: CoreFailure? = null,
 ) {
 

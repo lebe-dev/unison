@@ -1,5 +1,6 @@
 package app.unison.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,9 @@ fun RelaySection(
     onSave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onOff: () -> Unit,
     onRefresh: () -> Unit,
+    checking: Boolean,
+    check: Local.TestRelayResponse?,
+    onCheck: (url: String, token: String?) -> Unit,
 ) {
     var url by rememberSaveable(relay?.url) { mutableStateOf(relay?.url.orEmpty()) }
     // The token stays in memory only, so it never lands in a saved state.
@@ -123,7 +127,27 @@ fun RelaySection(
         )
     }
 
+    when {
+        checking -> Text(
+            text = stringResource(R.string.relay_checking),
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        check != null -> RelayCheckResult(check)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = { onCheck(address, token.trim().takeIf { it.isNotEmpty() }) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("relay_check"),
+            enabled = canSave && !checking,
+        ) {
+            Text(text = stringResource(R.string.relay_check))
+        }
         TextButton(
             onClick = {
                 val value = token.trim()
@@ -161,4 +185,79 @@ private fun relayStateText(relay: Local.Relay?): String {
         Local.RelayTransport.RELAY_TRANSPORT_WSS -> stringResource(R.string.relay_state_wss)
         else -> stringResource(R.string.relay_state_connected)
     }
+}
+
+/** Outcome of a relay check: a summary and one line per transport. */
+@Composable
+private fun RelayCheckResult(check: Local.TestRelayResponse) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .testTag("relay_check_result"),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = stringResource(relayCheckSummary(check)),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        RelayCheckRow(label = stringResource(R.string.relay_check_quic), result = check.quic)
+        RelayCheckRow(label = stringResource(R.string.relay_check_wss), result = check.websocket)
+    }
+}
+
+/** Outcome of the check of one transport, with the technical detail of a failure. */
+@Composable
+private fun RelayCheckRow(label: String, result: Local.RelayCheck) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = if (result.ok) {
+                stringResource(R.string.relay_check_ok, result.latencyMs)
+            } else {
+                stringResource(relayFailureText(result.failure))
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (result.ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+        )
+        if (!result.ok && result.detail.isNotEmpty()) {
+            Text(
+                text = result.detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** One line on what the check means for the devices. */
+@StringRes
+private fun relayCheckSummary(check: Local.TestRelayResponse): Int {
+    val quic = check.quic.ok
+    val wss = check.websocket.ok
+    return when {
+        quic && wss -> R.string.relay_check_both
+        wss -> R.string.relay_check_wss_only
+        quic -> R.string.relay_check_quic_only
+        else -> R.string.relay_check_none
+    }
+}
+
+/** Plain explanation of the reason a check failed. */
+@StringRes
+private fun relayFailureText(failure: Local.RelayCheckFailure): Int = when (failure) {
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_ADDRESS -> R.string.relay_fail_address
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT -> R.string.relay_fail_timeout
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_REFUSED -> R.string.relay_fail_refused
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_CERTIFICATE -> R.string.relay_fail_certificate
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NOT_RELAY -> R.string.relay_fail_not_relay
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_UNAVAILABLE -> R.string.relay_fail_unavailable
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_UNAUTHORIZED -> R.string.relay_fail_unauthorized
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_QUOTA_EXCEEDED -> R.string.relay_fail_quota
+    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_DATAGRAMS_TOO_SMALL -> R.string.relay_fail_datagrams
+    else -> R.string.relay_fail_other
 }

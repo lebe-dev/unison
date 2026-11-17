@@ -341,6 +341,7 @@ class SettingsScreenTest {
                     onRelaySave = onRelaySave,
                     onRelayOff = onRelayOff,
                     onRefreshRelay = onRefreshRelay,
+                    onRelayCheck = { _, _ -> },
                     onSelfConfirmationChange = onSelfConfirmationChange,
                     onLeaveGroup = onLeaveGroup,
                     diagnosticsEnabled = diagnosticsEnabled,

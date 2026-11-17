@@ -111,7 +111,7 @@ call is not implemented, and the daemon passes the clipboard pipeline of the nod
 | Requests | `SetFriendsDiscovery`, `ListRequests`, `DecideRequest` |
 | Pause | `GetPause`, `SetPause` |
 | Settings | `GetSettings`, `UpdateSettings` |
-| Relay | `GetRelay`, `SetRelay`, `RelayOff` |
+| Relay | `GetRelay`, `SetRelay`, `RelayOff`, `TestRelay` |
 
 `WatchEvents` carries the events of the node bus: a peer that comes online or goes offline, a
 clipboard item, a peer that has to be updated and the pairing events with the address of a candidate

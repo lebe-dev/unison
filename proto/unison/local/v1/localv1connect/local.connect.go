@@ -145,6 +145,8 @@ const (
 	UnisonServiceSetRelayProcedure = "/unison.local.v1.UnisonService/SetRelay"
 	// UnisonServiceRelayOffProcedure is the fully-qualified name of the UnisonService's RelayOff RPC.
 	UnisonServiceRelayOffProcedure = "/unison.local.v1.UnisonService/RelayOff"
+	// UnisonServiceTestRelayProcedure is the fully-qualified name of the UnisonService's TestRelay RPC.
+	UnisonServiceTestRelayProcedure = "/unison.local.v1.UnisonService/TestRelay"
 )
 
 // UnisonServiceClient is a client for the unison.local.v1.UnisonService service.
@@ -223,6 +225,9 @@ type UnisonServiceClient interface {
 	SetRelay(context.Context, *connect.Request[v1.SetRelayRequest]) (*connect.Response[v1.SetRelayResponse], error)
 	// Turn the relay off for the whole group.
 	RelayOff(context.Context, *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error)
+	// Check that a relay accepts this device over each transport. Nothing is
+	// stored, so an address and a token can be checked before they are saved.
+	TestRelay(context.Context, *connect.Request[v1.TestRelayRequest]) (*connect.Response[v1.TestRelayResponse], error)
 }
 
 // NewUnisonServiceClient constructs a client for the unison.local.v1.UnisonService service. By
@@ -482,6 +487,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("RelayOff")),
 			connect.WithClientOptions(opts...),
 		),
+		testRelay: connect.NewClient[v1.TestRelayRequest, v1.TestRelayResponse](
+			httpClient,
+			baseURL+UnisonServiceTestRelayProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("TestRelay")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -528,6 +539,7 @@ type unisonServiceClient struct {
 	getRelay              *connect.Client[v1.GetRelayRequest, v1.GetRelayResponse]
 	setRelay              *connect.Client[v1.SetRelayRequest, v1.SetRelayResponse]
 	relayOff              *connect.Client[v1.RelayOffRequest, v1.RelayOffResponse]
+	testRelay             *connect.Client[v1.TestRelayRequest, v1.TestRelayResponse]
 }
 
 // GetStatus calls unison.local.v1.UnisonService.GetStatus.
@@ -735,6 +747,11 @@ func (c *unisonServiceClient) RelayOff(ctx context.Context, req *connect.Request
 	return c.relayOff.CallUnary(ctx, req)
 }
 
+// TestRelay calls unison.local.v1.UnisonService.TestRelay.
+func (c *unisonServiceClient) TestRelay(ctx context.Context, req *connect.Request[v1.TestRelayRequest]) (*connect.Response[v1.TestRelayResponse], error) {
+	return c.testRelay.CallUnary(ctx, req)
+}
+
 // UnisonServiceHandler is an implementation of the unison.local.v1.UnisonService service.
 type UnisonServiceHandler interface {
 	// Version and runtime state of the daemon.
@@ -811,6 +828,9 @@ type UnisonServiceHandler interface {
 	SetRelay(context.Context, *connect.Request[v1.SetRelayRequest]) (*connect.Response[v1.SetRelayResponse], error)
 	// Turn the relay off for the whole group.
 	RelayOff(context.Context, *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error)
+	// Check that a relay accepts this device over each transport. Nothing is
+	// stored, so an address and a token can be checked before they are saved.
+	TestRelay(context.Context, *connect.Request[v1.TestRelayRequest]) (*connect.Response[v1.TestRelayResponse], error)
 }
 
 // NewUnisonServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -1066,6 +1086,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("RelayOff")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceTestRelayHandler := connect.NewUnaryHandler(
+		UnisonServiceTestRelayProcedure,
+		svc.TestRelay,
+		connect.WithSchema(unisonServiceMethods.ByName("TestRelay")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/unison.local.v1.UnisonService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UnisonServiceGetStatusProcedure:
@@ -1150,6 +1176,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceSetRelayHandler.ServeHTTP(w, r)
 		case UnisonServiceRelayOffProcedure:
 			unisonServiceRelayOffHandler.ServeHTTP(w, r)
+		case UnisonServiceTestRelayProcedure:
+			unisonServiceTestRelayHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -1321,4 +1349,8 @@ func (UnimplementedUnisonServiceHandler) SetRelay(context.Context, *connect.Requ
 
 func (UnimplementedUnisonServiceHandler) RelayOff(context.Context, *connect.Request[v1.RelayOffRequest]) (*connect.Response[v1.RelayOffResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RelayOff is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) TestRelay(context.Context, *connect.Request[v1.TestRelayRequest]) (*connect.Response[v1.TestRelayResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.TestRelay is not implemented"))
 }

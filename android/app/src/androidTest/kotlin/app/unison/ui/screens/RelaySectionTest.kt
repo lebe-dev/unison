@@ -72,10 +72,47 @@ class RelaySectionTest {
         assertEquals(true, off)
     }
 
+    @Test
+    fun typedRelayIsChecked() {
+        var checked: Pair<String, String?>? = null
+        setContent(storedToken = true, onCheck = { url, token -> checked = url to token })
+
+        compose.onNodeWithTag("relay_url").performScrollTo().performTextReplacement("other.example.com:443")
+        compose.onNodeWithText(testString(R.string.relay_check)).performScrollTo().performClick()
+
+        assertEquals("other.example.com:443" to null, checked)
+    }
+
+    @Test
+    fun checkResultExplainsEachTransport() {
+        val check = Local.TestRelayResponse.newBuilder()
+            .setQuic(
+                Local.RelayCheck.newBuilder()
+                    .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
+                    .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT)
+                    .setDetail("timeout: no recent network activity"),
+            )
+            .setWebsocket(
+                Local.RelayCheck.newBuilder()
+                    .setTransport(Local.RelayTransport.RELAY_TRANSPORT_WSS)
+                    .setOk(true)
+                    .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NONE)
+                    .setLatencyMs(85),
+            )
+            .build()
+        setContent(storedToken = true, check = check)
+
+        compose.onNodeWithText(testString(R.string.relay_check_wss_only)).performScrollTo().assertExists()
+        compose.onNodeWithText(testString(R.string.relay_fail_timeout)).performScrollTo().assertExists()
+        compose.onNodeWithText(testString(R.string.relay_check_ok, 85L)).performScrollTo().assertExists()
+    }
+
     private fun setContent(
         storedToken: Boolean = false,
         onSave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit = { _, _, _ -> },
         onOff: () -> Unit = {},
+        onCheck: (url: String, token: String?) -> Unit = { _, _ -> },
+        check: Local.TestRelayResponse? = null,
     ) {
         val relay = Local.Relay.newBuilder()
             .setUrl(if (storedToken) "relay.example.com:443" else "")
@@ -90,6 +127,9 @@ class RelaySectionTest {
                         onSave = onSave,
                         onOff = onOff,
                         onRefresh = {},
+                        checking = false,
+                        check = check,
+                        onCheck = onCheck,
                     )
                 }
             }

@@ -25,6 +25,27 @@ const (
 	wsOutQueue = 64
 )
 
+// errNotRelay reports a server that answers but does not speak the relay
+// protocol.
+var errNotRelay = errors.New("relay: the server is not a relay")
+
+// handshakeError is a WebSocket handshake that the server answered with an HTTP
+// status other than 101.
+type handshakeError struct {
+	status int
+	err    error
+}
+
+// Error describes the answer of the server.
+func (e *handshakeError) Error() string {
+	return fmt.Sprintf("relay: the server answered HTTP %d: %v", e.status, e.err)
+}
+
+// Unwrap returns the error of the WebSocket library.
+func (e *handshakeError) Unwrap() error {
+	return e.err
+}
+
 // wsCarrier is the WebSocket fallback: one binary message carries one frame.
 type wsCarrier struct {
 	conn    *websocket.Conn
@@ -55,12 +76,15 @@ func (d *Dialer) dialWebSocket(ctx context.Context) (carrier, error) {
 	if err != nil {
 		if resp != nil {
 			_ = resp.Body.Close()
+			if resp.StatusCode != http.StatusSwitchingProtocols {
+				err = &handshakeError{status: resp.StatusCode, err: err}
+			}
 		}
 		return nil, fmt.Errorf("relay: dial %s: %w", d.eps.webSocket, err)
 	}
 	if conn.Subprotocol() != ALPN {
 		_ = conn.CloseNow()
-		return nil, fmt.Errorf("relay: %s answered without the relay protocol", d.eps.webSocket)
+		return nil, fmt.Errorf("relay: %s answered without the relay protocol: %w", d.eps.webSocket, errNotRelay)
 	}
 	conn.SetReadLimit(int64(maxRelayDatagrams + frameOverheadBytes))
 

@@ -185,6 +185,31 @@ func (n *Node) SetRelay(ctx context.Context, settings trust.RelaySettings) error
 	return nil
 }
 
+// CheckRelay checks that the relay of the settings accepts this device over each
+// transport. It stores nothing and leaves the running relay client alone.
+func (n *Node) CheckRelay(ctx context.Context, settings trust.RelaySettings) (relay.ProbeResult, error) {
+	if err := n.usable(); err != nil {
+		return relay.ProbeResult{}, err
+	}
+	cfg := n.cfg.Relay
+	cfg.URL = settings.URL
+	cfg.Token = settings.Token
+	cfg.Clock = n.clock
+	if cfg.Logger == nil {
+		cfg.Logger = n.log
+	}
+	result, err := relay.Probe(ctx, cfg)
+	if err != nil {
+		return relay.ProbeResult{}, err
+	}
+	n.log.Info("relay checked",
+		"relay", settings.URL,
+		"quic", result.QUIC.Failure.String(),
+		"websocket", result.WebSocket.Failure.String(),
+	)
+	return result, nil
+}
+
 // relayNetworkChanged reports a network change to the relay client.
 func (n *Node) relayNetworkChanged() {
 	n.relayMu.Lock()

@@ -96,6 +96,7 @@ fun SettingsScreen(
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
     onRefreshRelay: () -> Unit,
+    onRelayCheck: (url: String, token: String?) -> Unit,
     onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
@@ -196,6 +197,9 @@ fun SettingsScreen(
                             onSave = onRelaySave,
                             onOff = onRelayOff,
                             onRefresh = onRefreshRelay,
+                            checking = state.relayChecking,
+                            check = state.relayCheck,
+                            onCheck = onRelayCheck,
                         )
                     }
                 }

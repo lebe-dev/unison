@@ -321,6 +321,29 @@ export const ru: { [K in MessageKey]: Message } = {
   "relay.filesOnRequest": "Файлы через ретранслятор только по запросу",
   "relay.filesOnRequestHint": "Файлы остаются в истории, пока вы их не скачаете.",
   "relay.turnOff": "Отключить",
+  "relay.check": "Проверить соединение",
+  "relay.checking": "Проверка ретранслятора…",
+  "relay.checkFailed": "Не удалось проверить ретранслятор.",
+  "relay.checkBoth": "Ретранслятор работает через QUIC и WebSocket.",
+  "relay.checkWssOnly":
+    "Ретранслятор работает через WebSocket. QUIC не проходит, поэтому устройства используют более медленный резервный путь.",
+  "relay.checkQuicOnly": "Ретранслятор работает через QUIC. Резервный WebSocket не работает.",
+  "relay.checkNone": "С этими настройками ретранслятор недоступен.",
+  "relay.checkQuic": "QUIC (UDP)",
+  "relay.checkWss": "WebSocket (TCP)",
+  "relay.checkOk": "Работает, {ms} мс",
+  "relay.failAddress": "Имя хоста не найдено.",
+  "relay.failTimeout": "Нет ответа: хост выключен или файрвол либо сеть отбрасывают трафик.",
+  "relay.failRefused": "Хост отклонил соединение: на этом порту ничего не слушает.",
+  "relay.failCertificate": "TLS-сертификат недоверенный или не совпадает с хостом.",
+  "relay.failNotRelay":
+    "Сервер отвечает, но это не ретранслятор. Проверьте адрес и прокси перед ним.",
+  "relay.failUnavailable":
+    "Ретранслятор перегружен или останавливается, либо прокси не может до него достучаться.",
+  "relay.failUnauthorized": "Ретранслятор не принимает токен доступа.",
+  "relay.failQuota": "Токен доступа исчерпал квоту трафика.",
+  "relay.failDatagrams": "Датаграммы ретранслятора слишком малы для устройств.",
+  "relay.failOther": "Проверка не удалась.",
 
   // Transfers screen and store.
   "transfers.sendFiles": "Отправить файлы",

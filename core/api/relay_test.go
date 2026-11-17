@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"net"
 	"strings"
 	"testing"
 
@@ -151,5 +152,74 @@ func TestRelayRefusesBadSettings(t *testing.T) {
 	}
 	if stored, _, err := n.RelaySettings(ctx); err != nil || !stored.Empty() {
 		t.Errorf("a refused request stored the relay: %+v, error %v", stored, err)
+	}
+}
+
+// TestRelayCheckRefusesBadSettings checks that a check without a usable address
+// or token is refused before anything is dialed.
+func TestRelayCheckRefusesBadSettings(t *testing.T) {
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 309)
+	n.start(t)
+	client := newClient(t, n.Node, api.Options{DeviceName: n.name})
+	ctx := callTimeout(t)
+
+	token := "group-token"
+	cases := map[string]*localv1.TestRelayRequest{
+		"nothing stored": {},
+		"no token":       {Url: "relay.example:443"},
+		"plain scheme":   {Url: "http://relay.example", Token: &token},
+		"with a path":    {Url: "https://relay.example/relay", Token: &token},
+	}
+	for name, request := range cases {
+		if _, err := client.TestRelay(ctx, connect.NewRequest(request)); connect.CodeOf(err) != connect.CodeInvalidArgument {
+			t.Errorf("%s: error %v, want invalid argument", name, err)
+		}
+	}
+}
+
+// TestRelayCheckReportsEachTransport checks that a check of the stored relay
+// reports the failure of each transport and stores nothing.
+func TestRelayCheckReportsEachTransport(t *testing.T) {
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 310)
+	n.start(t)
+	client := newClient(t, n.Node, api.Options{DeviceName: n.name})
+	ctx := callTimeout(t)
+
+	// Nothing listens on the port, so both transports fail.
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve a port: %v", err)
+	}
+	address := listener.Addr().String()
+	_ = listener.Close()
+
+	token := "group-token"
+	if _, err := client.SetRelay(ctx, connect.NewRequest(&localv1.SetRelayRequest{Url: address, Token: &token})); err != nil {
+		t.Fatalf("set relay: %v", err)
+	}
+
+	response, err := client.TestRelay(ctx, connect.NewRequest(&localv1.TestRelayRequest{}))
+	if err != nil {
+		t.Fatalf("check relay: %v", err)
+	}
+	quic := response.Msg.GetQuic()
+	if quic.GetTransport() != localv1.RelayTransport_RELAY_TRANSPORT_QUIC || quic.GetOk() || quic.GetDetail() == "" {
+		t.Errorf("QUIC check is %+v", quic)
+	}
+	websocket := response.Msg.GetWebsocket()
+	if websocket.GetTransport() != localv1.RelayTransport_RELAY_TRANSPORT_WSS || websocket.GetOk() {
+		t.Errorf("WebSocket check is %+v", websocket)
+	}
+	if websocket.GetFailure() != localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_REFUSED || websocket.GetDetail() == "" {
+		t.Errorf("WebSocket check failure is %s, detail %q", websocket.GetFailure(), websocket.GetDetail())
+	}
+
+	// Another address with the stored token is checked without being stored.
+	other := "127.0.0.1:1"
+	if _, err := client.TestRelay(ctx, connect.NewRequest(&localv1.TestRelayRequest{Url: other})); err != nil {
+		t.Fatalf("check another relay with the stored token: %v", err)
+	}
+	if stored, _, err := n.RelaySettings(ctx); err != nil || stored.URL != address {
+		t.Errorf("the check changed the stored relay: %+v, error %v", stored, err)
 	}
 }

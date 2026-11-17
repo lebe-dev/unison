@@ -315,6 +315,16 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "TestRelay":
+		call, err := requestOf[localv1.TestRelayRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.TestRelay(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "SendFiles":
 		call, err := requestOf[localv1.SendFilesRequest](payload)
 		if err != nil {

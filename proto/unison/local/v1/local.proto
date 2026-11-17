@@ -234,6 +234,9 @@ service UnisonService {
   rpc SetRelay(SetRelayRequest) returns (SetRelayResponse);
   // Turn the relay off for the whole group.
   rpc RelayOff(RelayOffRequest) returns (RelayOffResponse);
+  // Check that a relay accepts this device over each transport. Nothing is
+  // stored, so an address and a token can be checked before they are saved.
+  rpc TestRelay(TestRelayRequest) returns (TestRelayResponse);
 }
 
 // Network conditions of the local device.
@@ -936,6 +939,65 @@ message RelayOffRequest {}
 
 message RelayOffResponse {
   Relay relay = 1;
+}
+
+// Reason a relay check of one transport failed.
+enum RelayCheckFailure {
+  RELAY_CHECK_FAILURE_UNSPECIFIED = 0;
+  // The device registered on the relay.
+  RELAY_CHECK_FAILURE_NONE = 1;
+  // The host name does not resolve.
+  RELAY_CHECK_FAILURE_ADDRESS = 2;
+  // No answer in time: the host is down, a firewall drops the packets or the
+  // network blocks UDP.
+  RELAY_CHECK_FAILURE_TIMEOUT = 3;
+  // The host refused the connection: nothing listens on the port.
+  RELAY_CHECK_FAILURE_REFUSED = 4;
+  // The TLS certificate is not trusted or does not match the host.
+  RELAY_CHECK_FAILURE_CERTIFICATE = 5;
+  // The server answers but is not a relay, or a proxy does not forward the
+  // relay path.
+  RELAY_CHECK_FAILURE_NOT_RELAY = 6;
+  // The relay is full or shutting down, or the proxy in front of it gets no
+  // answer from it.
+  RELAY_CHECK_FAILURE_UNAVAILABLE = 7;
+  // The relay does not know the access token.
+  RELAY_CHECK_FAILURE_UNAUTHORIZED = 8;
+  // The token used up its traffic quota.
+  RELAY_CHECK_FAILURE_QUOTA_EXCEEDED = 9;
+  // The datagrams of the relay are too small for the packets of a device.
+  RELAY_CHECK_FAILURE_DATAGRAMS_TOO_SMALL = 10;
+  // Any other error, described by the detail.
+  RELAY_CHECK_FAILURE_OTHER = 11;
+}
+
+// Outcome of a relay check of one transport.
+message RelayCheck {
+  RelayTransport transport = 1;
+  // The device registered on the relay over this transport.
+  bool ok = 2;
+  RelayCheckFailure failure = 3;
+  // Time to connect and register, in milliseconds. Zero when the check failed.
+  int64 latency_ms = 4;
+  // Technical description of the error, for the advanced user. Empty on
+  // success.
+  string detail = 5;
+}
+
+message TestRelayRequest {
+  // Address of the relay, host:port or https://host:port. The stored address
+  // is checked when empty.
+  string url = 1;
+  // Access token of the group. The stored token is used when the field is
+  // absent.
+  optional string token = 2;
+}
+
+message TestRelayResponse {
+  // QUIC over UDP, the primary transport.
+  RelayCheck quic = 1;
+  // WebSocket over TLS, the fallback.
+  RelayCheck websocket = 2;
 }
 
 message RetryDeviceRequest {

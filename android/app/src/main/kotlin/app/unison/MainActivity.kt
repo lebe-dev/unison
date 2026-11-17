@@ -153,6 +153,7 @@ class MainActivity : ComponentActivity() {
                         onRelaySave = appState::setRelay,
                         onRelayOff = appState::relayOff,
                         onRefreshRelay = appState::refreshRelay,
+                        onRelayCheck = appState::testRelay,
                         onSelfConfirmationChange = appState::setSelfConfirmation,
                         onLeaveGroup = appState::leaveGroup,
                         diagnosticsEnabled = diagnosticsEnabled,

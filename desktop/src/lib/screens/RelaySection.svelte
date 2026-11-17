@@ -1,7 +1,8 @@
 <script lang="ts">
   import { client } from "../api/client";
-  import type { Relay } from "../api/gen/unison/local/v1/local_pb";
-  import { RelayTransport } from "../api/gen/unison/local/v1/local_pb";
+  import type { Relay, RelayCheck, TestRelayResponse } from "../api/gen/unison/local/v1/local_pb";
+  import { RelayCheckFailure, RelayTransport } from "../api/gen/unison/local/v1/local_pb";
+  import type { MessageKey } from "../i18n";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { t } from "../i18n";
@@ -15,10 +16,20 @@
   let loaded = $state(false);
   let busy = $state(false);
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
+  let checking = $state(false);
+  let check = $state<TestRelayResponse | null>(null);
 
   const stateText = $derived(relayStateText(relay));
   const canSave = $derived(
     url.trim().length > 0 && (token.trim().length > 0 || relay?.tokenSet === true),
+  );
+  const checkRows = $derived(
+    check
+      ? [
+          { label: t("relay.checkQuic"), result: check.quic },
+          { label: t("relay.checkWss"), result: check.websocket },
+        ]
+      : [],
   );
   const tokenHint = $derived(relay?.tokenSet ? t("relay.tokenStored") : t("relay.tokenHint"));
 
@@ -111,6 +122,57 @@
     }
   }
 
+  async function runCheck(): Promise<void> {
+    checking = true;
+    check = null;
+    notice = null;
+    try {
+      check = await client.testRelay({
+        url: url.trim(),
+        token: token.trim() || undefined,
+      });
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, t("relay.checkFailed")) };
+    } finally {
+      checking = false;
+    }
+  }
+
+  function checkSummary(value: TestRelayResponse): string {
+    const quic = value.quic?.ok === true;
+    const wss = value.websocket?.ok === true;
+    if (quic && wss) {
+      return t("relay.checkBoth");
+    }
+    if (wss) {
+      return t("relay.checkWssOnly");
+    }
+    if (quic) {
+      return t("relay.checkQuicOnly");
+    }
+    return t("relay.checkNone");
+  }
+
+  const failureKeys: Partial<Record<RelayCheckFailure, MessageKey>> = {
+    [RelayCheckFailure.ADDRESS]: "relay.failAddress",
+    [RelayCheckFailure.TIMEOUT]: "relay.failTimeout",
+    [RelayCheckFailure.REFUSED]: "relay.failRefused",
+    [RelayCheckFailure.CERTIFICATE]: "relay.failCertificate",
+    [RelayCheckFailure.NOT_RELAY]: "relay.failNotRelay",
+    [RelayCheckFailure.UNAVAILABLE]: "relay.failUnavailable",
+    [RelayCheckFailure.UNAUTHORIZED]: "relay.failUnauthorized",
+    [RelayCheckFailure.QUOTA_EXCEEDED]: "relay.failQuota",
+    [RelayCheckFailure.DATAGRAMS_TOO_SMALL]: "relay.failDatagrams",
+  };
+
+  function checkText(result: RelayCheck | undefined): string {
+    if (result?.ok) {
+      return t("relay.checkOk", { ms: String(result.latencyMs) });
+    }
+    const key = result ? failureKeys[result.failure] : undefined;
+    return t(key ?? "relay.failOther");
+  }
+
   async function turnOff(): Promise<void> {
     busy = true;
     notice = null;
@@ -174,7 +236,33 @@
       </span>
     </label>
   </div>
+  {#if checking}
+    <p class="notice info" role="status">{t("relay.checking")}</p>
+  {:else if check}
+    <div class="check" role="status">
+      <p class="check-summary">{checkSummary(check)}</p>
+      {#each checkRows as row (row.label)}
+        <div class="check-row" class:ok={row.result?.ok} class:failed={!row.result?.ok}>
+          <span class="check-transport">{row.label}</span>
+          <span>
+            {checkText(row.result)}
+            {#if !row.result?.ok && row.result?.detail}
+              <small class="check-detail">{row.result.detail}</small>
+            {/if}
+          </span>
+        </div>
+      {/each}
+    </div>
+  {/if}
   <div class="toolbar actions">
+    <button
+      class="button"
+      type="button"
+      onclick={() => void runCheck()}
+      disabled={busy || checking || !loaded || !canSave}
+    >
+      {t("relay.check")}
+    </button>
     <button
       class="button"
       type="button"
@@ -201,5 +289,39 @@
 
   .actions {
     justify-content: flex-end;
+  }
+
+  .check {
+    display: grid;
+    gap: 6px;
+    margin: 8px 0;
+  }
+
+  .check-summary {
+    margin: 0;
+  }
+
+  .check-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 8px;
+  }
+
+  .check-transport {
+    color: var(--muted);
+  }
+
+  .check-row.ok span:last-child {
+    color: var(--online-text);
+  }
+
+  .check-row.failed span:last-child {
+    color: var(--danger);
+  }
+
+  .check-detail {
+    display: block;
+    color: var(--muted);
+    word-break: break-word;
   }
 </style>

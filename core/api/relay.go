@@ -34,7 +34,7 @@ func (s *Service) SetRelay(ctx context.Context, req *connect.Request[localv1.Set
 		return nil, errorOf(err)
 	}
 
-	settings, invalid := s.relaySettings(ctx, req.Msg)
+	settings, invalid := s.relaySettings(ctx, req.Msg.GetUrl(), req.Msg.Token)
 	if invalid != nil {
 		return nil, invalid
 	}
@@ -82,10 +82,40 @@ func (s *Service) relay(ctx context.Context) (*localv1.Relay, error) {
 	return relayToProto(settings, changedAt, s.node.RelayStatus(), s.node.RelayFilesOnRequest()), nil
 }
 
-// relaySettings validates the relay access of a request. A request without a
-// token keeps the stored one.
-func (s *Service) relaySettings(ctx context.Context, req *localv1.SetRelayRequest) (trust.RelaySettings, *connect.Error) {
-	url := strings.TrimSpace(req.GetUrl())
+// TestRelay checks that a relay accepts this device over each transport. An
+// empty address and an absent token stand for the stored ones.
+func (s *Service) TestRelay(ctx context.Context, req *connect.Request[localv1.TestRelayRequest]) (*connect.Response[localv1.TestRelayResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+
+	url := req.Msg.GetUrl()
+	if strings.TrimSpace(url) == "" {
+		stored, _, err := s.node.RelaySettings(ctx)
+		if err != nil {
+			return nil, errorOf(err)
+		}
+		url = stored.URL
+	}
+	settings, invalid := s.relaySettings(ctx, url, req.Msg.Token)
+	if invalid != nil {
+		return nil, invalid
+	}
+
+	result, err := s.node.CheckRelay(ctx, settings)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.TestRelayResponse{
+		Quic:      relayCheckToProto(result.QUIC),
+		Websocket: relayCheckToProto(result.WebSocket),
+	}), nil
+}
+
+// relaySettings validates a relay address and a token. An absent token stands
+// for the stored one.
+func (s *Service) relaySettings(ctx context.Context, rawURL string, rawToken *string) (trust.RelaySettings, *connect.Error) {
+	url := strings.TrimSpace(rawURL)
 	switch {
 	case url == "":
 		return trust.RelaySettings{}, invalidRelay("a relay address is required")
@@ -97,14 +127,14 @@ func (s *Service) relaySettings(ctx context.Context, req *localv1.SetRelayReques
 	}
 
 	var token string
-	if req.Token == nil {
+	if rawToken == nil {
 		stored, _, err := s.node.RelaySettings(ctx)
 		if err != nil {
 			return trust.RelaySettings{}, errorOf(err)
 		}
 		token = stored.Token
 	} else {
-		token = strings.TrimSpace(*req.Token)
+		token = strings.TrimSpace(*rawToken)
 	}
 	switch {
 	case token == "":
@@ -142,5 +172,49 @@ func relayTransportToProto(transport relay.Transport) localv1.RelayTransport {
 		return localv1.RelayTransport_RELAY_TRANSPORT_WSS
 	default:
 		return localv1.RelayTransport_RELAY_TRANSPORT_NONE
+	}
+}
+
+// relayCheckToProto converts the outcome of a check of one transport.
+func relayCheckToProto(probe relay.TransportProbe) *localv1.RelayCheck {
+	out := &localv1.RelayCheck{
+		Transport: relayTransportToProto(probe.Transport),
+		Ok:        probe.OK(),
+		Failure:   relayFailureToProto(probe.Failure),
+	}
+	if probe.OK() {
+		out.LatencyMs = probe.Latency.Milliseconds()
+	}
+	if probe.Err != nil {
+		out.Detail = probe.Err.Error()
+	}
+	return out
+}
+
+// relayFailureToProto converts the reason a check failed.
+func relayFailureToProto(failure relay.Failure) localv1.RelayCheckFailure {
+	switch failure {
+	case relay.FailureNone:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_NONE
+	case relay.FailureAddress:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_ADDRESS
+	case relay.FailureTimeout:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_TIMEOUT
+	case relay.FailureRefused:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_REFUSED
+	case relay.FailureCertificate:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_CERTIFICATE
+	case relay.FailureNotRelay:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_NOT_RELAY
+	case relay.FailureUnavailable:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_UNAVAILABLE
+	case relay.FailureUnauthorized:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_UNAUTHORIZED
+	case relay.FailureQuota:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_QUOTA_EXCEEDED
+	case relay.FailureDatagramsTooSmall:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_DATAGRAMS_TOO_SMALL
+	default:
+		return localv1.RelayCheckFailure_RELAY_CHECK_FAILURE_OTHER
 	}
 }

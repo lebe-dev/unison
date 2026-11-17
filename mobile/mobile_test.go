@@ -122,6 +122,17 @@ func TestRelayCalls(t *testing.T) {
 		t.Fatalf("saved relay: %v", saved.GetRelay())
 	}
 
+	// Nothing listens on port 1, so the check reports the failure of each
+	// transport instead of an error.
+	checked := &localv1.TestRelayResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "TestRelay",
+		Payload: marshal(t, &localv1.TestRelayRequest{Url: "127.0.0.1:1"}),
+	}), checked)
+	if checked.GetQuic().GetOk() || checked.GetWebsocket().GetOk() || checked.GetWebsocket().GetDetail() == "" {
+		t.Fatalf("relay check: %v", checked)
+	}
+
 	off := &localv1.RelayOffResponse{}
 	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "RelayOff"}), off)
 	if off.GetRelay().GetUrl() != "" || off.GetRelay().GetTokenSet() {

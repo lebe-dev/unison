@@ -168,6 +168,26 @@
     <string name="relay_save_failed">Cannot save the relay</string>
     <string name="relay_off_done">The relay is off for the group</string>
     <string name="relay_off_failed">Cannot turn the relay off</string>
+    <string name="relay_check">Check connection</string>
+    <string name="relay_checking">Checking the relay…</string>
+    <string name="relay_check_failed">Cannot check the relay</string>
+    <string name="relay_check_both">The relay works over QUIC and WebSocket.</string>
+    <string name="relay_check_wss_only">The relay works over WebSocket. QUIC does not get through, so your devices use the slower fallback.</string>
+    <string name="relay_check_quic_only">The relay works over QUIC. The WebSocket fallback does not.</string>
+    <string name="relay_check_none">The relay cannot be reached with these settings.</string>
+    <string name="relay_check_quic">QUIC (UDP)</string>
+    <string name="relay_check_wss">WebSocket (TCP)</string>
+    <string name="relay_check_ok">OK, %1$d ms</string>
+    <string name="relay_fail_address">The host name does not resolve.</string>
+    <string name="relay_fail_timeout">No answer in time: the host is down, or a firewall or the network drops the traffic.</string>
+    <string name="relay_fail_refused">The host refused the connection: nothing listens on this port.</string>
+    <string name="relay_fail_certificate">The TLS certificate is not trusted or does not match the host.</string>
+    <string name="relay_fail_not_relay">The server answers, but it is not a relay. Check the address and the proxy in front of it.</string>
+    <string name="relay_fail_unavailable">The relay is busy or shutting down, or the proxy cannot reach it.</string>
+    <string name="relay_fail_unauthorized">The relay does not accept the access token.</string>
+    <string name="relay_fail_quota">The access token used up its traffic quota.</string>
+    <string name="relay_fail_datagrams">The relay datagrams are too small for your devices.</string>
+    <string name="relay_fail_other">The check failed.</string>
     <string name="settings_section_group">Your devices</string>    <string name="settings_leave_hint">Removing this device stops syncing with your other devices for good.</string>
     <string name="settings_leave_group">Remove this device from the group</string>
     <string name="settings_leave_title">Remove this device from the group?</string>

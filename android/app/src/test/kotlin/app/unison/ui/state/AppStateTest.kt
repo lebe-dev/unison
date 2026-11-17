@@ -132,6 +132,15 @@ class AppStateTest {
             return relay
         }
 
+        var relayCheck: Local.TestRelayResponse = Local.TestRelayResponse.getDefaultInstance()
+        val relayChecks = mutableListOf<Pair<String, String?>>()
+
+        override suspend fun testRelay(url: String, token: String?): Local.TestRelayResponse {
+            relayFailure?.let { throw it }
+            relayChecks += url to token
+            return relayCheck
+        }
+
         override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {
             selfConfirmations += scope to require
             settings = when (scope) {
@@ -417,6 +426,51 @@ class AppStateTest {
 
         assertEquals(1, core.relayOffCalls)
         assertTrue(state.state.value.relay?.url.isNullOrEmpty())
+    }
+
+    @Test
+    fun relayCheckReportsEachTransport() = runTest {
+        val core = FakeCore()
+        core.relayCheck = Local.TestRelayResponse.newBuilder()
+            .setQuic(
+                Local.RelayCheck.newBuilder()
+                    .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
+                    .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT),
+            )
+            .setWebsocket(
+                Local.RelayCheck.newBuilder()
+                    .setTransport(Local.RelayTransport.RELAY_TRANSPORT_WSS)
+                    .setOk(true)
+                    .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NONE)
+                    .setLatencyMs(85),
+            )
+            .build()
+        val state = appState(core)
+
+        state.testRelay("  relay.example.com:443  ", "  ")
+        advanceUntilIdle()
+
+        assertEquals(listOf("relay.example.com:443" to null), core.relayChecks)
+        assertEquals(core.relayCheck, state.state.value.relayCheck)
+        assertFalse(state.state.value.relayChecking)
+    }
+
+    @Test
+    fun failedRelayCheckEmitsNotice() = runTest {
+        val core = FakeCore()
+        core.relayFailure = IllegalStateException("core is busy")
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.testRelay("relay.example.com:443", "secret")
+        advanceUntilIdle()
+
+        assertEquals(listOf(R.string.relay_check_failed), notices)
+        assertEquals(null, state.state.value.relayCheck)
+        assertFalse(state.state.value.relayChecking)
+        collector.cancel()
     }
 
     @Test

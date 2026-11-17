@@ -187,7 +187,7 @@ func readUvarint(r io.Reader) (uint64, error) {
 func limitsOf(result *relayv1.RegisterResult) (Limits, error) {
 	status := result.GetStatus()
 	if status != relayv1.RelayStatus_RELAY_STATUS_OK {
-		return Limits{}, fmt.Errorf("%w: %s", ErrRejected, statusName(status))
+		return Limits{}, &rejectedError{status: status}
 	}
 	wire := result.GetLimits()
 	if wire == nil {
@@ -216,6 +216,22 @@ func mailboxIDOf(raw []byte) (ID, bool) {
 	var id ID
 	copy(id[:], raw)
 	return id, true
+}
+
+// rejectedError is a registration the relay refused, with the status it gave.
+// It matches ErrRejected.
+type rejectedError struct {
+	status relayv1.RelayStatus
+}
+
+// Error describes the refusal.
+func (e *rejectedError) Error() string {
+	return ErrRejected.Error() + ": " + statusName(e.status)
+}
+
+// Is reports that the error is ErrRejected.
+func (e *rejectedError) Is(target error) bool {
+	return target == ErrRejected
 }
 
 // statusName returns a short name of a relay status for logs and errors.

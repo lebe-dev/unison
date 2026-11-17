@@ -235,6 +235,19 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.relay
     }
 
+    /** Checks the relay over each transport without storing anything. */
+    override suspend fun testRelay(url: String, token: String?): Local.TestRelayResponse {
+        val request = Local.TestRelayRequest.newBuilder().setUrl(url)
+        if (token != null) {
+            request.setToken(token)
+        }
+        return call(
+            method = "TestRelay",
+            request = request.build(),
+            parse = { Local.TestRelayResponse.parseFrom(it) },
+        )
+    }
+
     /** Makes this device ask before it takes the content of the scope from any device. */
     override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {
         val builder = Local.UpdateSettingsRequest.newBuilder()

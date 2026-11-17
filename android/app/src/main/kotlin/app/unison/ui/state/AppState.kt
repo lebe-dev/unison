@@ -405,6 +405,23 @@ class AppState(
         }
     }
 
+    /** Checks that the relay accepts this device, without storing the settings. */
+    fun testRelay(url: String, token: String?) {
+        mutableState.update { it.copy(relayChecking = true, relayCheck = null) }
+        scope.launch {
+            try {
+                val check = core.testRelay(url.trim(), token?.trim()?.takeIf { it.isNotEmpty() })
+                mutableState.update { it.copy(relayChecking = false, relayCheck = check) }
+            } catch (e: CancellationException) {
+                mutableState.update { it.copy(relayChecking = false) }
+                throw e
+            } catch (e: Exception) {
+                mutableState.update { it.copy(relayChecking = false) }
+                mutableNotices.tryEmit(R.string.relay_check_failed)
+            }
+        }
+    }
+
     /** Makes this device ask before it takes the content of [scope] from any device. */
     fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean) {
         this.scope.launch {

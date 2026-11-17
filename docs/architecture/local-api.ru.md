@@ -115,7 +115,7 @@ pipe дает доступ только текущему пользовател�
 | Запросы | `SetFriendsDiscovery`, `ListRequests`, `DecideRequest` |
 | Пауза | `GetPause`, `SetPause` |
 | Настройки | `GetSettings`, `UpdateSettings` |
-| Ретранслятор | `GetRelay`, `SetRelay`, `RelayOff` |
+| Ретранслятор | `GetRelay`, `SetRelay`, `RelayOff`, `TestRelay` |
 
 `WatchEvents` несет события шины узла: пир, который вышел онлайн или ушел офлайн, элемент буфера
 обмена, пир, которому нужно обновиться, и события спаривания с адресом кандидата и коротким

@@ -34,6 +34,12 @@ interface CoreApi {
     suspend fun relayOff(): Local.Relay
 
     /**
+     * Checks that the relay at [url] accepts this device over each transport,
+     * without storing anything. A null [token] uses the stored one.
+     */
+    suspend fun testRelay(url: String, token: String?): Local.TestRelayResponse
+
+    /**
      * Makes this device ask before it takes the clipboard items or the files of
      * any device.
      */
@@ -163,6 +169,11 @@ class RunningCore(
     override suspend fun relayOff(): Local.Relay {
         ensureRunning()
         return client.relayOff()
+    }
+
+    override suspend fun testRelay(url: String, token: String?): Local.TestRelayResponse {
+        ensureRunning()
+        return client.testRelay(url, token)
     }
 
     override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {

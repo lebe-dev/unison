@@ -36,6 +36,30 @@ unison relay off
 desktop app and the Android app have the same settings in their relay section. Turning the relay off
 clears the address and the token for the group.
 
+### Check the connection
+
+The relay client connects only when a peer needs the relay, so "waiting" alone does not tell a
+working relay from a broken one. **Check connection** in the relay section of the desktop and
+Android apps tries both transports right away with the address and the token in the form, before
+they are saved; an empty token field uses the stored token. It registers a throwaway mailbox,
+disconnects and stores nothing.
+
+The result has one line per transport: the time to connect and register, or the reason it failed:
+
+| Reason | What to look at |
+|--------|-----------------|
+| The host name does not resolve | The address, DNS |
+| No answer in time | The host, the firewall; for QUIC, a network or a host that drops UDP |
+| Connection refused | Nothing listens on the port |
+| Certificate | The certificate is not publicly trusted or does not match the host |
+| Not a relay | Another service on the address, or a proxy that does not forward `/relay` |
+| Busy or unavailable | The relay is full or restarting, or the proxy gets no answer from it |
+| Token not accepted | The token is missing from the tokens file of the relay |
+| Quota | The token used up its traffic quota for the window |
+
+A QUIC failure with a working WebSocket is a working relay: the devices fall back to WebSocket,
+which is slower. The technical error is shown under each failure.
+
 ## Files over the relay
 
 Files are a special case: by default a file stays in the history and travels over the relay only
