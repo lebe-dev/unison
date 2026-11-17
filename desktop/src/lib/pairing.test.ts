@@ -14,6 +14,9 @@ import {
   Platform,
   RejectSasResponseSchema,
   Role,
+  EventKind,
+  EventSchema,
+  type Event as DaemonEvent,
 } from "./api/gen/unison/local/v1/local_pb";
 
 vi.mock("./api/client", () => ({
@@ -30,6 +33,7 @@ vi.mock("./api/client", () => ({
 }));
 
 import { client } from "./api/client";
+import { daemon } from "./daemon.svelte";
 import { pairing } from "./pairing.svelte";
 
 const mocked = vi.mocked(client);
@@ -112,6 +116,32 @@ describe("PairingStore", () => {
 
     await pairing.loadQr();
     expect(client.getPairingQr).toHaveBeenCalledTimes(2);
+  });
+
+  it("hides the code once a device is paired", async () => {
+    let emit: (event: DaemonEvent) => void = () => {};
+    vi.spyOn(daemon, "onEvent").mockImplementation((handler) => {
+      emit = handler;
+      return () => {};
+    });
+    vi.spyOn(daemon, "refresh").mockResolvedValue();
+    mocked.openPairingWindow.mockResolvedValue(window(Date.now() + 180_000));
+    pairing.start();
+    await pairing.open();
+    expect(pairing.qr).not.toBeNull();
+
+    emit(create(EventSchema, { kind: EventKind.PAIRING_PAIRED, name: "Pixel" }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(pairing.qr).toBeNull();
+    expect(client.getPairingQr).toHaveBeenCalledTimes(1);
+
+    await pairing.extend();
+    expect(pairing.qr).toBeNull();
+    expect(client.getPairingQr).toHaveBeenCalledTimes(1);
+
+    await pairing.open();
+    expect(pairing.qr).not.toBeNull();
   });
 
   it("has no code without a window", async () => {

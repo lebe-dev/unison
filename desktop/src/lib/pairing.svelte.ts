@@ -61,6 +61,8 @@ class PairingStore {
   window = $state<OpenWindow | null>(null);
   /** Square for another device to scan, absent without an open window. */
   qr = $state<PairingQr | null>(null);
+  /** A device was paired in the open window, so its square is hidden. */
+  qrSpent = $state(false);
   /** Devices that are open for pairing. */
   candidates = $state<PairingCandidate[]>([]);
   /** Device that waits for the comparison of the code. */
@@ -105,6 +107,7 @@ class PairingStore {
     this.busy = true;
     this.error = null;
     this.result = null;
+    this.qrSpent = false;
     try {
       const response = await client.openPairingWindow({ role: this.role });
       this.#applyWindow(response.window, this.role);
@@ -168,10 +171,10 @@ class PairingStore {
     }
   }
 
-  /** loadQr reloads the square of the window. A completed pairing spends the
-   * code, so the daemon answers with a new one and the screen has to follow. */
+  /** loadQr reloads the square of the window. It stays hidden after a device
+   * is paired in this window. */
   async loadQr(): Promise<void> {
-    if (!this.window) {
+    if (!this.window || this.qrSpent) {
       return;
     }
     try {
@@ -264,8 +267,9 @@ class PairingStore {
           message: event.name ? `${event.name} is paired.` : "The device is paired.",
         };
         void daemon.refresh();
+        this.qrSpent = true;
+        this.qr = null;
         void this.refreshCandidates();
-        void this.loadQr();
         break;
       case EventKind.PAIRING_FAILED:
         this.request = null;
@@ -303,6 +307,7 @@ class PairingStore {
   #closeWindow(): void {
     this.window = null;
     this.qr = null;
+    this.qrSpent = false;
     this.candidates = [];
     this.#stopCandidates();
     this.#clearExpiry();
