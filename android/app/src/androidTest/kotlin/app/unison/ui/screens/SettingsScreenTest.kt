@@ -115,6 +115,16 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun trackingParametersCanBeKept() {
+        var enabled: Boolean? = null
+        setContent(stripTracking = true, onStripTrackingChange = { enabled = it })
+
+        compose.onNodeWithTag(STRIP_TRACKING_TAG).performScrollTo().performClick()
+
+        assertEquals(false, enabled)
+    }
+
+    @Test
     fun historyLifetimeIsSaved() {
         var saved: Pair<Local.Kind, Long>? = null
         setContent(onTtlSave = { kind, seconds -> saved = kind to seconds })
@@ -205,6 +215,8 @@ class SettingsScreenTest {
         onLeaveGroup: () -> Unit = {},
         diagnosticsEnabled: Boolean = false,
         onDiagnosticsChange: (Boolean) -> Unit = {},
+        stripTracking: Boolean = true,
+        onStripTrackingChange: (Boolean) -> Unit = {},
     ) {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
@@ -231,6 +243,8 @@ class SettingsScreenTest {
                     onLeaveGroup = onLeaveGroup,
                     diagnosticsEnabled = diagnosticsEnabled,
                     onDiagnosticsChange = onDiagnosticsChange,
+                    stripTracking = stripTracking,
+                    onStripTrackingChange = onStripTrackingChange,
                     onRefresh = {},
                 )
             }

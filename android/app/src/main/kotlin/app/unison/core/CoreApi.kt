@@ -18,6 +18,9 @@ interface CoreApi {
     /** Mirrors the consent to report errors to the developer. */
     suspend fun setSentryEnabled(enabled: Boolean): Local.Settings
 
+    /** Removes the tracking parameters from the links of the clipboard text. */
+    suspend fun setStripTracking(enabled: Boolean): Local.Settings
+
     /** Relay access of the group and the state of its client. */
     suspend fun relay(): Local.Relay
 
@@ -140,6 +143,11 @@ class RunningCore(
     override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
         ensureRunning()
         return client.setSentryEnabled(enabled)
+    }
+
+    override suspend fun setStripTracking(enabled: Boolean): Local.Settings {
+        ensureRunning()
+        return client.setStripTracking(enabled)
     }
 
     override suspend fun relay(): Local.Relay {

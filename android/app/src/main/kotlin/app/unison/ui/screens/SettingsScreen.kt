@@ -75,6 +75,8 @@ fun SettingsScreen(
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
     onDiagnosticsChange: (Boolean) -> Unit,
+    stripTracking: Boolean,
+    onStripTrackingChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -104,6 +106,12 @@ fun SettingsScreen(
                 clipboard = state.requiresConfirmation,
                 files = state.requiresFileConfirmation,
                 onChange = onSelfConfirmationChange,
+            )
+        }
+        SettingsCard {
+            Links(
+                enabled = stripTracking,
+                onChange = onStripTrackingChange,
             )
         }
         SettingsCard {
@@ -360,6 +368,19 @@ private fun Confirmation(
     )
 }
 
+/** Removal of the advertising parameters from the links of the clipboard. */
+@Composable
+private fun Links(enabled: Boolean, onChange: (Boolean) -> Unit) {
+    SectionTitle(text = stringResource(R.string.settings_section_links))
+    SettingsSwitch(
+        title = stringResource(R.string.settings_strip_tracking),
+        hint = stringResource(R.string.settings_strip_tracking_hint),
+        checked = enabled,
+        tag = STRIP_TRACKING_TAG,
+        onChange = onChange,
+    )
+}
+
 /** Reporting of the crashes and the errors of this device to the developer. */
 @Composable
 private fun Diagnostics(enabled: Boolean, onChange: (Boolean) -> Unit) {
@@ -446,6 +467,9 @@ internal const val FILE_CONFIRMATION_TAG = "settings.confirmation.files"
 
 /** Tag of the switch of the error reporting. */
 internal const val DIAGNOSTICS_TAG = "settings.diagnostics"
+
+/** Tag of the switch of the tracking parameters removal. */
+internal const val STRIP_TRACKING_TAG = "settings.strip_tracking"
 
 /** Tag of the button that opens the folder picker for received files. */
 internal const val DOWNLOADS_PICK_TAG = "settings.downloads.pick"

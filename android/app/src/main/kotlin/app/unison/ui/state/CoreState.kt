@@ -36,6 +36,10 @@ data class CoreState(
     val reportsErrors: Boolean
         get() = settings?.sentryEnabled == true
 
+    /** This device removes the tracking parameters from the links. */
+    val stripTracking: Boolean
+        get() = settings?.stripTracking ?: true
+
     /** Paired devices of [role], the online ones first. */
     fun devices(role: Local.Role): List<Local.Device> =
         status?.devicesList.orEmpty()

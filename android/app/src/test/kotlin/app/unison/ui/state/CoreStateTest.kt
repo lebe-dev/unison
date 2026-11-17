@@ -1,6 +1,8 @@
 package app.unison.ui.state
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import unison.local.v1.Local
 
@@ -41,6 +43,18 @@ class CoreStateTest {
     @Test
     fun missingStatusHasNoDevices() {
         assertEquals(emptyList<Local.Device>(), CoreState().devices(Local.Role.ROLE_PERSONAL))
+    }
+
+    @Test
+    fun trackingParametersAreRemovedUntilTheSettingsSayOtherwise() {
+        assertEquals(true, CoreState().stripTracking)
+        assertFalse(CoreState(settings = Local.Settings.getDefaultInstance()).stripTracking)
+
+        val kept = CoreState(
+            settings = Local.Settings.newBuilder().setStripTracking(true).build(),
+        )
+
+        assertTrue(kept.stripTracking)
     }
 
     private fun statusOf(vararg devices: Local.Device): Local.GetStatusResponse =

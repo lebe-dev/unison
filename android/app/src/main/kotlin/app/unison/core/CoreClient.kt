@@ -185,6 +185,19 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         return response.settings
     }
 
+    /** Removes the tracking parameters from the links of the clipboard text. */
+    override suspend fun setStripTracking(enabled: Boolean): Local.Settings {
+        val request = Local.UpdateSettingsRequest.newBuilder()
+            .setStripTracking(enabled)
+            .build()
+        val response = call(
+            method = "UpdateSettings",
+            request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
     /** Relay access of the group and the state of its client. */
     override suspend fun relay(): Local.Relay {
         val response = call(

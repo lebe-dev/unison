@@ -122,6 +122,10 @@
     <string name="settings_file_confirmation_hint">Файлы не скачиваются, пока вы их не примете.</string>
     <string name="settings_confirmation_saved">Настройка подтверждения сохранена</string>
     <string name="settings_confirmation_failed">Не удалось изменить настройку подтверждения</string>
+    <string name="settings_section_links">Ссылки</string>
+    <string name="settings_strip_tracking">Удалять рекламные параметры</string>
+    <string name="settings_strip_tracking_hint">Из ссылок в буфере обмена удаляются параметры UTM, fbclid, gclid и подобные.</string>
+    <string name="settings_strip_tracking_failed">Не удалось сохранить настройку ссылок</string>
     <string name="settings_section_diagnostics">Диагностика</string>
     <string name="settings_diagnostics">Отправлять ошибки разработчику</string>
     <string name="settings_diagnostics_hint">Отчеты о сбоях помогают исправлять проблемы. Буфер обмена, имена устройств и файлы не отправляются.</string>

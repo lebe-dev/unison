@@ -43,6 +43,7 @@ class AppStateTest {
         val selfConfirmations = mutableListOf<Pair<Local.ConfirmationScope, Boolean>>()
         val confirmations = mutableListOf<DeviceConfirmation>()
         val sentrySettings = mutableListOf<Boolean>()
+        val stripTrackingSettings = mutableListOf<Boolean>()
         var confirmationFailure: Exception? = null
         val revoked = mutableListOf<String>()
         val renamed = mutableListOf<Pair<String, String>>()
@@ -94,6 +95,12 @@ class AppStateTest {
         override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
             sentrySettings += enabled
             settings = settings.toBuilder().setSentryEnabled(enabled).build()
+            return settings
+        }
+
+        override suspend fun setStripTracking(enabled: Boolean): Local.Settings {
+            stripTrackingSettings += enabled
+            settings = settings.toBuilder().setStripTracking(enabled).build()
             return settings
         }
 
@@ -609,6 +616,22 @@ class AppStateTest {
         advanceUntilIdle()
 
         assertTrue(state.state.value.reportsErrors)
+    }
+
+    @Test
+    fun trackingStripIsSaved() = runTest {
+        val core = FakeCore()
+        core.settings = Local.Settings.newBuilder().setStripTracking(true).build()
+        val state = appState(core)
+        state.refresh()
+        advanceUntilIdle()
+        assertTrue(state.state.value.stripTracking)
+
+        state.setStripTracking(false)
+        advanceUntilIdle()
+
+        assertEquals(listOf(false), core.stripTrackingSettings)
+        assertFalse(state.state.value.stripTracking)
     }
 
     @Test

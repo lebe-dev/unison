@@ -450,6 +450,20 @@ class AppState(
         }
     }
 
+    /** Mirrors the removal of the tracking parameters from the links into the core. */
+    fun setStripTracking(enabled: Boolean) {
+        scope.launch {
+            try {
+                val settings = core.setStripTracking(enabled)
+                mutableState.update { it.copy(settings = settings) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_strip_tracking_failed)
+            }
+        }
+    }
+
     /** Stops the state updates. */
     fun close() {
         scope.cancel()

@@ -81,6 +81,8 @@ fun UnisonRoot(
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
     onDiagnosticsChange: (Boolean) -> Unit,
+    stripTracking: Boolean,
+    onStripTrackingChange: (Boolean) -> Unit,
     onSetDeviceConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onRenameDevice: (Local.Device, String) -> Unit,
     onRevokeDevice: (Local.Device) -> Unit,
@@ -226,6 +228,8 @@ fun UnisonRoot(
                 onLeaveGroup = onLeaveGroup,
                 diagnosticsEnabled = diagnosticsEnabled,
                 onDiagnosticsChange = onDiagnosticsChange,
+                stripTracking = stripTracking,
+                onStripTrackingChange = onStripTrackingChange,
                 onRefresh = onRefresh,
                 modifier = content,
             )
