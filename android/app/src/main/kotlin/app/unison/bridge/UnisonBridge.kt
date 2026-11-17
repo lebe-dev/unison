@@ -29,6 +29,7 @@ class UnisonBridge(
     private val callerUid: () -> Int = { Binder.getCallingUid() },
 ) : IUnisonBridge.Stub() {
 
+    private val appContext = context.applicationContext
     private val listeners = RemoteCallbackList<IUnisonBridgeListener>()
     private val content = BridgeContent(core, scope, File(context.cacheDir, CACHE_DIR))
     private val refresh = Mutex()
@@ -350,7 +351,13 @@ class UnisonBridge(
             return
         }
         scope.launch {
-            addRecent(BridgeSummaries.of(item, deviceName(event.deviceId.ifEmpty { item.origin })))
+            addRecent(
+                BridgeSummaries.of(
+                    appContext,
+                    item,
+                    deviceName(event.deviceId.ifEmpty { item.origin }),
+                ),
+            )
             dispatchItem(recent.firstOrNull { it.id == item.id } ?: return@launch)
         }
     }
@@ -406,7 +413,7 @@ class UnisonBridge(
         return entries
             .map { it.item }
             .filter { it.id.isNotEmpty() && !it.deleted && it.origin.isNotEmpty() && it.origin != ownId }
-            .map { BridgeSummaries.of(it, deviceName(it.origin)) }
+            .map { BridgeSummaries.of(appContext, it, deviceName(it.origin)) }
             .take(MAX_RECENT_ITEMS)
     }
 

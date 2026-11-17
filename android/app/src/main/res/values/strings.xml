@@ -294,6 +294,15 @@
     <string name="kind_text">Text</string>
     <string name="kind_image">Image</string>
     <string name="kind_files">File</string>
+    <plurals name="names_more">
+        <item quantity="one">%1$s and %2$d more</item>
+        <item quantity="other">%1$s and %2$d more</item>
+    </plurals>
+    <string name="unit_bytes">B</string>
+    <string name="unit_kilobytes">KB</string>
+    <string name="unit_megabytes">MB</string>
+    <string name="unit_gigabytes">GB</string>
+    <string name="unit_terabytes">TB</string>
     <string name="action_copy">Copy</string>
     <string name="action_apply">Apply</string>
     <string name="action_skip">Skip</string>

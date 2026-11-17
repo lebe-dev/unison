@@ -4,6 +4,12 @@ import android.app.Notification
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
+import app.unison.testContext
+import app.unison.testQuantity
+import app.unison.testString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,11 +25,17 @@ class RequestNotificationsTest {
         val notification = RequestNotifications.request(context, request())
 
         assertEquals(2, notification.actions.size)
-        assertEquals("Decline", notification.actions[0].title.toString())
-        assertEquals("Accept", notification.actions[1].title.toString())
+        assertEquals(testString(R.string.action_decline), notification.actions[0].title.toString())
+        assertEquals(testString(R.string.action_accept), notification.actions[1].title.toString())
         assertEquals("Friend", notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
-        assertTrue(
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString().contains("2 files"),
+        assertEquals(
+            testQuantity(
+                R.plurals.request_files,
+                2,
+                2,
+                HistoryText.formatSize(3072, SizeUnits.of(testContext)),
+            ),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
         )
     }
 

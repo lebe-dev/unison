@@ -36,6 +36,7 @@ import app.unison.ui.ErrorCard
 import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
 import app.unison.ui.groupItemColor
+import app.unison.ui.sizeUnits
 import app.unison.ui.state.RequestsState
 import unison.local.v1.Local
 
@@ -115,7 +116,7 @@ private fun RequestRow(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val files = request.filesList
-        val size = HistoryText.formatSize(request.totalBytes)
+        val size = HistoryText.formatSize(request.totalBytes, sizeUnits())
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),

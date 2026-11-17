@@ -7,6 +7,11 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
+import app.unison.testContext
+import app.unison.testString
 import app.unison.ui.state.CoreFailure
 import app.unison.ui.state.HistoryState
 import app.unison.ui.theme.UnisonTheme
@@ -39,8 +44,13 @@ class HistoryScreenTest {
 
         compose.onNodeWithText("hello world").assertIsDisplayed()
         compose.onNodeWithText("notes.txt").assertIsDisplayed()
-        compose.onNodeWithText("Mac - 11 B").assertIsDisplayed()
-        compose.onNodeWithText("Mac - 2 KB").assertIsDisplayed()
+        val units = SizeUnits.of(testContext)
+        compose.onNodeWithText(
+            testString(R.string.history_item_detail, "Mac", HistoryText.formatSize(11, units)),
+        ).assertIsDisplayed()
+        compose.onNodeWithText(
+            testString(R.string.history_item_detail, "Mac", HistoryText.formatSize(2048, units)),
+        ).assertIsDisplayed()
     }
 
     @Test
@@ -55,9 +65,9 @@ class HistoryScreenTest {
             ),
         )
 
-        compose.onAllNodesWithText("Copy").assertCountEquals(1)
-        compose.onAllNodesWithText("Download").assertCountEquals(2)
-        compose.onAllNodesWithText("Delete").assertCountEquals(2)
+        compose.onAllNodesWithText(testString(R.string.action_copy)).assertCountEquals(1)
+        compose.onAllNodesWithText(testString(R.string.action_download)).assertCountEquals(2)
+        compose.onAllNodesWithText(testString(R.string.action_delete)).assertCountEquals(2)
     }
 
     @Test
@@ -69,7 +79,13 @@ class HistoryScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Mac - 0 B - not downloaded yet").assertIsDisplayed()
+        compose.onNodeWithText(
+            testString(
+                R.string.history_item_detail_incomplete,
+                "Mac",
+                HistoryText.formatSize(0, SizeUnits.of(testContext)),
+            ),
+        ).assertIsDisplayed()
     }
 
     @Test
@@ -86,9 +102,9 @@ class HistoryScreenTest {
             onApply = { applied = it },
         )
 
-        compose.onNodeWithText("Waits for you").assertIsDisplayed()
-        compose.onAllNodesWithText("Copy").assertCountEquals(0)
-        compose.onNodeWithText("Apply").performClick()
+        compose.onNodeWithText(testString(R.string.history_held)).assertIsDisplayed()
+        compose.onAllNodesWithText(testString(R.string.action_copy)).assertCountEquals(0)
+        compose.onNodeWithText(testString(R.string.action_apply)).performClick()
 
         assertEquals("1", applied?.item?.id)
         assertNull(copied)
@@ -109,9 +125,9 @@ class HistoryScreenTest {
             onDelete = { deleted = it },
         )
 
-        compose.onNodeWithText("Copy").performClick()
-        compose.onNodeWithText("Download").performClick()
-        compose.onNodeWithText("Delete").performClick()
+        compose.onNodeWithText(testString(R.string.action_copy)).performClick()
+        compose.onNodeWithText(testString(R.string.action_download)).performClick()
+        compose.onNodeWithText(testString(R.string.action_delete)).performClick()
 
         assertEquals("1", copied?.item?.id)
         assertEquals("1", downloaded?.item?.id)
@@ -126,7 +142,7 @@ class HistoryScreenTest {
             onKindChange = { kind = it },
         )
 
-        compose.onNodeWithText("Images").performClick()
+        compose.onNodeWithText(testString(R.string.history_filter_images)).performClick()
 
         assertEquals(Local.Kind.KIND_IMAGE, kind)
     }
@@ -139,7 +155,12 @@ class HistoryScreenTest {
             onDeviceChange = { device = it },
         )
 
-        compose.onNodeWithText("Device: All devices").performClick()
+        compose.onNodeWithText(
+            testString(
+                R.string.history_filter_device,
+                testString(R.string.history_all_devices),
+            ),
+        ).performClick()
         compose.onNodeWithText("Mac").performClick()
 
         assertEquals(ORIGIN, device)
@@ -149,7 +170,7 @@ class HistoryScreenTest {
     fun emptyHistoryIsExplained() {
         setContent(history = HistoryState(loaded = true))
 
-        compose.onNodeWithText("History is empty").assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.history_empty)).assertIsDisplayed()
     }
 
     @Test
@@ -160,8 +181,8 @@ class HistoryScreenTest {
             onRefresh = { retried = true },
         )
 
-        compose.onNodeWithText("Unison is not running").assertIsDisplayed()
-        compose.onNodeWithText("Retry").performClick()
+        compose.onNodeWithText(testString(R.string.error_core_stopped)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.action_retry)).performClick()
 
         assertTrue(retried)
     }

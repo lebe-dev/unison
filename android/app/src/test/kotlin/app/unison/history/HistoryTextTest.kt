@@ -32,7 +32,10 @@ class HistoryTextTest {
             .addRepresentations(representation("application/x-unison-file", "c.txt"))
             .build()
 
-        assertEquals("a.txt, b.txt and 1 more", HistoryText.fileNames(item))
+        val names = HistoryText.fileNames(item)
+
+        assertEquals("a.txt, b.txt", names.shown)
+        assertEquals(1, names.rest)
     }
 
     @Test

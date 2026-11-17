@@ -4,6 +4,8 @@ import android.app.Notification
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.testString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,10 +21,11 @@ class HistoryNotificationsTest {
         val notification = HistoryNotifications.pending(context, image(), "Mac")
 
         assertEquals(1, notification.actions.size)
-        assertEquals("Download", notification.actions[0].title.toString())
+        assertEquals(testString(R.string.action_download), notification.actions[0].title.toString())
         assertEquals("Mac", notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
-        assertTrue(
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString().contains("Image"),
+        assertEquals(
+            testString(R.string.history_notification_body, testString(R.string.kind_image)),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
         )
     }
 

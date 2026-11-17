@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import app.unison.MainActivity
 import app.unison.R
 import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
 import app.unison.service.NotificationChannels
 import app.unison.service.UnisonService
 import unison.local.v1.Local
@@ -40,12 +41,13 @@ object TransferNotifications {
             return builder.build()
         }
         val percent = TransferProgress.percent(transfers)
+        val units = SizeUnits.of(context)
         builder.setContentText(
             context.getString(
                 R.string.transfer_progress_text,
                 percent,
-                HistoryText.formatSize(TransferProgress.bytes(transfers)),
-                HistoryText.formatSize(total),
+                HistoryText.formatSize(TransferProgress.bytes(transfers), units),
+                HistoryText.formatSize(total, units),
             ),
         )
         builder.setProgress(PROGRESS_MAX, percent * PROGRESS_MAX / 100, false)

@@ -8,6 +8,12 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
+import app.unison.testQuantity
+import app.unison.testContext
+import app.unison.testString
 import app.unison.ui.state.CoreFailure
 import app.unison.ui.state.RequestsState
 import app.unison.ui.theme.UnisonTheme
@@ -34,7 +40,14 @@ class RequestsScreenTest {
         )
 
         compose.onNodeWithText("Friend").assertIsDisplayed()
-        compose.onNodeWithText("2 files - 2 KB").assertIsDisplayed()
+        compose.onNodeWithText(
+            testQuantity(
+                R.plurals.request_files,
+                2,
+                2,
+                HistoryText.formatSize(2048, SizeUnits.of(testContext)),
+            ),
+        ).assertIsDisplayed()
         compose.onNodeWithText("notes.txt, plan.pdf").assertIsDisplayed()
     }
 
@@ -42,8 +55,8 @@ class RequestsScreenTest {
     fun emptyListIsExplained() {
         setContent(requests = RequestsState(loaded = true))
 
-        compose.onNodeWithText("No requests").assertIsDisplayed()
-        compose.onAllNodesWithText("Accept").assertCountEquals(0)
+        compose.onNodeWithText(testString(R.string.requests_empty)).assertIsDisplayed()
+        compose.onAllNodesWithText(testString(R.string.action_accept)).assertCountEquals(0)
     }
 
     @Test
@@ -54,8 +67,8 @@ class RequestsScreenTest {
             onRefresh = { retried = true },
         )
 
-        compose.onNodeWithText("Unison is not running").assertIsDisplayed()
-        compose.onNodeWithText("Retry").performClick()
+        compose.onNodeWithText(testString(R.string.error_core_stopped)).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.action_retry)).performClick()
 
         assertTrue(retried)
     }
@@ -74,10 +87,10 @@ class RequestsScreenTest {
             onDecline = { declined = it },
         )
 
-        compose.onNodeWithText("Accept").performClick()
+        compose.onNodeWithText(testString(R.string.action_accept)).performClick()
         assertEquals("one", accepted?.id)
 
-        compose.onNodeWithText("Decline").performClick()
+        compose.onNodeWithText(testString(R.string.action_decline)).performClick()
         assertEquals("one", declined?.id)
     }
 
@@ -91,8 +104,8 @@ class RequestsScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Accept").assertIsNotEnabled()
-        compose.onNodeWithText("Decline").assertIsNotEnabled()
+        compose.onNodeWithText(testString(R.string.action_accept)).assertIsNotEnabled()
+        compose.onNodeWithText(testString(R.string.action_decline)).assertIsNotEnabled()
     }
 
     private fun setContent(

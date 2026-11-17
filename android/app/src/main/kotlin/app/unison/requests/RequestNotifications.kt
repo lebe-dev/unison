@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import app.unison.MainActivity
 import app.unison.R
 import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
 import app.unison.service.NotificationChannels
 import app.unison.service.UnisonService
 import app.unison.ui.Destination
@@ -25,7 +26,7 @@ object RequestNotifications {
     /** Offer with the accept and decline actions. */
     fun request(context: Context, request: Local.ShareRequest): Notification {
         val files = request.filesList
-        val size = HistoryText.formatSize(request.totalBytes)
+        val size = HistoryText.formatSize(request.totalBytes, SizeUnits.of(context))
         val names = files.map { it.name }.filter { it.isNotEmpty() }
 
         val builder = NotificationCompat.Builder(context, NotificationChannels.REQUESTS)

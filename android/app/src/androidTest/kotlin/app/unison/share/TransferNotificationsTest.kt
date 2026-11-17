@@ -4,6 +4,12 @@ import android.app.Notification
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.history.HistoryText
+import app.unison.history.SizeUnits
+import app.unison.testContext
+import app.unison.testQuantity
+import app.unison.testString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -24,12 +30,24 @@ class TransferNotificationsTest {
             listOf(transfer("Mac", bytes = 40, total = 100)),
         )
 
-        assertEquals("Sending to Mac", notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
-        assertEquals("40% - 40 B of 100 B", notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+        assertEquals(
+            testString(R.string.transfer_progress_title, "Mac"),
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+        )
+        val units = SizeUnits.of(testContext)
+        assertEquals(
+            testString(
+                R.string.transfer_progress_text,
+                40,
+                HistoryText.formatSize(40, units),
+                HistoryText.formatSize(100, units),
+            ),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
         assertEquals(40, notification.extras.getInt(Notification.EXTRA_PROGRESS))
         assertEquals(100, notification.extras.getInt(Notification.EXTRA_PROGRESS_MAX))
         assertEquals(1, notification.actions.size)
-        assertEquals("Cancel", notification.actions[0].title.toString())
+        assertEquals(testString(R.string.action_cancel), notification.actions[0].title.toString())
     }
 
     @Test
@@ -53,14 +71,23 @@ class TransferNotificationsTest {
             ),
         )
 
-        assertEquals("Sending to Laptop and 2 more", notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals(
+            testString(
+                R.string.transfer_progress_title,
+                testQuantity(R.plurals.transfer_more_devices, 2, "Laptop", 2),
+            ),
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+        )
     }
 
     @Test
     fun resultIsDismissedOnTap() {
-        val notification = TransferNotifications.result(context, "Sent to Mac")
+        val notification = TransferNotifications.result(context, testString(R.string.transfer_sent, "Mac"))
 
-        assertEquals("Sent to Mac", notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+        assertEquals(
+            testString(R.string.transfer_sent, "Mac"),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
         assertTrue(notification.flags and Notification.FLAG_AUTO_CANCEL != 0)
         assertTrue(notification.actions.isNullOrEmpty())
         assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)

@@ -5,8 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import app.unison.R
+import app.unison.history.SizeUnits
 import java.util.Date
 import unison.local.v1.Local
+
+/** Unit names and number format of the sizes in the current locale. */
+@Composable
+fun sizeUnits(): SizeUnits = SizeUnits.of(LocalContext.current)
 
 /** Label of the operating system of a paired device. */
 @Composable

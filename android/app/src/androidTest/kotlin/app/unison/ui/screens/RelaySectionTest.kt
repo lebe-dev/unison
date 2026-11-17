@@ -13,6 +13,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.unison.R
+import app.unison.testString
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -35,7 +37,7 @@ class RelaySectionTest {
 
         compose.onNodeWithTag("relay_url").performScrollTo().performTextReplacement("relay.example.com:443")
         compose.onNodeWithTag("relay_token").performScrollTo().performTextReplacement("secret")
-        compose.onNodeWithText("Save").performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.action_save)).performScrollTo().performClick()
 
         assertEquals(Triple("relay.example.com:443", "secret", true), saved)
     }
@@ -45,7 +47,7 @@ class RelaySectionTest {
         setContent(onSave = { _, _, _ -> })
 
         compose.onNodeWithTag("relay_url").performScrollTo().performTextReplacement("relay.example.com:443")
-        compose.onNodeWithText("Save").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText(testString(R.string.action_save)).performScrollTo().assertIsNotEnabled()
     }
 
     @Test
@@ -56,7 +58,7 @@ class RelaySectionTest {
         })
 
         compose.onNodeWithTag("relay_url").performScrollTo().performTextReplacement("relay.example.com:443")
-        compose.onNodeWithText("Save").performScrollTo().assertIsEnabled().performClick()
+        compose.onNodeWithText(testString(R.string.action_save)).performScrollTo().assertIsEnabled().performClick()
 
         assertEquals(null, savedToken)
     }
@@ -65,7 +67,7 @@ class RelaySectionTest {
     fun relayIsTurnedOff() {
         var off = false
         setContent(storedToken = true, onOff = { off = true })
-        compose.onNodeWithText("Turn off for the group").performScrollTo().performClick()
+        compose.onNodeWithText(testString(R.string.relay_off)).performScrollTo().performClick()
 
         assertEquals(true, off)
     }
