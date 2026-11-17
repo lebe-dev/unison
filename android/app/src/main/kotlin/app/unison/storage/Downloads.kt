@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
 import android.webkit.MimeTypeMap
@@ -21,11 +22,20 @@ object Downloads {
     const val DEFAULT_MIME = "application/octet-stream"
 
     /** Creates a pending entry and returns the URI of its content. */
-    fun create(context: Context, name: String, mimeType: String): Uri? = try {
-        context.contentResolver.insert(collection(), values(name, mimeType))
-    } catch (e: Exception) {
-        Log.w(TAG, "cannot create an entry: ${e.message}")
-        null
+    fun create(context: Context, name: String, mimeType: String): Uri? {
+        DownloadsFolder.current(context)?.let { tree ->
+            try {
+                DownloadsFolder.create(context, tree, name, mimeType)?.let { return it }
+            } catch (e: Exception) {
+                Log.w(TAG, "cannot create a file in the chosen folder: ${e.message}")
+            }
+        }
+        return try {
+            context.contentResolver.insert(collection(), values(name, mimeType))
+        } catch (e: Exception) {
+            Log.w(TAG, "cannot create an entry: ${e.message}")
+            null
+        }
     }
 
     /** Copies a file into a new entry and publishes it. */
@@ -49,6 +59,10 @@ object Downloads {
 
     /** Makes a finished entry visible to other apps. */
     fun publish(context: Context, uri: Uri) {
+        // Files in a picked folder are visible from the start.
+        if (DocumentsContract.isDocumentUri(context, uri)) {
+            return
+        }
         val values = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
         try {
             context.contentResolver.update(uri, values, null, null)
@@ -60,6 +74,10 @@ object Downloads {
     /** Removes an entry that was not finished. */
     fun discard(context: Context, uri: Uri) {
         try {
+            if (DocumentsContract.isDocumentUri(context, uri)) {
+                DocumentsContract.deleteDocument(context.contentResolver, uri)
+                return
+            }
             context.contentResolver.delete(uri, null, null)
         } catch (e: Exception) {
             Log.w(TAG, "cannot remove an entry: ${e.message}")

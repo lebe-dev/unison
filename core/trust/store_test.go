@@ -752,3 +752,49 @@ func assertPeerEqual(t *testing.T, got, want Peer) {
 		t.Errorf("revoked %t, want %t", got.Revoked, want.Revoked)
 	}
 }
+
+// TestAddSeedsConfirmationFromGlobalFlags checks that a new Personal peer starts
+// with the flags set for every device, and that a later change of the global
+// flags leaves the peer alone.
+func TestAddSeedsConfirmationFromGlobalFlags(t *testing.T) {
+	ts := openTestStore(t)
+	ctx := context.Background()
+
+	if err := ts.SetSelfRequireConfirmation(ctx, ScopeClipboard, true); err != nil {
+		t.Fatalf("set the clipboard flag: %v", err)
+	}
+	first := testPeer(t, 21, model.RolePersonal)
+	if err := ts.Add(ctx, first); err != nil {
+		t.Fatalf("add the first peer: %v", err)
+	}
+	got, err := ts.Get(ctx, first.DeviceID())
+	if err != nil {
+		t.Fatalf("get the first peer: %v", err)
+	}
+	if want := (Confirmations{Clipboard: true}); got.Confirm != want {
+		t.Fatalf("flags of the new peer are %+v, want %+v", got.Confirm, want)
+	}
+
+	if _, err := ts.SetRequireConfirmation(ctx, first.DeviceID(), ScopeClipboard, false); err != nil {
+		t.Fatalf("clear the flag of the peer: %v", err)
+	}
+	got, err = ts.Get(ctx, first.DeviceID())
+	if err != nil {
+		t.Fatalf("get the first peer again: %v", err)
+	}
+	if got.Confirm.Clipboard {
+		t.Fatal("the flag of the peer is on after the user turned it off")
+	}
+
+	friend := testPeer(t, 22, model.RoleFriends)
+	if err := ts.Add(ctx, friend); err != nil {
+		t.Fatalf("add a friend: %v", err)
+	}
+	got, err = ts.Get(ctx, friend.DeviceID())
+	if err != nil {
+		t.Fatalf("get the friend: %v", err)
+	}
+	if got.Confirm.Any() {
+		t.Fatalf("a friend got the flags %+v", got.Confirm)
+	}
+}

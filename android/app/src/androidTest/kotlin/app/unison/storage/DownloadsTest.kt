@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.test.core.app.ApplicationProvider
+import app.unison.service.UnisonSettings
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import java.io.FileOutputStream
@@ -39,6 +40,41 @@ class DownloadsTest {
             find(name)?.let { context.contentResolver.delete(it, null, null) }
             file.delete()
         }
+    }
+
+    @Test
+    fun lostFolderPermissionFallsBackToTheDownloadsCollection() {
+        val name = uniqueName("txt")
+        val file = File(context.cacheDir, name).apply { writeText(CONTENT) }
+        // The app never got access to this folder.
+        UnisonSettings.setDownloadsTree(context, "content://com.android.externalstorage.documents/tree/primary%3ANowhere")
+
+        try {
+            assertTrue(Downloads.save(context, file, name, "text/plain"))
+            assertNotNull("no entry for $name", find(name))
+        } finally {
+            UnisonSettings.setDownloadsTree(context, null)
+            find(name)?.let { context.contentResolver.delete(it, null, null) }
+            file.delete()
+        }
+    }
+
+    @Test
+    fun downloadsFolderIsRemembered() {
+        val tree = "content://com.android.externalstorage.documents/tree/primary%3AInbox"
+        try {
+            UnisonSettings.setDownloadsTree(context, tree)
+            assertEquals(tree, UnisonSettings.downloadsTree(context))
+        } finally {
+            UnisonSettings.setDownloadsTree(context, null)
+        }
+        assertNull(UnisonSettings.downloadsTree(context))
+    }
+
+    @Test
+    fun folderLabelIsThePathInsideTheStorage() {
+        val tree = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADocuments%2FInbox")
+        assertEquals("Documents/Inbox", DownloadsFolder.label(tree))
     }
 
     @Test

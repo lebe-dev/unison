@@ -1,5 +1,6 @@
 package app.unison.ui
 
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -67,6 +68,9 @@ fun UnisonRoot(
     onPolicyReset: () -> Unit,
     onTtlSave: (Local.Kind, Long) -> Unit,
     onTtlReset: () -> Unit,
+    downloadsFolder: String?,
+    onDownloadsFolderPick: (Uri) -> Unit,
+    onDownloadsFolderReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
@@ -193,6 +197,9 @@ fun UnisonRoot(
                 onPolicyReset = onPolicyReset,
                 onTtlSave = onTtlSave,
                 onTtlReset = onTtlReset,
+                downloadsFolder = downloadsFolder,
+                onDownloadsFolderPick = onDownloadsFolderPick,
+                onDownloadsFolderReset = onDownloadsFolderReset,
                 onPause = onPause,
                 onRelaySave = onRelaySave,
                 onRelayOff = onRelayOff,

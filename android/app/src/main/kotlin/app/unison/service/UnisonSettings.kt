@@ -36,6 +36,9 @@ object UnisonSettings {
     /** Hash of the last clipboard content this device sent or applied. */
     const val KEY_LAST_CLIP = "clipboard.last_hash"
 
+    /** URI of the folder the user picked for received files, absent for the default one. */
+    const val KEY_DOWNLOADS_TREE = "downloads.tree"
+
     /** Set once the first run screen was completed. */
     const val KEY_ONBOARDED = "onboarding.done"
 
@@ -68,6 +71,18 @@ object UnisonSettings {
     fun setLastClipHash(context: Context, hash: String) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putString(KEY_LAST_CLIP, hash) }
+    }
+
+    /** URI of the folder chosen for received files, null for the default folder. */
+    fun downloadsTree(context: Context): String? {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_DOWNLOADS_TREE, null)
+    }
+
+    fun setDownloadsTree(context: Context, uri: String?) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            if (uri == null) remove(KEY_DOWNLOADS_TREE) else putString(KEY_DOWNLOADS_TREE, uri)
+        }
     }
 
     /** True when the user already saw the first run screen. */

@@ -1,5 +1,8 @@
 package app.unison.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,6 +63,9 @@ fun SettingsScreen(
     onPolicyReset: () -> Unit,
     onTtlSave: (Local.Kind, Long) -> Unit,
     onTtlReset: () -> Unit,
+    downloadsFolder: String?,
+    onDownloadsFolderPick: (Uri) -> Unit,
+    onDownloadsFolderReset: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
     onRelayOff: () -> Unit,
@@ -93,6 +99,11 @@ fun SettingsScreen(
             onReset = onPolicyReset,
         )
         HistoryTtlSection(ttl = ttl, onSave = onTtlSave, onReset = onTtlReset)
+        DownloadsFolderSection(
+            folder = downloadsFolder,
+            onPick = onDownloadsFolderPick,
+            onReset = onDownloadsFolderReset,
+        )
         Pause(pause = state.status?.pause, onPause = onPause)
         RelaySection(
             relay = state.relay,
@@ -192,6 +203,54 @@ private fun ServiceMode(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Folder of the received files. The system picker grants access to the picked
+ * folder only; the app asks for no storage permission.
+ */
+@Composable
+private fun DownloadsFolderSection(
+    folder: String?,
+    onPick: (Uri) -> Unit,
+    onReset: () -> Unit,
+) {
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            onPick(uri)
+        }
+    }
+
+    SectionTitle(text = stringResource(R.string.settings_section_downloads))
+    Text(
+        text = folder ?: stringResource(R.string.settings_downloads_default),
+        style = MaterialTheme.typography.bodyLarge,
+    )
+    Text(
+        text = stringResource(R.string.settings_downloads_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(
+            onClick = { picker.launch(null) },
+            modifier = Modifier.testTag(DOWNLOADS_PICK_TAG),
+        ) {
+            Text(text = stringResource(R.string.settings_downloads_choose))
+        }
+        OutlinedButton(
+            onClick = onReset,
+            enabled = folder != null,
+            modifier = Modifier.testTag(DOWNLOADS_RESET_TAG),
+        ) {
+            Text(text = stringResource(R.string.settings_downloads_reset))
         }
     }
 }
@@ -340,6 +399,12 @@ internal const val CONFIRMATION_TAG = "settings.confirmation"
 
 /** Tag of the switch of the files confirmation of this device. */
 internal const val FILE_CONFIRMATION_TAG = "settings.confirmation.files"
+
+/** Tag of the button that opens the folder picker for received files. */
+internal const val DOWNLOADS_PICK_TAG = "settings.downloads.pick"
+
+/** Tag of the button that brings back the default folder of received files. */
+internal const val DOWNLOADS_RESET_TAG = "settings.downloads.reset"
 
 /** Tag of the button that saves the device name. */
 internal const val NAME_SAVE_TAG = "settings.name.save"

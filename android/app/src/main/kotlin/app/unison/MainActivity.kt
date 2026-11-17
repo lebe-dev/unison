@@ -3,6 +3,7 @@ package app.unison
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -35,6 +36,7 @@ import app.unison.policy.PolicyProto
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
+import app.unison.storage.DownloadsFolder
 import app.unison.ui.Destination
 import app.unison.ui.PromptAnswer
 import app.unison.ui.UnisonRoot
@@ -55,6 +57,7 @@ class MainActivity : ComponentActivity() {
     private var onboarded by mutableStateOf(false)
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
+    private var downloadsFolder by mutableStateOf<String?>(null)
     private var policy by mutableStateOf(PolicyDefaults.config)
     private var historyTtl by mutableStateOf(HistoryTtlDefaults.values)
     private var pending by mutableStateOf<ClipboardDraft?>(null)
@@ -83,6 +86,7 @@ class MainActivity : ComponentActivity() {
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
+        downloadsFolder = DownloadsFolder.current(this)?.let(DownloadsFolder::label)
         policy = PolicyDefaults.config
         historyTtl = HistoryTtlDefaults.values
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
@@ -131,6 +135,9 @@ class MainActivity : ComponentActivity() {
                         onPolicyReset = ::resetPolicy,
                         onTtlSave = ::saveHistoryTtl,
                         onTtlReset = ::resetHistoryTtl,
+                        downloadsFolder = downloadsFolder,
+                        onDownloadsFolderPick = ::saveDownloadsFolder,
+                        onDownloadsFolderReset = ::resetDownloadsFolder,
                         onPause = appState::setPause,
                         onRelaySave = appState::setRelay,
                         onRelayOff = appState::relayOff,
@@ -318,6 +325,19 @@ class MainActivity : ComponentActivity() {
         UnisonSettings.setDeviceName(this, trimmed)
         deviceName = trimmed
         appState.setDeviceName(trimmed)
+    }
+
+    private fun saveDownloadsFolder(tree: Uri) {
+        if (!DownloadsFolder.choose(this, tree)) {
+            Toast.makeText(this, R.string.settings_downloads_failed, Toast.LENGTH_LONG).show()
+            return
+        }
+        downloadsFolder = DownloadsFolder.label(tree)
+    }
+
+    private fun resetDownloadsFolder() {
+        DownloadsFolder.reset(this)
+        downloadsFolder = null
     }
 
     private fun saveOperatingMode(mode: OperatingMode) {

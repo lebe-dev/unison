@@ -61,6 +61,11 @@ brings back `~/Downloads/Unison`. The new folder applies to the files that arriv
 files already received stay where they are. The command line client shows the current folder
 with `unison settings`.
 
+On Android the folder is chosen in Settings under "Received files". The system folder picker
+opens and Unison gets access to the folder you pick and to nothing else; the app asks for no
+storage permission. If the access is lost, for example because the folder was deleted, files go
+to `Download/Unison` again.
+
 Files are fetched in verified chunks, so an interrupted transfer resumes where it stopped. Every
 received file is checked against the hash of the announcement.
 

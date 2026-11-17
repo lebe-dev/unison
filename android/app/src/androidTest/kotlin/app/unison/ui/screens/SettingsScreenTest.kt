@@ -138,6 +138,25 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun defaultDownloadsFolderIsNamed() {
+        setContent(downloadsFolder = null)
+
+        compose.onNodeWithText("Download/Unison").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(DOWNLOADS_RESET_TAG).assertIsNotEnabled()
+    }
+
+    @Test
+    fun chosenDownloadsFolderIsShownAndCanBeReset() {
+        var reset = false
+        setContent(downloadsFolder = "Documents/Inbox", onDownloadsFolderReset = { reset = true })
+
+        compose.onNodeWithText("Documents/Inbox").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag(DOWNLOADS_RESET_TAG).performScrollTo().performClick()
+
+        assertTrue(reset)
+    }
+
+    @Test
     fun leavingTheGroupAsksForConfirmation() {
         var left = false
         setContent(onLeaveGroup = { left = true })
@@ -168,6 +187,8 @@ class SettingsScreenTest {
         onRefreshRelay: () -> Unit = {},
         onTtlSave: (Local.Kind, Long) -> Unit = { _, _ -> },
         onTtlReset: () -> Unit = {},
+        downloadsFolder: String? = null,
+        onDownloadsFolderReset: () -> Unit = {},
         onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit = { _, _ -> },
         onLeaveGroup: () -> Unit = {},
     ) {
@@ -185,6 +206,9 @@ class SettingsScreenTest {
                     onPolicyReset = {},
                     onTtlSave = onTtlSave,
                     onTtlReset = onTtlReset,
+                    downloadsFolder = downloadsFolder,
+                    onDownloadsFolderPick = {},
+                    onDownloadsFolderReset = onDownloadsFolderReset,
                     onPause = onPause,
                     onRelaySave = onRelaySave,
                     onRelayOff = onRelayOff,

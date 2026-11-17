@@ -90,7 +90,8 @@ service.
 - An offer of a Friends device, or of a Personal device you ask about, waits in `Requests`
   (`unison requests`) and expires after ten minutes.
 - An item that is listed as not downloaded needs the device that has it to be online.
-- Files land in `~/Downloads/Unison` on macOS and in `Download/Unison` on Android.
+- Files land in `~/Downloads/Unison` on macOS and in `Download/Unison` on Android, unless you chose
+  another folder in Settings.
 - The cache of a device holds at most 2 GiB. A larger file is refused, and a full disk stops the
   download as well.
 

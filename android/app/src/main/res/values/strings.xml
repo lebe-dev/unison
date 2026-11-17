@@ -99,6 +99,12 @@
     <string name="settings_name_applies">Announced to the paired devices</string>
     <string name="settings_name_saved">Device name saved</string>
     <string name="settings_name_failed">Cannot save the device name</string>
+    <string name="settings_section_downloads">Received files</string>
+    <string name="settings_downloads_default">Download/Unison</string>
+    <string name="settings_downloads_hint">Unison gets access to the folder you pick and to nothing else.</string>
+    <string name="settings_downloads_choose">Choose folder</string>
+    <string name="settings_downloads_reset">Use default folder</string>
+    <string name="settings_downloads_failed">Cannot use this folder</string>
     <string name="settings_section_service">Service mode</string>
     <string name="settings_section_confirmation">Confirmation</string>
     <string name="settings_confirmation">Ask before applying the clipboard of any device</string>
