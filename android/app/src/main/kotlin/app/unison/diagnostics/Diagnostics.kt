@@ -101,6 +101,13 @@ object Diagnostics {
         event.breadcrumbs = null
         event.extras = null
         event.contexts.remove("device")
+        event.message?.let { message ->
+            message.formatted = message.formatted?.let(::redactPaths)
+            message.message = message.message?.let(::redactPaths)
+        }
+        event.exceptions?.forEach { exception ->
+            exception.value = exception.value?.let(::redactPaths)
+        }
         event.setTag(COMPONENT_TAG, COMPONENT)
         return event
     }
