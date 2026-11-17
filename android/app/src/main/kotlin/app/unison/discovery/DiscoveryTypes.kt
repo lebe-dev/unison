@@ -81,11 +81,11 @@ object Candidates {
         return if (zone == null) "[$literal]:$port" else "[$literal%$zone]:$port"
     }
 
-    /** First dialable address of a service, IPv4 preferred. */
-    fun pick(hosts: Iterable<InetAddress?>): InetAddress? = hosts
+    /** Dialable addresses of a service, IPv4 first. */
+    fun addresses(hosts: Iterable<InetAddress?>): List<InetAddress> = hosts
         .filterNotNull()
         .filter { dialable(it) }
-        .minByOrNull { if (it is Inet6Address) 1 else 0 }
+        .sortedBy { if (it is Inet6Address) 1 else 0 }
 
     private fun dialable(host: InetAddress): Boolean =
         !host.isAnyLocalAddress && !host.isLoopbackAddress && !host.isMulticastAddress

@@ -4,6 +4,7 @@ import java.net.Inet6Address
 import java.net.InetAddress
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import unison.mobile.v1.Mobile as MobileProto
 
@@ -115,24 +116,30 @@ class CandidatesTest {
     }
 
     @Test
-    fun ipv4IsPreferred() {
-        val host = Candidates.pick(
+    fun everyDialableAddressIsReported() {
+        val addresses = Candidates.addresses(
             listOf(
                 Inet6Address.getByAddress(null, ipv6("fe80::1"), 2),
                 InetAddress.getByName("10.0.0.7"),
+                InetAddress.getByName("127.0.0.1"),
+                InetAddress.getByName("192.168.1.5"),
             ),
         )
 
-        assertEquals("10.0.0.7", host?.hostAddress)
+        assertEquals(3, addresses.size)
+        assertEquals("10.0.0.7", addresses[0].hostAddress)
+        assertEquals("192.168.1.5", addresses[1].hostAddress)
+        assertTrue(addresses[2] is Inet6Address)
     }
 
     @Test
     fun unusableHostsAreSkipped() {
-        assertNull(Candidates.pick(listOf(null, InetAddress.getByName("127.0.0.1"))))
-        assertNull(Candidates.pick(emptyList()))
+        val unusable = listOf(null, InetAddress.getByName("127.0.0.1"))
+        assertTrue(Candidates.addresses(unusable).isEmpty())
+        assertTrue(Candidates.addresses(emptyList()).isEmpty())
 
-        val host = Candidates.pick(listOf(null, InetAddress.getByName("192.168.1.5")))
-        assertEquals("192.168.1.5", host?.hostAddress)
+        val host = Candidates.addresses(listOf(null, InetAddress.getByName("192.168.1.5")))
+        assertEquals("192.168.1.5", host.single().hostAddress)
     }
 
     private fun ipv6(literal: String): ByteArray =

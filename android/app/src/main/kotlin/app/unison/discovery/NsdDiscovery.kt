@@ -510,17 +510,24 @@ class NsdDiscovery(
         if (port !in 1..65535) {
             return false
         }
-        val host = Candidates.pick(hostsOf(info))
-        val addr = Candidates.address(host, port)
-        if (addr == null) {
-            Log.w(TAG, "a device of $service has no usable address")
-            return false
-        }
         val txt = Candidates.proto(info.attributes ?: emptyMap())
-        try {
-            sink.offer(service, addr, txt)
-        } catch (e: Exception) {
-            Log.w(TAG, "reporting a device of $service failed: ${e.message}")
+        var reported = false
+        // One device can resolve to several addresses of this network, and a
+        // VPN or a virtual bridge adds addresses that do not reach it. Every
+        // address becomes its own candidate, so a dead one does not keep the
+        // device offline.
+        for (host in Candidates.addresses(hostsOf(info))) {
+            val addr = Candidates.address(host, port) ?: continue
+            try {
+                sink.offer(service, addr, txt)
+            } catch (e: Exception) {
+                Log.w(TAG, "reporting a device of $service failed: ${e.message}")
+                continue
+            }
+            reported = true
+        }
+        if (!reported) {
+            Log.w(TAG, "a device of $service has no usable address")
             return false
         }
         Log.i(TAG, "reported a device of $service")
