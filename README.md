@@ -15,7 +15,7 @@ macOS and Android are supported. Windows and Linux are not available yet.
 - [Relay](docs/relay.md) - a self-hosted relay for devices that are not in one network
 - [Keyboard bridge](docs/keyboard-bridge.md) - the Android interface for a keyboard
 - [Command line](docs/cli.md) - the `unison` client of the daemon
-- [Security](docs/security.md) - the model in short
+- [Security](docs/security.md) - keys, transport, pairing, untrusted content, data at rest
 - [Troubleshooting](docs/troubleshooting.md) - the usual reasons a device does not connect
 
 Building the code and running the tests is described in `DEV.md`.
