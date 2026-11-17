@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Capability for the main window and the prompt window",
   "windows": ["main", "prompt"],
-  "permissions": ["core:default", "notification:default"]
+  "permissions": ["core:default", "core:window:allow-start-dragging", "notification:default"]
 }

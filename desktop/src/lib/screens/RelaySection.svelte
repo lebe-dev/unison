@@ -129,31 +129,39 @@
   }
 </script>
 
-<section class="panel">
-  <h3>Relay</h3>
+<section class="section">
+  <h3 class="section-title">Relay</h3>
   {#if notice}
     <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
       {notice.text}
     </p>
   {/if}
-  <p class="muted">{stateText}</p>
-  <div class="inline">
-    <label class="field grow">
-      <span>Relay address</span>
+  <div class="list">
+    <div class="form-row">
+      <span class="label">{stateText}</span>
+    </div>
+    <label class="form-row">
+      <span class="label">
+        Relay address
+        <small>Host and port of the group relay, or https://host:port. Shared with the group.</small
+        >
+      </span>
       <input
+        class="wide"
         type="text"
         bind:value={url}
         placeholder="relay.example.com:443"
         maxlength="2048"
         disabled={busy || !loaded}
       />
-      <small>Host and port of the group relay, or https://host:port. Shared with the group.</small>
     </label>
-  </div>
-  <div class="inline">
-    <label class="field grow">
-      <span>Access token</span>
+    <label class="form-row">
+      <span class="label">
+        Access token
+        <small>{tokenHint}</small>
+      </span>
       <input
+        class="wide"
         type="password"
         bind:value={token}
         autocomplete="off"
@@ -161,25 +169,16 @@
         placeholder={relay?.tokenSet ? "Stored on this device" : ""}
         disabled={busy || !loaded}
       />
-      <small>{tokenHint}</small>
+    </label>
+    <label class="toggle form-row">
+      <input type="checkbox" bind:checked={filesOnRequest} disabled={busy || !loaded} />
+      <span>
+        Files over the relay only when I ask for them
+        <small>Files stay in the history until you download them.</small>
+      </span>
     </label>
   </div>
-  <label class="toggle">
-    <input type="checkbox" bind:checked={filesOnRequest} disabled={busy || !loaded} />
-    <span>
-      Files over the relay only when I ask for them
-      <small>Files stay in the history until you download them.</small>
-    </span>
-  </label>
-  <div class="toolbar">
-    <button
-      class="button primary"
-      type="button"
-      onclick={() => void save()}
-      disabled={busy || !loaded || !canSave}
-    >
-      Save
-    </button>
+  <div class="toolbar actions">
     <button
       class="button"
       type="button"
@@ -188,18 +187,23 @@
     >
       Turn off
     </button>
+    <button
+      class="button primary"
+      type="button"
+      onclick={() => void save()}
+      disabled={busy || !loaded || !canSave}
+    >
+      Save
+    </button>
   </div>
 </section>
 
 <style>
-  .inline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.5rem;
+  .wide {
+    width: 240px;
   }
 
-  .grow {
-    flex: 1 1 240px;
+  .actions {
+    justify-content: flex-end;
   }
 </style>

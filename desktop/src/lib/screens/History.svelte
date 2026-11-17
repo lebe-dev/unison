@@ -337,36 +337,34 @@
 <style>
   .history {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .toolbar {
-    align-items: flex-end;
+    gap: 12px;
+    min-height: 0;
   }
 
   .toolbar .field {
-    min-width: 140px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .toolbar .field > span {
+    font-weight: 400;
+    color: var(--secondary);
   }
 
   .count {
     margin-left: auto;
-    padding-bottom: 0.45rem;
   }
 
   .feed {
     display: flex;
     flex-direction: column;
-    height: min(58vh, 560px);
-    margin: 0 -0.25rem;
-    padding: 0 0.25rem;
+    height: min(62vh, 620px);
+    border-radius: 10px;
+    background-color: var(--surface);
+    box-shadow: var(--box-shadow);
     overflow-y: auto;
   }
 
@@ -374,17 +372,15 @@
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-    gap: 0.75rem;
-    height: 80px;
-    margin-bottom: 8px;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    gap: 12px;
+    height: 88px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--separator);
     box-sizing: border-box;
   }
 
-  .row.pending {
-    border-style: dashed;
+  .row.pending .title {
+    color: var(--muted);
   }
 
   .preview {
@@ -396,8 +392,9 @@
     width: 56px;
     height: 56px;
     padding: 0;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: 8px;
+    box-shadow: var(--box-shadow);
     background-color: var(--surface-soft);
     overflow: hidden;
     cursor: zoom-in;
@@ -443,7 +440,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.875rem;
+    font-weight: 500;
   }
 
   .meta {
@@ -451,7 +448,7 @@
     overflow: hidden;
     white-space: nowrap;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 11px;
   }
 
   .downloading {
@@ -473,7 +470,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background-color: rgba(16, 20, 28, 0.6);
+    background-color: rgba(0, 0, 0, 0.45);
     z-index: 10;
   }
 

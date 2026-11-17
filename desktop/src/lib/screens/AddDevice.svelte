@@ -2,7 +2,6 @@
   import { Role } from "../api/gen/unison/local/v1/local_pb";
   import CandidateList from "../pairing/CandidateList.svelte";
   import QrPanel from "../pairing/QrPanel.svelte";
-  import SasPanel from "../pairing/SasPanel.svelte";
   import WindowTimer from "../pairing/WindowTimer.svelte";
   import NetworkIssue from "../NetworkIssue.svelte";
   import { daemon } from "../daemon.svelte";
@@ -36,17 +35,6 @@
       <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
     {/if}
   </section>
-{:else if pairing.request}
-  <SasPanel
-    request={pairing.request}
-    busy={pairing.busy}
-    confirmed={pairing.confirmed}
-    onConfirm={() => void pairing.confirm()}
-    onReject={() => void pairing.reject()}
-  />
-  {#if pairing.error}
-    <p class="notice error">{pairing.error}</p>
-  {/if}
 {:else if pairing.window}
   <div class="window">
     <div class="panel-header">
@@ -160,14 +148,10 @@
   .start {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+    gap: 16px;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
   }
 
   .roles {
@@ -182,8 +166,8 @@
   legend {
     margin-bottom: 0.5rem;
     padding: 0;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   .role {
@@ -191,15 +175,17 @@
     flex: 1 1 220px;
     align-items: flex-start;
     gap: 0.6rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border);
+    padding: 12px;
     border-radius: 10px;
-    cursor: pointer;
+    background-color: var(--surface);
+    box-shadow: var(--box-shadow);
+    cursor: default;
   }
 
   .role.selected {
-    border-color: var(--accent);
-    background-color: var(--accent-soft);
+    box-shadow:
+      0 0 0 2px var(--accent),
+      var(--box-shadow);
   }
 
   .role input {

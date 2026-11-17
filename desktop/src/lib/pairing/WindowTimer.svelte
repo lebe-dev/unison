@@ -45,7 +45,7 @@
 
 <style>
   .timer {
-    font-size: 0.875rem;
+    font-size: 12px;
     color: var(--muted);
   }
 

@@ -33,6 +33,7 @@
     type TTLKind,
   } from "../ttl";
   import RelaySection from "./RelaySection.svelte";
+  import { theme } from "../theme.svelte";
 
   const pauses: { choice: PauseChoice; label: string }[] = [
     { choice: "five_minutes", label: "Pause for 5 minutes" },
@@ -359,23 +360,36 @@
       busy = false;
     }
   }
+
+  function changeTheme(event: Event): void {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value === "system" || value === "light" || value === "dark") {
+      theme.set(value);
+    }
+  }
 </script>
 
-{#if !daemon.connected}
-  <div class="settings">
-    <section class="state">
-      {#if daemon.loading}
-        <p class="muted">Connecting to the daemon...</p>
-      {:else}
-        <p class="notice error">The daemon is not running, so the settings are unavailable.</p>
-        <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button
-        >
-      {/if}
-    </section>
+{#snippet appearance()}
+  <section class="section">
+    <h3 class="section-title">Appearance</h3>
+    <div class="list">
+      <label class="form-row">
+        <span class="label">Theme</span>
+        <select aria-label="Theme" value={theme.mode} onchange={changeTheme}>
+          <option value="system">Auto</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+    </div>
+  </section>
+{/snippet}
 
-    <section class="panel">
-      <h3>Startup</h3>
-      <label class="toggle">
+{#snippet startup()}
+  <section class="section">
+    <h3 class="section-title">Startup</h3>
+    <div class="list">
+      <label class="toggle form-row">
         <input
           type="checkbox"
           checked={loginEnabled}
@@ -387,23 +401,42 @@
           <small>{loginHint}</small>
         </span>
       </label>
+    </div>
+  </section>
+{/snippet}
+
+<div class="settings">
+  {#if !daemon.connected}
+    <section class="state">
+      {#if daemon.loading}
+        <p class="muted">Connecting to the daemon...</p>
+      {:else}
+        <p class="notice error">The daemon is not running, so the settings are unavailable.</p>
+        <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button
+        >
+      {/if}
     </section>
-  </div>
-{:else}
-  <div class="settings">
+
+    {@render appearance()}
+    {@render startup()}
+  {:else}
     {#if notice}
       <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
         {notice.text}
       </p>
     {/if}
 
-    <section class="panel">
-      <h3>This device</h3>
-      <p class="muted mono">{shortDeviceID(daemon.deviceID)}</p>
-      <div class="inline">
-        <label class="field grow">
-          <span>Device name</span>
+    <section class="section">
+      <h3 class="section-title">
+        <span class="grow">This Mac</span>
+        <span class="mono count">{shortDeviceID(daemon.deviceID)}</span>
+      </h3>
+      <div class="list">
+        <div class="form-row">
+          <label class="label" for="device-name">Device name</label>
           <input
+            id="device-name"
+            class="name-input"
             type="text"
             bind:value={name}
             maxlength="128"
@@ -412,127 +445,145 @@
               if (event.key === "Enter") void saveName();
             }}
           />
-          <small>Peers see this name. They learn it the next time they connect.</small>
-        </label>
-        <button
-          class="button primary"
-          type="button"
-          onclick={() => void saveName()}
-          disabled={busy || !loaded}
-        >
-          Save
-        </button>
-      </div>
-
-      <label class="toggle">
-        <input
-          type="checkbox"
-          checked={requireConfirmation}
-          disabled={busy || !loaded}
-          onchange={(event) => void setConfirmation("clipboard", event.currentTarget.checked)}
-        />
-        <span>
-          Ask before applying the clipboard of new devices
-          <small>
-            Items wait in the history and a prompt asks whether to apply them. This is the default
-            for devices you pair from now on; change it for a device on the Devices screen.
-          </small>
-        </span>
-      </label>
-
-      <label class="toggle">
-        <input
-          type="checkbox"
-          checked={requireFileConfirmation}
-          disabled={busy || !loaded}
-          onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
-        />
-        <span>
-          Ask before accepting files from new devices
-          <small>
-            Nothing is downloaded until you accept the files in the prompt or on the Requests
-            screen.
-          </small>
-        </span>
-      </label>
-    </section>
-
-    <section class="panel">
-      <h3>Received files</h3>
-      <p class="muted">Files that other devices send are saved in this folder.</p>
-      <p class="mono path">{downloadsDir}</p>
-      <div class="toolbar">
-        <button
-          class="button"
-          type="button"
-          onclick={() => void chooseDownloadsDir()}
-          disabled={busy || !loaded}
-        >
-          Choose folder
-        </button>
-        <button
-          class="button"
-          type="button"
-          onclick={() => void saveDownloadsDir("")}
-          disabled={busy || !loaded}
-        >
-          Use default folder
-        </button>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h3>Friends</h3>
-      <label class="toggle">
-        <input
-          type="checkbox"
-          checked={friendsOn}
-          disabled={busy || !daemon.connected}
-          onchange={(event) => void setFriends(event.currentTarget.checked)}
-        />
-        <span>
-          Find friends
-          <small>
-            {#if friendsOn}
-              Searching for {friendsLeft}. Turn it on on the other device too; the search stops by
-              itself.
-            {:else}
-              Both devices have to turn it on. The search stops by itself after 15 minutes.
-            {/if}
-          </small>
-        </span>
-      </label>
-    </section>
-
-    <section class="panel">
-      <h3>Clipboard</h3>
-      <p class="muted">{daemon.pauseText}</p>
-      <div class="toolbar">
-        {#each pauses as option (option.choice)}
           <button
-            class="button small"
-            class:primary={option.choice === "off" && daemon.paused}
+            class="button"
             type="button"
-            onclick={() => void setPause(option.choice)}
+            onclick={() => void saveName()}
+            disabled={busy || !loaded}
           >
-            {option.label}
+            Save
           </button>
-        {/each}
+        </div>
+        <label class="toggle form-row">
+          <input
+            type="checkbox"
+            checked={requireConfirmation}
+            disabled={busy || !loaded}
+            onchange={(event) => void setConfirmation("clipboard", event.currentTarget.checked)}
+          />
+          <span>
+            Ask before applying the clipboard of new devices
+            <small>
+              Items wait in the history and a prompt asks whether to apply them. This is the default
+              for devices you pair from now on; change it for a device on the Devices screen.
+            </small>
+          </span>
+        </label>
+        <label class="toggle form-row">
+          <input
+            type="checkbox"
+            checked={requireFileConfirmation}
+            disabled={busy || !loaded}
+            onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
+          />
+          <span>
+            Ask before accepting files from new devices
+            <small>
+              Nothing is downloaded until you accept the files in the prompt or on the Requests
+              screen.
+            </small>
+          </span>
+        </label>
+      </div>
+      <p class="section-footer">Peers see this name. They learn it the next time they connect.</p>
+    </section>
+
+    {@render appearance()}
+
+    <section class="section">
+      <h3 class="section-title">Received Files</h3>
+      <div class="list">
+        <div class="form-row">
+          <span class="label">
+            Save to
+            <span class="mono path hint">{downloadsDir}</span>
+          </span>
+          <button
+            class="button"
+            type="button"
+            onclick={() => void saveDownloadsDir("")}
+            disabled={busy || !loaded}
+          >
+            Use default folder
+          </button>
+          <button
+            class="button"
+            type="button"
+            onclick={() => void chooseDownloadsDir()}
+            disabled={busy || !loaded}
+          >
+            Choose folder
+          </button>
+        </div>
+      </div>
+      <p class="section-footer">Files that other devices send are saved in this folder.</p>
+    </section>
+
+    <section class="section">
+      <h3 class="section-title">Friends</h3>
+      <div class="list">
+        <label class="toggle form-row">
+          <input
+            type="checkbox"
+            checked={friendsOn}
+            disabled={busy || !daemon.connected}
+            onchange={(event) => void setFriends(event.currentTarget.checked)}
+          />
+          <span>
+            Find friends
+            <small>
+              {#if friendsOn}
+                Searching for {friendsLeft}. Turn it on on the other device too; the search stops by
+                itself.
+              {:else}
+                Both devices have to turn it on. The search stops by itself after 15 minutes.
+              {/if}
+            </small>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="section">
+      <h3 class="section-title">Clipboard</h3>
+      <div class="list">
+        <div class="form-row">
+          <span class="label">{daemon.pauseText}</span>
+          <div class="toolbar">
+            {#each pauses as option (option.choice)}
+              <button
+                class="button small"
+                class:primary={option.choice === "off" && daemon.paused}
+                type="button"
+                onclick={() => void setPause(option.choice)}
+              >
+                {option.label}
+              </button>
+            {/each}
+          </div>
+        </div>
       </div>
     </section>
 
     {#if ttl}
-      <section class="panel">
-        <h3>History</h3>
-        <p class="muted">
-          How long this device keeps the items it copies. The lifetime is set on the item when it is
-          copied, so the items that already exist keep their own.
-        </p>
-        {#each ttlKinds as kind (kind.key)}
-          <div class="inline">
-            <label class="field grow">
-              <span>{kind.label}</span>
+      <section class="section">
+        <h3 class="section-title">
+          <span class="grow">History</span>
+          <button
+            class="button small"
+            type="button"
+            onclick={() => void resetTTL()}
+            disabled={busy}
+          >
+            Reset lifetimes
+          </button>
+        </h3>
+        <div class="list">
+          {#each ttlKinds as kind (kind.key)}
+            <label class="form-row">
+              <span class="label">{kind.label}</span>
               <input
+                class="short"
                 type="text"
                 value={ttlDrafts[kind.key]}
                 aria-label={`${kind.label} lifetime`}
@@ -543,47 +594,50 @@
                 }}
               />
             </label>
-          </div>
-        {/each}
-        <p class="muted">Days and hours are accepted, for example 7d or 24h, up to 365d.</p>
-        <div class="toolbar">
-          <button class="button" type="button" onclick={() => void resetTTL()} disabled={busy}>
-            Reset lifetimes
-          </button>
+          {/each}
         </div>
+        <p class="section-footer">
+          How long this device keeps the items it copies. The lifetime is set on the item when it is
+          copied, so the items that already exist keep their own. Days and hours are accepted, for
+          example 7d or 24h, up to 365d.
+        </p>
       </section>
     {/if}
 
     {#if policy}
       {@const table = policy}
-      <section class="panel">
-        <h3>Network policy</h3>
-        <p class="muted">
-          What arrives by itself on every kind of network. The limit applies to the items fetched
-          without asking.
-        </p>
+      <section class="section">
+        <h3 class="section-title">
+          <span class="grow">Network policy</span>
+          <button
+            class="button small"
+            type="button"
+            onclick={() => void resetPolicy()}
+            disabled={busy}
+          >
+            Reset to defaults
+          </button>
+        </h3>
         {#each conditions as condition (condition.key)}
-          <div class="policy">
-            <div class="policy-head">
-              <div>
+          <div class="list">
+            <label class="toggle form-row">
+              <input
+                type="checkbox"
+                aria-label={`${condition.label} relay`}
+                checked={table[condition.key].relay}
+                disabled={busy}
+                onchange={(event) => setRelay(condition.key, event.currentTarget.checked)}
+              />
+              <span class="relay-label">Relay</span>
+              <span>
                 <strong>{condition.label}</strong>
                 <small>{condition.hint}</small>
-              </div>
-              <label class="toggle">
-                <input
-                  type="checkbox"
-                  aria-label={`${condition.label} relay`}
-                  checked={table[condition.key].relay}
-                  disabled={busy}
-                  onchange={(event) => setRelay(condition.key, event.currentTarget.checked)}
-                />
-                <span>Relay</span>
-              </label>
-            </div>
+              </span>
+            </label>
             {#each kinds as kind (kind.key)}
               {@const cell = table[condition.key][kind.key]}
-              <div class="policy-cell">
-                <span class="policy-kind">{kind.label}</span>
+              <div class="form-row">
+                <span class="label">{kind.label}</span>
                 <select
                   value={cell.action}
                   aria-label={`${condition.label} ${kind.label} action`}
@@ -598,7 +652,7 @@
                   {/each}
                 </select>
                 <input
-                  class="policy-limit"
+                  class="short"
                   type="number"
                   min="1"
                   max="102400"
@@ -614,10 +668,14 @@
             {/each}
           </div>
         {/each}
-        <div class="inline">
-          <label class="field grow">
-            <span>Relay limit</span>
+        <div class="list">
+          <label class="form-row">
+            <span class="label">
+              Relay limit
+              <small>Items larger than this are not fetched over the relay.</small>
+            </span>
             <input
+              class="short"
               type="number"
               min="1"
               max="102400"
@@ -627,106 +685,46 @@
               disabled={busy}
               onchange={(event) => setRelayLimit(event.currentTarget.valueAsNumber)}
             />
-            <small>Items larger than this are not fetched over the relay.</small>
+            <span class="muted">MiB</span>
           </label>
-          <button class="button" type="button" onclick={() => void resetPolicy()} disabled={busy}>
-            Reset to defaults
-          </button>
         </div>
+        <p class="section-footer">
+          What arrives by itself on every kind of network. The limit applies to the items fetched
+          without asking.
+        </p>
       </section>
     {/if}
 
-    <section class="panel">
-      <h3>Startup</h3>
-      <label class="toggle">
-        <input
-          type="checkbox"
-          checked={loginEnabled}
-          disabled={busy || login === null || login.status === "unsupported"}
-          onchange={(event) => void setLogin(event.currentTarget.checked)}
-        />
-        <span>
-          Start Unison at login
-          <small>{loginHint}</small>
-        </span>
-      </label>
-    </section>
+    {@render startup()}
 
     <RelaySection />
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style>
   .settings {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 22px;
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
   }
 
-  .state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .inline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.5rem;
+  .name-input {
+    width: 220px;
   }
 
   .path {
     overflow-wrap: anywhere;
   }
 
-  .grow {
-    flex: 1 1 240px;
+  .short {
+    width: 80px;
   }
 
-  .policy {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem 0;
-    border-top: 1px solid var(--border, rgb(128 128 128 / 0.25));
-  }
-
-  .policy-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .policy-head small {
-    display: block;
-    color: var(--muted, inherit);
-    opacity: 0.75;
-  }
-
-  .policy-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .policy-kind {
-    flex: 1 1 120px;
-  }
-
-  .policy-limit {
-    width: 6rem;
-  }
-
-  .settings input[type="number"] {
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font: inherit;
-    font-size: 0.875rem;
-    color: var(--foreground);
-    background-color: var(--surface);
+  .relay-label {
+    font-size: 12px;
+    color: var(--muted);
   }
 </style>

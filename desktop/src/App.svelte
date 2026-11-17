@@ -18,20 +18,24 @@
   import Requests from "./lib/screens/Requests.svelte";
   import Settings from "./lib/screens/Settings.svelte";
   import Transfers from "./lib/screens/Transfers.svelte";
-  import { theme } from "./lib/theme.svelte";
+  import Icon, { type IconName } from "./lib/Icon.svelte";
+  import SasPanel from "./lib/pairing/SasPanel.svelte";
   import { onTrayAction, type TrayAction } from "./lib/tray";
   import { transfers } from "./lib/transfers.svelte";
 
   const sections = [
-    { id: "devices", label: "Devices" },
-    { id: "add", label: "Add device" },
-    { id: "requests", label: "Requests" },
-    { id: "history", label: "History" },
-    { id: "transfers", label: "Transfers" },
-    { id: "settings", label: "Settings" },
-  ] as const;
+    { id: "devices", label: "Devices", icon: "devices" },
+    { id: "add", label: "Add Device", icon: "add" },
+    { id: "requests", label: "Requests", icon: "requests" },
+    { id: "transfers", label: "Transfers", icon: "transfers" },
+    { id: "history", label: "History", icon: "history" },
+    { id: "settings", label: "Settings", icon: "settings" },
+  ] as const satisfies readonly { id: string; label: string; icon: IconName }[];
 
   type SectionID = (typeof sections)[number]["id"];
+
+  const navigation = sections.filter((section) => section.id !== "settings");
+  const settingsSection = sections[sections.length - 1];
 
   let active = $state<SectionID>("devices");
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
@@ -101,72 +105,78 @@
     return new Date(Number(value)).toLocaleTimeString();
   }
 
-  function changeTheme(event: Event): void {
-    const value = (event.currentTarget as HTMLSelectElement).value;
-    if (value === "system" || value === "light" || value === "dark") {
-      theme.set(value);
+  /** handleShortcut follows the keyboard shortcuts of a Mac app: Command-comma
+   * opens the settings and Command with a digit opens a section of the sidebar. */
+  function handleShortcut(event: KeyboardEvent): void {
+    if (!event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) {
+      return;
     }
+    if (event.key === ",") {
+      event.preventDefault();
+      active = "settings";
+      return;
+    }
+    const index = Number(event.key) - 1;
+    if (Number.isInteger(index) && index >= 0 && index < navigation.length) {
+      event.preventDefault();
+      active = navigation[index].id;
+    }
+  }
+
+  function trailing(id: SectionID): number {
+    if (id === "requests") {
+      return requests.pending;
+    }
+    if (id === "devices") {
+      return daemon.devices.length;
+    }
+    return 0;
   }
 </script>
 
+<svelte:window onkeydown={handleShortcut} />
+
 <div class="app">
-  <aside class="sidebar">
-    <h1>Unison</h1>
-    <nav>
-      {#each sections as section (section.id)}
-        <button
-          type="button"
-          class:active={section.id === active}
-          onclick={() => (active = section.id)}
-        >
-          {section.label}
-          {#if section.id === "add" && pairing.request}
-            <span class="badge confirm" aria-label="Pairing request waiting">!</span>
-          {/if}
-          {#if section.id === "requests" && requests.pending > 0}
-            <span class="badge confirm" aria-label="Requests waiting">{requests.pending}</span>
-          {/if}
-        </button>
+  <aside class="sidebar" data-tauri-drag-region>
+    <nav aria-label="Sections">
+      {#each navigation as section (section.id)}
+        {@render navItem(section)}
       {/each}
     </nav>
     <div class="sidebar-footer">
-      <label class="theme-picker">
-        Theme
-        <select aria-label="Theme" value={theme.mode} onchange={changeTheme}>
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
-      </label>
+      {@render navItem(settingsSection)}
       <DaemonStatus />
     </div>
   </aside>
 
   <main>
-    <header>
-      <h2>{current.label}</h2>
-      <div class="summary">
-        <span>{daemon.deviceName}</span>
-        <span>{daemon.onlinePeers} online</span>
-        <span class:paused={daemon.paused}>{daemon.pauseText}</span>
+    <header class="window-toolbar" data-tauri-drag-region>
+      <div class="titles">
+        <h1>{current.label}</h1>
+        {#if daemon.connected}
+          <span class="subtitle">
+            {daemon.deviceName} · {daemon.onlinePeers} online ·
+            <span class:paused={daemon.paused}>{daemon.pauseText}</span>
+          </span>
+        {/if}
       </div>
     </header>
 
-    {#if daemon.localNetworkBlocked}
-      <div class="notice error local-network" role="alert">
-        <p>
-          Unison has no access to the local network, so your devices cannot find this Mac. Allow
-          Unison in System Settings &gt; Privacy &amp; Security &gt; Local Network.
-        </p>
-        <button type="button" onclick={openSettings}>Open settings</button>
-      </div>
-    {/if}
+    <div class="content" class:bleed={active === "devices"}>
+      {#if daemon.localNetworkBlocked}
+        <div class="banner" role="alert">
+          <p>
+            Unison has no access to the local network, so your devices cannot find this Mac. Allow
+            Unison in System Settings &gt; Privacy &amp; Security &gt; Local Network.
+          </p>
+          <button class="button" type="button" onclick={openSettings}>Open Settings</button>
+        </div>
+      {/if}
 
-    {#if daemon.connected && daemon.error}
-      <p class="error">{daemon.error}</p>
-    {/if}
+      {#if daemon.connected && daemon.error}
+        <p class="error">{daemon.error}</p>
+      {/if}
 
-    <div class="screen">
       {#if active === "devices"}
         <Devices onAdd={() => (active = "add")} />
       {:else if active === "add"}
@@ -180,23 +190,63 @@
       {:else}
         <Settings />
       {/if}
-    </div>
 
-    <section class="activity">
-      <h3>Activity</h3>
-      {#if daemon.activity.length === 0}
-        <p class="muted">No events yet.</p>
-      {:else}
-        <ul>
-          {#each daemon.activity as event (event)}
-            <li>
-              <span class="kind">{eventKindLabel(event.kind)}</span>
-              <span class="device">{event.name || "This device"}</span>
-              <time>{clock(event.atUnixMs)}</time>
-            </li>
-          {/each}
-        </ul>
+      {#if active !== "devices"}
+        <details class="activity">
+          <summary>Activity</summary>
+          {#if daemon.activity.length === 0}
+            <p class="muted">No events yet.</p>
+          {:else}
+            <ul class="list">
+              {#each daemon.activity as event (event)}
+                <li>
+                  <span class="kind">{eventKindLabel(event.kind)}</span>
+                  <span class="device">{event.name || "This device"}</span>
+                  <time>{clock(event.atUnixMs)}</time>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </details>
       {/if}
-    </section>
+    </div>
   </main>
 </div>
+
+{#if pairing.request}
+  <div class="sheet-backdrop">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Pairing request">
+      <SasPanel
+        request={pairing.request}
+        busy={pairing.busy}
+        confirmed={pairing.confirmed}
+        onConfirm={() => void pairing.confirm()}
+        onReject={() => void pairing.reject()}
+      />
+      {#if pairing.error}
+        <p class="notice error">{pairing.error}</p>
+      {/if}
+    </div>
+  </div>
+{/if}
+
+{#snippet navItem(section: (typeof sections)[number])}
+  {@const count = trailing(section.id)}
+  <button
+    type="button"
+    class="nav-item"
+    class:active={section.id === active}
+    aria-current={section.id === active ? "page" : undefined}
+    onclick={() => (active = section.id)}
+  >
+    <Icon name={section.icon} />
+    <span class="label">{section.label}</span>
+    {#if section.id === "requests" && count > 0}
+      <span class="pill" aria-label="Requests waiting">{count}</span>
+    {:else if section.id === "add" && pairing.request}
+      <span class="pill" aria-label="Pairing request waiting">1</span>
+    {:else if count > 0}
+      <span class="trailing">{count}</span>
+    {/if}
+  </button>
+{/snippet}

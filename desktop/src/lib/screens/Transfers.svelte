@@ -95,7 +95,7 @@
     <section class="panel send">
       <div class="panel-header">
         <h3>Send files</h3>
-        <button class="button small" type="button" onclick={() => void choose()} disabled={picking}>
+        <button class="button" type="button" onclick={() => void choose()} disabled={picking}>
           {picking ? "Picking..." : "Choose files"}
         </button>
       </div>
@@ -113,7 +113,7 @@
         {:else}
           <div class="targets">
             {#each online as device (device.deviceId)}
-              <label class="toggle">
+              <label class="check">
                 <input
                   type="checkbox"
                   checked={targets.includes(device.deviceId)}
@@ -159,9 +159,9 @@
       <p class="notice error">{transfers.error}</p>
     {/if}
 
-    <section class="group">
-      <div class="panel-header">
-        <h3>Active <span class="count">{active.length}</span></h3>
+    <section class="section">
+      <div class="section-title">
+        <h3 class="grow">In Progress <span class="count">{active.length}</span></h3>
         <button
           class="button ghost small"
           type="button"
@@ -174,7 +174,7 @@
       {#if active.length === 0}
         <p class="empty">No transfer is running.</p>
       {:else}
-        <ul>
+        <ul class="list">
           {#each active as transfer (transfer.id)}
             <li class="transfer">
               <div class="head">
@@ -246,12 +246,12 @@
       {/if}
     </section>
 
-    <section class="group">
-      <h3>Finished <span class="count">{finished.length}</span></h3>
+    <section class="section">
+      <h3 class="section-title">Finished <span class="count">{finished.length}</span></h3>
       {#if finished.length === 0}
         <p class="empty">No finished transfer yet.</p>
       {:else}
-        <ul>
+        <ul class="list">
           {#each finished as transfer (transfer.id)}
             <li class="transfer">
               <div class="head">
@@ -287,66 +287,18 @@
   .transfers {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-  }
-
-  .state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .send {
-    gap: 0.5rem;
+    gap: 22px;
   }
 
   .targets {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-  }
-
-  .group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    gap: 6px 16px;
   }
 
   h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin: 0;
-    font-size: 0.9375rem;
+    font-size: 13px;
     font-weight: 600;
-  }
-
-  .count {
-    padding: 0.05rem 0.4rem;
-    border-radius: 999px;
-    color: var(--muted);
-    background-color: var(--surface-soft);
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  ul {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .transfer {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 10px;
   }
 
   .head {
@@ -354,14 +306,20 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 8px;
   }
 
   .identity {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .identity strong {
+    font-weight: 500;
+    overflow-wrap: anywhere;
   }
 
   .badge.incoming {
@@ -370,15 +328,15 @@
   }
 
   .progress {
-    height: 6px;
-    border-radius: 999px;
-    background-color: var(--surface-soft);
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--fill);
     overflow: hidden;
   }
 
   .progress div {
     height: 100%;
-    border-radius: 999px;
+    border-radius: 2px;
     background-color: var(--accent);
     transition: width 0.2s ease;
   }
@@ -390,8 +348,12 @@
   .files {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem 0.75rem;
+    gap: 2px 12px;
     word-break: break-all;
+  }
+
+  .toolbar:empty {
+    display: none;
   }
 
   @keyframes slide {

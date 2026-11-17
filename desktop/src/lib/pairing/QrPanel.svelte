@@ -90,10 +90,10 @@
   .code {
     display: grid;
     place-items: center;
-    padding: 0.75rem;
-    border: 1px solid var(--border);
+    padding: 12px;
     border-radius: 12px;
     background-color: #ffffff;
+    box-shadow: var(--box-shadow);
   }
 
   .code :global(svg) {
@@ -115,8 +115,7 @@
   }
 
   summary {
-    cursor: pointer;
     color: var(--muted);
-    font-size: 0.8125rem;
+    font-size: 12px;
   }
 </style>

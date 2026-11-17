@@ -41,7 +41,7 @@
   </section>
 {:else}
   <div class="requests">
-    <div class="toolbar">
+    <div class="toolbar intro">
       <p class="muted">
         Files that Friends offer, and files of the devices you ask about, wait here until you
         answer. Nothing is written to this device before you accept.
@@ -75,7 +75,7 @@
         {requests.loading ? "Loading the requests..." : "No file waits for your answer."}
       </p>
     {:else}
-      <ul>
+      <ul class="list">
         {#each requests.requests as request (request.id)}
           <li class="request">
             <div class="head">
@@ -99,7 +99,7 @@
 
             <p class="meta muted">Arrived {formatDateTime(request.createdAtUnixMs)}</p>
 
-            <div class="toolbar">
+            <div class="toolbar answer">
               <button
                 class="button primary small"
                 type="button"
@@ -128,41 +128,15 @@
   .requests {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 16px;
   }
 
-  .state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .toolbar {
+  .intro {
     align-items: center;
   }
 
-  .toolbar p {
+  .intro p {
     flex: 1 1 260px;
-    margin: 0;
-  }
-
-  ul {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .request {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 10px;
   }
 
   .head {
@@ -170,25 +144,40 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 8px;
   }
 
   .identity {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .identity strong {
+    font-weight: 600;
+  }
+
+  .files {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    list-style: none;
+    background-color: var(--surface-soft);
   }
 
   .files li {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
+    justify-content: space-between;
+    gap: 8px;
     word-break: break-all;
   }
 
-  .meta {
-    margin: 0;
+  .toolbar.answer {
+    justify-content: flex-end;
   }
 </style>

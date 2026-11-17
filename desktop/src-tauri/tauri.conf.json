@@ -13,10 +13,16 @@
     "windows": [
       {
         "title": "Unison",
-        "width": 1000,
-        "height": 700,
-        "minWidth": 800,
-        "minHeight": 600
+        "width": 1080,
+        "height": 720,
+        "minWidth": 860,
+        "minHeight": 560,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 20,
+          "y": 22
+        }
       }
     ],
     "security": {

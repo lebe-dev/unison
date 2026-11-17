@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "../Icon.svelte";
   import { PairingMethod } from "../api/gen/unison/local/v1/local_pb";
   import type { PairingRequest } from "../pairing.svelte";
   import { groupDigits, sasEmoji } from "./countdown";
@@ -28,12 +29,17 @@
 </script>
 
 <section class="sas" aria-live="polite">
-  <h3>{scanned ? "A device scanned the square" : "Compare the code"}</h3>
-  <p class="lead">
-    <strong>{name}</strong>
-    <span class="muted">({platformLabel(request.platform)})</span>
-    wants to pair as <strong>{roleLabel(request.role)}</strong>.
-  </p>
+  <div class="head">
+    <span class="badge-icon"><Icon name="shield" size={28} stroke={1.2} /></span>
+    <div class="head-text">
+      <h3>{scanned ? "A device scanned the square" : "Compare the code"}</h3>
+      <p class="lead">
+        <strong>{name}</strong>
+        <span class="muted">({platformLabel(request.platform)})</span>
+        wants to pair as <strong>{roleLabel(request.role)}</strong>.
+      </p>
+    </div>
+  </div>
   {#if scanned}
     <p class="muted">
       The device read the square of this one. Accept only if you started the pairing on it.
@@ -60,11 +66,16 @@
     <p class="notice info">Confirmed. Waiting for the other device to confirm as well.</p>
   {/if}
 
-  <div class="toolbar">
-    <button class="button primary" type="button" onclick={onConfirm} disabled={busy || confirmed}>
+  <div class="toolbar actions">
+    <button class="button large" type="button" onclick={onReject} disabled={busy}>Reject</button>
+    <button
+      class="button primary large"
+      type="button"
+      onclick={onConfirm}
+      disabled={busy || confirmed}
+    >
       {scanned ? "Add device" : "Confirm"}
     </button>
-    <button class="button danger" type="button" onclick={onReject} disabled={busy}> Reject </button>
   </div>
 </section>
 
@@ -72,41 +83,68 @@
   .sas {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 14px;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .badge-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    color: #ffffff;
+    background-color: var(--accent);
+  }
+
+  .head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   h3 {
-    margin: 0;
-    font-size: 0.9375rem;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
   }
 
   .lead {
-    margin: 0;
+    color: var(--secondary);
   }
 
   .code {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1.25rem;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background-color: var(--surface-soft);
+    gap: 10px;
+    padding: 20px 16px;
+    border-radius: 10px;
+    background-color: var(--surface);
+    box-shadow: var(--box-shadow);
     text-align: center;
   }
 
   .digits {
-    font-size: clamp(2.5rem, 8vw, 3.5rem);
+    font-size: 36px;
     font-weight: 600;
-    letter-spacing: 0.35rem;
+    letter-spacing: 0.3rem;
   }
 
   .emoji {
     display: flex;
     justify-content: center;
-    gap: 0.75rem;
-    font-size: 2.5rem;
+    gap: 12px;
+    font-size: 32px;
     line-height: 1.2;
+  }
+
+  .actions {
+    justify-content: flex-end;
   }
 </style>

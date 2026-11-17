@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "../Icon.svelte";
   import { onDestroy, onMount } from "svelte";
   import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
   import {
@@ -48,6 +49,7 @@
 <main class="prompt">
   {#if current}
     <header>
+      <span class="app-icon"><Icon name={current.kind === "files" ? "file" : "clipboard"} /></span>
       <span class="title"
         >{current.kind === "files" ? "Files" : "Clipboard"} from {current.device}</span
       >
@@ -94,29 +96,40 @@
   :global(body) {
     margin: 0;
     overflow: hidden;
-    background-color: var(--surface);
+    background-color: var(--toolbar);
   }
 
   .prompt {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 10px;
     box-sizing: border-box;
     height: 100vh;
-    padding: 1rem 1.1rem;
+    padding: 14px 16px;
     color: var(--foreground);
-    background-color: var(--surface);
-    font-size: 0.875rem;
+    background-color: var(--toolbar);
   }
 
   header {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .app-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    color: #ffffff;
+    background-color: var(--accent);
   }
 
   .title {
+    flex: 1;
     overflow: hidden;
     font-weight: 600;
     text-overflow: ellipsis;
@@ -126,7 +139,7 @@
   .count {
     flex-shrink: 0;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 11px;
   }
 
   .question {
@@ -134,18 +147,19 @@
     margin: 0;
     overflow: hidden;
     overflow-wrap: anywhere;
+    color: var(--secondary);
   }
 
   .size {
     display: block;
-    margin-top: 0.2rem;
+    margin-top: 2px;
     color: var(--muted);
-    font-size: 0.8125rem;
+    font-size: 12px;
   }
 
   .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.5rem;
+    gap: 8px;
   }
 </style>

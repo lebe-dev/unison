@@ -69,20 +69,25 @@
   ul {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
     margin: 0;
     padding: 0;
     list-style: none;
+    border-radius: 8px;
+    background-color: var(--surface-soft);
   }
 
   li {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    gap: 12px;
+    min-height: 36px;
+    padding: 4px 10px;
+    box-sizing: border-box;
+  }
+
+  li + li {
+    border-top: 1px solid var(--separator);
   }
 
   .addr {
