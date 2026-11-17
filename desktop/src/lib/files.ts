@@ -15,3 +15,13 @@ export function pickFiles(): Promise<string[]> {
 export function pickFolder(): Promise<string | null> {
   return invoke<string | null>("pick_folder");
 }
+
+/** showInFolder reveals the files in the file manager of the system. */
+export function showInFolder(paths: string[]): Promise<void> {
+  return invoke("show_in_folder", { paths });
+}
+
+/** openFiles opens the files with the apps the system keeps for them. */
+export function openFiles(paths: string[]): Promise<void> {
+  return invoke("open_files", { paths });
+}

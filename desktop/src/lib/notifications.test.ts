@@ -9,6 +9,7 @@ import {
   TransferSchema,
   TransferState,
 } from "./api/gen/unison/local/v1/local_pb";
+import { openFiles, showInFolder } from "./files";
 import { history } from "./history.svelte";
 import { notifications } from "./notifications.svelte";
 import { notify, onNotificationAction } from "./notify";
@@ -44,10 +45,17 @@ vi.mock("./history.svelte", () => ({
   history: { apply: vi.fn() },
 }));
 
+vi.mock("./files", () => ({
+  showInFolder: vi.fn(),
+  openFiles: vi.fn(),
+}));
+
 const notifyMock = vi.mocked(notify);
 const onActionMock = vi.mocked(onNotificationAction);
 const decideMock = vi.mocked(requests.decide);
 const applyMock = vi.mocked(history.apply);
+const showInFolderMock = vi.mocked(showInFolder);
+const openFilesMock = vi.mocked(openFiles);
 
 let performed: ((action: { actionId: string; extra: Record<string, unknown> }) => void) | null =
   null;
@@ -57,6 +65,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   performed = null;
   notifyMock.mockResolvedValue(true);
+  showInFolderMock.mockResolvedValue(undefined);
+  openFilesMock.mockResolvedValue(undefined);
   onActionMock.mockImplementation((handler) => {
     performed = handler;
     return Promise.resolve(() => {});
@@ -183,6 +193,23 @@ describe("notifications of daemon events", () => {
     });
   });
 
+  it("offers to show and open the received files", async () => {
+    await notifications.start();
+
+    harness.handlers[0](
+      create(EventSchema, {
+        kind: EventKind.TRANSFER,
+        transfer: transfer(TransferState.DONE, TransferDirection.INCOMING, "", [
+          "/Users/mac/Downloads/report.pdf",
+        ]),
+      }),
+    );
+
+    const request = notifyMock.mock.calls[0][0];
+    expect(request.actions?.map((action) => action.title)).toEqual(["Show in folder", "Open"]);
+    expect(request.extra).toEqual({ paths: ["/Users/mac/Downloads/report.pdf"] });
+  });
+
   it("announces a sent transfer", async () => {
     await notifications.start();
 
@@ -238,16 +265,39 @@ describe("answers from the notifications", () => {
     expect(applyMock).toHaveBeenCalledWith("item-1");
   });
 
+  it("shows the received files in the folder", async () => {
+    await notifications.start();
+
+    performed?.({ actionId: "show-in-folder", extra: { paths: ["/Users/mac/a.pdf"] } });
+
+    expect(showInFolderMock).toHaveBeenCalledWith(["/Users/mac/a.pdf"]);
+  });
+
+  it("opens the received files", async () => {
+    await notifications.start();
+
+    performed?.({ actionId: "open", extra: { paths: ["/Users/mac/a.pdf", "/Users/mac/b.pdf"] } });
+
+    expect(openFilesMock).toHaveBeenCalledWith(["/Users/mac/a.pdf", "/Users/mac/b.pdf"]);
+  });
+
   it("ignores an action without a subject", async () => {
     await notifications.start();
 
     performed?.({ actionId: "apply", extra: {} });
+    performed?.({ actionId: "open", extra: {} });
 
     expect(applyMock).not.toHaveBeenCalled();
+    expect(openFilesMock).not.toHaveBeenCalled();
   });
 });
 
-function transfer(state: TransferState, direction: TransferDirection, error = "") {
+function transfer(
+  state: TransferState,
+  direction: TransferDirection,
+  error = "",
+  paths: string[] = [],
+) {
   return create(TransferSchema, {
     id: "t1",
     direction,
@@ -256,5 +306,6 @@ function transfer(state: TransferState, direction: TransferDirection, error = ""
     error,
     files: [{ name: "report.pdf", size: 2048n }],
     totalBytes: 2048n,
+    paths,
   });
 }

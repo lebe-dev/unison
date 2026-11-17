@@ -1,5 +1,6 @@
 pub mod agent;
 mod daemon;
+mod files;
 mod prompt;
 mod proxy;
 mod streams;
@@ -209,6 +210,8 @@ pub fn run() {
             api_stream_cancel,
             daemon_status,
             open_local_network_settings,
+            files::show_in_folder,
+            files::open_files,
             login_item_status,
             set_login_item,
             tray::set_tray_state,

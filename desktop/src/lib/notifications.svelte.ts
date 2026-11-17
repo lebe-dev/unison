@@ -7,6 +7,7 @@ import {
   type Transfer,
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
+import { openFiles, showInFolder } from "./files";
 import { formatBytes, kindLabel, transferFilesText } from "./format";
 import { history } from "./history.svelte";
 import {
@@ -30,6 +31,12 @@ const REQUEST_ACTIONS: NotificationAction[] = [
 
 /** Button of the notification of an item that waits for confirmation. */
 const APPLY_ACTIONS: NotificationAction[] = [{ id: "apply", title: "Apply" }];
+
+/** Buttons of the notification of the received files. */
+const RECEIVED_ACTIONS: NotificationAction[] = [
+  { id: "show-in-folder", title: "Show in folder" },
+  { id: "open", title: "Open" },
+];
 
 /**
  * NotificationStore shows the OS notifications of the daemon events: an
@@ -122,7 +129,24 @@ class NotificationStore {
           void history.apply(id);
         }
         break;
+      case "show-in-folder":
+        this.#handFiles(action, showInFolder);
+        break;
+      case "open":
+        this.#handFiles(action, openFiles);
+        break;
     }
+  }
+
+  /** #handFiles hands the files of the notification to the shell. */
+  #handFiles(action: PerformedAction, run: (paths: string[]) => Promise<void>): void {
+    const paths = extraPaths(action.extra);
+    if (paths.length === 0) {
+      return;
+    }
+    void run(paths).catch((error: unknown) => {
+      console.warn("the files of the notification cannot be opened", error);
+    });
   }
 
   #onTransfer(transfer: Transfer): void {
@@ -140,16 +164,16 @@ class NotificationStore {
           extra: { id: transfer.id },
         });
         break;
-      case TransferState.DONE:
+      case TransferState.DONE: {
+        const incoming = transfer.direction === TransferDirection.INCOMING;
+        const received = incoming && transfer.paths.length > 0;
         this.#show(`transfer:${transfer.id}:done`, {
-          title:
-            transfer.direction === TransferDirection.INCOMING ? "Files received" : "Files sent",
-          body:
-            transfer.direction === TransferDirection.INCOMING
-              ? `${files} from ${peer} is saved.`
-              : `${files} is sent to ${peer}.`,
+          title: incoming ? "Files received" : "Files sent",
+          body: incoming ? `${files} from ${peer} is saved.` : `${files} is sent to ${peer}.`,
+          ...(received ? { actions: RECEIVED_ACTIONS, extra: { paths: transfer.paths } } : {}),
         });
         break;
+      }
       case TransferState.FAILED:
         this.#show(`transfer:${transfer.id}:failed`, {
           title: "Transfer failed",
@@ -175,6 +199,15 @@ class NotificationStore {
 function extraID(extra: Record<string, unknown>): string {
   const value = extra.id;
   return typeof value === "string" ? value : "";
+}
+
+/** extraPaths reads the files of the subject of a notification. */
+function extraPaths(extra: Record<string, unknown>): string[] {
+  const value = extra.paths;
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((path): path is string => typeof path === "string" && path !== "");
 }
 
 /** notifications is the notification state of the app. */
