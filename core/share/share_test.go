@@ -8,61 +8,6 @@ import (
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
-func TestSafeName(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{name: "plain", in: "report.txt", want: "report.txt"},
-		{name: "traversal", in: "../../etc/passwd", want: "passwd"},
-		{name: "absolute", in: "/etc/passwd", want: "passwd"},
-		{name: "backslash", in: `..\..\windows\system32\hosts`, want: "hosts"},
-		{name: "control", in: "a\x00b.txt", want: "a-b.txt"},
-		{name: "empty", in: "", want: "file"},
-		{name: "dots", in: "..", want: "file"},
-		{name: "trailing dot", in: "name.", want: "name"},
-		{name: "trailing space", in: "name ", want: "name"},
-		{name: "reserved", in: "CON", want: "_CON"},
-		{name: "reserved with extension", in: "nul.txt", want: "_nul.txt"},
-		{name: "reserved inside", in: "console.txt", want: "console.txt"},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if got := SafeName(test.in); got != test.want {
-				t.Fatalf("SafeName(%q) = %q, want %q", test.in, got, test.want)
-			}
-		})
-	}
-}
-
-func TestSafeNameLength(t *testing.T) {
-	name := SafeName(strings.Repeat("a", MaxNameLength*2) + ".bin")
-	if len(name) > MaxNameLength {
-		t.Fatalf("name of %d bytes, limit is %d", len(name), MaxNameLength)
-	}
-}
-
-func TestNumberedName(t *testing.T) {
-	tests := []struct {
-		attempt int
-		want    string
-	}{
-		{attempt: 0, want: "photo.jpg"},
-		{attempt: 1, want: "photo (1).jpg"},
-		{attempt: 2, want: "photo (2).jpg"},
-	}
-	for _, test := range tests {
-		if got := numberedName("photo.jpg", test.attempt); got != test.want {
-			t.Fatalf("attempt %d gives %q, want %q", test.attempt, got, test.want)
-		}
-	}
-	if got := numberedName("archive.tar.gz", 1); got != "archive.tar (1).gz" {
-		t.Fatalf("archive name is %q", got)
-	}
-}
-
 func TestFilesOfRejectsBadOffers(t *testing.T) {
 	hash := make([]byte, 32)
 	hash[0] = 1

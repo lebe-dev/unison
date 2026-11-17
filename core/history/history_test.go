@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"lukechampine.com/blake3"
+
 	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/model"
 )
@@ -450,4 +452,51 @@ func (p *memoryPayloads) putIfMissing(hash [32]byte, data []byte) error {
 	defer p.mu.Unlock()
 	p.blobs[hash] = data
 	return nil
+}
+
+// TestFetchIntoDirectoryKeepsUserFiles checks that a file name chosen by a peer
+// never replaces a file the directory already holds, and cannot leave it.
+func TestFetchIntoDirectoryKeepsUserFiles(t *testing.T) {
+	f := newFixture(t, testDevice(1))
+
+	data := []byte("from a peer")
+	item := model.ClipItem{
+		ID:        testID(1),
+		Origin:    f.origin,
+		Seq:       1,
+		CreatedAt: testTime,
+		ExpiresAt: testTime.Add(time.Hour),
+		Kind:      model.KindFiles,
+		Source:    model.SourceClipboard,
+		Representations: []model.Representation{
+			{MIME: "application/octet-stream", Size: uint64(len(data)), Hash: blake3.Sum256(data), Inline: data, FileName: "notes.txt"},
+			{MIME: "application/octet-stream", Size: uint64(len(data)), Hash: blake3.Sum256(data), Inline: data, FileName: ".."},
+		},
+	}
+	f.append(item)
+
+	dir := t.TempDir()
+	existing := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(existing, []byte("mine"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	_, written, err := f.store.Fetch(context.Background(), item.ID, dir)
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if got, err := os.ReadFile(existing); err != nil || string(got) != "mine" {
+		t.Fatalf("the file of the user changed: %q, %v", got, err)
+	}
+	if len(written) != 2 {
+		t.Fatalf("written files are %v", written)
+	}
+	for _, path := range written {
+		if filepath.Dir(path) != dir {
+			t.Fatalf("the payload %s left the directory %s", path, dir)
+		}
+	}
+	if written[0] != filepath.Join(dir, "notes (1).txt") {
+		t.Fatalf("the first payload went to %s", written[0])
+	}
 }

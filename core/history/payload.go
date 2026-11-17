@@ -7,8 +7,9 @@ import (
 	"io"
 	"mime"
 	"os"
-	"path/filepath"
+	"strings"
 
+	"github.com/lebe-dev/unison/core/download"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
 )
@@ -153,11 +154,11 @@ func (s *Store) writePayloads(ctx context.Context, item model.ClipItem, path str
 
 	written := make([]string, 0, len(targets))
 	for i, rep := range targets {
-		name := path
-		if directory {
-			name = filepath.Join(path, payloadName(rep, i))
+		name, file, err := openTarget(path, directory, payloadName(rep, i))
+		if err != nil {
+			return written, err
 		}
-		if err := s.writePayload(ctx, rep, name); err != nil {
+		if err := s.writePayload(ctx, rep, file); err != nil {
 			return written, err
 		}
 		written = append(written, name)
@@ -165,14 +166,31 @@ func (s *Store) writePayloads(ctx context.Context, item model.ClipItem, path str
 	return written, nil
 }
 
-// writePayload writes one payload to name.
-func (s *Store) writePayload(ctx context.Context, rep model.Representation, name string) error {
-	//nolint:gosec // The name is built from the payload directory and the sanitized file name.
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
-	if err != nil {
-		return fmt.Errorf("history: create payload file: %w", err)
+// openTarget opens the file of one payload. Inside a directory the payload
+// gets a new file, so a name chosen by a peer never replaces a file of the
+// user; a path the user named is replaced.
+func openTarget(path string, directory bool, name string) (string, *os.File, error) {
+	if directory {
+		target, file, err := download.Create(path, name)
+		if err != nil {
+			return "", nil, fmt.Errorf("history: %w", err)
+		}
+		return target, file, nil
 	}
+	//nolint:gosec // The path is the destination the user asked for.
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	if err != nil {
+		return "", nil, fmt.Errorf("history: create payload file: %w", err)
+	}
+	if err := download.Mark(path); err != nil {
+		_ = file.Close()
+		return "", nil, err
+	}
+	return path, file, nil
+}
 
+// writePayload writes one payload into file and closes it.
+func (s *Store) writePayload(ctx context.Context, rep model.Representation, file *os.File) error {
 	written, err := s.copyPayload(ctx, rep, file)
 	closeErr := file.Close()
 	if err != nil {
@@ -264,8 +282,8 @@ func primaryPayload(item model.ClipItem) (model.Representation, bool) {
 
 // payloadName returns the file name of one payload.
 func payloadName(rep model.Representation, index int) string {
-	if name := filepath.Base(rep.FileName); rep.FileName != "" && name != "." && name != "/" {
-		return name
+	if strings.TrimSpace(rep.FileName) != "" {
+		return download.SafeName(rep.FileName)
 	}
 	extension := ".bin"
 	if types, err := mime.ExtensionsByType(rep.MIME); err == nil && len(types) > 0 {

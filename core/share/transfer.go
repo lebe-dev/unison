@@ -38,8 +38,6 @@ const (
 	maxAttempts = 3
 	// progressEvery is the number of chunks between two progress events.
 	progressEvery = 16
-	// maxDownloadAttempts bounds the lookups of a free file name.
-	maxDownloadAttempts = 100
 )
 
 // Errors reported by the service.
