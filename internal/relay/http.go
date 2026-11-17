@@ -23,7 +23,7 @@ func (s *Server) listenHTTP() error {
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /readyz", s.handleReady)
 	s.httpServer = &http.Server{
-		Handler:           mux,
+		Handler:           s.recoverHandler(mux),
 		ReadHeaderTimeout: httpHeaderTimeout,
 	}
 
@@ -38,6 +38,27 @@ func (s *Server) listenHTTP() error {
 		}
 	}()
 	return nil
+}
+
+// recoverHandler reports a panic of a handler and answers with an error, so a
+// bug in one request neither ends the process silently nor goes unreported.
+func (s *Server) recoverHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			value := recover()
+			if value == nil {
+				return
+			}
+			s.log.Error("request handler panicked",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"panic", value,
+			)
+			observability.CapturePanic(value)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}()
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleMetrics renders the counters in the Prometheus text format.

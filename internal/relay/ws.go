@@ -29,7 +29,7 @@ func (s *Server) listenWS(cert tls.Certificate) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc(WSPath, s.handleWS)
 	s.wsServer = &http.Server{
-		Handler:           mux,
+		Handler:           s.recoverHandler(mux),
 		ReadHeaderTimeout: httpHeaderTimeout,
 	}
 
