@@ -207,7 +207,6 @@
     <string name="pairing_quiet">No devices found on this network yet.</string>
     <string name="pairing_quiet_hint">Open the pairing window on the other device. If it is open, this network may keep the devices apart: connect both to another network, or to the same VPN.</string>
     <string name="pairing_quiet_detail">Seconds without a pairing announcement: %1$d.\nThis window listens at %2$s.</string>
-    <string name="device_unreachable">Not reachable</string>
     <string name="device_unreachable_summary">%1$s does not answer.</string>
     <string name="device_unreachable_hint">It may be turned off. If it is on, check that both devices are on the same network and that the network does not keep its devices apart.</string>
     <string name="device_unreachable_since">Not answering since %1$s.</string>

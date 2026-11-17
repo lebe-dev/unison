@@ -2,6 +2,8 @@ package app.unison.ui.screens
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,12 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -33,17 +37,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.clipboard.ClipboardDraft
 import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
-import app.unison.ui.NetworkIssueCard
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
 import app.unison.ui.networkLabel
@@ -257,25 +262,6 @@ private fun DeviceSection(
 }
 
 /** One paired device with its live connection state and its settings. */
-/** A paired device that does not answer, with the addresses it was tried on. */
-@Composable
-private fun UnreachableCard(device: Local.Device) {
-    val timeFormat = DateFormat.getTimeFormat(LocalContext.current)
-    val since = stringResource(
-        R.string.device_unreachable_since,
-        timeFormat.format(Date(device.unreachableSinceUnixMs)),
-    )
-    NetworkIssueCard(
-        summary = stringResource(
-            R.string.device_unreachable_summary,
-            device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
-        ),
-        hint = stringResource(R.string.device_unreachable_hint),
-        details = NetworkIssues.deviceDetails(device) { since },
-        modifier = Modifier.padding(top = 8.dp),
-    )
-}
-
 @Composable
 private fun DeviceRow(
     device: Local.Device,
@@ -290,20 +276,9 @@ private fun DeviceRow(
                 .fillMaxWidth()
                 .padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (device.online) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        },
-                    ),
-            )
+            DeviceStatusDot(device = device, unreachable = unreachable)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
@@ -320,25 +295,6 @@ private fun DeviceRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = stringResource(
-                    when {
-                        device.online -> R.string.device_online
-                        unreachable -> R.string.device_unreachable
-                        else -> R.string.device_offline
-                    },
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = when {
-                    device.online -> MaterialTheme.colorScheme.primary
-                    unreachable -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
-        }
-
-        if (unreachable) {
-            UnreachableCard(device = device)
         }
 
         if (device.role == Local.Role.ROLE_PERSONAL) {
@@ -361,6 +317,94 @@ private fun DeviceRow(
         }
     }
 }
+
+/**
+ * Dot of a paired device: green while the device answers, red while it does
+ * not. The red dot of a device that does not answer opens the reason and the
+ * addresses that were tried.
+ */
+@Composable
+private fun DeviceStatusDot(device: Local.Device, unreachable: Boolean) {
+    var open by remember { mutableStateOf(false) }
+    val name = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) }
+    val summary = stringResource(R.string.device_unreachable_summary, name)
+    val description = when {
+        device.online -> stringResource(R.string.device_online)
+        unreachable -> summary
+        else -> stringResource(R.string.device_offline)
+    }
+    val timeFormat = DateFormat.getTimeFormat(LocalContext.current)
+    val since = stringResource(
+        R.string.device_unreachable_since,
+        timeFormat.format(Date(device.unreachableSinceUnixMs)),
+    )
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(DOT_TOUCH)
+                .clip(CircleShape)
+                .then(if (unreachable) Modifier.clickable { open = true } else Modifier)
+                .semantics { contentDescription = description },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(DOT)
+                    .clip(CircleShape)
+                    .background(
+                        if (device.online) onlineDotColor() else MaterialTheme.colorScheme.error,
+                    ),
+            )
+        }
+        if (unreachable) {
+            UnreachablePopup(
+                summary = summary,
+                hint = stringResource(R.string.device_unreachable_hint),
+                details = NetworkIssues.deviceDetails(device) { since },
+                expanded = open,
+                onDismiss = { open = false },
+            )
+        }
+    }
+}
+
+/** Reason and technical details of a device that does not answer. */
+@Composable
+private fun UnreachablePopup(
+    summary: String,
+    hint: String,
+    details: String,
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = POPUP_WIDTH)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Text(text = summary, style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (details.isNotEmpty()) {
+                Text(
+                    text = details,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Color of the dot of a device that answers. */
+@Composable
+private fun onlineDotColor(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
 
 /**
  * The four confirmation flags of a Personal device: this device and the device
@@ -516,3 +560,12 @@ private fun ClipboardOffer(
 
 /** Characters of the device ID shown when the name is empty. */
 private const val SHORT_ID_LENGTH = 8
+
+/** Diameter of the status dot of a device. */
+private val DOT = 10.dp
+
+/** Touch area of the status dot, larger than the dot itself. */
+private val DOT_TOUCH = 32.dp
+
+/** Maximum width of the popup of a device that does not answer. */
+private val POPUP_WIDTH = 280.dp

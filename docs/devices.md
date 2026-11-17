@@ -94,17 +94,20 @@ brackets, for example `[fe80::1%en0]:47123`.
 ## Connection problems
 
 When two devices cannot reach each other, the app says so in two levels: a short message in plain
-words with what to try, and a `Details` toggle with the technical information. The details are
-meant for a bug report or for checking the network; they quote the daemon and are not translated.
+words with what to try, and the technical information on request. The details are meant for a bug
+report or for checking the network; they quote the daemon and are not translated.
 
 - **Pairing.** An exchange that cannot reach the other device ends with "Could not reach the other
   device". The details list every address that was tried and why it failed.
 - **Pairing window.** A window that has not seen any device for 30 seconds says "No devices found on
   this network yet". The details give the address the window listens on.
-- **Paired devices.** A device that is offline and did not answer on any of its known addresses at
-  the last attempt is shown as `Not reachable`, with the time it stopped answering and the failures
-  per address in the details. The activity list records the moment it stops answering. A device
-  that answers and refuses the connection, or one without any known address, stays `Offline`.
+- **Paired devices.** macOS shows a device that is offline and did not answer on any of its known
+  addresses at the last attempt as `Not reachable`, with the time it stopped answering and the
+  failures per address behind a `Details` toggle. Android shows the state as a dot next to the
+  name: green while the device answers, red while it does not, and the red dot of such a device
+  opens the time and the failures in a popup. The activity list records the moment it stops
+  answering. A device that answers and refuses the connection, or one without any known address,
+  is not marked as unreachable.
 
 A device that is turned off and a network that keeps its devices apart look the same from the other
 side, so the message names both. See [Troubleshooting](troubleshooting.md).
