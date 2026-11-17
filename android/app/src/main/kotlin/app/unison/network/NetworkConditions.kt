@@ -12,7 +12,7 @@ data class NetworkConditions(
     val roaming: Boolean = false,
     /** The default network is a VPN. */
     val vpn: Boolean = false,
-    /** The system data saver is on. */
+    /** The system data saver is on for sure, see [BackgroundData]. */
     val dataSaver: Boolean = false,
     /** A Wi-Fi network is available. */
     val wifi: Boolean = false,

@@ -17,6 +17,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,10 +25,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import app.unison.R
+import app.unison.network.BackgroundData
 import app.unison.policy.PolicyCondition
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyKind
@@ -52,6 +59,7 @@ fun PolicySection(
         text = stringResource(R.string.policy_now, conditionLabel(conditionOf(network))),
         style = MaterialTheme.typography.bodyMedium,
     )
+    BackgroundDataNotice()
     Text(
         text = stringResource(R.string.policy_hint),
         style = MaterialTheme.typography.bodySmall,
@@ -78,6 +86,47 @@ fun PolicySection(
         Text(text = stringResource(R.string.policy_reset))
     }
 }
+
+/**
+ * Warns that the system restricts the background data of the app and leads to
+ * the page that lifts it. The status is read again when the screen comes back.
+ */
+@Composable
+private fun BackgroundDataNotice() {
+    val context = LocalContext.current
+    var restricted by remember { mutableStateOf(BackgroundData.restricted(BackgroundData.status(context))) }
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(owner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                restricted = BackgroundData.restricted(BackgroundData.status(context))
+            }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
+    if (!restricted) {
+        return
+    }
+
+    Text(
+        text = stringResource(R.string.policy_background_restricted),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+    OutlinedButton(
+        onClick = { BackgroundData.openSettings(context) },
+        modifier = Modifier
+            .padding(top = 8.dp)
+            .testTag(BACKGROUND_DATA_TAG),
+    ) {
+        Text(text = stringResource(R.string.policy_background_open))
+    }
+}
+
+/** Tag of the button that opens the background data settings of the app. */
+internal const val BACKGROUND_DATA_TAG = "settings.policy.background_data"
 
 /** One condition of the table with its cells and the relay permission. */
 @Composable

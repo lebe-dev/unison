@@ -413,6 +413,8 @@
     <string name="policy_section">Network policy</string>
     <string name="policy_now">Now: %1$s</string>
     <string name="policy_hint">Items larger than the limit arrive on request.</string>
+    <string name="policy_background_restricted">Background data of Unison is restricted. The app keeps working while its notification is shown, but Android may cut it off on mobile data. Allow background data so the devices stay connected.</string>
+    <string name="policy_background_open">Allow background data</string>
     <string name="policy_condition_unmetered">Wi-Fi, not metered</string>
     <string name="policy_condition_metered">Mobile data</string>
     <string name="policy_condition_roaming">Roaming</string>

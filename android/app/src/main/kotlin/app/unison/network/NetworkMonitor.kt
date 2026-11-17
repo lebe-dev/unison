@@ -150,8 +150,7 @@ class NetworkMonitor(
         listener.onNetworkConditions(next)
     }
 
-    private fun dataSaver(): Boolean =
-        connectivity?.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
+    private fun dataSaver(): Boolean = BackgroundData.dataSaver(BackgroundData.status(appContext))
 
     private fun describe(conditions: NetworkConditions): String = with(conditions) {
         "online=$online metered=$metered roaming=$roaming vpn=$vpn " +

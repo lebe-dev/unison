@@ -14,6 +14,12 @@ network it is on, the type of the content and the role of the device that sends 
 
 A restriction wins over a weaker one, so the data saver row applies on a metered roaming network.
 
+On Android the system reports the same status when the data saver is on and when background data
+is turned off for Unison alone, so the app takes the data saver row only when Android proves the
+data saver is on: Unison is allowed unrestricted data under it. Otherwise a mobile network counts
+as metered, and `Settings > Network and relay` warns that background data is restricted, with a
+button to the system page that allows it.
+
 ## Actions
 
 | Action | What happens |

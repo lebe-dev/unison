@@ -426,6 +426,8 @@
     <string name="policy_section">Сетевая политика</string>
     <string name="policy_now">Сейчас: %1$s</string>
     <string name="policy_hint">Элементы больше лимита поступают по запросу.</string>
+    <string name="policy_background_restricted">Фоновая передача данных для Unison ограничена. Пока показано уведомление, приложение работает, но на мобильных данных Android может его отключить. Разрешите фоновые данные, чтобы устройства оставались на связи.</string>
+    <string name="policy_background_open">Разрешить фоновые данные</string>
     <string name="policy_condition_unmetered">Wi-Fi без лимита</string>
     <string name="policy_condition_metered">Мобильные данные</string>
     <string name="policy_condition_roaming">Роуминг</string>
