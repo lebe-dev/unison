@@ -18,6 +18,8 @@ const (
 	startTimeout = 30 * time.Second
 	callTimeout  = 30 * time.Second
 	stopTimeout  = 10 * time.Second
+	// flushTimeout bounds the wait for the queued reports when the core stops.
+	flushTimeout = 2 * time.Second
 	// transferTimeout bounds the calls that move a whole file, which takes
 	// longer than any other call on a slow link or through the relay.
 	transferTimeout = 30 * time.Minute

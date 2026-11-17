@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lebe-dev/unison/core/model/protoconv"
+	"github.com/lebe-dev/unison/internal/observability"
 	mobilev1 "github.com/lebe-dev/unison/proto/unison/mobile/v1"
 )
 
@@ -49,9 +50,15 @@ var (
 	global   *core
 )
 
+// initOnce starts the reporting once for the process.
+var initOnce sync.Once
+
 // Start prepares the core with its configuration and the platform callbacks.
 func Start(cfg []byte, p Platform) (err error) {
 	defer recoverErr(&err)
+	initOnce.Do(func() {
+		observability.Init(observability.Options{Component: "mobile-core", Version: version})
+	})
 
 	if p == nil {
 		return errPlatform
@@ -76,6 +83,7 @@ func Start(cfg []byte, p Platform) (err error) {
 
 // Stop releases the resources held by the core.
 func Stop() (err error) {
+	defer observability.Flush(flushTimeout)
 	defer recoverErr(&err)
 
 	globalMu.Lock()
@@ -94,7 +102,8 @@ func Stop() (err error) {
 // Version returns the version of the core.
 func Version() (v string) {
 	defer func() {
-		if recover() != nil {
+		if value := recover(); value != nil {
+			observability.CapturePanic(value)
 			v = version
 		}
 	}()
@@ -181,9 +190,7 @@ func SubmitFile(meta []byte, fd int) (err error) {
 // AddPeerCandidate passes a discovered service instance to the core. service is
 // "main" or "pairing", txt is a serialized unison.mobile.v1.CandidateTxt.
 func AddPeerCandidate(service string, addr string, txt []byte) {
-	defer func() {
-		_ = recover()
-	}()
+	defer observability.HandlePanic()
 
 	c := runningCore()
 	if c == nil {
@@ -195,9 +202,7 @@ func AddPeerCandidate(service string, addr string, txt []byte) {
 // NetworkChanged reports the network conditions of the device. state is a
 // serialized unison.mobile.v1.NetworkState.
 func NetworkChanged(state []byte) {
-	defer func() {
-		_ = recover()
-	}()
+	defer observability.HandlePanic()
 
 	c := runningCore()
 	if c == nil {
@@ -223,6 +228,7 @@ func runningCore() *core {
 // recoverErr turns a panic into an error.
 func recoverErr(err *error) {
 	if recovered := recover(); recovered != nil {
+		observability.CapturePanic(recovered)
 		*err = fmt.Errorf("mobile: panic: %v", recovered)
 	}
 }

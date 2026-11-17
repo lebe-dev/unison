@@ -27,6 +27,7 @@ import (
 	"github.com/lebe-dev/unison/core/store"
 	"github.com/lebe-dev/unison/core/transport"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // Connection management defaults.
@@ -718,6 +719,7 @@ func (n *Node) spawn(fn func()) {
 	n.wg.Add(1)
 	go func() {
 		defer n.wg.Done()
+		defer observability.Recover()
 		fn()
 	}()
 }

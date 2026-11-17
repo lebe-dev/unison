@@ -13,6 +13,7 @@ import (
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -73,6 +74,12 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 			return nil, errorOf(err)
 		}
 	}
+	if value := req.Msg.SentryEnabled; value != nil {
+		if err := s.node.Store().Settings().SetBool(ctx, node.SettingSentryEnabled, *value); err != nil {
+			return nil, errorOf(err)
+		}
+		observability.SetEnabled(*value)
+	}
 	if err := s.applyPolicy(ctx, req.Msg); err != nil {
 		return nil, errorOf(err)
 	}
@@ -113,12 +120,17 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 	if dir == "" {
 		dir = share.DefaultDownloadsDir()
 	}
+	sentry, err := s.node.Store().Settings().GetBool(ctx, node.SettingSentryEnabled, false)
+	if err != nil {
+		return nil, err
+	}
 	settings := &localv1.Settings{
 		DeviceName:              stored,
 		RequireConfirmation:     self.Clipboard,
 		RequireFileConfirmation: self.Files,
 		BlobMaxSizeBytes:        limit,
 		DownloadsDir:            dir,
+		SentryEnabled:           sentry,
 	}
 	fillPolicy(settings, s.node.Policy().Config())
 	fillHistoryTTLs(settings, s.node.TTLs())

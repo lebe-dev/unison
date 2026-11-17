@@ -11,6 +11,7 @@ import (
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 	"github.com/lebe-dev/unison/proto/unison/local/v1/localv1connect"
 )
@@ -65,6 +66,12 @@ var _ localv1connect.UnisonServiceHandler = (*Service)(nil)
 func New(n *node.Node, opts Options) (*Service, error) {
 	if n == nil {
 		return nil, errors.New("api: node is required")
+	}
+	// The consent gates the events of the whole process, so it is applied
+	// before the first call. A store that cannot tell it keeps reporting off.
+	if db := n.Store(); db != nil {
+		enabled, err := db.Settings().GetBool(context.Background(), node.SettingSentryEnabled, false)
+		observability.SetEnabled(err == nil && enabled)
 	}
 	clock := opts.Clock
 	if clock == nil {

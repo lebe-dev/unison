@@ -11,13 +11,18 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/internal/daemon"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // version is set at build time from the VERSION file.
 var version = "dev"
+
+// flushTimeout bounds the wait for the queued reports when the daemon exits.
+const flushTimeout = 5 * time.Second
 
 // Clipboard modes of the daemon.
 const (
@@ -33,7 +38,24 @@ const (
 )
 
 func main() {
-	os.Exit(run(os.Args[1:]))
+	observability.Init(observability.Options{Component: "daemon", Version: version})
+	os.Exit(runReported())
+}
+
+// runReported runs the command and returns its exit code. A panic of this
+// goroutine is reported and raised again, so the process still crashes.
+func runReported() (code int) {
+	defer func() {
+		if value := recover(); value != nil {
+			observability.CapturePanic(value)
+			observability.Flush(flushTimeout)
+			panic(value)
+		}
+	}()
+
+	code = run(os.Args[1:])
+	observability.Flush(flushTimeout)
+	return code
 }
 
 // run runs the daemon and returns the exit code.
@@ -80,18 +102,15 @@ func run(args []string) int {
 
 	dir, err := daemon.ResolveDataDir(*dataDir)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "unisond: "+err.Error())
-		return exitError
+		return fail(err)
 	}
 	keystore, err := daemon.NewKeystore(dir)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "unisond: "+err.Error())
-		return exitError
+		return fail(err)
 	}
 	clip, err := newClipboard(mode)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "unisond: "+err.Error())
-		return exitError
+		return fail(err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -111,10 +130,19 @@ func run(args []string) int {
 		options.Stderr = os.Stderr
 	}
 	if err := daemon.Run(ctx, options); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "unisond: "+err.Error())
-		return exitError
+		return fail(err)
 	}
 	return exitOK
+}
+
+// fail prints err, reports it and returns the exit code of a failure. A second
+// instance on the data directory is an expected condition and is not reported.
+func fail(err error) int {
+	if !errors.Is(err, daemon.ErrRunning) {
+		observability.CaptureException(err)
+	}
+	_, _ = fmt.Fprintln(os.Stderr, "unisond: "+err.Error())
+	return exitError
 }
 
 // newClipboard returns the clipboard of the mode.

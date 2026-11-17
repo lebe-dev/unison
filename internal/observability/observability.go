@@ -59,7 +59,6 @@ func Init(opts Options) bool {
 		Environment:      buildEnvironment,
 		AttachStacktrace: true,
 		EnableTracing:    false,
-		SendDefaultPII:   false,
 		DataCollection:   dataCollection(),
 		MaxBreadcrumbs:   -1,
 		BeforeSend:       beforeSend,
@@ -147,7 +146,7 @@ func Recover() {
 	if value == nil {
 		return
 	}
-	reportPanic(value)
+	CapturePanic(value)
 	panic(value)
 }
 
@@ -155,13 +154,15 @@ func Recover() {
 // already kept the panic from the process.
 func HandlePanic() {
 	if value := recover(); value != nil {
-		reportPanic(value)
+		CapturePanic(value)
 	}
 }
 
-// reportPanic sends the panic with its stack.
-func reportPanic(value any) {
-	if !enabled.Load() {
+// CapturePanic reports a value taken from recover. The caller keeps the
+// control flow, so it is used where the panic already turned into another
+// result.
+func CapturePanic(value any) {
+	if value == nil || !enabled.Load() {
 		return
 	}
 	sentry.CurrentHub().Recover(value)

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lebe-dev/unison/internal/observability"
 	"github.com/lebe-dev/unison/proto/unison/local/v1/localv1connect"
 )
 
@@ -67,6 +68,7 @@ func Serve(ctx context.Context, ln net.Listener, handler http.Handler) error {
 	done := make(chan struct{})
 	defer close(done)
 	go func() {
+		defer observability.Recover()
 		select {
 		case <-ctx.Done():
 			_ = server.Close()

@@ -15,6 +15,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // Runtime limits.
@@ -176,6 +177,7 @@ func Run(ctx context.Context, opts Options) error {
 	}()
 	go func() {
 		defer close(eventsDone)
+		defer observability.Recover()
 		logEvents(eventsCtx, log, subscriber)
 	}()
 
@@ -271,7 +273,10 @@ func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBloc
 	}
 
 	done := make(chan error, 1)
-	go func() { done <- localconn.Serve(ctx, listener, handler) }()
+	go func() {
+		defer observability.Recover()
+		done <- localconn.Serve(ctx, listener, handler)
+	}()
 	return done, nil
 }
 
@@ -282,6 +287,7 @@ func stopNode(n *node.Node, log *slog.Logger) {
 	defer cancel()
 	if err := n.Stop(ctx); err != nil {
 		log.Warn("stopping the node failed", "error", err)
+		observability.CaptureException(err)
 	}
 }
 

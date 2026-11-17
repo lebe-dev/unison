@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/core/transport/vnet"
+	"github.com/lebe-dev/unison/internal/observability"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -114,6 +115,60 @@ func TestUpdateSettingsInvalid(t *testing.T) {
 		if connect.CodeOf(err) != connect.CodeInvalidArgument {
 			t.Errorf("%s: error is %v, want invalid argument", name, err)
 		}
+	}
+}
+
+// TestUpdateSettingsSentryConsent checks that the consent to report errors is
+// stored and gates the reporting.
+func TestUpdateSettingsSentryConsent(t *testing.T) {
+	observability.SetEnabled(false)
+	t.Cleanup(func() { observability.SetEnabled(false) })
+
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 2500)
+	n.start(t)
+	client := newClient(t, n.Node, api.Options{DeviceName: "one"})
+	ctx := callTimeout(t)
+
+	response, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		SentryEnabled: ptr(true),
+	}))
+	if err != nil {
+		t.Fatalf("update settings: %v", err)
+	}
+	if !response.Msg.GetSettings().GetSentryEnabled() {
+		t.Error("the consent is not reported")
+	}
+	if !observability.Enabled() {
+		t.Error("the consent does not gate the reporting")
+	}
+
+	stored, err := client.GetSettings(ctx, connect.NewRequest(&localv1.GetSettingsRequest{}))
+	if err != nil {
+		t.Fatalf("get settings: %v", err)
+	}
+	if !stored.Msg.GetSettings().GetSentryEnabled() {
+		t.Error("the stored consent is not reported")
+	}
+
+	if _, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		SentryEnabled: ptr(false),
+	})); err != nil {
+		t.Fatalf("update settings: %v", err)
+	}
+	if observability.Enabled() {
+		t.Error("the withdrawn consent still gates the reporting")
+	}
+
+	// A service created later applies the stored value before the first call.
+	if _, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		SentryEnabled: ptr(true),
+	})); err != nil {
+		t.Fatalf("update settings: %v", err)
+	}
+	observability.SetEnabled(false)
+	_ = newClient(t, n.Node, api.Options{DeviceName: "one"})
+	if !observability.Enabled() {
+		t.Error("the stored consent is not applied at startup")
 	}
 }
 

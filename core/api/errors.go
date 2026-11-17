@@ -12,19 +12,28 @@ import (
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // errorOf maps an error of the core to a connect error. The message of the
-// cause is kept, it never carries clipboard content or secrets.
+// cause is kept, it never carries clipboard content or secrets. An internal
+// failure is reported, the client errors are expected and are not.
 func errorOf(err error) *connect.Error {
 	if err == nil {
 		return nil
 	}
 	var connectErr *connect.Error
 	if errors.As(err, &connectErr) {
+		if connectErr.Code() == connect.CodeInternal {
+			observability.CaptureException(err)
+		}
 		return connectErr
 	}
-	return connect.NewError(codeOf(err), err)
+	code := codeOf(err)
+	if code == connect.CodeInternal {
+		observability.CaptureException(err)
+	}
+	return connect.NewError(code, err)
 }
 
 // codeOf maps an error of the core to a connect code.

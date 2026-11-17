@@ -18,6 +18,7 @@ import (
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/share"
+	"github.com/lebe-dev/unison/internal/observability"
 	mobilev1 "github.com/lebe-dev/unison/proto/unison/mobile/v1"
 )
 
@@ -72,6 +73,7 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 	startCtx, cancel := context.WithTimeout(ctx, startTimeout)
 	defer cancel()
 	if err := n.Start(startCtx); err != nil {
+		observability.CaptureException(err)
 		return nil, err
 	}
 
@@ -115,6 +117,7 @@ func (c *core) stop(ctx context.Context) error {
 // platform callback runs on this goroutine and does not hold up the node.
 func (c *core) relay(ctx context.Context) {
 	defer c.wg.Done()
+	defer observability.Recover()
 
 	for {
 		select {
@@ -137,7 +140,8 @@ func (c *core) relay(ctx context.Context) {
 // deliver calls the platform and keeps a panic from reaching the relay.
 func (c *core) deliver(data []byte) {
 	defer func() {
-		if recover() != nil {
+		if value := recover(); value != nil {
+			observability.CapturePanic(value)
 			c.log.Warn("the platform event callback panicked")
 		}
 	}()
@@ -278,7 +282,8 @@ var _ share.Sink = blobSink{}
 // returns the file name, which is what the platform shows to the user.
 func (b blobSink) Write(_ context.Context, file share.File, src io.Reader) (path string, err error) {
 	defer func() {
-		if recover() != nil {
+		if value := recover(); value != nil {
+			observability.CapturePanic(value)
 			path, err = "", errors.New("mobile: the platform sink panicked")
 		}
 	}()
