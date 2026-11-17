@@ -69,8 +69,8 @@ func New(n *node.Node, opts Options) (*Service, error) {
 	}
 	// The consent gates the events of the whole process, so it is applied
 	// before the first call. A store that cannot tell it keeps reporting off.
-	if db := n.Store(); db != nil {
-		enabled, err := db.Settings().GetBool(context.Background(), node.SettingSentryEnabled, false)
+	if n.Store() != nil {
+		enabled, err := n.SentryEnabled(context.Background())
 		observability.SetEnabled(err == nil && enabled)
 	}
 	clock := opts.Clock

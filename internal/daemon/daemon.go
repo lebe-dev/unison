@@ -143,7 +143,19 @@ func Run(ctx context.Context, opts Options) error {
 	if err != nil {
 		return err
 	}
-	defer stopNode(n, log)
+	defer func() {
+		if err := stopNode(n, log); err != nil {
+			observability.CaptureException(err)
+		}
+	}()
+
+	// The consent is applied before the node starts, so a startup failure is
+	// still reported for a user who already granted it.
+	if enabled, err := n.SentryEnabled(ctx); err == nil {
+		observability.SetEnabled(enabled)
+	} else {
+		observability.SetEnabled(false)
+	}
 
 	log.Info("starting daemon",
 		"version", opts.Version,
@@ -197,7 +209,7 @@ func Run(ctx context.Context, opts Options) error {
 	if err := <-serveDone; err != nil {
 		return fmt.Errorf("daemon: the local API stopped: %w", err)
 	}
-	stopNode(n, log)
+	_ = stopNode(n, log)
 	log.Info("daemon stopped")
 	return nil
 }
@@ -282,13 +294,14 @@ func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBloc
 
 // stopNode stops the node within the shutdown timeout. A node that is stopped
 // already is released again without effect.
-func stopNode(n *node.Node, log *slog.Logger) {
+func stopNode(n *node.Node, log *slog.Logger) error {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := n.Stop(ctx); err != nil {
 		log.Warn("stopping the node failed", "error", err)
-		observability.CaptureException(err)
+		return err
 	}
+	return nil
 }
 
 // endpointAlive reports whether an instance answers on the endpoint.

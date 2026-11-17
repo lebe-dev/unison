@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // maxKeyBytes bounds the rendezvous key of a pair.
@@ -402,6 +403,7 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	// day change.
 	until := nextMidnight(d.clock.Now()).Sub(d.clock.Now())
 	go func() {
+		defer observability.Recover()
 		select {
 		case <-runCtx.Done():
 		case <-d.clock.After(until):

@@ -66,6 +66,13 @@ func startCore(ctx context.Context, cfg config, platform Platform) (*core, error
 	if err != nil {
 		return nil, err
 	}
+	// The consent is applied before the node starts, so a startup failure is
+	// still reported for a user who already granted it.
+	if enabled, err := n.SentryEnabled(ctx); err == nil {
+		observability.SetEnabled(enabled)
+	} else {
+		observability.SetEnabled(false)
+	}
 	bridge.key = func(ctx context.Context) ([]byte, error) {
 		return n.Trust().DiscoveryKey(ctx)
 	}

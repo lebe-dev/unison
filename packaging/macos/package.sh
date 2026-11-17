@@ -73,7 +73,7 @@ done
 
 # The daemon needs cgo for the Keychain and the pasteboard, so every slice is
 # built on macOS and merged into one universal binary.
-daemon_ldflags="-s -w -X main.version=$version -X github.com/lebe-dev/unison/internal/observability.dsn=${SENTRY_DSN:-} -X github.com/lebe-dev/unison/internal/observability.environment=release"
+daemon_ldflags="-s -w -X main.version=$version -X github.com/lebe-dev/unison/internal/observability.buildDSN=${SENTRY_DSN:-} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
 
 build_daemon() {
     local arch=$1 target=$2

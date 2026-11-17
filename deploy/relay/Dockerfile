@@ -14,7 +14,7 @@ COPY . /build
 # when the image reports no errors.
 ARG VERSION=dev
 ARG SENTRY_DSN=""
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X github.com/lebe-dev/unison/internal/observability.dsn=${SENTRY_DSN} -X github.com/lebe-dev/unison/internal/observability.environment=release" \
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X github.com/lebe-dev/unison/internal/observability.buildDSN=${SENTRY_DSN} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release" \
         -o unison-relay ./cmd/unison-relay && \
     CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" \
         -o healthcheck ./deploy/relay/healthcheck && \

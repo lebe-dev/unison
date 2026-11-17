@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // Timeouts and bounds of the WebSocket fallback.
@@ -161,6 +163,7 @@ func (c *wsCarrier) write(ctx context.Context, data []byte) error {
 // writeLoop sends the queued frames.
 func (c *wsCarrier) writeLoop() {
 	defer c.wg.Done()
+	defer observability.Recover()
 
 	for {
 		select {
@@ -178,6 +181,7 @@ func (c *wsCarrier) writeLoop() {
 // pingLoop detects a dead WebSocket connection.
 func (c *wsCarrier) pingLoop() {
 	defer c.wg.Done()
+	defer observability.Recover()
 
 	ticker := time.NewTicker(wsPingInterval)
 	defer ticker.Stop()

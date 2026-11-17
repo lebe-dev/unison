@@ -16,6 +16,7 @@ import (
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/store"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -180,6 +181,7 @@ func New(opts Options) (*Service, error) {
 
 // expireLoop stops the offers that wait for a decision for too long.
 func (s *Service) expireLoop() {
+	defer observability.Recover()
 	interval := min(max(s.pendingTTL/4, 100*time.Millisecond), time.Minute)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -271,6 +273,7 @@ func (s *Service) Register(sess *session.Session) error {
 
 // watch attaches a session when it opens and detaches it when it ends.
 func (s *Service) watch(sess *session.Session) {
+	defer observability.Recover()
 	events := sess.Events()
 	for {
 		select {
@@ -349,6 +352,7 @@ func (s *Service) detach(sess *session.Session) {
 
 // resume continues a transfer after the peer came back.
 func (s *Service) resume(id string) {
+	defer observability.Recover()
 	s.mu.Lock()
 	rec := s.records[id]
 	if rec == nil || rec.transfer.State.ended() {
@@ -492,7 +496,10 @@ func (s *Service) Accept(ctx context.Context, id string) error {
 		return err
 	}
 	s.report(ctx, Event{Kind: EventAccepted, Peer: peer, Transfer: snapshot})
-	go s.download(id)
+	go func() {
+		defer observability.Recover()
+		s.download(id)
+	}()
 	return nil
 }
 

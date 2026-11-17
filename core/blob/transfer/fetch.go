@@ -16,6 +16,7 @@ import (
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/session"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -235,6 +236,7 @@ func (f *Fetcher) query(ctx context.Context, request FetchRequest, peers []Peer)
 		wg.Add(1)
 		go func(i int, peer Peer) {
 			defer wg.Done()
+			defer observability.Recover()
 			ok, err := f.have(ctx, peer, request.Hash)
 			if err != nil {
 				f.log.Debug("blob query failed", "peer", peer.DeviceID(), "hash", hashHex(request.Hash), "error", err)
@@ -547,6 +549,7 @@ func (fl *fetchState) round(ctx context.Context, live []source, jobs [][]int) {
 			wg.Add(1)
 			go func(src source) {
 				defer wg.Done()
+				defer observability.Recover()
 				for !dead.Load() {
 					n := int(cursor.Add(1)) - 1
 					if n >= len(assigned) {

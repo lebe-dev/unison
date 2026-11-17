@@ -7,9 +7,9 @@ ldflags := "-s -w -X main.version=" + version
 # The DSN comes from .env or the environment and is empty in builds without
 # reporting.
 sentry_dsn := env("SENTRY_DSN", "")
-sentry_ldflags := "-X github.com/lebe-dev/unison/internal/observability.dsn=" + sentry_dsn
-debug_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.environment=debug"
-release_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.environment=release"
+sentry_ldflags := "-X github.com/lebe-dev/unison/internal/observability.buildDSN=" + sentry_dsn
+debug_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=debug"
+release_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
 
 # Binaries are pure Go so every target can be cross-compiled without a C toolchain.
 export CGO_ENABLED := "0"
@@ -300,7 +300,7 @@ desktop-test:
 aar:
     mkdir -p android/core bin
     go build -o bin/gobind golang.org/x/mobile/cmd/gobind
-    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.environment=debug" -trimpath -o android/core/core.aar ./mobile
+    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=debug" -trimpath -o android/core/core.aar ./mobile
     rm -f android/core/core-sources.jar
 
 # Build the Android debug APK.

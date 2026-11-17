@@ -16,6 +16,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/transport"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // Window and exchange defaults.
@@ -510,6 +511,7 @@ func (w *Window) announce() error {
 // that fails the handshake does not stop the window.
 func (w *Window) runAccept() {
 	defer w.wg.Done()
+	defer observability.Recover()
 	for {
 		conn, err := w.listener.Accept(w.ctx)
 		if err != nil {
@@ -531,6 +533,7 @@ func (w *Window) runAccept() {
 		go func() {
 			defer w.untrack(conn)
 			defer func() { _ = conn.Close() }()
+			defer observability.Recover()
 			_ = w.run(w.ctx, conn, false, flow{method: MethodSAS})
 		}()
 	}
@@ -539,6 +542,7 @@ func (w *Window) runAccept() {
 // runBrowse reports the pairing candidates found on the local network.
 func (w *Window) runBrowse() {
 	defer w.wg.Done()
+	defer observability.Recover()
 	candidates, err := w.opts.Discovery.Browse(w.ctx, ports.ServicePairing)
 	if err != nil {
 		if w.log != nil && w.ctx.Err() == nil {
@@ -563,19 +567,26 @@ func (w *Window) runBrowse() {
 // window ends.
 func (w *Window) runTimer() {
 	defer w.wg.Done()
+	defer observability.Recover()
 	timer := w.clock.After(w.opts.Window)
 	for {
 		select {
 		case <-w.ctx.Done():
 			if !w.isClosed() {
-				go func() { _ = w.Close() }()
+				go func() {
+					defer observability.Recover()
+					_ = w.Close()
+				}()
 			}
 			return
 		case request := <-w.extend:
 			timer = w.clock.After(request.after)
 			close(request.armed)
 		case <-timer:
-			go func() { _ = w.Close() }()
+			go func() {
+				defer observability.Recover()
+				_ = w.Close()
+			}()
 			return
 		}
 	}

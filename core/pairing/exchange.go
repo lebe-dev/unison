@@ -19,6 +19,7 @@ import (
 	"github.com/lebe-dev/unison/core/model/protoconv"
 	"github.com/lebe-dev/unison/core/transport"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -488,6 +489,7 @@ func (w *Window) awaitDecisions(ctx context.Context, reader *frameReader, stream
 	}
 	answers := make(chan answer, 1)
 	go func() {
+		defer observability.Recover()
 		message := &wirev1.PairDecision{}
 		err := reader.readMessage(message)
 		answers <- answer{accepted: message.Accepted, err: err}

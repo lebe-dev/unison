@@ -18,6 +18,7 @@ import (
 	"github.com/miekg/dns"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 const (
@@ -211,6 +212,7 @@ func (d *Discovery) Browse(ctx context.Context, service ports.Service) (<-chan p
 	out := make(chan ports.Candidate, candidateBuffer)
 	go func() {
 		defer close(out)
+		defer observability.Recover()
 		for c := range tagged {
 			select {
 			case out <- ports.Candidate{Addr: c.Addr, TXT: c.TXT}:
@@ -310,6 +312,7 @@ func (d *Discovery) Stop() error {
 // refreshLoop re-announces on tag epoch changes and on network changes.
 func (d *Discovery) refreshLoop() {
 	defer d.wg.Done()
+	defer observability.Recover()
 
 	ticker := time.NewTicker(d.opts.Refresh)
 	defer ticker.Stop()
@@ -396,6 +399,7 @@ func (d *Discovery) announce(ctx context.Context, ad advert) {
 
 	go func() {
 		defer d.wg.Done()
+		defer observability.Recover()
 		select {
 		case <-time.After(announceRepeat):
 		case <-d.ctx.Done():
@@ -592,6 +596,7 @@ func (d *Discovery) isOwn(name string) bool {
 // browse queries service and emits the discovered instances.
 func (d *Discovery) browse(ctx context.Context, id int, b *browser) {
 	defer d.wg.Done()
+	defer observability.Recover()
 	defer func() {
 		d.mu.Lock()
 		delete(d.browsers, id)
@@ -641,6 +646,7 @@ func (d *Discovery) query(b *browser) {
 // dispatch handles the messages received by tr.
 func (d *Discovery) dispatch(tr *transport) {
 	defer d.wg.Done()
+	defer observability.Recover()
 
 	for {
 		select {

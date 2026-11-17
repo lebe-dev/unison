@@ -12,6 +12,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -169,6 +170,7 @@ func (s *Service) Opened(sess *session.Session) {
 
 	go func() {
 		defer s.wg.Done()
+		defer observability.Recover()
 		select {
 		case <-sess.Done():
 		case <-s.ctx.Done():
@@ -226,6 +228,7 @@ func (s *Service) spawn(fn func(ctx context.Context)) {
 
 	go func() {
 		defer s.wg.Done()
+		defer observability.Recover()
 		fn(s.ctx)
 	}()
 }

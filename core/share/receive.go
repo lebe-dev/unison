@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -144,7 +145,10 @@ func (s *Service) startIncoming(ctx context.Context, sess *session.Session, id, 
 	s.report(ctx, Event{Kind: EventAccepted, Peer: snapshot.Peer, Transfer: snapshot})
 	// The download runs on its own goroutine: the session handler has to return
 	// to the control stream.
-	go s.download(id)
+	go func() {
+		defer observability.Recover()
+		s.download(id)
+	}()
 	return nil
 }
 
