@@ -29,5 +29,6 @@ macOS and Android are supported. Windows and Linux are not available yet.
 - [macOS](docs/architecture/macos.md) - the darwin ports and the bundle
 - [Windows](docs/architecture/windows.md) - the windows ports and the installer
 - [Android](docs/architecture/android.md) - the mobile binding, the service and the app
+- [Application log](docs/architecture/application-log.md) - the log the user can turn on and share
 
 Building the code and running the tests is described in `DEV.md`.
