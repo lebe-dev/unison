@@ -25,6 +25,7 @@ import app.unison.clipboard.HeldItems
 import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
+import app.unison.diagnostics.Diagnostics
 import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryTtl
 import app.unison.history.HistoryTtlDefaults
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private var downloadsFolder by mutableStateOf<String?>(null)
     private var policy by mutableStateOf(PolicyDefaults.config)
     private var historyTtl by mutableStateOf(HistoryTtlDefaults.values)
+    private var diagnosticsEnabled by mutableStateOf(false)
     private var pending by mutableStateOf<ClipboardDraft?>(null)
     private val requestedScreen = MutableStateFlow<Destination?>(null)
     private var requestsPoll: Job? = null
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
         downloadsFolder = DownloadsFolder.current(this)?.let(DownloadsFolder::label)
         policy = PolicyDefaults.config
         historyTtl = HistoryTtlDefaults.values
+        diagnosticsEnabled = UnisonSettings.sentryEnabled(this)
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
         // A recreated activity has already taken the code of its intent; a code
         // that still waits for the user is kept across the recreation.
@@ -149,6 +152,8 @@ class MainActivity : ComponentActivity() {
                         onRefreshRelay = appState::refreshRelay,
                         onSelfConfirmationChange = appState::setSelfConfirmation,
                         onLeaveGroup = appState::leaveGroup,
+                        diagnosticsEnabled = diagnosticsEnabled,
+                        onDiagnosticsChange = ::saveDiagnostics,
                         onSetDeviceConfirmation = { device, scope, side, require ->
                             appState.setDeviceConfirmation(device.deviceId, scope, side, require)
                         },
@@ -318,12 +323,28 @@ class MainActivity : ComponentActivity() {
                 val settings = core.settings()
                 policy = PolicyProto.table(settings)
                 historyTtl = HistoryTtlProto.values(settings)
+                applyDiagnosticsConsent(settings.sentryEnabled)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 // The values keep their last state while the core is unavailable.
             }
         }
+    }
+
+    /** Keeps the preference and the state of the switch in step with the core. */
+    private fun applyDiagnosticsConsent(enabled: Boolean) {
+        diagnosticsEnabled = enabled
+        if (UnisonSettings.sentryEnabled(this) != enabled) {
+            Diagnostics.setConsent(this, enabled)
+        }
+    }
+
+    /** Stores the consent at once and mirrors it into the core. */
+    private fun saveDiagnostics(enabled: Boolean) {
+        Diagnostics.setConsent(this, enabled)
+        diagnosticsEnabled = enabled
+        appState.setSentryEnabled(enabled)
     }
 
     /** Offers the clipboard when it holds content that was not synchronized before. */

@@ -7,6 +7,7 @@ import app.unison.core.CoreException
 import app.unison.core.CoreStarter
 import app.unison.core.SubmitFailure
 import app.unison.core.mobile.Mobile
+import app.unison.diagnostics.Diagnostics
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -93,7 +94,10 @@ class MobileBridgeCore(
                 SubmitFailure.PAUSED -> SubmitOutcome.PAUSED
                 SubmitFailure.UNSUPPORTED -> SubmitOutcome.UNSUPPORTED_TYPE
                 SubmitFailure.NOT_RUNNING -> SubmitOutcome.CORE_UNAVAILABLE
-                SubmitFailure.OTHER -> SubmitOutcome.FAILED
+                SubmitFailure.OTHER -> {
+                    Diagnostics.capture(e)
+                    SubmitOutcome.FAILED
+                }
             }
         }
     }

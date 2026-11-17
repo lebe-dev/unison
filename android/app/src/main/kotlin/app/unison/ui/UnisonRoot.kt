@@ -79,6 +79,8 @@ fun UnisonRoot(
     onRefreshRelay: () -> Unit,
     onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
+    diagnosticsEnabled: Boolean,
+    onDiagnosticsChange: (Boolean) -> Unit,
     onSetDeviceConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onRenameDevice: (Local.Device, String) -> Unit,
     onRevokeDevice: (Local.Device) -> Unit,
@@ -222,6 +224,8 @@ fun UnisonRoot(
                 onRefreshRelay = onRefreshRelay,
                 onSelfConfirmationChange = onSelfConfirmationChange,
                 onLeaveGroup = onLeaveGroup,
+                diagnosticsEnabled = diagnosticsEnabled,
+                onDiagnosticsChange = onDiagnosticsChange,
                 onRefresh = onRefresh,
                 modifier = content,
             )

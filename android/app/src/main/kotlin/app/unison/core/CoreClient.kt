@@ -1,6 +1,7 @@
 package app.unison.core
 
 import app.unison.core.mobile.Mobile
+import app.unison.diagnostics.Diagnostics
 import app.unison.history.HistoryTtlProto
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyProto
@@ -87,6 +88,7 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
     private inline fun <T> decode(what: String, block: () -> T): T = try {
         block()
     } catch (e: InvalidProtocolBufferException) {
+        Diagnostics.capture(e)
         throw CoreException(CoreException.CODE_INTERNAL, "$what does not decode: ${e.message}")
     }
 
@@ -166,6 +168,19 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             method = "GetSettings",
             request = Local.GetSettingsRequest.getDefaultInstance(),
             parse = { Local.GetSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
+    /** Mirrors the consent to report errors to the developer. */
+    override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
+        val request = Local.UpdateSettingsRequest.newBuilder()
+            .setSentryEnabled(enabled)
+            .build()
+        val response = call(
+            method = "UpdateSettings",
+            request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
         )
         return response.settings
     }

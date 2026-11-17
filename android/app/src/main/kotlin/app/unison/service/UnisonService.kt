@@ -19,6 +19,7 @@ import app.unison.core.CoreClient
 import app.unison.core.CoreException
 import app.unison.core.coreEvents
 import app.unison.core.mobile.Mobile
+import app.unison.diagnostics.Diagnostics
 import app.unison.discovery.NsdDiscovery
 import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryNotifications
@@ -236,6 +237,7 @@ class UnisonService : Service() {
         }
     } catch (e: Exception) {
         Log.e(TAG, "core start failed", e)
+        Diagnostics.capture(e)
         discovery.stop()
         false
     }
@@ -246,6 +248,7 @@ class UnisonService : Service() {
             Mobile.stop()
         } catch (e: Exception) {
             Log.w(TAG, "core stop failed: ${e.message}")
+            Diagnostics.capture(e)
         }
         coreStarted = false
     }

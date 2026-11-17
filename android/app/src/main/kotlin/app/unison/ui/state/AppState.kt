@@ -436,6 +436,20 @@ class AppState(
         }
     }
 
+    /** Mirrors the consent to report errors to the developer into the core. */
+    fun setSentryEnabled(enabled: Boolean) {
+        scope.launch {
+            try {
+                val settings = core.setSentryEnabled(enabled)
+                mutableState.update { it.copy(settings = settings) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_diagnostics_failed)
+            }
+        }
+    }
+
     /** Stops the state updates. */
     fun close() {
         scope.cancel()

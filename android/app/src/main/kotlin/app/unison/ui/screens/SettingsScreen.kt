@@ -73,6 +73,8 @@ fun SettingsScreen(
     onRefreshRelay: () -> Unit,
     onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
+    diagnosticsEnabled: Boolean,
+    onDiagnosticsChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,6 +104,12 @@ fun SettingsScreen(
                 clipboard = state.requiresConfirmation,
                 files = state.requiresFileConfirmation,
                 onChange = onSelfConfirmationChange,
+            )
+        }
+        SettingsCard {
+            Diagnostics(
+                enabled = diagnosticsEnabled,
+                onChange = onDiagnosticsChange,
             )
         }
         SettingsCard {
@@ -336,14 +344,14 @@ private fun Confirmation(
     onChange: (Local.ConfirmationScope, Boolean) -> Unit,
 ) {
     SectionTitle(text = stringResource(R.string.settings_section_confirmation))
-    ConfirmationSwitch(
+    SettingsSwitch(
         title = stringResource(R.string.settings_confirmation),
         hint = stringResource(R.string.settings_confirmation_hint),
         checked = clipboard,
         tag = CONFIRMATION_TAG,
         onChange = { onChange(Local.ConfirmationScope.CONFIRMATION_SCOPE_CLIPBOARD, it) },
     )
-    ConfirmationSwitch(
+    SettingsSwitch(
         title = stringResource(R.string.settings_file_confirmation),
         hint = stringResource(R.string.settings_file_confirmation_hint),
         checked = files,
@@ -352,9 +360,22 @@ private fun Confirmation(
     )
 }
 
-/** One switch of the confirmation section. */
+/** Reporting of the crashes and the errors of this device to the developer. */
 @Composable
-private fun ConfirmationSwitch(
+private fun Diagnostics(enabled: Boolean, onChange: (Boolean) -> Unit) {
+    SectionTitle(text = stringResource(R.string.settings_section_diagnostics))
+    SettingsSwitch(
+        title = stringResource(R.string.settings_diagnostics),
+        hint = stringResource(R.string.settings_diagnostics_hint),
+        checked = enabled,
+        tag = DIAGNOSTICS_TAG,
+        onChange = onChange,
+    )
+}
+
+/** One switch of a settings section. */
+@Composable
+private fun SettingsSwitch(
     title: String,
     hint: String,
     checked: Boolean,
@@ -422,6 +443,9 @@ internal const val CONFIRMATION_TAG = "settings.confirmation"
 
 /** Tag of the switch of the files confirmation of this device. */
 internal const val FILE_CONFIRMATION_TAG = "settings.confirmation.files"
+
+/** Tag of the switch of the error reporting. */
+internal const val DIAGNOSTICS_TAG = "settings.diagnostics"
 
 /** Tag of the button that opens the folder picker for received files. */
 internal const val DOWNLOADS_PICK_TAG = "settings.downloads.pick"

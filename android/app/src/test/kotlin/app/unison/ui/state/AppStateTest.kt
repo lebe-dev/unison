@@ -42,6 +42,7 @@ class AppStateTest {
         var settings: Local.Settings = Local.Settings.getDefaultInstance()
         val selfConfirmations = mutableListOf<Pair<Local.ConfirmationScope, Boolean>>()
         val confirmations = mutableListOf<DeviceConfirmation>()
+        val sentrySettings = mutableListOf<Boolean>()
         var confirmationFailure: Exception? = null
         val revoked = mutableListOf<String>()
         val renamed = mutableListOf<Pair<String, String>>()
@@ -89,6 +90,12 @@ class AppStateTest {
         }
 
         override suspend fun settings(): Local.Settings = settings
+
+        override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
+            sentrySettings += enabled
+            settings = settings.toBuilder().setSentryEnabled(enabled).build()
+            return settings
+        }
 
         var relay: Local.Relay = Local.Relay.getDefaultInstance()
         var relayFailure: Exception? = null
@@ -578,6 +585,30 @@ class AppStateTest {
         assertTrue(!state.state.value.requiresConfirmation)
         assertTrue(R.string.settings_confirmation_saved in notices)
         collector.cancel()
+    }
+
+    @Test
+    fun sentryConsentIsSaved() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.setSentryEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(listOf(true), core.sentrySettings)
+        assertTrue(state.state.value.reportsErrors)
+    }
+
+    @Test
+    fun refreshLoadsTheSentryConsent() = runTest {
+        val core = FakeCore()
+        core.settings = Local.Settings.newBuilder().setSentryEnabled(true).build()
+        val state = appState(core)
+
+        state.refresh()
+        advanceUntilIdle()
+
+        assertTrue(state.state.value.reportsErrors)
     }
 
     @Test

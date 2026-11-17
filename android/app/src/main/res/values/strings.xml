@@ -120,6 +120,10 @@
     <string name="settings_file_confirmation_hint">Nothing is downloaded until you accept the files.</string>
     <string name="settings_confirmation_saved">Confirmation setting saved</string>
     <string name="settings_confirmation_failed">Cannot change the confirmation setting</string>
+    <string name="settings_section_diagnostics">Diagnostics</string>
+    <string name="settings_diagnostics">Send errors to the developer</string>
+    <string name="settings_diagnostics_hint">Crash reports help fix problems. The clipboard, device names and files are never included.</string>
+    <string name="settings_diagnostics_failed">Cannot save the diagnostics setting</string>
     <string name="relay_title">Relay</string>
     <string name="relay_url_label">Relay address</string>
     <string name="relay_url_hint">Host and port of the group relay, or https://host:port. Shared with your other devices.</string>

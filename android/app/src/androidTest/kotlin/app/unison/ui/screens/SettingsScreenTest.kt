@@ -105,6 +105,16 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun diagnosticsReportingIsOffered() {
+        var enabled: Boolean? = null
+        setContent(onDiagnosticsChange = { enabled = it })
+
+        compose.onNodeWithTag(DIAGNOSTICS_TAG).performScrollTo().performClick()
+
+        assertEquals(true, enabled)
+    }
+
+    @Test
     fun historyLifetimeIsSaved() {
         var saved: Pair<Local.Kind, Long>? = null
         setContent(onTtlSave = { kind, seconds -> saved = kind to seconds })
@@ -193,6 +203,8 @@ class SettingsScreenTest {
         onDownloadsFolderReset: () -> Unit = {},
         onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit = { _, _ -> },
         onLeaveGroup: () -> Unit = {},
+        diagnosticsEnabled: Boolean = false,
+        onDiagnosticsChange: (Boolean) -> Unit = {},
     ) {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
@@ -217,6 +229,8 @@ class SettingsScreenTest {
                     onRefreshRelay = onRefreshRelay,
                     onSelfConfirmationChange = onSelfConfirmationChange,
                     onLeaveGroup = onLeaveGroup,
+                    diagnosticsEnabled = diagnosticsEnabled,
+                    onDiagnosticsChange = onDiagnosticsChange,
                     onRefresh = {},
                 )
             }

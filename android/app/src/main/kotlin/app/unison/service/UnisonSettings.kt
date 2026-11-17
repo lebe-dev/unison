@@ -42,6 +42,9 @@ object UnisonSettings {
     /** Set once the first run screen was completed. */
     const val KEY_ONBOARDED = "onboarding.done"
 
+    /** Set by the user to report errors to the developer. */
+    const val KEY_SENTRY_ENABLED = "diagnostics.sentry_enabled"
+
     fun operatingMode(context: Context): OperatingMode {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
         return OperatingMode.fromValue(prefs.getString(KEY_OPERATING_MODE, null))
@@ -96,5 +99,16 @@ object UnisonSettings {
     fun setOnboarded(context: Context, done: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putBoolean(KEY_ONBOARDED, done) }
+    }
+
+    /** True when the user allows the app to send errors to the developer. */
+    fun sentryEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_SENTRY_ENABLED, false)
+    }
+
+    fun setSentryEnabled(context: Context, value: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putBoolean(KEY_SENTRY_ENABLED, value) }
     }
 }

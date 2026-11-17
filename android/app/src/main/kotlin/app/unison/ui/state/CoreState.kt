@@ -32,6 +32,10 @@ data class CoreState(
     val requiresFileConfirmation: Boolean
         get() = settings?.requireFileConfirmation == true
 
+    /** This device reports errors to the developer. */
+    val reportsErrors: Boolean
+        get() = settings?.sentryEnabled == true
+
     /** Paired devices of [role], the online ones first. */
     fun devices(role: Local.Role): List<Local.Device> =
         status?.devicesList.orEmpty()
