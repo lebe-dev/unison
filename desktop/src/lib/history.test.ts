@@ -250,6 +250,7 @@ describe("tray entries", () => {
         historyTtlImageSeconds: 0n,
         historyTtlFilesSeconds: 0n,
         sentryEnabled: false,
+        stripTracking: true,
       },
     });
 

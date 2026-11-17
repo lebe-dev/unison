@@ -424,6 +424,10 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.diagnosticsHint":
     "Отправляются сбои и ошибки приложения. Ничего не отправляется, пока вы не включите эту настройку.",
   "settings.diagnosticsFailed": "Не удалось изменить настройку отправки ошибок.",
+  "settings.stripTracking": "Убирать параметры отслеживания из ссылок",
+  "settings.stripTrackingHint":
+    "Из ссылок в буфере обмена удаляются utm, fbclid, gclid и подобные параметры.",
+  "settings.stripTrackingFailed": "Не удалось изменить настройку параметров отслеживания.",
 
   // Labels of the network policy table.
   "policy.condition.unmetered": "Без лимита",

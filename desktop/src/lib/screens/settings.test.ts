@@ -80,6 +80,7 @@ function settings(): SettingsMessage {
     historyTtlFilesSeconds: 86400n,
     downloadsDir: "/Users/me/Downloads/Unison",
     sentryEnabled: false,
+    stripTracking: true,
   });
 }
 
@@ -381,6 +382,49 @@ describe("settings screen", () => {
     expect(await screen.findByText("the daemon is busy")).toBeTruthy();
     expect((toggle as HTMLInputElement).checked).toBe(false);
     expect(setSentryEnabled).not.toHaveBeenCalledWith(true);
+  });
+
+  it("removes the tracking parameters by default", async () => {
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
+
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("turns the removal of tracking parameters on", async () => {
+    getSettings.mockResolvedValue(
+      create(GetSettingsResponseSchema, {
+        settings: { ...settings(), stripTracking: false },
+      }),
+    );
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
+    await screen.findByDisplayValue("This Mac");
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+
+    await fireEvent.click(toggle);
+
+    expect(updateSettings).toHaveBeenCalledWith({ stripTracking: true });
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("reverts the removal of tracking parameters when it cannot be saved", async () => {
+    getSettings.mockResolvedValue(
+      create(GetSettingsResponseSchema, {
+        settings: { ...settings(), stripTracking: false },
+      }),
+    );
+    updateSettings.mockRejectedValue(new Error("the daemon is busy"));
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
+    await screen.findByDisplayValue("This Mac");
+    await fireEvent.click(toggle);
+
+    expect(await screen.findByText("the daemon is busy")).toBeTruthy();
+    expect((toggle as HTMLInputElement).checked).toBe(false);
   });
 
   it("refuses an empty device name", async () => {

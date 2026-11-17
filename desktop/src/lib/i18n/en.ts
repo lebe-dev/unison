@@ -422,6 +422,10 @@ export const en = {
   "settings.diagnosticsHint":
     "Crashes and errors of the app are reported. Nothing is sent unless you turn this on.",
   "settings.diagnosticsFailed": "The error reporting setting could not be changed.",
+  "settings.stripTracking": "Remove tracking parameters from links",
+  "settings.stripTrackingHint":
+    "utm, fbclid, gclid and similar parameters are removed from the links in the clipboard.",
+  "settings.stripTrackingFailed": "The tracking parameter setting could not be changed.",
 
   // Labels of the network policy table.
   "policy.condition.unmetered": "Unmetered",

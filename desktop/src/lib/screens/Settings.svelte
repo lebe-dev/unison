@@ -49,6 +49,7 @@
   let requireConfirmation = $state(false);
   let requireFileConfirmation = $state(false);
   let sentryEnabled = $state(false);
+  let stripTracking = $state(true);
   let policy = $state<PolicyTable | null>(null);
   let ttl = $state<HistoryTTL | null>(null);
   let ttlDrafts = $state<Record<TTLKind, string>>({ text: "", image: "", files: "" });
@@ -128,6 +129,7 @@
       requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
       downloadsDir = response.settings?.downloadsDir ?? "";
       sentryEnabled = response.settings?.sentryEnabled ?? false;
+      stripTracking = response.settings?.stripTracking ?? true;
       policy = policyFromSettings(response.settings);
       showTTL(ttlFromSettings(response.settings));
       loaded = true;
@@ -216,6 +218,26 @@
       notice = {
         kind: "error",
         text: errorText(error, t("settings.diagnosticsFailed")),
+      };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** setStripTracking stores whether the links in the clipboard lose their tracking parameters. */
+  async function setStripTracking(value: boolean): Promise<void> {
+    const previous = stripTracking;
+    stripTracking = value;
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings({ stripTracking: value });
+      stripTracking = response.settings?.stripTracking ?? value;
+    } catch (error) {
+      stripTracking = previous;
+      notice = {
+        kind: "error",
+        text: errorText(error, t("settings.stripTrackingFailed")),
       };
     } finally {
       busy = false;
@@ -727,6 +749,18 @@
     <section class="section">
       <h3 class="section-title">{t("settings.sectionPrivacy")}</h3>
       <div class="list">
+        <label class="toggle form-row">
+          <input
+            type="checkbox"
+            checked={stripTracking}
+            disabled={busy || !loaded}
+            onchange={(event) => void setStripTracking(event.currentTarget.checked)}
+          />
+          <span>
+            {t("settings.stripTracking")}
+            <small>{t("settings.stripTrackingHint")}</small>
+          </span>
+        </label>
         <label class="toggle form-row">
           <input
             type="checkbox"
