@@ -11,6 +11,7 @@ import (
 
 	"github.com/quic-go/quic-go"
 
+	"github.com/lebe-dev/unison/internal/observability"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
 
@@ -108,10 +109,15 @@ func (s *Server) listenQUIC(cert tls.Certificate) error {
 // serveQUIC accepts connections until the server closes.
 func (s *Server) serveQUIC() {
 	defer s.wg.Done()
+	defer observability.Recover()
 
 	for {
 		conn, err := s.quicListener.Accept(s.ctx)
 		if err != nil {
+			if s.ctx.Err() == nil && !errors.Is(err, net.ErrClosed) {
+				s.log.Error("quic listener stopped", "error", err)
+				observability.CaptureMessage("relay: quic listener stopped")
+			}
 			return
 		}
 		if !s.capacity() {
@@ -131,6 +137,7 @@ func (s *Server) serveQUIC() {
 func (s *Server) serveQUICConn(conn *quic.Conn) {
 	p := s.newPeer(transportQUIC, &quicWriter{conn: conn})
 	defer p.stop(relayv1.RelayStatus_RELAY_STATUS_UNSPECIFIED)
+	defer observability.Recover()
 
 	state := conn.ConnectionState()
 	if !state.SupportsDatagrams.Local || !state.SupportsDatagrams.Remote {

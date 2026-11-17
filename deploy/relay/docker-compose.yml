@@ -26,6 +26,9 @@ services:
       # UNISON_RELAY_TOKENS accepts tokens as a comma separated list, for example
       # when no tokens file is mounted.
       UNISON_RELAY_TOKENS: ${RELAY_TOKENS:-}
+      # SENTRY_DSN at runtime overrides the DSN of the build. UNISON_RELAY_SENTRY=0
+      # turns reporting off.
+      SENTRY_DSN: ${SENTRY_DSN:-}
     volumes:
       # Read-only directory with cert.pem, key.pem and tokens.txt.
       - ./secrets:/etc/unison-relay:ro

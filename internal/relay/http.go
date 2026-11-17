@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // listenHTTP binds the health and metrics listener. It serves plain HTTP, so an
@@ -28,9 +30,11 @@ func (s *Server) listenHTTP() error {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		defer observability.Recover()
 		err := s.httpServer.Serve(ln)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			s.log.Error("health server stopped", "error", err)
+			observability.CaptureMessage("relay: health server stopped")
 		}
 	}()
 	return nil

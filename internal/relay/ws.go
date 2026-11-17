@@ -11,6 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/lebe-dev/unison/internal/observability"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
 
@@ -40,9 +41,11 @@ func (s *Server) listenWS(cert tls.Certificate) error {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		defer observability.Recover()
 		err := s.wsServer.Serve(tls.NewListener(ln, tlsConfig))
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			s.log.Error("websocket server stopped", "error", err)
+			observability.CaptureMessage("relay: websocket server stopped")
 		}
 	}()
 	return nil
@@ -80,6 +83,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 func (s *Server) serveWS(conn *websocket.Conn) {
 	p := s.newPeer(transportWS, &wsWriter{conn: conn})
 	defer p.stop(relayv1.RelayStatus_RELAY_STATUS_UNSPECIFIED)
+	defer observability.Recover()
 
 	ctx, cancel := context.WithTimeout(s.ctx, s.cfg.RegisterTimeout)
 	defer cancel()
@@ -132,6 +136,8 @@ func (s *Server) serveWS(conn *websocket.Conn) {
 
 // pingPeer keeps a WebSocket connection alive and detects a dead peer.
 func (s *Server) pingPeer(p *peer, conn *websocket.Conn) {
+	defer observability.Recover()
+
 	ticker := time.NewTicker(s.cfg.PingInterval)
 	defer ticker.Stop()
 

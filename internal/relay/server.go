@@ -15,6 +15,7 @@ import (
 
 	"github.com/quic-go/quic-go"
 
+	"github.com/lebe-dev/unison/internal/observability"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
 
@@ -380,6 +381,8 @@ func (p *peer) send(frame []byte) {
 
 // writeLoop writes the queued frames to the client.
 func (p *peer) writeLoop() {
+	defer observability.Recover()
+
 	for {
 		select {
 		case <-p.done:

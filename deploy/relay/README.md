@@ -75,6 +75,13 @@ docker run -d --name unison-relay --restart unless-stopped \
 Change the host side of `-p` when another service already listens on 443. The container ports stay
 the same.
 
+## Error reporting
+
+`SENTRY_DSN` can be set when the image is built and in the container environment; the runtime value
+wins. Without a DSN in both places the relay reports nothing. Crashes and unexpected server errors
+are reported without tokens, client addresses or payload data. Set `UNISON_RELAY_SENTRY=0` to turn
+reporting off at runtime; `false` and `off` work too.
+
 ## Ports
 
 | Port | Protocol | Purpose |
