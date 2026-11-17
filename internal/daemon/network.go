@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/lebe-dev/unison/core/model"
 )
 
 const (
@@ -19,15 +21,24 @@ const (
 )
 
 // watchNetwork reports every change of the local addresses to report until ctx
-// ends. The desktop has no network monitor of the platform, so the daemon
-// follows the interfaces itself.
-func watchNetwork(ctx context.Context, report func()) {
-	watchAddresses(ctx, networkWatchInterval, networkSettleDelay, localAddresses, report)
+// ends, with the state of the new network. The desktop has no network monitor
+// of the platform, so the daemon follows the interfaces itself.
+func watchNetwork(ctx context.Context, report func(model.NetworkState)) {
+	watchAddresses(ctx, networkWatchInterval, networkSettleDelay, localAddresses, func(fingerprint string) {
+		report(networkStateOf(fingerprint))
+	})
 }
 
-// watchAddresses reports a change of the fingerprint once the change settled.
-// The first fingerprint is the starting point and is not reported.
-func watchAddresses(ctx context.Context, interval, settle time.Duration, fingerprint func() string, report func()) {
+// networkStateOf returns the state of a network with the fingerprint of
+// localAddresses. A device without an address another device can use is
+// offline.
+func networkStateOf(fingerprint string) model.NetworkState {
+	return model.NetworkState{Online: fingerprint != ""}
+}
+
+// watchAddresses reports the new fingerprint once a change settled. The first
+// fingerprint is the starting point and is not reported.
+func watchAddresses(ctx context.Context, interval, settle time.Duration, fingerprint func() string, report func(string)) {
 	last := fingerprint()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -51,7 +62,7 @@ func watchAddresses(ctx context.Context, interval, settle time.Duration, fingerp
 			continue
 		}
 		last = next
-		report()
+		report(next)
 	}
 }
 

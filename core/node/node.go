@@ -499,8 +499,10 @@ func (n *Node) RetryPeer(ctx context.Context, id model.DeviceID) error {
 			l.retry()
 		}
 	}
-	n.advertise(ctx)
-	n.probeCandidates(ctx)
+	// The dials outlive the request that asked for them, so they follow the
+	// node rather than ctx.
+	n.advertise(n.ctx)
+	n.probeCandidates(n.ctx)
 	return nil
 }
 

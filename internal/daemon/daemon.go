@@ -177,12 +177,16 @@ func Run(ctx context.Context, opts Options) error {
 	// has no network monitor of the platform, and the peers of a network the
 	// device left are unreachable by their cached addresses.
 	refresher, refreshes := disc.(networkRefresher)
-	go watchNetwork(ctx, func() {
-		log.Info("network changed, retrying the peers")
+	go watchNetwork(ctx, func(state model.NetworkState) {
+		if state.Online {
+			log.Info("network changed, retrying the peers")
+		} else {
+			log.Info("network lost, waiting for a new one")
+		}
 		if refreshes {
 			refresher.Refresh()
 		}
-		n.NetworkChanged(model.NetworkState{Online: true})
+		n.NetworkChanged(state)
 	})
 
 	serveCtx, stopServing := context.WithCancel(context.Background())

@@ -348,3 +348,27 @@ func TestAnswer(t *testing.T) {
 		t.Fatalf("legacy answer id = %v, want the query id", resp)
 	}
 }
+
+// TestPeerIP checks which addresses make an interface worth announcing on.
+func TestPeerIP(t *testing.T) {
+	cases := []struct {
+		ip   string
+		want bool
+	}{
+		{"192.168.1.5", true},
+		{"10.0.0.7", true},
+		{"2001:db8::1", true},
+		{"127.0.0.1", false},
+		{"::1", false},
+		{"169.254.10.1", false},
+		{"fe80::1", false},
+		{"0.0.0.0", false},
+		{"::", false},
+		{"224.0.0.251", false},
+	}
+	for _, test := range cases {
+		if got := peerIP(net.ParseIP(test.ip)); got != test.want {
+			t.Errorf("peerIP(%s) = %v, want %v", test.ip, got, test.want)
+		}
+	}
+}

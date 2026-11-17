@@ -838,16 +838,17 @@ func hasPeerAddress(iface *net.Interface) bool {
 	}
 	for _, entry := range list {
 		ipNet, ok := entry.(*net.IPNet)
-		if !ok {
-			continue
+		if ok && peerIP(ipNet.IP) {
+			return true
 		}
-		ip := ipNet.IP
-		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() || ip.IsMulticast() {
-			continue
-		}
-		return true
 	}
 	return false
+}
+
+// peerIP reports whether another device of the local network can dial ip:
+// loopback, link local and multicast addresses stay inside one host or one link.
+func peerIP(ip net.IP) bool {
+	return !ip.IsLoopback() && !ip.IsLinkLocalUnicast() && !ip.IsUnspecified() && !ip.IsMulticast()
 }
 
 // randomLabel returns a random lowercase base32 label.

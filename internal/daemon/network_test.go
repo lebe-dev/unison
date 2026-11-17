@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"net"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -36,7 +37,7 @@ func runWatcher(t *testing.T, fingerprint func() string, watch time.Duration) in
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		watchAddresses(ctx, 2*time.Millisecond, 10*time.Millisecond, fingerprint, func() {
+		watchAddresses(ctx, 2*time.Millisecond, 10*time.Millisecond, fingerprint, func(string) {
 			reports.Add(1)
 		})
 	}()
@@ -70,7 +71,7 @@ func TestWatchAddressesStopsWithContext(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		watchAddresses(ctx, time.Millisecond, time.Millisecond, script.fingerprint, func() {})
+		watchAddresses(ctx, time.Millisecond, time.Millisecond, script.fingerprint, func(string) {})
 	}()
 	cancel()
 	select {
@@ -89,5 +90,68 @@ func TestLocalAddressesSkipLoopback(t *testing.T) {
 	}
 	if strings.Contains(fingerprint, "127.0.0.1") || strings.Contains(fingerprint, "::1/") {
 		t.Fatalf("the fingerprint %q contains a loopback address", fingerprint)
+	}
+}
+
+// TestWatchAddressesReportsFingerprint checks that a report carries the settled
+// addresses, so the daemon can tell a lost network from a new one.
+func TestWatchAddressesReportsFingerprint(t *testing.T) {
+	script := &addressSequence{values: []string{"a", "", ""}}
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	reported := make(chan string, 4)
+	watchAddresses(ctx, 2*time.Millisecond, 10*time.Millisecond, script.fingerprint, func(fingerprint string) {
+		reported <- fingerprint
+	})
+	close(reported)
+
+	var got []string
+	for fingerprint := range reported {
+		got = append(got, fingerprint)
+	}
+	if len(got) != 1 || got[0] != "" {
+		t.Fatalf("reports %q for a lost network, want one empty fingerprint", got)
+	}
+}
+
+// TestUsableAddr checks which addresses another device can reach.
+func TestUsableAddr(t *testing.T) {
+	cases := []struct {
+		cidr string
+		want bool
+	}{
+		{"192.168.1.5/24", true},
+		{"10.0.0.7/8", true},
+		{"2001:db8::1/64", true},
+		{"127.0.0.1/8", false},
+		{"::1/128", false},
+		{"169.254.10.1/16", false},
+		{"fe80::1/64", false},
+		{"0.0.0.0/0", false},
+		{"224.0.0.251/32", false},
+	}
+	for _, test := range cases {
+		ip, ipNet, err := net.ParseCIDR(test.cidr)
+		if err != nil {
+			t.Fatalf("parse %s: %v", test.cidr, err)
+		}
+		ipNet.IP = ip
+		if got := usableAddr(ipNet); got != test.want {
+			t.Errorf("usableAddr(%s) = %v, want %v", test.cidr, got, test.want)
+		}
+	}
+	if usableAddr(&net.IPAddr{IP: net.ParseIP("192.168.1.5")}) {
+		t.Error("an address without a network is usable")
+	}
+}
+
+// TestNetworkStateOf checks that a network without usable addresses is offline.
+func TestNetworkStateOf(t *testing.T) {
+	if networkStateOf("").Online {
+		t.Error("a network without addresses is online")
+	}
+	if !networkStateOf("en0:192.168.1.5/24|").Online {
+		t.Error("a network with an address is offline")
 	}
 }
