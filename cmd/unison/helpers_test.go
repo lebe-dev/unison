@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -30,6 +31,9 @@ const testTimeout = 60 * time.Second
 // testVersion is the daemon version the tests report.
 const testVersion = "1.2.3"
 
+// maxTestPort is the highest port of the virtual network that a node can dial.
+const maxTestPort = 65535
+
 // socketFactory binds virtual packet connections on consecutive addresses of
 // one node. The first socket is the main listener.
 type socketFactory struct {
@@ -44,6 +48,9 @@ func (f *socketFactory) listenPacket(_ context.Context, _ int) (net.PacketConn, 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
+	if f.next > maxTestPort {
+		return nil, fmt.Errorf("socket factory: port %d of the virtual network is out of range", f.next)
+	}
 	addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(f.next))
 	f.next++
 	return f.network.ListenPacket(addr)

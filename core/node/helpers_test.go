@@ -25,6 +25,9 @@ import (
 // testTimeout bounds the wait for an event or a state in the tests.
 const testTimeout = 20 * time.Second
 
+// maxTestPort is the highest port of the virtual network that a node can dial.
+const maxTestPort = 65535
+
 // testLogger returns a logger that writes to stderr when the test asks for it.
 func testLogger(base int) *slog.Logger {
 	if os.Getenv("NODE_TEST_LOG") == "" {
@@ -55,6 +58,11 @@ func (f *socketFactory) listenPacket(_ context.Context, _ int) (net.PacketConn, 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
+	// A port above the range of the real protocol is not a dialable address:
+	// the node cannot reach it and a test would wait for a timeout.
+	if f.next > maxTestPort {
+		return nil, fmt.Errorf("socket factory: port %d of the virtual network is out of range", f.next)
+	}
 	addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(f.next))
 	f.next++
 	pc, err := f.network.ListenPacket(addr)

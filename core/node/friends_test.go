@@ -243,7 +243,7 @@ func TestFriendsForbiddenMessages(t *testing.T) {
 
 	for i, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
-			a, b := shareNodes(t, 64000+i*100, model.RoleFriends)
+			a, b := shareNodes(t, 59000+i*100, model.RoleFriends)
 			receiver := peerSession(t, a, b.DeviceID())
 			sender := peerSession(t, b, a.DeviceID())
 			ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
