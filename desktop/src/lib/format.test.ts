@@ -14,7 +14,6 @@ import {
   formatBytes,
   formatTime,
   historyTitle,
-  imagePreview,
   itemSize,
   kindLabel,
   pathLabel,
@@ -120,25 +119,6 @@ describe("historyTitle", () => {
     });
 
     expect(historyTitle(item)).toBe("report.pdf and 1 more");
-  });
-});
-
-describe("imagePreview", () => {
-  it("returns an URL only for an inline image", () => {
-    const inline = create(ClipItemSchema, {
-      kind: Kind.IMAGE,
-      representations: [
-        { mimeType: "image/png", size: 3n, inlineBytes: new Uint8Array([1, 2, 3]) },
-      ],
-    });
-    const stored = create(ClipItemSchema, {
-      kind: Kind.IMAGE,
-      representations: [{ mimeType: "image/png", size: 3n, blake3: "ab" }],
-    });
-
-    expect(imagePreview(inline)).toMatch(/^data:image\/png;base64,/);
-    expect(imagePreview(stored)).toBeNull();
-    expect(imagePreview(textItem("text"))).toBeNull();
   });
 });
 

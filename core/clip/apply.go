@@ -223,7 +223,8 @@ func (p *Pipeline) textContent(ctx context.Context, item model.ClipItem) (ports.
 	return ports.Content{Representations: reps}, nil
 }
 
-// imageContent returns the PNG representation of the item.
+// imageContent returns the image of the item, decoded and encoded again as
+// PNG.
 func (p *Pipeline) imageContent(ctx context.Context, item model.ClipItem) (ports.Content, error) {
 	rep, ok := primaryImage(item)
 	if !ok {
@@ -233,11 +234,33 @@ func (p *Pipeline) imageContent(ctx context.Context, item model.ClipItem) (ports
 	if err != nil {
 		return ports.Content{}, err
 	}
-	data, err = toPNG(data)
+	data, err = sanitizeImage(data)
 	if err != nil {
 		return ports.Content{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
 	}
 	return ports.Content{Representations: []ports.Representation{{MIME: MIMEImagePNG, Data: data}}}, nil
+}
+
+// Thumbnail returns a scaled down copy of the image of an item. Only a payload
+// stored on this device is read; a missing one is reported as
+// ErrPayloadMissing.
+func (p *Pipeline) Thumbnail(ctx context.Context, item model.ClipItem, maxSide int) (Pixels, error) {
+	if item.Kind != model.KindImage {
+		return Pixels{}, fmt.Errorf("%w: kind %s has no image", ErrUnsupportedContent, item.Kind)
+	}
+	rep, ok := primaryImage(item)
+	if !ok {
+		return Pixels{}, fmt.Errorf("%w: no image representation", ErrUnsupportedContent)
+	}
+	data, err := p.payloadData(ctx, rep)
+	if err != nil {
+		return Pixels{}, err
+	}
+	pixels, err := Thumbnail(data, maxSide)
+	if err != nil {
+		return Pixels{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
+	}
+	return pixels, nil
 }
 
 // fileContent writes the files of the item to the downloads directory and

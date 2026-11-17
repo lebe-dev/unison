@@ -203,29 +203,6 @@ export function fileNames(item: ClipItem | undefined): string[] {
   return item.representations.map((rep) => rep.fileName).filter((name) => name !== "");
 }
 
-/** dataURL turns an inline payload into an URL the webview can show. */
-export function dataURL(mime: string, bytes: Uint8Array): string {
-  let binary = "";
-  const step = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += step) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + step));
-  }
-  return `data:${mime};base64,${btoa(binary)}`;
-}
-
-/** imagePreview returns the inline image of an item as an URL, or null when
- * the payload is not stored inline. */
-export function imagePreview(item: ClipItem | undefined): string | null {
-  if (!item || item.kind !== Kind.IMAGE) {
-    return null;
-  }
-  const rep = representation(item, "image/");
-  if (!rep || rep.inlineBytes.length === 0) {
-    return null;
-  }
-  return dataURL(rep.mimeType, rep.inlineBytes);
-}
-
 /** progressPercent returns the share of the transferred bytes, 0 when the size
  * is unknown. */
 export function progressPercent(transfer: Transfer): number {

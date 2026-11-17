@@ -49,8 +49,15 @@ func (p *Pipeline) imagePayloads(reps []ports.Representation) []payload {
 	return payloads
 }
 
-// normalizeImage converts one image representation to PNG.
-func normalizeImage(rep ports.Representation) ([]payload, error) {
+// normalizeImage converts one image representation to PNG. A panic of a
+// decoder is reported as an error.
+func normalizeImage(rep ports.Representation) (payloads []payload, err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			payloads, err = nil, fmt.Errorf("decode image: decoder failed: %v", recovered)
+		}
+	}()
+
 	source, closeSource, err := openImage(rep)
 	if err != nil {
 		return nil, err
@@ -80,7 +87,7 @@ func normalizeImage(rep ports.Representation) ([]payload, error) {
 	if err != nil {
 		return nil, err
 	}
-	payloads := []payload{pngPayload}
+	payloads = []payload{pngPayload}
 
 	original := imageMIME(format, rep.MIME)
 	if original != MIMEImagePNG && size < int64(2*len(pngPayload.data)) {
@@ -157,30 +164,6 @@ func checkImageBounds(cfg image.Config) error {
 	default:
 		return nil
 	}
-}
-
-// toPNG returns the payload as PNG, converting an image of another format.
-func toPNG(data []byte) ([]byte, error) {
-	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("decode image header: %w", err)
-	}
-	if err := checkImageBounds(cfg); err != nil {
-		return nil, err
-	}
-	if format == "png" {
-		return data, nil
-	}
-
-	decoded, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("decode image: %w", err)
-	}
-	var buffer bytes.Buffer
-	if err := png.Encode(&buffer, decoded); err != nil {
-		return nil, fmt.Errorf("encode png: %w", err)
-	}
-	return buffer.Bytes(), nil
 }
 
 // imageMIME returns the MIME type of an image format.

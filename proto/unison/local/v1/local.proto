@@ -186,6 +186,9 @@ service UnisonService {
   // History of clip items.
   rpc ListHistory(ListHistoryRequest) returns (ListHistoryResponse);
   rpc GetHistoryItem(GetHistoryItemRequest) returns (GetHistoryItemResponse);
+  // A scaled down copy of the image of an item, decoded by the daemon. The
+  // payload must be stored on this device.
+  rpc GetHistoryThumbnail(GetHistoryThumbnailRequest) returns (GetHistoryThumbnailResponse);
   rpc DeleteHistoryItem(DeleteHistoryItemRequest) returns (DeleteHistoryItemResponse);
   // Download the payloads of an item. They are written to path when it is set.
   rpc FetchHistoryItem(FetchHistoryItemRequest) returns (FetchHistoryItemResponse);
@@ -657,6 +660,21 @@ message GetHistoryItemRequest {
 
 message GetHistoryItemResponse {
   HistoryItem item = 1;
+}
+
+message GetHistoryThumbnailRequest {
+  // UUID of the item.
+  string id = 1;
+  // Longer side of the thumbnail in pixels. Zero uses the default, the server
+  // caps it. A smaller image keeps its size.
+  uint32 max_side = 2;
+}
+
+message GetHistoryThumbnailResponse {
+  uint32 width = 1;
+  uint32 height = 2;
+  // Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+  bytes rgba = 3;
 }
 
 message DeleteHistoryItemRequest {
