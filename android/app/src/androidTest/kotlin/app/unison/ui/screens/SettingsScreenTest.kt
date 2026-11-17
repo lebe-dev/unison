@@ -17,6 +17,7 @@ import app.unison.clipboard.PauseRequest
 import app.unison.history.HistoryTtl
 import app.unison.history.HistoryTtlDefaults
 import app.unison.policy.PolicyDefaults
+import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.testString
 import app.unison.ui.state.CoreState
@@ -164,6 +165,41 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun notificationCategoriesCanBeTurnedOff() {
+        var saved: NotificationSettings? = null
+        setContent(onNotificationsChange = { saved = it })
+        open(SettingsPage.NOTIFICATIONS)
+
+        compose.onNodeWithTag(TRANSFERS_TAG).performScrollTo().performClick()
+        assertEquals(false, saved?.transfers)
+
+        compose.onNodeWithTag(CONFIRMATIONS_TAG).performScrollTo().performClick()
+        assertEquals(false, saved?.confirmations)
+    }
+
+    @Test
+    fun dismissedStatusCanStayHidden() {
+        var saved: NotificationSettings? = null
+        setContent(onNotificationsChange = { saved = it })
+        open(SettingsPage.NOTIFICATIONS)
+
+        compose.onNodeWithTag(HIDE_STATUS_TAG).performScrollTo().performClick()
+
+        assertEquals(false, saved?.hideStatusAfterDismissal)
+    }
+
+    @Test
+    fun statusDetailsCanBeHidden() {
+        var saved: NotificationSettings? = null
+        setContent(onNotificationsChange = { saved = it })
+        open(SettingsPage.NOTIFICATIONS)
+
+        compose.onNodeWithTag(STATUS_DETAILS_TAG).performScrollTo().performClick()
+
+        assertEquals(false, saved?.statusDetails)
+    }
+
+    @Test
     fun trackingParametersCanBeKept() {
         var enabled: Boolean? = null
         setContent(stripTracking = true, onStripTrackingChange = { enabled = it })
@@ -279,6 +315,8 @@ class SettingsScreenTest {
         onLeaveGroup: () -> Unit = {},
         diagnosticsEnabled: Boolean = false,
         onDiagnosticsChange: (Boolean) -> Unit = {},
+        notifications: NotificationSettings = NotificationSettings(),
+        onNotificationsChange: (NotificationSettings) -> Unit = {},
         stripTracking: Boolean = true,
         onStripTrackingChange: (Boolean) -> Unit = {},
     ) {
@@ -307,6 +345,8 @@ class SettingsScreenTest {
                     onLeaveGroup = onLeaveGroup,
                     diagnosticsEnabled = diagnosticsEnabled,
                     onDiagnosticsChange = onDiagnosticsChange,
+                    notifications = notifications,
+                    onNotificationsChange = onNotificationsChange,
                     stripTracking = stripTracking,
                     onStripTrackingChange = onStripTrackingChange,
                     onRefresh = {},

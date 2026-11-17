@@ -45,6 +45,24 @@ object UnisonSettings {
     /** Set by the user to report errors to the developer. */
     const val KEY_SENTRY_ENABLED = "diagnostics.sentry_enabled"
 
+    /** Notifications of the transfers; see [NotificationSettings]. */
+    const val KEY_NOTIFICATIONS_TRANSFERS = "notifications.transfers"
+
+    /** Notifications of the file offers. */
+    const val KEY_NOTIFICATIONS_REQUESTS = "notifications.requests"
+
+    /** Notifications of the clipboard items. */
+    const val KEY_NOTIFICATIONS_CLIPBOARD = "notifications.clipboard"
+
+    /** Notifications of the clipboard items that wait for an apply. */
+    const val KEY_NOTIFICATIONS_CONFIRMATIONS = "notifications.confirmations"
+
+    /** Keep the status notification hidden after the user dismisses it. */
+    const val KEY_NOTIFICATIONS_HIDE_STATUS = "notifications.hide_status"
+
+    /** Show the device name and the online devices in the status notification. */
+    const val KEY_NOTIFICATIONS_STATUS_DETAILS = "notifications.status_details"
+
     fun operatingMode(context: Context): OperatingMode {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
         return OperatingMode.fromValue(prefs.getString(KEY_OPERATING_MODE, null))

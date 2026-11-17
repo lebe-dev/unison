@@ -37,6 +37,7 @@ import app.unison.R
 import app.unison.clipboard.PauseRequest
 import app.unison.history.HistoryTtl
 import app.unison.policy.PolicyConfig
+import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
@@ -56,6 +57,7 @@ internal enum class SettingsPage(@StringRes val title: Int, @DrawableRes val ico
     CLIPBOARD(R.string.settings_page_clipboard, R.drawable.ic_copy),
     FILES(R.string.settings_page_files, R.drawable.ic_kind_file),
     HISTORY(R.string.settings_page_history, R.drawable.ic_nav_history),
+    NOTIFICATIONS(R.string.settings_page_notifications, R.drawable.ic_nav_notifications),
     NETWORK(R.string.settings_page_network, R.drawable.ic_network),
     ABOUT(R.string.settings_section_about, R.drawable.ic_info),
 }
@@ -66,6 +68,7 @@ private val MAIN_PAGES = listOf(
     SettingsPage.CLIPBOARD,
     SettingsPage.FILES,
     SettingsPage.HISTORY,
+    SettingsPage.NOTIFICATIONS,
     SettingsPage.NETWORK,
 )
 
@@ -97,6 +100,8 @@ fun SettingsScreen(
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
     onDiagnosticsChange: (Boolean) -> Unit,
+    notifications: NotificationSettings,
+    onNotificationsChange: (NotificationSettings) -> Unit,
     stripTracking: Boolean,
     onStripTrackingChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
@@ -165,6 +170,17 @@ fun SettingsScreen(
                         HistoryTtlSection(ttl = ttl, onSave = onTtlSave, onReset = onTtlReset)
                     }
                 }
+                SettingsPage.NOTIFICATIONS -> {
+                    SettingsCard {
+                        NotificationCategories(settings = notifications, onChange = onNotificationsChange)
+                    }
+                    SettingsCard {
+                        PersistentStatus(settings = notifications, onChange = onNotificationsChange)
+                    }
+                    SettingsCard {
+                        SystemNotifications()
+                    }
+                }
                 SettingsPage.NETWORK -> {
                     SettingsCard {
                         PolicySection(
@@ -230,6 +246,7 @@ private fun SettingsIndex(
         SettingsPage.CLIPBOARD to pauseLabel(state.status?.pause),
         SettingsPage.FILES to (downloadsFolder ?: stringResource(R.string.settings_downloads_default)),
         SettingsPage.HISTORY to stringResource(R.string.settings_page_history_summary),
+        SettingsPage.NOTIFICATIONS to stringResource(R.string.settings_page_notifications_summary),
         SettingsPage.NETWORK to stringResource(R.string.settings_page_network_summary),
         SettingsPage.ABOUT to (
             state.status?.let { stringResource(R.string.core_version, it.version) }

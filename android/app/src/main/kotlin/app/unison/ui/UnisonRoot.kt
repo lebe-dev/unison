@@ -28,6 +28,7 @@ import app.unison.clipboard.ClipboardDraft
 import app.unison.clipboard.PauseRequest
 import app.unison.history.HistoryTtl
 import app.unison.policy.PolicyConfig
+import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.ui.screens.AddScreen
 import app.unison.ui.screens.DevicesScreen
@@ -81,6 +82,8 @@ fun UnisonRoot(
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
     onDiagnosticsChange: (Boolean) -> Unit,
+    notifications: NotificationSettings,
+    onNotificationsChange: (NotificationSettings) -> Unit,
     stripTracking: Boolean,
     onStripTrackingChange: (Boolean) -> Unit,
     onSetDeviceConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
@@ -228,6 +231,8 @@ fun UnisonRoot(
                 onLeaveGroup = onLeaveGroup,
                 diagnosticsEnabled = diagnosticsEnabled,
                 onDiagnosticsChange = onDiagnosticsChange,
+                notifications = notifications,
+                onNotificationsChange = onNotificationsChange,
                 stripTracking = stripTracking,
                 onStripTrackingChange = onStripTrackingChange,
                 onRefresh = onRefresh,

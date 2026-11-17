@@ -30,7 +30,7 @@ object NotificationChannels {
             NotificationChannel(
                 SERVICE,
                 context.getString(R.string.channel_service),
-                NotificationManager.IMPORTANCE_LOW,
+                NotificationManager.IMPORTANCE_MIN,
             ).apply { setShowBadge(false) },
         )
 

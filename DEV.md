@@ -564,10 +564,12 @@ The Android app keeps the core in `UnisonService`, a foreground service of the t
 name from the app settings and stops the core when the service is destroyed. It shows the device
 name and the number of online devices in a persistent notification on the `service` channel and
 keeps the `transfers`, `requests` and `clipboard` channels ready for the other components;
-`clipboard` is silent. The service runs without `POST_NOTIFICATIONS`; the notification is then
-hidden by the system. The UI talks to the core through `CoreClient`, which runs local API methods
-in process and delivers the answers as suspend functions, and collects events from
-`coreEvents.events`.
+`clipboard` is silent. The notification carries the send and stop actions. Its settings sit in
+`unison.settings` under `notifications.*`: every category can be turned off, the status text can
+be shortened, and a dismissed status notification stays away until a file arrives. The service
+runs without `POST_NOTIFICATIONS`; the notification is then hidden by the system.
+The UI talks to the core through `CoreClient`, which runs local API methods in process and delivers
+the answers as suspend functions, and collects events from `coreEvents.events`.
 
 `OperatingMode` decides how long the core runs: `always` also starts the service from
 `BOOT_COMPLETED` when the user unlocks the device, `app_open` stops the service when the

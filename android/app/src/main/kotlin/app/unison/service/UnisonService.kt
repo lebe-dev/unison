@@ -57,6 +57,13 @@ class UnisonService : Service() {
 
     @Volatile
     private var destroyed = false
+
+    /** True once the service has posted its foreground notification. */
+    private var statusPosted = false
+
+    /** The user dismissed the status notification; it stays away until a file arrives. */
+    private var statusDismissed = false
+
     private var eventsJob: Job? = null
     private var requestsDirty = false
     private var statusJob: Job? = null
@@ -87,8 +94,17 @@ class UnisonService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        if (intent?.action == ACTION_STATUS_DISMISSED) {
+            // The user swiped the status notification away; a later file brings it back.
+            if (NotificationSettings.load(this).hideStatusAfterDismissal) {
+                statusDismissed = true
+            }
+            return START_STICKY
+        }
 
-        startInForeground(getString(R.string.service_starting))
+        if (!statusPosted) {
+            startInForeground(getString(R.string.service_starting))
+        }
         startCore()
         if (intent?.action == ACTION_DOWNLOAD_ITEM) {
             intent.getStringExtra(EXTRA_ITEM_ID)?.let(::download)
@@ -123,6 +139,7 @@ class UnisonService : Service() {
         }
         notifiedRequests.clear()
         coreRunning = false
+        statusPosted = false
         if (coreStarted) {
             runBlocking(Dispatchers.IO) { stopCoreBlocking() }
         }
@@ -136,6 +153,7 @@ class UnisonService : Service() {
             ServiceNotifications.status(this, text),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
         )
+        statusPosted = true
     }
 
     /** Starts the network monitor and the core, as the operating mode allows. */
@@ -261,6 +279,9 @@ class UnisonService : Service() {
             event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD -> notifyPending(event.event)
             event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY -> notifyHeld(event.event)
             event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_TRANSFER -> {
+                if (IncomingFiles.arrives(event.event)) {
+                    restoreStatus()
+                }
                 refreshTransfers()
                 refreshRequests()
             }
@@ -385,6 +406,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showTransfers(notification: Notification) {
+        if (!NotificationSettings.load(this).transfers) {
+            return
+        }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(TransferNotifications.ID, notification)
     }
@@ -415,6 +439,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showPending(item: Local.ClipItem, device: String) {
+        if (!NotificationSettings.load(this).clipboard) {
+            return
+        }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             HistoryNotifications.idOf(item.id),
@@ -433,6 +460,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showHeld(item: Local.ClipItem, device: String) {
+        if (!NotificationSettings.load(this).confirmations) {
+            return
+        }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             HeldNotifications.idOf(item.id),
@@ -442,7 +472,7 @@ class UnisonService : Service() {
 
     /** Applies the clipboard item of the notification action. */
     private fun applyItem(itemId: String) {
-        startInForeground(getString(R.string.clipboard_applying))
+        show(getString(R.string.clipboard_applying))
         scope.launch {
             val applied = try {
                 withContext(Dispatchers.IO) { client.applyHistoryItem(itemId) }
@@ -462,6 +492,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showApplyResult(applied: Boolean) {
+        if (!NotificationSettings.load(this).clipboard) {
+            return
+        }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             HeldNotifications.RESULT_ID,
@@ -529,6 +562,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showRequest(request: Local.ShareRequest) {
+        if (!NotificationSettings.load(this).requests) {
+            return
+        }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             RequestNotifications.idOf(request.id),
@@ -538,7 +574,7 @@ class UnisonService : Service() {
 
     /** Answers the offer of the notification action. */
     private fun answerRequest(requestId: String, accept: Boolean) {
-        startInForeground(getString(R.string.requests_answering))
+        show(getString(R.string.requests_answering))
         scope.launch {
             val answered = try {
                 withContext(Dispatchers.IO) { client.decideRequest(requestId, accept) }
@@ -559,6 +595,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showRequestResult(answered: Boolean, accept: Boolean) {
+        if (!NotificationSettings.load(this).requests) {
+            return
+        }
         val text = when {
             !answered -> getString(R.string.requests_answer_failed)
             accept -> getString(R.string.requests_accepted)
@@ -573,7 +612,7 @@ class UnisonService : Service() {
 
     /** Saves the payloads of an item into the Downloads collection. */
     private fun download(itemId: String) {
-        startInForeground(getString(R.string.history_downloading))
+        show(getString(R.string.history_downloading))
         scope.launch {
             val saved = try {
                 withContext(Dispatchers.IO) { downloads.save(itemId) }
@@ -588,13 +627,20 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun showResult(itemId: String, saved: Boolean) {
-        NotificationManagerCompat.from(this).apply {
-            cancel(HistoryNotifications.idOf(itemId))
-            notify(HistoryNotifications.RESULT_ID, HistoryNotifications.result(this@UnisonService, saved))
+        NotificationManagerCompat.from(this).cancel(HistoryNotifications.idOf(itemId))
+        if (!NotificationSettings.load(this).clipboard) {
+            return
         }
+        NotificationManagerCompat.from(this).notify(
+            HistoryNotifications.RESULT_ID,
+            HistoryNotifications.result(this@UnisonService, saved),
+        )
     }
 
     private fun refreshStatus() {
+        if (statusDismissed) {
+            return
+        }
         statusJob?.cancel()
         statusJob = scope.launch {
             val text = statusText()
@@ -605,15 +651,28 @@ class UnisonService : Service() {
         }
     }
 
+    /** Brings the status notification back after a file arrives. */
+    private fun restoreStatus() {
+        if (!statusDismissed) {
+            return
+        }
+        statusDismissed = false
+        refreshStatus()
+    }
+
     private suspend fun statusText(): CharSequence = try {
         val status = withContext(Dispatchers.IO) { client.status() }
         val online = status.devicesList.count { it.online }
         Log.i(TAG, "core is up, device ${status.deviceId}")
-        getString(
-            R.string.service_status,
-            status.deviceName,
-            resources.getQuantityString(R.plurals.service_peers_online, online, online),
-        )
+        if (!NotificationSettings.load(this).statusDetails) {
+            getString(R.string.service_status_short)
+        } else {
+            getString(
+                R.string.service_status,
+                status.deviceName,
+                resources.getQuantityString(R.plurals.service_peers_online, online, online),
+            )
+        }
     } catch (e: CancellationException) {
         throw e
     } catch (e: CoreException) {
@@ -626,6 +685,9 @@ class UnisonService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun show(text: CharSequence) {
+        if (statusDismissed) {
+            return
+        }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             NOTIFICATION_ID,
@@ -644,6 +706,9 @@ class UnisonService : Service() {
 
         /** Stops the service and the core. */
         const val ACTION_STOP = "app.unison.action.STOP"
+
+        /** The user dismissed the persistent notification. */
+        const val ACTION_STATUS_DISMISSED = "app.unison.action.STATUS_DISMISSED"
 
         /** Downloads one history entry. */
         const val ACTION_DOWNLOAD_ITEM = "app.unison.action.DOWNLOAD_ITEM"

@@ -268,7 +268,7 @@ internal fun Diagnostics(enabled: Boolean, onChange: (Boolean) -> Unit) {
 
 /** One switch of a settings section. */
 @Composable
-private fun SettingsSwitch(
+internal fun SettingsSwitch(
     title: String,
     hint: String,
     checked: Boolean,

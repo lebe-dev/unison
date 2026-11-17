@@ -35,6 +35,7 @@ import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyDefaults
 import app.unison.policy.PolicyProto
 import app.unison.service.DeviceNames
+import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
@@ -63,6 +64,7 @@ class MainActivity : ComponentActivity() {
     private var policy by mutableStateOf(PolicyDefaults.config)
     private var historyTtl by mutableStateOf(HistoryTtlDefaults.values)
     private var diagnosticsEnabled by mutableStateOf(false)
+    private var notificationSettings by mutableStateOf(NotificationSettings())
     private var pending by mutableStateOf<ClipboardDraft?>(null)
     private val requestedScreen = MutableStateFlow<Destination?>(null)
     private var requestsPoll: Job? = null
@@ -93,6 +95,7 @@ class MainActivity : ComponentActivity() {
         policy = PolicyDefaults.config
         historyTtl = HistoryTtlDefaults.values
         diagnosticsEnabled = UnisonSettings.sentryEnabled(this)
+        notificationSettings = NotificationSettings.load(this)
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
         // A recreated activity has already taken the code of its intent; a code
         // that still waits for the user is kept across the recreation.
@@ -154,6 +157,8 @@ class MainActivity : ComponentActivity() {
                         onLeaveGroup = appState::leaveGroup,
                         diagnosticsEnabled = diagnosticsEnabled,
                         onDiagnosticsChange = ::saveDiagnostics,
+                        notifications = notificationSettings,
+                        onNotificationsChange = ::saveNotificationSettings,
                         stripTracking = state.stripTracking,
                         onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->
@@ -347,6 +352,13 @@ class MainActivity : ComponentActivity() {
         Diagnostics.setConsent(this, enabled)
         diagnosticsEnabled = enabled
         appState.setSentryEnabled(enabled)
+    }
+
+    /** Stores the notification preferences; the service reads them at the next post. */
+    private fun saveNotificationSettings(settings: NotificationSettings) {
+        NotificationSettings.save(this, settings)
+        notificationSettings = settings
+        UnisonService.start(this)
     }
 
     /** Offers the clipboard when it holds content that was not synchronized before. */
