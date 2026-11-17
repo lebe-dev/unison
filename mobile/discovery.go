@@ -16,6 +16,7 @@ import (
 
 	corediscovery "github.com/lebe-dev/unison/core/discovery"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/observability"
 	mobilev1 "github.com/lebe-dev/unison/proto/unison/mobile/v1"
 )
 
@@ -178,6 +179,7 @@ func (d *discoveryBridge) Browse(ctx context.Context, service ports.Service) (<-
 
 	go func() {
 		defer d.wg.Done()
+		defer observability.Recover()
 		select {
 		case <-ctx.Done():
 		case <-d.stopCh:
@@ -272,6 +274,7 @@ func (d *discoveryBridge) Add(service string, addr string, rawTXT []byte) {
 // refreshLoop re-announces the service when its tag changes.
 func (d *discoveryBridge) refreshLoop(ctx context.Context, ad *advertisement) {
 	defer d.wg.Done()
+	defer observability.Recover()
 
 	interval := d.refresh
 	if interval <= 0 {

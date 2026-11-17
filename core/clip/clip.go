@@ -11,6 +11,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/store"
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 // Pipeline timings and limits.
@@ -241,6 +242,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
+		defer observability.Recover()
 		p.recordQueue(ctx, records)
 	}()
 

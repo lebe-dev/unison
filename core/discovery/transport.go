@@ -10,6 +10,8 @@ import (
 	"github.com/miekg/dns"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
+
+	"github.com/lebe-dev/unison/internal/observability"
 )
 
 const (
@@ -138,6 +140,7 @@ func join6(ifaces []net.Interface, logger *slog.Logger) *ipv6.PacketConn {
 
 // read4 receives IPv4 mDNS messages until the socket is closed.
 func (t *transport) read4() {
+	defer observability.Recover()
 	buf := make([]byte, maxPacketSize)
 	for {
 		n, cm, from, err := t.v4.ReadFrom(buf)
@@ -154,6 +157,7 @@ func (t *transport) read4() {
 
 // read6 receives IPv6 mDNS messages until the socket is closed.
 func (t *transport) read6() {
+	defer observability.Recover()
 	buf := make([]byte, maxPacketSize)
 	for {
 		n, cm, from, err := t.v6.ReadFrom(buf)

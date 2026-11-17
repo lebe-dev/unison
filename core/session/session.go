@@ -17,6 +17,7 @@ import (
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/transport"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -390,6 +391,7 @@ func (s *Session) recordPeer(ctx context.Context, hello PeerHello) {
 
 // serveControl reads control messages until the session ends.
 func (s *Session) serveControl() {
+	defer observability.Recover()
 	for {
 		msg, err := s.readControl(s.ctx)
 		if err != nil {

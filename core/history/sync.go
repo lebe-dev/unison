@@ -12,6 +12,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/model/protoconv"
 	"github.com/lebe-dev/unison/core/session"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -124,6 +125,7 @@ func (s *Store) handleSync(ctx context.Context, peer Sender, msg *wirev1.History
 
 	go func() {
 		defer s.endSend(peer.DeviceID())
+		defer observability.Recover()
 		if err := s.sendMissing(ctx, peer, their); err != nil && ctx.Err() == nil {
 			s.log.Debug("history exchange failed", "peer", peer.DeviceID(), "error", err)
 		}

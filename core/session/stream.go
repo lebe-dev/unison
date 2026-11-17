@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -231,6 +232,7 @@ func (s *Session) ready() error {
 
 // acceptRequests accepts the bidirectional streams opened by the peer.
 func (s *Session) acceptRequests() {
+	defer observability.Recover()
 	for {
 		stream, err := s.conn.AcceptStream(s.ctx)
 		if err != nil {
@@ -249,6 +251,7 @@ func (s *Session) acceptRequests() {
 
 // acceptTransfers accepts the unidirectional streams opened by the peer.
 func (s *Session) acceptTransfers() {
+	defer observability.Recover()
 	for {
 		stream, err := s.conn.AcceptUniStream(s.ctx)
 		if err != nil {
@@ -267,6 +270,7 @@ func (s *Session) acceptTransfers() {
 
 // serveRequest checks an incoming request stream and runs its handler.
 func (s *Session) serveRequest(stream *quic.Stream) {
+	defer observability.Recover()
 	defer s.requestLoad.Add(-1)
 	// Both directions have to end for the stream to release its slot of the
 	// connection: the handler is done with the request, so the rest of the read
@@ -305,6 +309,7 @@ func (s *Session) serveRequest(stream *quic.Stream) {
 
 // serveTransfer checks an incoming transfer stream and runs its handler.
 func (s *Session) serveTransfer(stream *quic.ReceiveStream) {
+	defer observability.Recover()
 	defer s.transferLoad.Add(-1)
 	defer stream.CancelRead(quic.StreamErrorCode(0))
 
