@@ -215,7 +215,7 @@
       sentryEnabled = previous;
       notice = {
         kind: "error",
-        text: errorText(error, "The error reporting setting could not be changed."),
+        text: errorText(error, t("settings.diagnosticsFailed")),
       };
     } finally {
       busy = false;
@@ -725,7 +725,7 @@
     {/if}
 
     <section class="section">
-      <h3 class="section-title">Privacy</h3>
+      <h3 class="section-title">{t("settings.sectionPrivacy")}</h3>
       <div class="list">
         <label class="toggle form-row">
           <input
@@ -735,10 +735,8 @@
             onchange={(event) => void setSentryReporting(event.currentTarget.checked)}
           />
           <span>
-            Send errors to the developer
-            <small>
-              Crashes and errors of the app are reported. Nothing is sent unless you turn this on.
-            </small>
+            {t("settings.diagnostics")}
+            <small>{t("settings.diagnosticsHint")}</small>
           </span>
         </label>
       </div>

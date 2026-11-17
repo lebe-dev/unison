@@ -417,6 +417,11 @@ export const en = {
   "settings.lifetimesResetFailed": "The lifetimes could not be reset.",
   "settings.friendsFailed": "The search for friends could not be changed.",
   "settings.loginFailed": "The login item could not be changed.",
+  "settings.sectionPrivacy": "Privacy",
+  "settings.diagnostics": "Send errors to the developer",
+  "settings.diagnosticsHint":
+    "Crashes and errors of the app are reported. Nothing is sent unless you turn this on.",
+  "settings.diagnosticsFailed": "The error reporting setting could not be changed.",
 
   // Labels of the network policy table.
   "policy.condition.unmetered": "Unmetered",

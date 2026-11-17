@@ -419,6 +419,11 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.lifetimesResetFailed": "Не удалось сбросить сроки.",
   "settings.friendsFailed": "Не удалось изменить поиск друзей.",
   "settings.loginFailed": "Не удалось изменить элемент входа.",
+  "settings.sectionPrivacy": "Приватность",
+  "settings.diagnostics": "Отправлять ошибки разработчику",
+  "settings.diagnosticsHint":
+    "Отправляются сбои и ошибки приложения. Ничего не отправляется, пока вы не включите эту настройку.",
+  "settings.diagnosticsFailed": "Не удалось изменить настройку отправки ошибок.",
 
   // Labels of the network policy table.
   "policy.condition.unmetered": "Без лимита",
