@@ -20,6 +20,10 @@
   the addresses that were tried. Turn off client isolation or AP isolation on the router, leave the
   guest network, or connect both devices to the same VPN. See
   [Devices and pairing](devices.md#connection-problems).
+- A device that answered and stopped retries by itself: the daemon tries its known addresses again
+  when the addresses of this computer change, which is what a move to another Wi-Fi network looks
+  like. The `Reconnect` button of the device tries them at once, and `unison devices retry` does the
+  same from the command line.
 - Pairing by code does not need discovery. `unison pair` prints a code, and the other device scans
   it, or joins with `unison pair --qr <code>`. See [Devices and pairing](devices.md#pairing).
 - A paired device can be reached by an address that you enter. `unison status` prints the addresses

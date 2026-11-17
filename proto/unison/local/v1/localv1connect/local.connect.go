@@ -53,6 +53,9 @@ const (
 	// UnisonServiceSetPeerAddressProcedure is the fully-qualified name of the UnisonService's
 	// SetPeerAddress RPC.
 	UnisonServiceSetPeerAddressProcedure = "/unison.local.v1.UnisonService/SetPeerAddress"
+	// UnisonServiceRetryDeviceProcedure is the fully-qualified name of the UnisonService's RetryDevice
+	// RPC.
+	UnisonServiceRetryDeviceProcedure = "/unison.local.v1.UnisonService/RetryDevice"
 	// UnisonServiceOpenPairingWindowProcedure is the fully-qualified name of the UnisonService's
 	// OpenPairingWindow RPC.
 	UnisonServiceOpenPairingWindowProcedure = "/unison.local.v1.UnisonService/OpenPairingWindow"
@@ -159,6 +162,10 @@ type UnisonServiceClient interface {
 	// Address of a paired device, entered by the user. It is tried before the
 	// discovered and cached ones, for networks where discovery does not work.
 	SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error)
+	// Try a paired device again now: the daemon announces this device once more,
+	// forgets the delay of the failed attempts and dials every known address. An
+	// empty device id retries every paired device.
+	RetryDevice(context.Context, *connect.Request[v1.RetryDeviceRequest]) (*connect.Response[v1.RetryDeviceResponse], error)
 	// Pairing window and the short authentication string of an exchange.
 	OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error)
 	ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error)
@@ -269,6 +276,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+UnisonServiceSetPeerAddressProcedure,
 			connect.WithSchema(unisonServiceMethods.ByName("SetPeerAddress")),
+			connect.WithClientOptions(opts...),
+		),
+		retryDevice: connect.NewClient[v1.RetryDeviceRequest, v1.RetryDeviceResponse](
+			httpClient,
+			baseURL+UnisonServiceRetryDeviceProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RetryDevice")),
 			connect.WithClientOptions(opts...),
 		),
 		openPairingWindow: connect.NewClient[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse](
@@ -481,6 +494,7 @@ type unisonServiceClient struct {
 	revokeDevice          *connect.Client[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse]
 	setDeviceConfirmation *connect.Client[v1.SetDeviceConfirmationRequest, v1.SetDeviceConfirmationResponse]
 	setPeerAddress        *connect.Client[v1.SetPeerAddressRequest, v1.SetPeerAddressResponse]
+	retryDevice           *connect.Client[v1.RetryDeviceRequest, v1.RetryDeviceResponse]
 	openPairingWindow     *connect.Client[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse]
 	extendPairingWindow   *connect.Client[v1.ExtendPairingWindowRequest, v1.ExtendPairingWindowResponse]
 	closePairingWindow    *connect.Client[v1.ClosePairingWindowRequest, v1.ClosePairingWindowResponse]
@@ -549,6 +563,11 @@ func (c *unisonServiceClient) SetDeviceConfirmation(ctx context.Context, req *co
 // SetPeerAddress calls unison.local.v1.UnisonService.SetPeerAddress.
 func (c *unisonServiceClient) SetPeerAddress(ctx context.Context, req *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error) {
 	return c.setPeerAddress.CallUnary(ctx, req)
+}
+
+// RetryDevice calls unison.local.v1.UnisonService.RetryDevice.
+func (c *unisonServiceClient) RetryDevice(ctx context.Context, req *connect.Request[v1.RetryDeviceRequest]) (*connect.Response[v1.RetryDeviceResponse], error) {
+	return c.retryDevice.CallUnary(ctx, req)
 }
 
 // OpenPairingWindow calls unison.local.v1.UnisonService.OpenPairingWindow.
@@ -731,6 +750,10 @@ type UnisonServiceHandler interface {
 	// Address of a paired device, entered by the user. It is tried before the
 	// discovered and cached ones, for networks where discovery does not work.
 	SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error)
+	// Try a paired device again now: the daemon announces this device once more,
+	// forgets the delay of the failed attempts and dials every known address. An
+	// empty device id retries every paired device.
+	RetryDevice(context.Context, *connect.Request[v1.RetryDeviceRequest]) (*connect.Response[v1.RetryDeviceResponse], error)
 	// Pairing window and the short authentication string of an exchange.
 	OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error)
 	ExtendPairingWindow(context.Context, *connect.Request[v1.ExtendPairingWindowRequest]) (*connect.Response[v1.ExtendPairingWindowResponse], error)
@@ -837,6 +860,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		UnisonServiceSetPeerAddressProcedure,
 		svc.SetPeerAddress,
 		connect.WithSchema(unisonServiceMethods.ByName("SetPeerAddress")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRetryDeviceHandler := connect.NewUnaryHandler(
+		UnisonServiceRetryDeviceProcedure,
+		svc.RetryDevice,
+		connect.WithSchema(unisonServiceMethods.ByName("RetryDevice")),
 		connect.WithHandlerOptions(opts...),
 	)
 	unisonServiceOpenPairingWindowHandler := connect.NewUnaryHandler(
@@ -1053,6 +1082,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceSetDeviceConfirmationHandler.ServeHTTP(w, r)
 		case UnisonServiceSetPeerAddressProcedure:
 			unisonServiceSetPeerAddressHandler.ServeHTTP(w, r)
+		case UnisonServiceRetryDeviceProcedure:
+			unisonServiceRetryDeviceHandler.ServeHTTP(w, r)
 		case UnisonServiceOpenPairingWindowProcedure:
 			unisonServiceOpenPairingWindowHandler.ServeHTTP(w, r)
 		case UnisonServiceExtendPairingWindowProcedure:
@@ -1154,6 +1185,10 @@ func (UnimplementedUnisonServiceHandler) SetDeviceConfirmation(context.Context, 
 
 func (UnimplementedUnisonServiceHandler) SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetPeerAddress is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RetryDevice(context.Context, *connect.Request[v1.RetryDeviceRequest]) (*connect.Response[v1.RetryDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RetryDevice is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) OpenPairingWindow(context.Context, *connect.Request[v1.OpenPairingWindowRequest]) (*connect.Response[v1.OpenPairingWindowResponse], error) {

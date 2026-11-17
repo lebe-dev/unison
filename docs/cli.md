@@ -49,6 +49,7 @@ group uses a relay.
 ```sh
 unison devices                       # the same as unison devices ls
 unison devices address <id> <host:port> --wait 10s
+unison devices retry [<id>] --wait 10s
 unison devices rename <id|self> <name>
 unison devices confirm [--files] [--peer] <id|self> on|off
 unison devices revoke <id|self> [--yes]
@@ -68,14 +69,16 @@ taken at once. `PEER ASKS CLIP` and `PEER ASKS FILES` are the flags of the devic
 reported them last; a device reports them when a session opens and after every change.
 
 `devices address` stores an address of a paired device and waits for the connection; `--wait 0s`
-returns at once. `devices rename <id>` changes the name of a paired device on this device, and
-`devices rename self` changes the name this device announces; see
-[Devices and pairing](devices.md#renaming). `devices confirm self on` makes this device ask
-before it applies the clipboard of devices it pairs from now on, and `devices confirm <id> on` before it applies the
-clipboard of one device. `--files` changes the flag of the files instead, and `--peer` changes the
-flag of the device for this one, which needs the device online; see
-[Devices and pairing](devices.md#confirmation-flags). `devices revoke` asks for a confirmation
-unless `--yes` is given, and `devices revoke self` leaves the group.
+returns at once. `devices retry` makes the daemon try the device again with every known address
+without waiting for the next attempt, and retries every paired device when no id is given; the
+daemon does the same by itself after a change of the network. `devices rename <id>` changes the name
+of a paired device on this device, and `devices rename self` changes the name this device
+announces; see [Devices and pairing](devices.md#renaming). `devices confirm self on` makes this
+device ask before it applies the clipboard of devices it pairs from now on, and
+`devices confirm <id> on` before it applies the clipboard of one device. `--files` changes the flag
+of the files instead, and `--peer` changes the flag of the device for this one, which needs the
+device online; see [Devices and pairing](devices.md#confirmation-flags). `devices revoke` asks for a
+confirmation unless `--yes` is given, and `devices revoke self` leaves the group.
 
 ## pair
 

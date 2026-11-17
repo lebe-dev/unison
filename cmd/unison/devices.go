@@ -29,6 +29,8 @@ func (a *app) devices(ctx context.Context, args []string) error {
 		return a.devicesConfirm(ctx, rest)
 	case "address":
 		return a.devicesAddress(ctx, rest)
+	case "retry":
+		return a.devicesRetry(ctx, rest)
 	case "revoke":
 		return a.devicesRevoke(ctx, rest)
 	default:
@@ -250,6 +252,64 @@ func (a *app) devicesAddress(ctx context.Context, args []string) error {
 		return a.writeJSON(response.Msg)
 	}
 	a.info("address %s saved for %s", addr, deviceLabel(device.GetDeviceId(), device.GetName()))
+	if *wait <= 0 {
+		return nil
+	}
+	online, err := a.waitOnline(ctx, client, device.GetDeviceId(), *wait)
+	if err != nil {
+		return err
+	}
+	if !online {
+		a.info("the device is not online yet, the daemon keeps trying")
+		return nil
+	}
+	a.info("the device is online")
+	return nil
+}
+
+// devicesRetry asks the daemon to try a paired device again, or every paired
+// device when no id is given.
+func (a *app) devicesRetry(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("devices retry")
+	wait := flags.Duration("wait", addressWait, "how long to wait for the connection")
+	positional, err := parseCommand(flags, args)
+	if err != nil {
+		return err
+	}
+	if len(positional) > 1 {
+		return a.usageError("devices retry takes at most one device")
+	}
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	var device *localv1.Device
+	if len(positional) == 1 {
+		devices, err := a.devicesOf(ctx, client)
+		if err != nil {
+			return err
+		}
+		if device, err = resolveDevice(devices, positional[0]); err != nil {
+			return err
+		}
+	}
+
+	request := &localv1.RetryDeviceRequest{}
+	if device != nil {
+		request.DeviceId = device.GetDeviceId()
+	}
+	if _, err := client.RetryDevice(ctx, connect.NewRequest(request)); err != nil {
+		return fmt.Errorf("retry the device: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(&localv1.RetryDeviceResponse{})
+	}
+	if device == nil {
+		a.info("trying every paired device")
+		return nil
+	}
+	a.info("trying %s", deviceLabel(device.GetDeviceId(), device.GetName()))
 	if *wait <= 0 {
 		return nil
 	}

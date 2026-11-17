@@ -162,6 +162,27 @@ func (s *Service) SetPeerAddress(ctx context.Context, req *connect.Request[local
 	return connect.NewResponse(&localv1.SetPeerAddressResponse{Device: deviceToProto(peer, state)}), nil
 }
 
+// RetryDevice tries to reach a paired device again: the daemon announces this
+// device once more, forgets the delay of the failed attempts and dials every
+// known address. An empty device id retries every paired device.
+func (s *Service) RetryDevice(ctx context.Context, req *connect.Request[localv1.RetryDeviceRequest]) (*connect.Response[localv1.RetryDeviceResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	var id model.DeviceID
+	if raw := req.Msg.GetDeviceId(); raw != "" {
+		parsed, err := model.ParseDeviceID(raw)
+		if err != nil {
+			return nil, errorOf(fmt.Errorf("%w: device id", trust.ErrInvalidPeer))
+		}
+		id = parsed
+	}
+	if err := s.node.RetryPeer(ctx, id); err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.RetryDeviceResponse{}), nil
+}
+
 // confirmationTarget returns the device whose flag the request changes. The
 // local device is the target when self is set.
 func confirmationTarget(local model.DeviceID, req *localv1.SetDeviceConfirmationRequest) (model.DeviceID, error) {

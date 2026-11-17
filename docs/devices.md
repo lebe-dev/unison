@@ -115,7 +115,10 @@ report or for checking the network; they quote the daemon and are not translated
   is not marked as unreachable.
 
 A device that is turned off and a network that keeps its devices apart look the same from the other
-side, so the message names both. See [Troubleshooting](troubleshooting.md).
+side, so the message names both. The `Reconnect` button of the device asks the daemon to try every
+known address at once instead of waiting for the next attempt. The daemon does the same by itself
+when the addresses of its interfaces change, which is what a move to another Wi-Fi network looks
+like. See [Troubleshooting](troubleshooting.md).
 
 ## Group discovery
 
@@ -126,6 +129,10 @@ Personal device.
 
 The tag changes every ten minutes, and a device accepts the tags of the previous and the next ten
 minutes, so clock differences do not matter. The announcement carries no name, device ID or role.
+
+A device that has no discovery key, for example one whose store lost it, advertises without a tag.
+Its paired devices still dial it while one of theirs is offline, and the handshake decides whether
+the device is one of them.
 
 ## Searching for Friends devices
 

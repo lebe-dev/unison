@@ -146,6 +146,23 @@
     notice = { kind: "error", text: failure };
   }
 
+  /** reconnect asks the daemon to dial an offline device again. */
+  async function reconnect(device: Device): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      await client.retryDevice({ deviceId: device.deviceId });
+      notice = {
+        kind: "info",
+        text: t("devices.reconnecting", { name: device.name || t("common.theDeviceGenitive") }),
+      };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, t("devices.reconnectFailed")) };
+    } finally {
+      busy = false;
+    }
+  }
+
   async function revoke(device: Device): Promise<void> {
     busy = true;
     notice = null;
@@ -435,6 +452,16 @@
           </div>
         {:else if editing !== device.deviceId}
           <div class="toolbar">
+            {#if !device.online}
+              <button
+                class="button"
+                type="button"
+                onclick={() => void reconnect(device)}
+                disabled={busy}
+              >
+                {t("devices.reconnect")}
+              </button>
+            {/if}
             <button class="button" type="button" onclick={() => beginRename(device)}>
               {t("devices.rename")}
             </button>

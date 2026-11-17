@@ -169,6 +169,67 @@ func TestSetPeerAddressBrackets(t *testing.T) {
 	}
 }
 
+// TestRetryDevice connects two paired devices without discovery: the retry
+// dials the cached address of the peer.
+func TestRetryDevice(t *testing.T) {
+	network := vnet.NewNetwork()
+	one := newNode(t, network, fake.NewBus(), 3400)
+	two := newNode(t, network, fake.NewBus(), 3410)
+	one.start(t)
+	two.start(t)
+	one.pair(t, two)
+	two.pair(t, one)
+
+	// The devices share no discovery, so the cached address is the only way
+	// to reach the peer.
+	ctx := callTimeout(t)
+	if err := one.Trust().UpdateAddrs(ctx, two.DeviceID(), []string{two.Addr().String()}); err != nil {
+		t.Fatalf("store the address: %v", err)
+	}
+
+	client := newClient(t, one.Node, api.Options{DeviceName: one.name})
+	if _, err := client.RetryDevice(ctx, connect.NewRequest(&localv1.RetryDeviceRequest{
+		DeviceId: two.DeviceID().String(),
+	})); err != nil {
+		t.Fatalf("retry the device: %v", err)
+	}
+	waitPeerOnline(t, one, two.DeviceID())
+	waitPeerOnline(t, two, one.DeviceID())
+}
+
+// TestRetryDeviceInvalid checks the refused device and the retry of every
+// device.
+func TestRetryDeviceInvalid(t *testing.T) {
+	network := vnet.NewNetwork()
+	n := newNode(t, network, fake.NewBus(), 3420)
+	revoked := newNode(t, network, fake.NewBus(), 3430)
+	n.start(t)
+	revoked.start(t)
+	n.pair(t, revoked)
+	if err := n.Trust().MarkRevoked(t.Context(), revoked.DeviceID()); err != nil {
+		t.Fatalf("revoke the device: %v", err)
+	}
+
+	client := newClient(t, n.Node, api.Options{DeviceName: n.name})
+	ctx := callTimeout(t)
+	_, err := client.RetryDevice(ctx, connect.NewRequest(&localv1.RetryDeviceRequest{DeviceId: "no-hex"}))
+	requireCode(t, err, connect.CodeInvalidArgument)
+
+	_, err = client.RetryDevice(ctx, connect.NewRequest(&localv1.RetryDeviceRequest{
+		DeviceId: model.DeviceID{9}.String(),
+	}))
+	requireCode(t, err, connect.CodeNotFound)
+
+	_, err = client.RetryDevice(ctx, connect.NewRequest(&localv1.RetryDeviceRequest{
+		DeviceId: revoked.DeviceID().String(),
+	}))
+	requireCode(t, err, connect.CodePermissionDenied)
+
+	if _, err := client.RetryDevice(ctx, connect.NewRequest(&localv1.RetryDeviceRequest{})); err != nil {
+		t.Fatalf("retry every device: %v", err)
+	}
+}
+
 // stopNode stops a node before the test creates it again.
 func stopNode(t *testing.T, n *testNode) {
 	t.Helper()

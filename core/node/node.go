@@ -478,6 +478,32 @@ func (n *Node) SetPeerAddress(ctx context.Context, id model.DeviceID, addr strin
 	return nil
 }
 
+// RetryPeer tries to reach a paired device now: it forgets the delay of the
+// failed attempts, announces this device again and dials every known address.
+// Every paired device is retried when id is zero.
+func (n *Node) RetryPeer(ctx context.Context, id model.DeviceID) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if !id.IsZero() {
+		peer, err := n.trust.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if peer.Revoked {
+			return trust.ErrPeerRevoked
+		}
+		n.startLink(peer).retry()
+	} else {
+		for _, l := range n.linkList() {
+			l.retry()
+		}
+	}
+	n.advertise(ctx)
+	n.probeCandidates(ctx)
+	return nil
+}
+
 // Peers returns the live state of every paired device, in the order the devices
 // were added.
 func (n *Node) Peers(ctx context.Context) ([]model.PeerState, error) {

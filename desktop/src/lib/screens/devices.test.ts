@@ -8,6 +8,7 @@ import {
   DeviceSchema,
   GetStatusResponseSchema,
   Platform,
+  RetryDeviceResponseSchema,
   RevokeDeviceResponseSchema,
   Role,
   SetDeviceConfirmationResponseSchema,
@@ -19,6 +20,7 @@ import Devices from "./Devices.svelte";
 vi.mock("../api/client", () => ({
   client: {
     getStatus: vi.fn(),
+    retryDevice: vi.fn(),
     setDeviceConfirmation: vi.fn(),
     revokeDevice: vi.fn(),
   },
@@ -27,6 +29,7 @@ vi.mock("../api/client", () => ({
 const getStatus = vi.mocked(client.getStatus);
 const setDeviceConfirmation = vi.mocked(client.setDeviceConfirmation);
 const revokeDevice = vi.mocked(client.revokeDevice);
+const retryDevice = vi.mocked(client.retryDevice);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -40,6 +43,7 @@ beforeEach(() => {
   );
   setDeviceConfirmation.mockResolvedValue(create(SetDeviceConfirmationResponseSchema, {}));
   revokeDevice.mockResolvedValue(create(RevokeDeviceResponseSchema, {}));
+  retryDevice.mockResolvedValue(create(RetryDeviceResponseSchema, {}));
   daemon.status = create(GetStatusResponseSchema, {
     running: true,
     deviceId: "self",
@@ -160,6 +164,21 @@ describe("devices screen", () => {
     });
     expect((peer as HTMLInputElement).disabled).toBe(true);
     expect((local as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it("retries a device that is offline", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { online: false })],
+    });
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
+
+    expect(retryDevice).toHaveBeenCalledWith({ deviceId: "device-1" });
+    expect(await screen.findByText(/Trying to reach MacBook/)).toBeTruthy();
   });
 
   it("revokes a device only after a confirmation", async () => {

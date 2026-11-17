@@ -265,6 +265,9 @@ commands:
   devices address <id> <host:port> [--wait 5s]
                               store an address of a paired device and connect
                               to it, for networks where discovery does not work
+  devices retry [<id>] [--wait 5s]
+                              try a device again now, or every paired device
+                              when no id is given
   devices confirm <id|self> on|off [--files] [--peer]
                               ask before taking the clipboard items (or with
                               --files the file transfers) of a device or, for

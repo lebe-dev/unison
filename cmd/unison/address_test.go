@@ -129,6 +129,60 @@ func TestDevicesAddressUsage(t *testing.T) {
 	}
 }
 
+// TestDevicesRetry tries a device again by its cached address.
+func TestDevicesRetry(t *testing.T) {
+	network := vnet.NewNetwork()
+	device := newDevice(t, network, fake.NewBus(), 740, api.Options{})
+	other := newDevice(t, network, fake.NewBus(), 750, api.Options{})
+	device.start(t)
+	other.start(t)
+	device.pair(t, other)
+	other.pair(t, device)
+
+	// The devices share no discovery, so the cached address is the only way to
+	// reach the peer.
+	if err := device.Trust().UpdateAddrs(t.Context(), other.DeviceID(), []string{other.Addr().String()}); err != nil {
+		t.Fatalf("store the address: %v", err)
+	}
+
+	code, stdout, stderr := runCommand(t, "",
+		"--endpoint", device.endpoint, "devices", "retry", other.name, "--wait", "5s")
+	if code != exitOK {
+		t.Fatalf("devices retry exited with %d, stderr %q", code, stderr)
+	}
+	for _, want := range []string{"trying " + other.name, "the device is online"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("the output has no %q:\n%s", want, stdout)
+		}
+	}
+	waitOnline(t, device, other)
+	waitOnline(t, other, device)
+}
+
+// TestDevicesRetryEveryDevice checks the retry of every paired device.
+func TestDevicesRetryEveryDevice(t *testing.T) {
+	network := vnet.NewNetwork()
+	device := newDevice(t, network, fake.NewBus(), 760, api.Options{})
+	device.start(t)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "retry")
+	if code != exitOK {
+		t.Fatalf("devices retry exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "trying every paired device") {
+		t.Errorf("the output has no retry of every device:\n%s", stdout)
+	}
+
+	code, _, stderr = runCommand(t, "",
+		"--endpoint", device.endpoint, "devices", "retry", "no such device")
+	if code != exitFailure {
+		t.Errorf("devices retry with an unknown device exited with %d", code)
+	}
+	if stderr == "" {
+		t.Error("devices retry with an unknown device reported no error")
+	}
+}
+
 // stopDevice stops a device before the test creates it again.
 func stopDevice(t *testing.T, d *testDevice) {
 	t.Helper()
