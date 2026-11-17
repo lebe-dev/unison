@@ -2,6 +2,7 @@ pub mod agent;
 mod daemon;
 mod files;
 mod i18n;
+pub mod observability;
 mod prompt;
 mod proxy;
 mod streams;
@@ -120,6 +121,13 @@ fn daemon_status() -> daemon::Status {
     daemon::status()
 }
 
+/// set_sentry_enabled grants or withdraws the consent of the shell to report
+/// errors.
+#[tauri::command]
+fn set_sentry_enabled(enabled: bool) {
+    observability::set_enabled(enabled);
+}
+
 /// login_item_status reports the state of the login item of the daemon.
 #[tauri::command]
 fn login_item_status() -> agent::LoginItem {
@@ -154,6 +162,7 @@ async fn set_login_item(
     let status = match agent::set(enabled) {
         Ok(status) => status,
         Err(err) => {
+            observability::capture_error(&format!("the login item could not be changed: {err}"));
             if let Some(path) = endpoint {
                 tauri::async_runtime::spawn(async move {
                     if let Err(err) = daemon::ensure_running(&path).await {
@@ -186,6 +195,9 @@ pub fn run() {
         .setup(|app| {
             if let Some(Err(err)) = agent::register_at_launch() {
                 eprintln!("unison: the login item could not be registered: {err}");
+                observability::capture_error(&format!(
+                    "the login item could not be registered: {err}"
+                ));
             }
             let endpoint = daemon::resolve_endpoint();
             match &endpoint {
@@ -198,7 +210,12 @@ pub fn run() {
                     });
                 }
                 // The window still has to tell why the app knows no daemon.
-                Err(err) => daemon::set_failed(err),
+                Err(err) => {
+                    observability::capture_error(&format!(
+                        "the endpoint of the daemon is unknown: {err}"
+                    ));
+                    daemon::set_failed(err);
+                }
             }
             app.manage(AppState { endpoint });
             app.manage(streams::Streams::default());
@@ -215,6 +232,7 @@ pub fn run() {
             files::open_files,
             login_item_status,
             set_login_item,
+            set_sentry_enabled,
             tray::set_tray_state,
             tray::pick_files,
             tray::pick_folder,

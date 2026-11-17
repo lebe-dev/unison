@@ -30,6 +30,14 @@ fn absolute_paths(paths: Vec<String>) -> Result<Vec<String>, String> {
     Ok(paths)
 }
 
+/// unexpected returns the message of a file operation the system could not
+/// perform and reports it.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn unexpected(message: String) -> String {
+    crate::observability::capture_error(&message);
+    message
+}
+
 /// reveal selects the paths in the file manager.
 #[cfg(target_os = "macos")]
 fn reveal(paths: &[String]) -> Result<(), String> {
@@ -78,7 +86,7 @@ fn run(program: &str, args: &[&str]) -> Result<(), String> {
     let status = Command::new(program)
         .args(args)
         .status()
-        .map_err(|err| format!("cannot run {program}: {err}"))?;
+        .map_err(|err| unexpected(format!("cannot run {program}: {err}")))?;
     if !status.success() {
         return Err(format!("{program} failed: {status}"));
     }
@@ -93,7 +101,7 @@ fn run(program: &str, args: &[&str]) -> Result<(), String> {
         .args(args)
         .spawn()
         .map(|_| ())
-        .map_err(|err| format!("cannot run {program}: {err}"))
+        .map_err(|err| unexpected(format!("cannot run {program}: {err}")))
 }
 
 #[cfg(test)]

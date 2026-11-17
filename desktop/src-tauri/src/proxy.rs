@@ -20,6 +20,8 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use serde::Serialize;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
+use crate::observability;
+
 /// Content types of the Connect protocol in binary form.
 const UNARY_CONTENT_TYPE: &str = "application/proto";
 const STREAM_CONTENT_TYPE: &str = "application/connect+proto";
@@ -111,6 +113,14 @@ pub async fn connect(endpoint: &str) -> io::Result<EndpointStream> {
     }
 }
 
+/// transport_error returns the message of a failed exchange with the daemon and
+/// reports it, since a failure of the transport is not an error of the user.
+fn transport_error(message: impl Into<String>) -> String {
+    let message = message.into();
+    observability::capture_error(&message);
+    message
+}
+
 /// check_endpoint verifies that the endpoint is a socket of the current user
 /// that only the owner can reach, in a directory other users cannot write to.
 #[cfg(unix)]
@@ -177,7 +187,7 @@ async fn call_within(
     let status = response.status();
     let body = tokio::time::timeout(limit, read_body(response.into_body(), MAX_RESPONSE_BYTES))
         .await
-        .map_err(|_| "the daemon did not finish the response in time".to_string())??;
+        .map_err(|_| transport_error("the daemon did not finish the response in time"))??;
     Ok(ApiResponse {
         status: status.as_u16(),
         body: BASE64.encode(body),
@@ -218,7 +228,8 @@ pub async fn stream(
 
     let mut body = response.into_body();
     while let Some(frame) = body.frame().await {
-        let frame = frame.map_err(|err| format!("reading the event stream failed: {err}"))?;
+        let frame = frame
+            .map_err(|err| transport_error(format!("reading the event stream failed: {err}")))?;
         if let Ok(data) = frame.into_data()
             && !data.is_empty()
         {
@@ -241,10 +252,10 @@ async fn open(
     let uri = procedure(service, method)?;
     let stream = connect(endpoint)
         .await
-        .map_err(|err| format!("cannot reach the daemon: {err}"))?;
+        .map_err(|err| transport_error(format!("cannot reach the daemon: {err}")))?;
     let (mut sender, connection) = http2::handshake(TokioExecutor::new(), TokioIo::new(stream))
         .await
-        .map_err(|err| format!("cannot open a session with the daemon: {err}"))?;
+        .map_err(|err| transport_error(format!("cannot open a session with the daemon: {err}")))?;
     tokio::spawn(async move {
         let _ = connection.await;
     });
@@ -261,10 +272,10 @@ async fn open(
     let response = match timeout {
         Some(limit) => tokio::time::timeout(limit, pending)
             .await
-            .map_err(|_| "the daemon did not answer in time".to_string())?,
+            .map_err(|_| transport_error("the daemon did not answer in time"))?,
         None => pending.await,
     }
-    .map_err(|err| format!("the request to the daemon failed: {err}"))?;
+    .map_err(|err| transport_error(format!("the request to the daemon failed: {err}")))?;
     Ok((response, sender))
 }
 
@@ -293,9 +304,9 @@ async fn read_body(body: Incoming, limit: usize) -> Result<Vec<u8>, String> {
         .await
         .map_err(|err| {
             if err.is::<LengthLimitError>() {
-                format!("the response is larger than {limit} bytes")
+                transport_error(format!("the response is larger than {limit} bytes"))
             } else {
-                format!("reading the response failed: {err}")
+                transport_error(format!("reading the response failed: {err}"))
             }
         })?
         .to_bytes();

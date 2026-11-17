@@ -249,6 +249,7 @@ describe("tray entries", () => {
         historyTtlTextSeconds: 0n,
         historyTtlImageSeconds: 0n,
         historyTtlFilesSeconds: 0n,
+        sentryEnabled: false,
       },
     });
 

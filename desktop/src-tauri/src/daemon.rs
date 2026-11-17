@@ -152,6 +152,7 @@ async fn ensure_running_with(endpoint: &str, startup: &Startup) -> Result<(), St
         }
         Err(err) => {
             set_status(State::Failed, Some(err.clone()));
+            crate::observability::capture_error(&format!("the daemon did not start: {err}"));
             Err(err)
         }
     }

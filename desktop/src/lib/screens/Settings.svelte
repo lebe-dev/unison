@@ -7,6 +7,7 @@
   import { t, type MessageKey } from "../i18n";
   import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
+  import { setSentryEnabled } from "../sentry";
   import {
     actions,
     bytesOf,
@@ -47,6 +48,7 @@
   let downloadsDir = $state("");
   let requireConfirmation = $state(false);
   let requireFileConfirmation = $state(false);
+  let sentryEnabled = $state(false);
   let policy = $state<PolicyTable | null>(null);
   let ttl = $state<HistoryTTL | null>(null);
   let ttlDrafts = $state<Record<TTLKind, string>>({ text: "", image: "", files: "" });
@@ -125,10 +127,12 @@
       requireConfirmation = response.settings?.requireConfirmation ?? false;
       requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
       downloadsDir = response.settings?.downloadsDir ?? "";
+      sentryEnabled = response.settings?.sentryEnabled ?? false;
       policy = policyFromSettings(response.settings);
       showTTL(ttlFromSettings(response.settings));
       loaded = true;
       notice = null;
+      void syncSentry(sentryEnabled);
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("settings.loadFailed")) };
     } finally {
@@ -182,6 +186,36 @@
       notice = {
         kind: "error",
         text: errorText(error, t("settings.confirmationFailed")),
+      };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** syncSentry tells the shell of the app whether it may report its errors. */
+  async function syncSentry(enabled: boolean): Promise<void> {
+    try {
+      await setSentryEnabled(enabled);
+    } catch {
+      // A shell that cannot take the setting keeps its own default.
+    }
+  }
+
+  /** setSentryReporting stores the consent and passes it to the shell. */
+  async function setSentryReporting(value: boolean): Promise<void> {
+    const previous = sentryEnabled;
+    sentryEnabled = value;
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings({ sentryEnabled: value });
+      sentryEnabled = response.settings?.sentryEnabled ?? value;
+      await syncSentry(sentryEnabled);
+    } catch (error) {
+      sentryEnabled = previous;
+      notice = {
+        kind: "error",
+        text: errorText(error, "The error reporting setting could not be changed."),
       };
     } finally {
       busy = false;
@@ -689,6 +723,26 @@
         <p class="section-footer">{t("settings.policyFooter")}</p>
       </section>
     {/if}
+
+    <section class="section">
+      <h3 class="section-title">Privacy</h3>
+      <div class="list">
+        <label class="toggle form-row">
+          <input
+            type="checkbox"
+            checked={sentryEnabled}
+            disabled={busy || !loaded}
+            onchange={(event) => void setSentryReporting(event.currentTarget.checked)}
+          />
+          <span>
+            Send errors to the developer
+            <small>
+              Crashes and errors of the app are reported. Nothing is sent unless you turn this on.
+            </small>
+          </span>
+        </label>
+      </div>
+    </section>
 
     {@render startup()}
 

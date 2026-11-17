@@ -20,6 +20,7 @@ import {
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
 import { pickFolder } from "../files";
+import { setSentryEnabled } from "../sentry";
 import Settings from "./Settings.svelte";
 
 vi.mock("../files", () => ({
@@ -27,7 +28,12 @@ vi.mock("../files", () => ({
   pickFolder: vi.fn(),
 }));
 
+vi.mock("../sentry", () => ({
+  setSentryEnabled: vi.fn(),
+}));
+
 const pickFolderMock = vi.mocked(pickFolder);
+const setSentryEnabledMock = vi.mocked(setSentryEnabled);
 
 vi.mock("../api/client", () => ({
   client: {
@@ -73,11 +79,13 @@ function settings(): SettingsMessage {
     historyTtlImageSeconds: 3n * 86400n,
     historyTtlFilesSeconds: 86400n,
     downloadsDir: "/Users/me/Downloads/Unison",
+    sentryEnabled: false,
   });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setSentryEnabledMock.mockResolvedValue();
   getStatus.mockResolvedValue(
     create(GetStatusResponseSchema, {
       running: true,
@@ -322,6 +330,57 @@ describe("settings screen", () => {
 
     expect(updateSettings).toHaveBeenCalledWith({ requireFileConfirmation: true });
     expect((files as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("keeps error reporting off by default", async () => {
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+    expect(setSentryEnabled).toHaveBeenCalledWith(false);
+  });
+
+  it("passes a granted error reporting to the shell", async () => {
+    getSettings.mockResolvedValue(
+      create(GetSettingsResponseSchema, {
+        settings: { ...settings(), sentryEnabled: true },
+      }),
+    );
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+    expect(setSentryEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it("turns error reporting on", async () => {
+    updateSettings.mockResolvedValue(
+      create(UpdateSettingsResponseSchema, {
+        settings: { ...settings(), sentryEnabled: true },
+      }),
+    );
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    await fireEvent.click(toggle);
+
+    expect(updateSettings).toHaveBeenCalledWith({ sentryEnabled: true });
+    expect(setSentryEnabled).toHaveBeenCalledWith(true);
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("reverts the error reporting when it cannot be saved", async () => {
+    updateSettings.mockRejectedValue(new Error("the daemon is busy"));
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    await fireEvent.click(toggle);
+
+    expect(await screen.findByText("the daemon is busy")).toBeTruthy();
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+    expect(setSentryEnabled).not.toHaveBeenCalledWith(true);
   });
 
   it("refuses an empty device name", async () => {

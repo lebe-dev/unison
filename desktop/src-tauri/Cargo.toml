@@ -16,6 +16,12 @@ base64 = "0.22"
 http-body-util = "0.1"
 hyper = { version = "1", features = ["client", "http2"] }
 hyper-util = { version = "0.1", features = ["tokio"] }
+sentry = { version = "0.49", default-features = false, features = [
+  "backtrace",
+  "contexts",
+  "panic",
+  "transport",
+] }
 serde = { version = "1", features = ["derive"] }
 sys-locale = "0.3"
 tauri = { version = "2", features = ["tray-icon", "image-png"] }

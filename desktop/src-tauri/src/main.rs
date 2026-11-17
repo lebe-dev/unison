@@ -5,5 +5,6 @@ fn main() {
     if let Some(code) = unison_desktop_lib::agent::run_arg() {
         std::process::exit(code);
     }
+    unison_desktop_lib::observability::init();
     unison_desktop_lib::run()
 }
