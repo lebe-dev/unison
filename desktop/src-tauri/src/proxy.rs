@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use http_body_util::{BodyExt, Full};
+use http_body_util::{BodyExt, Full, LengthLimitError, Limited};
 use hyper::body::{Bytes, Incoming};
 use hyper::client::conn::http2;
 use hyper::header::CONTENT_TYPE;
@@ -92,10 +92,13 @@ impl AsyncWrite for EndpointStream {
     }
 }
 
-/// Connect opens the endpoint of the daemon.
+/// Connect opens the endpoint of the daemon. A unix socket that another user
+/// owns, that other users can reach or that other users can replace is refused
+/// before anything is sent to it, the same way the clients of the daemon do.
 pub async fn connect(endpoint: &str) -> io::Result<EndpointStream> {
     #[cfg(unix)]
     {
+        check_endpoint(std::path::Path::new(endpoint))?;
         tokio::net::UnixStream::connect(endpoint)
             .await
             .map(EndpointStream::Unix)
@@ -106,6 +109,40 @@ pub async fn connect(endpoint: &str) -> io::Result<EndpointStream> {
             .open(endpoint)
             .map(EndpointStream::Pipe)
     }
+}
+
+/// check_endpoint verifies that the endpoint is a socket of the current user
+/// that only the owner can reach, in a directory other users cannot write to.
+#[cfg(unix)]
+fn check_endpoint(path: &std::path::Path) -> io::Result<()> {
+    use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
+
+    let insecure = || {
+        io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "the endpoint is reachable by other users",
+        )
+    };
+    let dir = match path.parent() {
+        Some(dir) if !dir.as_os_str().is_empty() => dir,
+        _ => std::path::Path::new("."),
+    };
+    if std::fs::metadata(dir)?.permissions().mode() & 0o022 != 0 {
+        return Err(insecure());
+    }
+    let info = std::fs::symlink_metadata(path)?;
+    if !info.file_type().is_socket() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "the endpoint is not a socket",
+        ));
+    }
+    // SAFETY: getuid has no preconditions and cannot fail.
+    let uid = unsafe { libc::getuid() };
+    if info.mode() & 0o077 != 0 || info.uid() != uid {
+        return Err(insecure());
+    }
+    Ok(())
 }
 
 /// Call performs a unary call of the service.
@@ -239,15 +276,361 @@ fn procedure(service: &str, method: &str) -> Result<String, String> {
     Ok(format!("http://unison/{service}/{method}"))
 }
 
-/// read_body collects a response body up to limit bytes.
+/// read_body collects a response body up to limit bytes. The limit applies
+/// while the body arrives, so a larger response is never held in memory.
 async fn read_body(body: Incoming, limit: usize) -> Result<Vec<u8>, String> {
-    let collected = body
+    let collected = Limited::new(body, limit)
         .collect()
         .await
-        .map_err(|err| format!("reading the response failed: {err}"))?
+        .map_err(|err| {
+            if err.is::<LengthLimitError>() {
+                format!("the response is larger than {limit} bytes")
+            } else {
+                format!("reading the response failed: {err}")
+            }
+        })?
         .to_bytes();
-    if collected.len() > limit {
-        return Err(format!("the response is larger than {limit} bytes"));
-    }
     Ok(collected.to_vec())
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use crate::testutil::{TempDir, bind_socket, block_on, set_mode};
+    use http_body_util::combinators::BoxBody;
+    use hyper::body::{Body, Frame};
+    use hyper::server::conn::http2 as server;
+    use hyper::service::service_fn;
+    use std::convert::Infallible;
+    use std::path::Path;
+    use std::sync::{Arc, Mutex};
+    use tokio::sync::oneshot;
+
+    type Reply = hyper::Response<BoxBody<Bytes, Infallible>>;
+
+    /// Seen is what the test server received.
+    #[derive(Default, Clone, Debug)]
+    struct Seen {
+        path: String,
+        content_type: String,
+        protocol: String,
+        body: Vec<u8>,
+    }
+
+    /// Server answers every request of one connection with reply, records the
+    /// request and reports when the connection ends.
+    struct Server {
+        seen: Arc<Mutex<Seen>>,
+        closed: oneshot::Receiver<()>,
+    }
+
+    fn full(status: StatusCode, body: impl Into<Bytes>) -> Reply {
+        hyper::Response::builder()
+            .status(status)
+            .body(Full::new(body.into()).boxed())
+            .expect("build the response")
+    }
+
+    /// serve accepts one connection on path and answers it.
+    fn serve(path: &Path, reply: fn() -> Reply) -> Server {
+        let listener = bind_socket(path);
+        listener.set_nonblocking(true).expect("nonblocking");
+        let listener = tokio::net::UnixListener::from_std(listener).expect("listener");
+        let seen = Arc::new(Mutex::new(Seen::default()));
+        let (done, closed) = oneshot::channel();
+        let record = seen.clone();
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.expect("accept");
+            let service = service_fn(move |request: Request<Incoming>| {
+                let record = record.clone();
+                async move {
+                    let header = |name: &str| {
+                        request
+                            .headers()
+                            .get(name)
+                            .and_then(|value| value.to_str().ok())
+                            .unwrap_or_default()
+                            .to_string()
+                    };
+                    let mut seen = Seen {
+                        path: request.uri().path().to_string(),
+                        content_type: header("content-type"),
+                        protocol: header("connect-protocol-version"),
+                        body: Vec::new(),
+                    };
+                    seen.body = request
+                        .into_body()
+                        .collect()
+                        .await
+                        .unwrap()
+                        .to_bytes()
+                        .to_vec();
+                    *record.lock().unwrap() = seen;
+                    Ok::<_, Infallible>(reply())
+                }
+            });
+            let _ = server::Builder::new(TokioExecutor::new())
+                .serve_connection(TokioIo::new(stream), service)
+                .await;
+            let _ = done.send(());
+        });
+        Server { seen, closed }
+    }
+
+    /// Endless is a response body that never ends, like the event stream of a
+    /// daemon without events.
+    struct Endless;
+
+    impl Body for Endless {
+        type Data = Bytes;
+        type Error = Infallible;
+
+        fn poll_frame(
+            self: Pin<&mut Self>,
+            _cx: &mut Context<'_>,
+        ) -> Poll<Option<Result<Frame<Bytes>, Infallible>>> {
+            Poll::Pending
+        }
+    }
+
+    #[test]
+    fn procedure_accepts_protobuf_names() {
+        assert_eq!(
+            procedure("unison.local.v1.UnisonService", "GetStatus").as_deref(),
+            Ok("http://unison/unison.local.v1.UnisonService/GetStatus")
+        );
+        assert!(procedure("a_b.C9", "Do_It").is_ok());
+    }
+
+    #[test]
+    fn procedure_refuses_other_names() {
+        for (service, method) in [
+            ("", "GetStatus"),
+            ("unison.Service", ""),
+            ("unison/Service", "GetStatus"),
+            ("unison.Service", "Get/Status"),
+            ("..", "x?y=1"),
+            ("unison.Service", "Get Status"),
+            ("unison.Service", "GetStatus#x"),
+            ("сервис", "GetStatus"),
+        ] {
+            assert!(
+                procedure(service, method).is_err(),
+                "{service}/{method} was accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn call_forwards_the_request_and_returns_the_response() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let server = serve(&path, || full(StatusCode::OK, &b"\x01\x02reply"[..]));
+            let response = call(path.to_str().unwrap(), "unison.S", "Get", b"\x08\x01")
+                .await
+                .expect("call");
+            assert_eq!(response.status, 200);
+            assert_eq!(BASE64.decode(response.body).unwrap(), b"\x01\x02reply");
+
+            let seen = server.seen.lock().unwrap().clone();
+            assert_eq!(seen.path, "/unison.S/Get");
+            assert_eq!(seen.content_type, UNARY_CONTENT_TYPE);
+            assert_eq!(seen.protocol, "1");
+            assert_eq!(seen.body, b"\x08\x01");
+        });
+    }
+
+    #[test]
+    fn call_returns_the_status_of_an_error() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let _server = serve(&path, || {
+                full(StatusCode::NOT_FOUND, r#"{"code":"not_found"}"#)
+            });
+            let response = call(path.to_str().unwrap(), "unison.S", "Get", b"")
+                .await
+                .expect("call");
+            assert_eq!(response.status, 404);
+            assert_eq!(
+                BASE64.decode(response.body).unwrap(),
+                br#"{"code":"not_found"}"#
+            );
+        });
+    }
+
+    #[test]
+    fn call_refuses_a_response_above_the_limit() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let _server = serve(&path, || {
+                full(StatusCode::OK, vec![0u8; MAX_RESPONSE_BYTES + 1])
+            });
+            let err = call(path.to_str().unwrap(), "unison.S", "Get", b"")
+                .await
+                .err()
+                .expect("an oversized response was accepted");
+            assert!(err.contains("larger than"), "unexpected error: {err}");
+        });
+    }
+
+    #[test]
+    fn call_reports_a_missing_daemon() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let err = block_on(call(path.to_str().unwrap(), "unison.S", "Get", b""))
+            .err()
+            .expect("a call without a daemon succeeded");
+        assert!(err.starts_with("cannot reach the daemon"), "{err}");
+    }
+
+    #[test]
+    fn stream_hands_over_the_chunks() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let server = serve(&path, || {
+                full(StatusCode::OK, &b"\x00\x00\x00\x00\x01e"[..])
+            });
+            let mut chunks = Vec::new();
+            stream(
+                path.to_str().unwrap(),
+                "unison.S",
+                "Watch",
+                b"req",
+                |data| {
+                    chunks.extend_from_slice(data);
+                    Ok(())
+                },
+            )
+            .await
+            .expect("stream");
+            assert_eq!(chunks, b"\x00\x00\x00\x00\x01e");
+            let seen = server.seen.lock().unwrap().clone();
+            assert_eq!(seen.content_type, STREAM_CONTENT_TYPE);
+            assert_eq!(seen.body, b"req");
+        });
+    }
+
+    #[test]
+    fn stream_reports_an_error_status() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let _server = serve(&path, || full(StatusCode::SERVICE_UNAVAILABLE, "busy"));
+            let err = stream(path.to_str().unwrap(), "unison.S", "Watch", b"", |_| {
+                panic!("a chunk of a failed stream was delivered")
+            })
+            .await
+            .expect_err("a failed stream succeeded");
+            assert!(err.contains("503") && err.contains("busy"), "{err}");
+        });
+    }
+
+    #[test]
+    fn stream_stops_when_the_chunk_cannot_be_delivered() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let _server = serve(&path, || full(StatusCode::OK, "chunk"));
+            let err = stream(path.to_str().unwrap(), "unison.S", "Watch", b"", |_| {
+                Err("the webview is gone".to_string())
+            })
+            .await
+            .expect_err("the stream ignored the failed delivery");
+            assert_eq!(err, "the webview is gone");
+        });
+    }
+
+    #[test]
+    fn cancelled_stream_closes_its_connection() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        block_on(async {
+            let server = serve(&path, || hyper::Response::new(BodyExt::boxed(Endless)));
+            let streams = Arc::new(crate::streams::Streams::default());
+            let running = streams.open("main", 7);
+
+            let canceller = streams.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+                assert!(canceller.cancel("main", 7), "the stream was not open");
+            });
+
+            let endpoint = path.to_str().unwrap();
+            let result = tokio::time::timeout(
+                Duration::from_secs(5),
+                running.run(stream(endpoint, "unison.S", "Watch", b"", |_| Ok(()))),
+            )
+            .await
+            .expect("the cancelled stream kept running");
+            assert_eq!(result, Ok(()));
+
+            tokio::time::timeout(Duration::from_secs(5), server.closed)
+                .await
+                .expect("the daemon still holds the connection of a cancelled stream")
+                .expect("the server stopped");
+        });
+    }
+
+    #[test]
+    fn connect_accepts_a_private_socket() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        block_on(async {
+            connect(path.to_str().unwrap()).await.expect("connect");
+        });
+    }
+
+    #[test]
+    fn connect_refuses_a_socket_other_users_can_reach() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        set_mode(&path, 0o666);
+        let err = block_on(connect(path.to_str().unwrap()))
+            .err()
+            .expect("connected");
+        assert_eq!(err.kind(), io::ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn connect_refuses_a_directory_other_users_can_write() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        set_mode(dir.path(), 0o777);
+        let err = block_on(connect(path.to_str().unwrap()))
+            .err()
+            .expect("connected");
+        assert_eq!(err.kind(), io::ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn connect_refuses_a_file() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        std::fs::write(&path, b"").unwrap();
+        set_mode(&path, 0o600);
+        let err = block_on(connect(path.to_str().unwrap()))
+            .err()
+            .expect("connected");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn connect_refuses_a_symlink_to_the_socket() {
+        let dir = TempDir::new();
+        let target = dir.join("real.sock");
+        let _listener = bind_socket(&target);
+        let path = dir.join("unisond.sock");
+        std::os::unix::fs::symlink(&target, &path).unwrap();
+        let err = block_on(connect(path.to_str().unwrap()))
+            .err()
+            .expect("connected");
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+    }
 }

@@ -10,6 +10,19 @@ const BASE_URL = "http://unison";
 /** Largest piece of a base64 string built at once. */
 const CHUNK_SIZE = 0x8000;
 
+/** Largest stream id, the bridge takes it as an unsigned 32-bit number. */
+const MAX_STREAM_ID = 0xffffffff;
+
+/** Id of the last stream this page opened. */
+let lastStreamId = 0;
+
+/** nextStreamId returns the id of a new stream, which names it to the bridge
+ * when the page cancels it. */
+function nextStreamId(): number {
+  lastStreamId = lastStreamId >= MAX_STREAM_ID ? 1 : lastStreamId + 1;
+  return lastStreamId;
+}
+
 /** One unary response of the bridge. */
 interface ApiResponse {
   status: number;
@@ -138,9 +151,10 @@ class ChunkQueue {
 /**
  * invokeFetch answers the requests of the Connect transport through the Tauri
  * bridge. The request and response bodies stay in the Connect framing, so the
- * bridge never parses protobuf.
+ * bridge never parses protobuf. An aborted stream is cancelled in the bridge
+ * too, which closes its connection to the daemon.
  */
-async function invokeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function invokeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const request = new Request(input, init);
   const target = procedure(request.url);
   const contentType = request.headers.get("content-type") ?? "application/proto";
@@ -162,12 +176,18 @@ async function invokeFetch(input: RequestInfo | URL, init?: RequestInit): Promis
   if (signal?.aborted) {
     queue.fail(new DOMException("the call was aborted", "AbortError"));
   } else {
+    const id = nextStreamId();
     signal?.addEventListener(
       "abort",
-      () => queue.fail(new DOMException("the call was aborted", "AbortError")),
+      () => {
+        queue.fail(new DOMException("the call was aborted", "AbortError"));
+        invoke<void>("api_stream_cancel", { id }).catch((error: unknown) => {
+          console.warn("cannot cancel the stream of the daemon", error);
+        });
+      },
       { once: true },
     );
-    invoke<void>("api_stream", { ...target, body, onChunk: channel }).then(
+    invoke<void>("api_stream", { id, ...target, body, onChunk: channel }).then(
       () => queue.close(),
       (error: unknown) => queue.fail(error),
     );

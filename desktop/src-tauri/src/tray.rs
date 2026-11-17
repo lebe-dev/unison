@@ -432,3 +432,62 @@ fn pause_text(paused: bool) -> &'static str {
         "Clipboard on"
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn state(connected: bool, online_peers: usize) -> TrayState {
+        TrayState {
+            connected,
+            online_peers,
+            paused: false,
+            devices: Vec::new(),
+            recent: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn menu_label_keeps_short_text() {
+        assert_eq!(menu_label("hello"), "hello");
+    }
+
+    #[test]
+    fn menu_label_shortens_long_text_by_characters() {
+        let text = "ж".repeat(MENU_LABEL_LIMIT + 5);
+        let label = menu_label(&text);
+        assert_eq!(label, format!("{}...", "ж".repeat(MENU_LABEL_LIMIT)));
+    }
+
+    #[test]
+    fn menu_label_puts_text_on_one_line() {
+        assert_eq!(menu_label("a\nb\r\nc"), "a b  c");
+    }
+
+    #[test]
+    fn status_text_counts_devices() {
+        assert_eq!(status_text(&state(false, 3)), "Daemon offline");
+        assert_eq!(status_text(&state(true, 0)), "No devices online");
+        assert_eq!(status_text(&state(true, 1)), "1 device online");
+        assert_eq!(status_text(&state(true, 4)), "4 devices online");
+    }
+
+    #[test]
+    fn pause_text_names_the_state() {
+        assert_eq!(pause_text(true), "Clipboard paused");
+        assert_eq!(pause_text(false), "Clipboard on");
+    }
+
+    #[test]
+    fn replace_entries_reports_changes_only() {
+        let current = Mutex::new(Vec::new());
+        let next = vec![("1".to_string(), "one".to_string())];
+        assert!(replace_entries(&current, &next));
+        assert!(
+            !replace_entries(&current, &next),
+            "an unchanged list rebuilt the menu"
+        );
+        assert!(replace_entries(&current, &[]));
+        assert!(current.lock().unwrap().is_empty());
+    }
+}

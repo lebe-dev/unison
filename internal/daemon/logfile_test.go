@@ -77,3 +77,52 @@ func TestLogRecords(t *testing.T) {
 		t.Errorf("version is %v, want %q", record["version"], "test")
 	}
 }
+
+// TestLogFileSurvivesFailedRotation checks that a rotation that cannot move the
+// files leaves the log writable, so the daemon does not go silent for the rest
+// of its run.
+func TestLogFileSurvivesFailedRotation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), LogFileName)
+	file, err := openLogFile(path, 10, 1)
+	if err != nil {
+		t.Fatalf("open log file: %v", err)
+	}
+	t.Cleanup(func() { _ = file.Close() })
+
+	// A directory with content in place of the backup cannot be removed, so
+	// the rotation fails.
+	if err := os.MkdirAll(filepath.Join(path+".1", "blocker"), 0o700); err != nil {
+		t.Fatalf("create blocker: %v", err)
+	}
+
+	for _, record := range []string{"0123456789", "after-failure\n", "still-written\n"} {
+		if _, err := file.Write([]byte(record)); err != nil {
+			t.Fatalf("write %q: %v", record, err)
+		}
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read the log file: %v", err)
+	}
+	for _, want := range []string{"0123456789", "after-failure", "still-written"} {
+		if !strings.Contains(string(content), want) {
+			t.Errorf("the log file lost %q: %q", want, content)
+		}
+	}
+
+	// Once the obstacle is gone the next write rotates again.
+	if err := os.RemoveAll(path + ".1"); err != nil {
+		t.Fatalf("remove blocker: %v", err)
+	}
+	if _, err := file.Write([]byte("rotated\n")); err != nil {
+		t.Fatalf("write after recovery: %v", err)
+	}
+	backup, err := os.ReadFile(path + ".1")
+	if err != nil {
+		t.Fatalf("read the backup: %v", err)
+	}
+	if !strings.Contains(string(backup), "still-written") {
+		t.Errorf("the backup does not hold the earlier records: %q", backup)
+	}
+}

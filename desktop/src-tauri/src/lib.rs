@@ -2,6 +2,9 @@ pub mod agent;
 mod daemon;
 mod prompt;
 mod proxy;
+mod streams;
+#[cfg(all(test, unix))]
+mod testutil;
 mod tray;
 
 use base64::Engine;
@@ -9,7 +12,8 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use serde::Serialize;
 use std::time::Duration;
 use tauri::ipc::Channel;
-use tauri::{Manager, State};
+use tauri::webview::PageLoadEvent;
+use tauri::{Manager, State, Webview};
 
 /// AppState is shared by the commands.
 struct AppState {
@@ -40,10 +44,16 @@ async fn api_call(
 }
 
 /// api_stream forwards a server streaming call of the local API to the daemon
-/// and sends every chunk of the response body to the given channel.
+/// and sends every chunk of the response body to the given channel. The call
+/// ends when the daemon ends the response or when the webview cancels it by its
+/// id with api_stream_cancel.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 async fn api_stream(
     state: State<'_, AppState>,
+    streams: State<'_, streams::Streams>,
+    webview: Webview,
+    id: u32,
     service: String,
     method: String,
     body: String,
@@ -53,14 +63,23 @@ async fn api_stream(
     let body = BASE64
         .decode(body)
         .map_err(|err| format!("the request body is not base64: {err}"))?;
-    proxy::stream(endpoint, &service, &method, &body, |data| {
-        on_chunk
-            .send(StreamChunk {
-                chunk: BASE64.encode(data),
-            })
-            .map_err(|err| format!("delivering the response failed: {err}"))
-    })
-    .await
+    let stream = streams.open(webview.label(), id);
+    stream
+        .run(proxy::stream(endpoint, &service, &method, &body, |data| {
+            on_chunk
+                .send(StreamChunk {
+                    chunk: BASE64.encode(data),
+                })
+                .map_err(|err| format!("delivering the response failed: {err}"))
+        }))
+        .await
+}
+
+/// api_stream_cancel ends a streaming call the webview no longer reads, which
+/// closes its connection to the daemon.
+#[tauri::command]
+fn api_stream_cancel(streams: State<'_, streams::Streams>, webview: Webview, id: u32) {
+    streams.cancel(webview.label(), id);
 }
 
 /// daemon_status reports the state of the daemon and the reason of the last
@@ -177,12 +196,14 @@ pub fn run() {
                 Err(err) => daemon::set_failed(err),
             }
             app.manage(AppState { endpoint });
+            app.manage(streams::Streams::default());
             tray::install(app.handle())?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             api_call,
             api_stream,
+            api_stream_cancel,
             daemon_status,
             open_local_network_settings,
             login_item_status,
@@ -193,6 +214,15 @@ pub fn run() {
             prompt::show_prompt,
             prompt::hide_prompt
         ])
+        .on_page_load(|webview, payload| {
+            // A page that loads again has lost the streams of the previous
+            // page, so their connections to the daemon are closed here.
+            if payload.event() == PageLoadEvent::Started
+                && let Some(streams) = webview.try_state::<streams::Streams>()
+            {
+                streams.cancel_owner(webview.label());
+            }
+        })
         .on_window_event(|window, event| {
             // The window stays alive in the tray, so the app keeps the daemon
             // events and the menu state up to date while it is hidden.

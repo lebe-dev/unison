@@ -19,6 +19,9 @@ const BINARY_ENV: &str = "UNISON_DAEMON_BIN";
 const PROBE_TIMEOUT: Duration = Duration::from_millis(500);
 const START_TIMEOUT: Duration = Duration::from_secs(10);
 const START_INTERVAL: Duration = Duration::from_millis(200);
+/// EXIT_GRACE is how long the app keeps probing after the daemon it started
+/// exited, before it reports the exit.
+const EXIT_GRACE: Duration = Duration::from_secs(1);
 /// LOGIN_WAIT is how long the app waits for the login item to start the daemon
 /// before it starts the daemon of the bundle itself.
 const LOGIN_WAIT: Duration = Duration::from_secs(3);
@@ -168,12 +171,34 @@ async fn wait_for(endpoint: &str, limit: Duration) -> Result<(), String> {
 /// wait_started waits for the daemon the app started and reports why it did not
 /// come up.
 async fn wait_started(endpoint: &str, limit: Duration) -> Result<(), String> {
-    match wait_for(endpoint, limit).await {
-        Ok(()) => Ok(()),
-        Err(err) => match *lock(&LAST_EXIT) {
-            Some(status) => Err(format!("the daemon stopped during startup ({status})")),
-            None => Err(err),
-        },
+    wait_child(endpoint, limit, || *lock(&LAST_EXIT)).await
+}
+
+/// wait_child waits for a started daemon to answer on the endpoint. A daemon
+/// that exits ends the wait after EXIT_GRACE instead of the whole limit; the
+/// grace covers a daemon that exits because another instance is starting up
+/// on the same endpoint.
+async fn wait_child(
+    endpoint: &str,
+    limit: Duration,
+    exited: impl Fn() -> Option<ExitStatus>,
+) -> Result<(), String> {
+    let deadline = Instant::now() + limit;
+    let mut exit_deadline: Option<Instant> = None;
+    loop {
+        if probe(endpoint).await {
+            return Ok(());
+        }
+        let now = Instant::now();
+        if let Some(status) = exited() {
+            let until = *exit_deadline.get_or_insert(now + EXIT_GRACE);
+            if now >= until || now >= deadline {
+                return Err(format!("the daemon stopped during startup ({status})"));
+            }
+        } else if now >= deadline {
+            return Err(format!("the daemon did not answer on {endpoint}"));
+        }
+        tokio::time::sleep(START_INTERVAL).await;
     }
 }
 
@@ -316,5 +341,62 @@ fn windows_endpoint() -> Result<String, String> {
         let sid = String::from_utf16_lossy(std::slice::from_raw_parts(value, length));
         LocalFree(value.cast());
         Ok(format!(r"\\.\pipe\unison-{sid}"))
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use crate::testutil::{TempDir, bind_socket, block_on};
+    use std::os::unix::process::ExitStatusExt;
+
+    #[test]
+    fn wait_child_returns_once_the_daemon_answers() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let _listener = bind_socket(&path);
+        let started = Instant::now();
+        let result = block_on(wait_child(path.to_str().unwrap(), START_TIMEOUT, || None));
+        assert_eq!(result, Ok(()));
+        assert!(started.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn wait_child_reports_an_early_exit_without_waiting_for_the_limit() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let started = Instant::now();
+        let result = block_on(wait_child(path.to_str().unwrap(), START_TIMEOUT, || {
+            Some(ExitStatus::from_raw(1 << 8))
+        }));
+        let err = result.expect_err("a daemon that exited was reported as running");
+        assert!(err.contains("stopped during startup"), "{err}");
+        assert!(
+            started.elapsed() < EXIT_GRACE + Duration::from_secs(1),
+            "the wait took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn wait_child_reports_a_daemon_that_never_answers() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let result = block_on(wait_child(
+            path.to_str().unwrap(),
+            Duration::from_millis(300),
+            || None,
+        ));
+        let err = result.expect_err("a silent daemon was reported as running");
+        assert!(err.contains("did not answer"), "{err}");
+    }
+
+    #[test]
+    fn wait_stopped_returns_when_nothing_answers() {
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let started = Instant::now();
+        block_on(wait_stopped(path.to_str().unwrap(), Duration::from_secs(5)));
+        assert!(started.elapsed() < Duration::from_secs(1));
     }
 }

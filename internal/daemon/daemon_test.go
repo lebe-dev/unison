@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -322,5 +323,48 @@ func TestSetClip(t *testing.T) {
 	}
 	if got.Msg.GetItem().GetId() != set.Msg.GetItem().GetId() {
 		t.Errorf("latest item is %q, want %q", got.Msg.GetItem().GetId(), set.Msg.GetItem().GetId())
+	}
+}
+
+// TestRunReplacesStaleEndpoint checks that a socket left behind by a daemon
+// that crashed does not keep the next daemon from serving.
+func TestRunReplacesStaleEndpoint(t *testing.T) {
+	dataDir := shortDir(t)
+	endpoint, err := daemon.SocketPath(dataDir)
+	if err != nil {
+		t.Fatalf("resolve endpoint: %v", err)
+	}
+	listener, err := net.Listen("unix", endpoint)
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	// A crash skips the unlink, so the socket file stays without a listener.
+	listener.(*net.UnixListener).SetUnlinkOnClose(false)
+	if err := listener.Close(); err != nil {
+		t.Fatalf("close listener: %v", err)
+	}
+	if _, err := os.Lstat(endpoint); err != nil {
+		t.Fatalf("the stale socket is missing: %v", err)
+	}
+
+	inst := start(t, dataDir, "after-crash", newAdapters())
+	got, err := status(t, inst)
+	if err != nil {
+		t.Fatalf("get status: %v", err)
+	}
+	if got.GetDeviceName() != "after-crash" {
+		t.Errorf("device name is %q, want %q", got.GetDeviceName(), "after-crash")
+	}
+}
+
+// TestRunRemovesEndpointOnStop checks that a daemon that stops cleanly takes
+// its endpoint away, so clients see it stopped instead of a dead socket.
+func TestRunRemovesEndpointOnStop(t *testing.T) {
+	dataDir := shortDir(t)
+	inst := start(t, dataDir, "stopping", newAdapters())
+	inst.stop(t)
+
+	if _, err := os.Lstat(inst.endpoint); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("the endpoint is still there after the stop: %v", err)
 	}
 }

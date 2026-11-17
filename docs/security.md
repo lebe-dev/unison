@@ -40,7 +40,8 @@ of the platform: the login Keychain on macOS, the Android Keystore on Android. T
 the device, and a copy of the data directory without it cannot be read.
 
 The local endpoint of the daemon is a unix socket in a directory that only the user may enter, with
-the socket itself readable by the user alone. The client refuses an endpoint of another user.
+the socket itself readable by the user alone. The CLI and the desktop app refuse an endpoint that
+another user owns or can reach.
 
 ## Relay
 

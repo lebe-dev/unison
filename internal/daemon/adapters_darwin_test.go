@@ -3,8 +3,11 @@
 package daemon
 
 import (
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/lebe-dev/unison/platform/darwin/clipboard"
 )
 
 // TestKeychainServiceOfDefaultDataDir checks that the default data directory
@@ -93,5 +96,29 @@ func TestServiceSlug(t *testing.T) {
 				t.Errorf("serviceSlug(%q) = %q, want %q", tc.in, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestStartupWarning checks that the daemon warns about every pasteboard
+// policy that keeps it from reading the clipboard, and stays quiet otherwise.
+func TestStartupWarning(t *testing.T) {
+	cases := []struct {
+		behavior clipboard.Behavior
+		warns    bool
+	}{
+		{clipboard.BehaviorDefault, true},
+		{clipboard.BehaviorAsk, true},
+		{clipboard.BehaviorAlwaysDeny, true},
+		{clipboard.BehaviorAlwaysAllow, false},
+		{behaviorUnknown, false},
+	}
+	for _, tc := range cases {
+		warning := (&policyClipboard{behavior: tc.behavior}).StartupWarning(context.Background())
+		if got := warning != ""; got != tc.warns {
+			t.Errorf("behavior %d: warning %q, want a warning: %v", tc.behavior, warning, tc.warns)
+		}
+		if tc.warns && !strings.Contains(warning, "Paste from Other Apps") {
+			t.Errorf("behavior %d: warning %q does not name the setting", tc.behavior, warning)
+		}
 	}
 }

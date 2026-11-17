@@ -7,6 +7,7 @@ package clipboard
 #cgo LDFLAGS: -framework AppKit
 
 #import <AppKit/AppKit.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -166,15 +167,21 @@ static NSInteger uc_poll(NSInteger previous, uc_snapshot *out, size_t max_files)
 		if (out->sensitive) {
 			return count;
 		}
+		// Go copies a buffer with an int length, so a larger payload is left
+		// out instead of crashing the daemon.
 		NSData *plain = [pb dataForType:@"public.utf8-plain-text"];
-		if (plain != nil) {
+		if (plain != nil && plain.length <= INT_MAX) {
 			out->plain = uc_copy(plain.bytes, plain.length);
-			out->plain_len = plain.length;
+			if (out->plain != NULL) {
+				out->plain_len = plain.length;
+			}
 		}
 		NSData *html = [pb dataForType:@"public.html"];
-		if (html != nil) {
+		if (html != nil && html.length <= INT_MAX) {
 			out->html = uc_copy(html.bytes, html.length);
-			out->html_len = html.length;
+			if (out->html != NULL) {
+				out->html_len = html.length;
+			}
 		}
 		NSData *png = [pb dataForType:@"public.png"];
 		if (png != nil && png.length > 0 && png.length <= uc_max_image_bytes) {

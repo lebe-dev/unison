@@ -77,8 +77,13 @@ func (f *logFile) Write(p []byte) (int, error) {
 		return 0, errors.New("daemon: log file is closed")
 	}
 	if f.max > 0 && f.size > 0 && f.size+int64(len(p)) > f.max {
-		if err := f.rotate(); err != nil {
-			return 0, err
+		// A failed rotation keeps the records in the current file, which grows
+		// past the limit until the next rotation succeeds. Losing the log for
+		// the rest of the run would hide every later failure.
+		if err := f.rotate(); err != nil && f.file == nil {
+			if reopenErr := f.reopen(); reopenErr != nil {
+				return 0, errors.Join(err, reopenErr)
+			}
 		}
 	}
 	n, err := f.file.Write(p)
@@ -97,6 +102,23 @@ func (f *logFile) Close() error {
 	file := f.file
 	f.file = nil
 	return file.Close()
+}
+
+// reopen opens the current file again for appending after a failed rotation
+// closed it.
+func (f *logFile) reopen() error {
+	file, err := os.OpenFile(f.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return fmt.Errorf("daemon: reopen the log file: %w", err)
+	}
+	info, err := file.Stat()
+	if err != nil {
+		_ = file.Close()
+		return fmt.Errorf("daemon: read the log file size: %w", err)
+	}
+	f.file = file
+	f.size = info.Size()
+	return nil
 }
 
 // rotate closes the current file, shifts the rotated files by one and opens an
