@@ -2,7 +2,8 @@
   import { onMount } from "svelte";
   import type { ShareRequest } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
-  import { formatBytes, formatDateTime, shortDeviceID } from "../format";
+  import { filesCountText, formatBytes, formatDateTime, shortDeviceID } from "../format";
+  import { t } from "../i18n";
   import { requests } from "../requests.svelte";
 
   let now = $state(Date.now());
@@ -14,7 +15,7 @@
   });
 
   function fileSummary(request: ShareRequest): string {
-    return request.files.length === 1 ? "1 file" : `${request.files.length} files`;
+    return filesCountText(request.files.length);
   }
 
   function timeLeft(request: ShareRequest): string {
@@ -23,36 +24,37 @@
       return "";
     }
     if (left <= 0) {
-      return "The request is expiring.";
+      return t("requests.expiring");
     }
     const minutes = Math.ceil(left / 60_000);
-    return minutes <= 1 ? "Expires in less than a minute" : `Expires in ${minutes} min`;
+    return minutes <= 1
+      ? t("requests.expiresInLessThanMinute")
+      : t("requests.expiresInMinutes", { count: minutes });
   }
 </script>
 
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
-      <p class="muted">Connecting to the daemon...</p>
+      <p class="muted">{t("devices.connecting")}</p>
     {:else}
-      <p class="notice error">The daemon is not running, so the requests are unavailable.</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+      <p class="notice error">{t("requests.daemonNotRunning")}</p>
+      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+        {t("common.tryAgain")}
+      </button>
     {/if}
   </section>
 {:else}
   <div class="requests">
     <div class="toolbar intro">
-      <p class="muted">
-        Files that Friends offer, and files of the devices you ask about, wait here until you
-        answer. Nothing is written to this device before you accept.
-      </p>
+      <p class="muted">{t("requests.intro")}</p>
       <button
         class="button ghost small"
         type="button"
         onclick={() => void requests.load()}
         disabled={requests.loading}
       >
-        Refresh
+        {t("common.refresh")}
       </button>
     </div>
 
@@ -72,7 +74,7 @@
 
     {#if requests.requests.length === 0}
       <p class="empty">
-        {requests.loading ? "Loading the requests..." : "No file waits for your answer."}
+        {requests.loading ? t("requests.loading") : t("requests.empty")}
       </p>
     {:else}
       <ul class="list">
@@ -80,7 +82,7 @@
           <li class="request">
             <div class="head">
               <div class="identity">
-                <strong>{request.deviceName || "Unnamed device"}</strong>
+                <strong>{request.deviceName || t("common.unnamedDevice")}</strong>
                 <span class="mono muted">{shortDeviceID(request.deviceId)}</span>
                 <span class="badge">{fileSummary(request)}</span>
                 <span class="badge">{formatBytes(request.totalBytes)}</span>
@@ -97,7 +99,9 @@
               {/each}
             </ul>
 
-            <p class="meta muted">Arrived {formatDateTime(request.createdAtUnixMs)}</p>
+            <p class="meta muted">
+              {t("requests.arrived", { time: formatDateTime(request.createdAtUnixMs) })}
+            </p>
 
             <div class="toolbar answer">
               <button
@@ -106,7 +110,9 @@
                 onclick={() => void requests.decide(request.id, true)}
                 disabled={requests.answering.includes(request.id)}
               >
-                {requests.answering.includes(request.id) ? "Answering..." : "Accept"}
+                {requests.answering.includes(request.id)
+                  ? t("requests.answering")
+                  : t("common.accept")}
               </button>
               <button
                 class="button danger small"
@@ -114,7 +120,7 @@
                 onclick={() => void requests.decide(request.id, false)}
                 disabled={requests.answering.includes(request.id)}
               >
-                Decline
+                {t("common.decline")}
               </button>
             </div>
           </li>

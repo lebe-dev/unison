@@ -8,6 +8,7 @@ import {
 import { daemon } from "./daemon.svelte";
 import { errorText } from "./errors";
 import { historyTitle, kindLabel } from "./format";
+import { translate } from "./i18n";
 import { updateTray, type TrayRecentItem } from "./tray";
 
 /** Items a screen asks for at once. The daemon caps the number itself. */
@@ -98,7 +99,7 @@ class HistoryStore {
       this.items = response.items;
       this.error = null;
     } catch (error) {
-      this.error = errorText(error, "The history could not be loaded.");
+      this.error = errorText(error, translate("history.loadFailed"));
     } finally {
       this.#loading = false;
       this.loading = false;
@@ -123,9 +124,9 @@ class HistoryStore {
     try {
       await client.copyHistoryItem({ id });
       this.release(id);
-      this.notice = { kind: "info", text: "The item is on the clipboard." };
+      this.notice = { kind: "info", text: translate("history.onClipboard") };
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The item could not be copied.") };
+      this.notice = { kind: "error", text: errorText(error, translate("history.copyFailed")) };
     }
   }
 
@@ -138,9 +139,9 @@ class HistoryStore {
     try {
       await client.applyHistoryItem({ id });
       this.release(id);
-      this.notice = { kind: "info", text: "The item is on the clipboard." };
+      this.notice = { kind: "info", text: translate("history.onClipboard") };
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The item could not be applied.") };
+      this.notice = { kind: "error", text: errorText(error, translate("history.applyFailed")) };
     }
   }
 
@@ -167,19 +168,19 @@ class HistoryStore {
         const saved = response.files.join(", ");
         this.notice = {
           kind: "info",
-          text: `Saved ${saved}.`,
+          text: translate("history.saved", { paths: saved }),
         };
       } else {
         this.notice = {
           kind: "info",
-          text: "Downloaded to the local store.",
+          text: translate("history.downloadedLocal"),
         };
       }
       void this.refreshRecent();
     } catch (error) {
       this.notice = {
         kind: "error",
-        text: errorText(error, "The item could not be downloaded."),
+        text: errorText(error, translate("history.downloadFailed")),
       };
     } finally {
       this.downloading = this.downloading.filter((id) => id !== info.id);
@@ -193,10 +194,10 @@ class HistoryStore {
       await client.deleteHistoryItem({ id });
       this.items = this.items.filter((item) => item.item?.id !== id);
       this.release(id);
-      this.notice = { kind: "info", text: "The item is deleted." };
+      this.notice = { kind: "info", text: translate("history.deleted") };
       void this.refreshRecent();
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The item could not be deleted.") };
+      this.notice = { kind: "error", text: errorText(error, translate("history.deleteFailed")) };
     }
   }
 

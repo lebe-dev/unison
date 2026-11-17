@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toString as qrToString } from "qrcode";
+  import { t } from "../i18n";
 
   let {
     uri = "",
@@ -30,7 +31,7 @@
       })
       .catch((error: unknown) => {
         if (active) {
-          failure = error instanceof Error ? error.message : "The code could not be drawn.";
+          failure = error instanceof Error ? error.message : t("pairing.drawFailed");
         }
       });
     return () => {
@@ -49,14 +50,12 @@
 </script>
 
 <section class="panel qr">
-  <h3>Pair with a phone</h3>
+  <h3>{t("pairing.qrHeading")}</h3>
   {#if !uri}
-    <p class="muted">Open the pairing window to show a square that another device can scan.</p>
+    <p class="muted">{t("pairing.qrClosed")}</p>
   {:else}
-    <p class="muted">
-      Scan the square with the other device. The code works once and only while the window is open.
-    </p>
-    <div class="code" aria-label="Pairing code">
+    <p class="muted">{t("pairing.qrHint")}</p>
+    <div class="code" aria-label={t("pairing.codeAria")}>
       {#if drawing}
         <!-- The markup comes from the local QR encoder. -->
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -64,18 +63,19 @@
       {:else if failure}
         <p class="notice error">{failure}</p>
       {:else}
-        <p class="muted">Drawing the code...</p>
+        <p class="muted">{t("pairing.drawing")}</p>
       {/if}
     </div>
     <div class="toolbar">
-      <button class="button ghost small" type="button" onclick={() => void copy()}>Copy code</button
-      >
+      <button class="button ghost small" type="button" onclick={() => void copy()}>
+        {t("pairing.copyCode")}
+      </button>
       {#if copied}
-        <span class="muted">Copied.</span>
+        <span class="muted">{t("pairing.copied")}</span>
       {/if}
     </div>
     <details>
-      <summary>Code as text</summary>
+      <summary>{t("pairing.codeAsText")}</summary>
       <p class="mono code-text">{uri}</p>
     </details>
   {/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { t } from "../i18n";
   import { formatRemaining, remainingSeconds } from "./countdown";
 
   let {
@@ -37,9 +38,9 @@
 
 <span class="timer" class:urgent>
   {#if seconds > 0}
-    Window closes in <strong class="mono">{formatRemaining(seconds)}</strong>
+    {t("pairing.closesIn")} <strong class="mono">{formatRemaining(seconds)}</strong>
   {:else}
-    Closing the window...
+    {t("pairing.closing")}
   {/if}
 </span>
 

@@ -6,20 +6,21 @@
   import NetworkIssue from "../NetworkIssue.svelte";
   import { daemon } from "../daemon.svelte";
   import { roleLabel } from "../format";
+  import { t } from "../i18n";
   import { pairing } from "../pairing.svelte";
 
   const roles = [
     {
       role: Role.PERSONAL,
-      title: "Personal",
-      description: "Shares the clipboard and the history with this device.",
+      titleKey: "devices.personal",
+      descriptionKey: "add.personalDescription",
     },
     {
       role: Role.FRIENDS,
-      title: "Friends",
-      description: "Sends and receives items you share, with a confirmation on arrival.",
+      titleKey: "devices.friends",
+      descriptionKey: "add.friendsDescription",
     },
-  ];
+  ] as const;
 
   async function openWindow(): Promise<void> {
     await pairing.open();
@@ -29,10 +30,12 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
-      <p class="muted">Connecting to the daemon...</p>
+      <p class="muted">{t("devices.connecting")}</p>
     {:else}
-      <p class="notice error">The daemon is not running, so pairing is unavailable.</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+      <p class="notice error">{t("add.daemonNotRunning")}</p>
+      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+        {t("common.tryAgain")}
+      </button>
     {/if}
   </section>
 {:else if pairing.window}
@@ -41,10 +44,7 @@
       <span class="badge personal">{roleLabel(pairing.window.role)}</span>
       <WindowTimer expiresAt={pairing.window.expiresAt} />
     </div>
-    <p class="muted">
-      Pairing window is open. The other device sees this one and compares the same code before both
-      devices accept.
-    </p>
+    <p class="muted">{t("add.windowOpenHint")}</p>
     <div class="toolbar">
       <button
         class="button"
@@ -52,7 +52,7 @@
         onclick={() => void pairing.extend()}
         disabled={pairing.busy}
       >
-        Extend for 3 minutes
+        {t("add.extend")}
       </button>
       <button
         class="button ghost"
@@ -60,7 +60,7 @@
         onclick={() => void pairing.close()}
         disabled={pairing.busy}
       >
-        Close window
+        {t("add.closeWindow")}
       </button>
     </div>
 
@@ -75,7 +75,7 @@
       <p class="notice" class:error={!pairing.result.paired} class:info={pairing.result.paired}>
         {pairing.result.message}
         <button class="button ghost small" type="button" onclick={() => (pairing.result = null)}>
-          Dismiss
+          {t("common.dismiss")}
         </button>
       </p>
     {/if}
@@ -100,26 +100,23 @@
 {:else}
   <div class="start">
     <fieldset class="roles">
-      <legend>Role of the device you add</legend>
+      <legend>{t("add.roleLegend")}</legend>
       {#each roles as option (option.role)}
         <label class="role" class:selected={pairing.role === option.role}>
           <input type="radio" name="role" value={option.role} bind:group={pairing.role} />
           <span class="role-text">
-            <strong>{option.title}</strong>
-            <small>{option.description}</small>
+            <strong>{t(option.titleKey)}</strong>
+            <small>{t(option.descriptionKey)}</small>
           </span>
         </label>
       {/each}
     </fieldset>
 
-    <p class="muted">
-      Open the pairing window on both devices and compare the code. The window closes after three
-      minutes and can be extended.
-    </p>
+    <p class="muted">{t("add.startHint")}</p>
 
     <div class="toolbar">
       <button class="button primary" type="button" onclick={openWindow} disabled={pairing.busy}>
-        Open pairing window
+        {t("add.openWindow")}
       </button>
     </div>
 

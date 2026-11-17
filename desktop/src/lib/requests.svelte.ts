@@ -7,6 +7,7 @@ import {
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
 import { errorText } from "./errors";
+import { translate } from "./i18n";
 
 /** Refresh of the list, which covers the requests the daemon expires on its
  * own. */
@@ -82,7 +83,7 @@ class RequestStore {
       this.requests = response.requests;
       this.error = null;
     } catch (error) {
-      this.error = errorText(error, "The requests could not be loaded.");
+      this.error = errorText(error, translate("requests.loadFailed"));
     } finally {
       this.#loading = false;
       this.loading = false;
@@ -101,12 +102,12 @@ class RequestStore {
       this.requests = this.requests.filter((request) => request.id !== id);
       this.notice = {
         kind: "info",
-        text: accept ? "The files are on their way." : "The request is declined.",
+        text: translate(accept ? "requests.sent" : "requests.declined"),
       };
     } catch (error) {
       this.notice = {
         kind: "error",
-        text: errorText(error, "The request could not be answered."),
+        text: errorText(error, translate("requests.answerFailed")),
       };
     } finally {
       this.answering = this.answering.filter((current) => current !== id);

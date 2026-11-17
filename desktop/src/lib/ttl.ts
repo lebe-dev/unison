@@ -1,4 +1,5 @@
 import type { Settings } from "./api/gen/unison/local/v1/local_pb";
+import type { MessageKey } from "./i18n";
 
 /** Kind of the history items a lifetime belongs to. */
 export type TTLKind = "text" | "image" | "files";
@@ -7,10 +8,10 @@ export type TTLKind = "text" | "image" | "files";
 export type HistoryTTL = Record<TTLKind, bigint>;
 
 /** Kinds in the order of the screen. */
-export const ttlKinds: { key: TTLKind; label: string }[] = [
-  { key: "text", label: "Text" },
-  { key: "image", label: "Images" },
-  { key: "files", label: "Files" },
+export const ttlKinds: { key: TTLKind; label: MessageKey }[] = [
+  { key: "text", label: "ttl.text" },
+  { key: "image", label: "ttl.image" },
+  { key: "files", label: "ttl.files" },
 ];
 
 /** Longest lifetime the daemon accepts. */

@@ -7,6 +7,7 @@ import {
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
 import { errorText } from "./errors";
+import { translate } from "./i18n";
 
 /** Content a confirmation flag covers. */
 export type Scope = "clipboard" | "files";
@@ -91,9 +92,9 @@ class ConfirmationStore {
 function failureText(error: unknown): string {
   if (error instanceof ConnectError && error.code === Code.Unavailable) {
     // The flag of the paired device is changed over the session with it.
-    return "The device is offline. Its own setting changes only while it is online.";
+    return translate("confirmation.deviceOffline");
   }
-  return errorText(error, "The confirmation setting could not be changed.");
+  return errorText(error, translate("settings.confirmationFailed"));
 }
 
 /** confirmation is the confirmation flag state of the app. */

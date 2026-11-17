@@ -4,6 +4,7 @@
   import type { PairingRequest } from "../pairing.svelte";
   import { groupDigits, sasEmoji } from "./countdown";
   import { platformLabel, roleLabel } from "../format";
+  import { t } from "../i18n";
 
   let {
     request,
@@ -25,30 +26,28 @@
   const scanned = $derived(request.method === PairingMethod.QR);
   const digits = $derived(request.sas ? groupDigits(request.sas.digits) : "");
   const emoji = $derived(sasEmoji(request.sas?.emoji ?? []));
-  const name = $derived(request.name || "A device");
+  const name = $derived(request.name || t("common.aDevice"));
 </script>
 
 <section class="sas" aria-live="polite">
   <div class="head">
     <span class="badge-icon"><Icon name="shield" size={28} stroke={1.2} /></span>
     <div class="head-text">
-      <h3>{scanned ? "A device scanned the square" : "Compare the code"}</h3>
+      <h3>
+        {scanned ? t("pairing.scannedHeading") : t("pairing.compareCodeHeading")}
+      </h3>
       <p class="lead">
         <strong>{name}</strong>
         <span class="muted">({platformLabel(request.platform)})</span>
-        wants to pair as <strong>{roleLabel(request.role)}</strong>.
+        {t("pairing.wantsToPairPrefix")} <strong>{roleLabel(request.role)}</strong>.
       </p>
     </div>
   </div>
   {#if scanned}
-    <p class="muted">
-      The device read the square of this one. Accept only if you started the pairing on it.
-    </p>
+    <p class="muted">{t("pairing.scannedHint")}</p>
   {:else}
-    <p class="muted">
-      The same code must appear on both devices. Accept only when the code matches.
-    </p>
-    <div class="code" aria-label="Short authentication string">
+    <p class="muted">{t("pairing.sameCodeHint")}</p>
+    <div class="code" aria-label={t("pairing.sasAria")}>
       {#if digits}
         <div class="digits mono">{digits}</div>
         <div class="emoji">
@@ -57,24 +56,26 @@
           {/each}
         </div>
       {:else}
-        <p class="muted">Waiting for the code...</p>
+        <p class="muted">{t("pairing.waitingCode")}</p>
       {/if}
     </div>
   {/if}
 
   {#if confirmed}
-    <p class="notice info">Confirmed. Waiting for the other device to confirm as well.</p>
+    <p class="notice info">{t("pairing.confirmedWait")}</p>
   {/if}
 
   <div class="toolbar actions">
-    <button class="button large" type="button" onclick={onReject} disabled={busy}>Reject</button>
+    <button class="button large" type="button" onclick={onReject} disabled={busy}>
+      {t("pairing.reject")}
+    </button>
     <button
       class="button primary large"
       type="button"
       onclick={onConfirm}
       disabled={busy || confirmed}
     >
-      {scanned ? "Add device" : "Confirm"}
+      {scanned ? t("common.addDevice") : t("pairing.confirm")}
     </button>
   </div>
 </section>

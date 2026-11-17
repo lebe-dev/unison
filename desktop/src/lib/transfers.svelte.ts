@@ -7,6 +7,7 @@ import {
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
 import { errorText } from "./errors";
+import { translate } from "./i18n";
 
 /** Message for the user after an action of the screen. */
 export interface TransferNotice {
@@ -77,7 +78,7 @@ class TransferStore {
       this.transfers = sortTransfers(response.transfers);
       this.error = null;
     } catch (error) {
-      this.error = errorText(error, "The transfers could not be loaded.");
+      this.error = errorText(error, translate("transfers.loadFailed"));
     } finally {
       this.loading = false;
     }
@@ -94,13 +95,15 @@ class TransferStore {
       for (const transfer of response.transfers) {
         this.#upsert(transfer);
       }
-      const count = response.transfers.length;
       this.notice = {
         kind: "info",
-        text: count === 1 ? "The offer is sent." : `${count} offers are sent.`,
+        text: translate("transfers.offersSent", { count: response.transfers.length }),
       };
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The files could not be sent.") };
+      this.notice = {
+        kind: "error",
+        text: errorText(error, translate("transfers.sendFailed")),
+      };
     }
   }
 
@@ -112,7 +115,7 @@ class TransferStore {
     } catch (error) {
       this.notice = {
         kind: "error",
-        text: errorText(error, "The transfer could not be canceled."),
+        text: errorText(error, translate("transfers.cancelFailed")),
       };
     }
   }
@@ -123,7 +126,10 @@ class TransferStore {
     try {
       await client.acceptTransfer({ id });
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The offer could not be accepted.") };
+      this.notice = {
+        kind: "error",
+        text: errorText(error, translate("transfers.acceptFailed")),
+      };
     }
   }
 
@@ -133,7 +139,10 @@ class TransferStore {
     try {
       await client.rejectTransfer({ id });
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The offer could not be declined.") };
+      this.notice = {
+        kind: "error",
+        text: errorText(error, translate("transfers.rejectFailed")),
+      };
     }
   }
 

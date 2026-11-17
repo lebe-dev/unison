@@ -6,6 +6,7 @@ import {
 import { daemon } from "./daemon.svelte";
 import { formatBytes, kindLabel } from "./format";
 import { history } from "./history.svelte";
+import { translate } from "./i18n";
 import type { Prompt, PromptAction } from "./prompt/types";
 import { requests } from "./requests.svelte";
 
@@ -99,10 +100,16 @@ class PromptStore {
 /** filesPrompt describes a file offer. */
 function filesPrompt(request: ShareRequest): Prompt {
   const names = request.files.map((file) => file.name).filter((name) => name !== "");
+  const count = request.files.length;
   const summary =
     names.length === 1
       ? names[0]
-      : `${request.files.length} files${names.length ? `: ${names.slice(0, 3).join(", ")}` : ""}`;
+      : names.length > 0
+        ? translate("prompt.filesSummaryWithNames", {
+            count,
+            names: names.slice(0, 3).join(", "),
+          })
+        : translate("prompt.filesSummary", { count });
   return {
     id: request.id,
     kind: "files",
@@ -118,7 +125,10 @@ function deviceName(name: string, deviceId: string): string {
   if (name) {
     return name;
   }
-  return daemon.devices.find((device) => device.deviceId === deviceId)?.name || "A device";
+  return (
+    daemon.devices.find((device) => device.deviceId === deviceId)?.name ||
+    translate("common.aDevice")
+  );
 }
 
 /** prompts is the question state of the app. */

@@ -10,6 +10,7 @@ import {
 import { updateTray, type PauseChoice } from "./tray";
 import { daemonStatus, type DaemonStatus } from "./daemonStatus";
 import { shortDeviceID } from "./format";
+import { getLocale, translate } from "./i18n";
 
 /** Times of the shell. */
 const STATUS_INTERVAL = 5_000;
@@ -86,17 +87,17 @@ class DaemonStore {
 
   get pauseText(): string {
     if (!this.connected) {
-      return "Daemon offline";
+      return translate("daemon.offline");
     }
     const pause = this.status?.pause;
     if (!pause?.paused) {
-      return "Clipboard active";
+      return translate("daemon.pauseActive");
     }
     if (pause.indefinite) {
-      return "Clipboard paused";
+      return translate("daemon.pausePaused");
     }
-    const until = new Date(Number(pause.untilUnixMs)).toLocaleTimeString();
-    return `Clipboard paused until ${until}`;
+    const until = new Date(Number(pause.untilUnixMs)).toLocaleTimeString(getLocale());
+    return translate("daemon.pauseUntil", { time: until });
   }
 
   /** start loads the status and follows the events of the daemon. */

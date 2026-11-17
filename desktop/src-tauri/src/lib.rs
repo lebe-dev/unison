@@ -1,6 +1,7 @@
 pub mod agent;
 mod daemon;
 mod files;
+mod i18n;
 mod prompt;
 mod proxy;
 mod streams;

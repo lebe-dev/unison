@@ -1,5 +1,6 @@
 <script lang="ts">
   import { daemon } from "./daemon.svelte";
+  import { t } from "./i18n";
 
   const reason = $derived(daemon.offlineReason);
 </script>
@@ -8,15 +9,20 @@
   <span class="dot" class:online={daemon.connected} class:error={daemon.failed}></span>
   <span class="title">
     {#if daemon.connected}
-      Daemon {daemon.status?.version ?? ""}
+      {t("daemon.status", { version: daemon.status?.version ?? "" })}
     {:else if daemon.loading}
-      Connecting...
+      {t("daemon.connecting")}
     {:else}
-      Daemon offline
+      {t("daemon.offline")}
     {/if}
   </span>
   {#if daemon.connected}
-    <span class="detail">{daemon.onlinePeers} of {daemon.devices.length} devices online</span>
+    <span class="detail">
+      {t("daemon.devicesOnline", {
+        online: daemon.onlinePeers,
+        total: daemon.devices.length,
+      })}
+    </span>
   {/if}
   {#if reason}
     <span class="reason">{reason}</span>

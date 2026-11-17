@@ -15,6 +15,7 @@
     transferFilesText,
     transferStateLabel,
   } from "../format";
+  import { t } from "../i18n";
   import { isActiveTransfer, transfers } from "../transfers.svelte";
 
   let picked = $state<string[]>([]);
@@ -73,7 +74,10 @@
     if (total <= 0) {
       return formatBytes(transfer.bytes);
     }
-    return `${formatBytes(transfer.bytes)} of ${formatBytes(total)}`;
+    return t("transfers.of", {
+      done: formatBytes(transfer.bytes),
+      total: formatBytes(total),
+    });
   }
 
   function measured(transfer: Transfer): boolean {
@@ -84,32 +88,32 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
-      <p class="muted">Connecting to the daemon...</p>
+      <p class="muted">{t("devices.connecting")}</p>
     {:else}
-      <p class="notice error">The daemon is not running, so the transfers are unavailable.</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+      <p class="notice error">{t("transfers.daemonNotRunning")}</p>
+      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+        {t("common.tryAgain")}
+      </button>
     {/if}
   </section>
 {:else}
   <div class="transfers">
     <section class="panel send">
       <div class="panel-header">
-        <h3>Send files</h3>
+        <h3>{t("transfers.sendFiles")}</h3>
         <button class="button" type="button" onclick={() => void choose()} disabled={picking}>
-          {picking ? "Picking..." : "Choose files"}
+          {picking ? t("transfers.picking") : t("transfers.chooseFiles")}
         </button>
       </div>
 
       {#if picked.length === 0}
         <p class="muted">
-          {online.length === 0
-            ? "No device is online right now."
-            : "Pick files, then choose the devices that receive them."}
+          {online.length === 0 ? t("transfers.noDeviceOnline") : t("transfers.pickHint")}
         </p>
       {:else}
         <p class="muted">{picked.join(", ")}</p>
         {#if online.length === 0}
-          <p class="notice error">No device is online right now.</p>
+          <p class="notice error">{t("transfers.noDeviceOnline")}</p>
         {:else}
           <div class="targets">
             {#each online as device (device.deviceId)}
@@ -119,7 +123,7 @@
                   checked={targets.includes(device.deviceId)}
                   onchange={() => toggleTarget(device.deviceId)}
                 />
-                <span>{device.name || "Unnamed device"}</span>
+                <span>{device.name || t("common.unnamedDevice")}</span>
               </label>
             {/each}
           </div>
@@ -130,7 +134,7 @@
               onclick={() => void send()}
               disabled={busy || targets.length === 0}
             >
-              Send
+              {t("transfers.send")}
             </button>
             <button
               class="button ghost small"
@@ -138,7 +142,7 @@
               onclick={() => (picked = [])}
               disabled={busy}
             >
-              Clear
+              {t("common.clear")}
             </button>
           </div>
         {/if}
@@ -161,18 +165,20 @@
 
     <section class="section">
       <div class="section-title">
-        <h3 class="grow">In Progress <span class="count">{active.length}</span></h3>
+        <h3 class="grow">
+          {t("transfers.inProgress")} <span class="count">{active.length}</span>
+        </h3>
         <button
           class="button ghost small"
           type="button"
           onclick={() => void transfers.refresh()}
           disabled={transfers.loading}
         >
-          Refresh
+          {t("common.refresh")}
         </button>
       </div>
       {#if active.length === 0}
-        <p class="empty">No transfer is running.</p>
+        <p class="empty">{t("transfers.noRunning")}</p>
       {:else}
         <ul class="list">
           {#each active as transfer (transfer.id)}
@@ -192,8 +198,10 @@
               </div>
 
               <p class="muted">
-                {transfer.direction === TransferDirection.INCOMING ? "From" : "To"}
-                {transfer.deviceName || "a device"} - {progressText(transfer)}
+                {transfer.direction === TransferDirection.INCOMING
+                  ? t("transfers.from")
+                  : t("transfers.to")}
+                {transfer.deviceName || t("common.aDeviceLower")} - {progressText(transfer)}
               </p>
 
               <div class="progress" class:measured={measured(transfer)}>
@@ -221,14 +229,14 @@
                     type="button"
                     onclick={() => void transfers.accept(transfer.id)}
                   >
-                    Accept
+                    {t("common.accept")}
                   </button>
                   <button
                     class="button danger small"
                     type="button"
                     onclick={() => void transfers.reject(transfer.id)}
                   >
-                    Decline
+                    {t("common.decline")}
                   </button>
                 {:else if cancellable(transfer)}
                   <button
@@ -236,7 +244,7 @@
                     type="button"
                     onclick={() => void transfers.cancel(transfer.id)}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 {/if}
               </div>
@@ -247,9 +255,11 @@
     </section>
 
     <section class="section">
-      <h3 class="section-title">Finished <span class="count">{finished.length}</span></h3>
+      <h3 class="section-title">
+        {t("transfers.finished")} <span class="count">{finished.length}</span>
+      </h3>
       {#if finished.length === 0}
-        <p class="empty">No finished transfer yet.</p>
+        <p class="empty">{t("transfers.noFinished")}</p>
       {:else}
         <ul class="list">
           {#each finished as transfer (transfer.id)}
@@ -262,8 +272,11 @@
                 <span class="muted">{formatDateTime(transfer.createdAtUnixMs)}</span>
               </div>
               <p class="muted">
-                {transfer.direction === TransferDirection.INCOMING ? "From" : "To"}
-                {transfer.deviceName || "a device"} - {formatBytes(transfer.totalBytes)}
+                {transfer.direction === TransferDirection.INCOMING
+                  ? t("transfers.from")
+                  : t("transfers.to")}
+                {transfer.deviceName || t("common.aDeviceLower")} -
+                {formatBytes(transfer.totalBytes)}
               </p>
               {#if transfer.paths.length > 0}
                 <p class="files muted">

@@ -4,6 +4,7 @@
   import { RelayTransport } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
+  import { t } from "../i18n";
 
   const REFRESH_MS = 5000;
 
@@ -19,11 +20,7 @@
   const canSave = $derived(
     url.trim().length > 0 && (token.trim().length > 0 || relay?.tokenSet === true),
   );
-  const tokenHint = $derived(
-    relay?.tokenSet
-      ? "An access token is stored on this device. Type a new one to replace it."
-      : "The access token of the group relay.",
-  );
+  const tokenHint = $derived(relay?.tokenSet ? t("relay.tokenStored") : t("relay.tokenHint"));
 
   $effect(() => {
     if (daemon.connected && !loaded) {
@@ -43,18 +40,18 @@
 
   function relayStateText(value: Relay | null): string {
     if (!value?.url) {
-      return "The group does not use a relay.";
+      return t("relay.stateOff");
     }
     if (!value.connected) {
-      return "Waiting for the relay connection.";
+      return t("relay.stateWaiting");
     }
     switch (value.transport) {
       case RelayTransport.QUIC:
-        return "Connected to the relay over QUIC.";
+        return t("relay.stateQuic");
       case RelayTransport.WSS:
-        return "Connected to the relay over WebSocket.";
+        return t("relay.stateWss");
       default:
-        return "Connected to the relay.";
+        return t("relay.stateConnected");
     }
   }
 
@@ -71,7 +68,7 @@
       if (!quiet) {
         notice = {
           kind: "error",
-          text: errorText(error, "The relay settings could not be loaded."),
+          text: errorText(error, t("relay.loadFailed")),
         };
       }
     } finally {
@@ -91,7 +88,7 @@
   async function save(): Promise<void> {
     const address = url.trim();
     if (!address) {
-      notice = { kind: "error", text: "The relay address cannot be empty." };
+      notice = { kind: "error", text: t("relay.empty") };
       return;
     }
     busy = true;
@@ -105,10 +102,10 @@
       apply(response.relay);
       notice = {
         kind: "info",
-        text: "The relay is stored and sent to the other Personal devices.",
+        text: t("relay.saved"),
       };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The relay settings could not be saved.") };
+      notice = { kind: "error", text: errorText(error, t("relay.saveFailed")) };
     } finally {
       busy = false;
     }
@@ -120,9 +117,9 @@
     try {
       const response = await client.relayOff({});
       apply(response.relay);
-      notice = { kind: "info", text: "The relay is off for the whole group." };
+      notice = { kind: "info", text: t("relay.off") };
     } catch (error) {
-      notice = { kind: "error", text: errorText(error, "The relay could not be turned off.") };
+      notice = { kind: "error", text: errorText(error, t("relay.offFailed")) };
     } finally {
       busy = false;
     }
@@ -130,7 +127,7 @@
 </script>
 
 <section class="section">
-  <h3 class="section-title">Relay</h3>
+  <h3 class="section-title">{t("relay.heading")}</h3>
   {#if notice}
     <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
       {notice.text}
@@ -142,9 +139,8 @@
     </div>
     <label class="form-row">
       <span class="label">
-        Relay address
-        <small>Host and port of the group relay, or https://host:port. Shared with the group.</small
-        >
+        {t("relay.address")}
+        <small>{t("relay.addressHint")}</small>
       </span>
       <input
         class="wide"
@@ -157,7 +153,7 @@
     </label>
     <label class="form-row">
       <span class="label">
-        Access token
+        {t("relay.token")}
         <small>{tokenHint}</small>
       </span>
       <input
@@ -166,15 +162,15 @@
         bind:value={token}
         autocomplete="off"
         maxlength="512"
-        placeholder={relay?.tokenSet ? "Stored on this device" : ""}
+        placeholder={relay?.tokenSet ? t("relay.tokenStoredPlaceholder") : ""}
         disabled={busy || !loaded}
       />
     </label>
     <label class="toggle form-row">
       <input type="checkbox" bind:checked={filesOnRequest} disabled={busy || !loaded} />
       <span>
-        Files over the relay only when I ask for them
-        <small>Files stay in the history until you download them.</small>
+        {t("relay.filesOnRequest")}
+        <small>{t("relay.filesOnRequestHint")}</small>
       </span>
     </label>
   </div>
@@ -185,7 +181,7 @@
       onclick={() => void turnOff()}
       disabled={busy || !loaded || !relay?.url}
     >
-      Turn off
+      {t("relay.turnOff")}
     </button>
     <button
       class="button primary"
@@ -193,7 +189,7 @@
       onclick={() => void save()}
       disabled={busy || !loaded || !canSave}
     >
-      Save
+      {t("common.save")}
     </button>
   </div>
 </section>
