@@ -1,5 +1,7 @@
 # Relay
 
+[Русский](relay.ru.md) | English
+
 The relay connects devices that are not in one local network. It forwards opaque datagrams between
 the members of a mailbox, so the two devices still run their own QUIC connection with mutual TLS and
 the hybrid key exchange inside the relay datagrams. The relay sees neither keys nor plaintext, keeps

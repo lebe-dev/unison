@@ -1,5 +1,7 @@
 # Daemon and local API
 
+[Русский](local-api.ru.md) | English
+
 The daemon is the process that owns a device. It starts the core node, serves the local API on the
 endpoint of its data directory, and keeps running while the user works. The desktop app and the
 command line client are its clients; on Android the core runs in the app process and there is no

@@ -5,6 +5,7 @@
 !DEV.md
 !docs/**/*.md
 !deploy/**/README.md
+!**/*.ru.md
 
 deploy/relay/secrets/
 

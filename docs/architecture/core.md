@@ -1,5 +1,7 @@
 # Core
 
+[Русский](core.ru.md) | English
+
 `core/` is a set of Go packages that together are one device. Only `core/node` knows all of them;
 a domain package reaches the others through interfaces that the node passes in. `core/ports` holds
 the interfaces to the operating system, so everything else builds and runs on any host.

@@ -1,5 +1,7 @@
 # Windows
 
+[Русский](windows.ru.md) | English
+
 On Windows the daemon runs as `unisond.exe` next to the app, as an external binary of the bundle.
 It has no window and no console, holds the DPAPI protected secrets, watches the clipboard and serves
 the local API on a named pipe.

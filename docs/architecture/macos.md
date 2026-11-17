@@ -1,5 +1,7 @@
 # macOS
 
+[Русский](macos.ru.md) | English
+
 On macOS the daemon is the device: it runs as `unisond` from the app bundle, holds the Keychain
 items, watches the pasteboard and serves the local API on a unix socket. The desktop app is its
 client.

@@ -1,5 +1,7 @@
 # Android
 
+[Русский](android.ru.md) | English
+
 On Android the core runs inside the app process. There is no daemon and no local socket: the Go
 core is bound into the app as an AAR, a foreground service keeps it alive, and the UI calls it in
 process.

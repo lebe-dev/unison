@@ -1,5 +1,7 @@
 # Unison
 
+[Русский](README.ru.md) | English
+
 Unison moves the clipboard, images and files between your own devices over the local network, and
 sends single items to friends. Trust is per device: two devices are paired once, and there is no
 account and no service you have to trust.

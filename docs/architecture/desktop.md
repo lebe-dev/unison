@@ -1,5 +1,7 @@
 # Desktop app
 
+[Русский](desktop.ru.md) | English
+
 The desktop app is the macOS and Windows window of the daemon. It is a Tauri 2 shell with a Svelte 5
 frontend and never speaks to the daemon directly: every call goes through Rust, which opens the
 local endpoint and proxies the request.
