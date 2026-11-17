@@ -99,6 +99,8 @@ fun UnisonRoot(
     onConfirmPairing: () -> Unit,
     onRejectPairing: () -> Unit,
     onScanPairingCode: (String) -> Unit,
+    onAcceptPairingLink: () -> Unit,
+    onDismissPairingLink: () -> Unit,
     onCancelScan: () -> Unit,
     onDismissPairingResult: () -> Unit,
 ) {
@@ -158,6 +160,8 @@ fun UnisonRoot(
                 onConfirm = onConfirmPairing,
                 onReject = onRejectPairing,
                 onScan = onScanPairingCode,
+                onAcceptLink = onAcceptPairingLink,
+                onDismissLink = onDismissPairingLink,
                 onCancelScan = onCancelScan,
                 onDismissResult = onDismissPairingResult,
                 modifier = content,

@@ -3,6 +3,7 @@ package app.unison.pairing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import unison.local.v1.Local
 
 class PairingLinkTest {
 
@@ -30,5 +31,18 @@ class PairingLinkTest {
     fun schemeAndHostIgnoreCase() {
         val uri = "UNISON://Pair?v=1"
         assertEquals(uri, PairingLink.code(PairingLink.ACTION_VIEW, uri))
+    }
+
+    @Test
+    fun roleOfTheCode() {
+        assertEquals(Local.Role.ROLE_PERSONAL, PairingLink.role("unison://pair?v=1&id=abc&role=personal"))
+        assertEquals(Local.Role.ROLE_FRIENDS, PairingLink.role("unison://pair?role=friends&v=1"))
+    }
+
+    @Test
+    fun unknownRoleIsUnspecified() {
+        assertEquals(Local.Role.ROLE_UNSPECIFIED, PairingLink.role("unison://pair?v=1"))
+        assertEquals(Local.Role.ROLE_UNSPECIFIED, PairingLink.role("unison://pair?v=1&role=admin"))
+        assertEquals(Local.Role.ROLE_UNSPECIFIED, PairingLink.role("unison://pair?v=1&xrole=personal"))
     }
 }

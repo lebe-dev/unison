@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import app.unison.ui.pairing.PairingCode
 import app.unison.ui.pairing.PairingRequestBody
 import app.unison.ui.pairing.rememberWindowRemaining
 import app.unison.ui.roleLabel
+import app.unison.ui.state.PairingLinkOffer
 import app.unison.ui.state.PairingRequest
 import app.unison.ui.state.PairingResult
 import app.unison.ui.state.PairingState
@@ -70,6 +72,8 @@ fun AddScreen(
     onCancelScan: () -> Unit,
     onDismissResult: () -> Unit,
     modifier: Modifier = Modifier,
+    onAcceptLink: () -> Unit = {},
+    onDismissLink: () -> Unit = {},
 ) {
     var scanning by rememberSaveable { mutableStateOf(false) }
 
@@ -138,6 +142,10 @@ fun AddScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    state.link?.takeIf { !state.scanning }?.let { link ->
+        PairingLinkDialog(link = link, onAccept = onAcceptLink, onDismiss = onDismissLink)
     }
 
     state.request?.let { request ->
@@ -493,5 +501,45 @@ private fun ConfirmPairingDialog(
         },
     )
 }
+
+/**
+ * Asks before pairing with the device of a link. Any app or web page can open
+ * such a link, so the user decides whether the device joins, and in which role.
+ */
+@Composable
+private fun PairingLinkDialog(
+    link: PairingLinkOffer,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag(PAIRING_LINK_TAG),
+        title = { Text(text = stringResource(R.string.pairing_link_title)) },
+        text = {
+            Text(
+                text = stringResource(
+                    when (link.role) {
+                        Local.Role.ROLE_FRIENDS -> R.string.pairing_link_body_friends
+                        else -> R.string.pairing_link_body_personal
+                    },
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onAccept) {
+                Text(text = stringResource(R.string.pairing_pair))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
+/** Test tag of the dialog that asks about a pairing link. */
+const val PAIRING_LINK_TAG = "pairing-link"
 
 private val CODE_SIZE = 220.dp

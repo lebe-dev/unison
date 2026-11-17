@@ -178,6 +178,9 @@
     <string name="pairing_scan_cancel">Cancel</string>
     <string name="pairing_scan_failed">Cannot start the pairing</string>
     <string name="pairing_code_invalid">This is not a pairing code</string>
+    <string name="pairing_link_title">Pair with the device of this link?</string>
+    <string name="pairing_link_body_personal">A link opened Unison with a pairing code. The device will join as Personal and get your clipboard and history. Pair only if you opened the code of your own device.</string>
+    <string name="pairing_link_body_friends">A link opened Unison with a pairing code. The device will join as Friends and may offer you files. Pair only if you know whose code it is.</string>
     <string name="pairing_camera_title">Camera access is needed to scan codes</string>
     <string name="pairing_camera_body">Allow the camera to read the pairing code of the other device.</string>
     <string name="pairing_camera_allow">Allow camera</string>

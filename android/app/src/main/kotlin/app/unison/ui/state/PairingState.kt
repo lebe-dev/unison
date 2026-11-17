@@ -19,12 +19,21 @@ data class PairingState(
     val dialing: String = "",
     /** A scanned code waits for the other device to confirm. */
     val scanning: Boolean = false,
+    /** Code of a link that another app opened, until the user confirms it. */
+    val link: PairingLinkOffer? = null,
     /** A call of the core is in flight. */
     val busy: Boolean = false,
     /** Failure of the last call, as a string resource. */
     @StringRes val failure: Int? = null,
     /** Outcome of the last exchange, absent until it ends. */
     val result: PairingResult? = null,
+)
+
+/** A pairing code that arrived as a link. */
+data class PairingLinkOffer(
+    val uri: String,
+    /** Role the device of the code proposes. */
+    val role: Local.Role,
 )
 
 /** A device that asks to pair. */

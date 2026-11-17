@@ -9,6 +9,7 @@ import app.unison.core.CoreException
 import app.unison.core.qrCodeAddresses
 import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
+import app.unison.pairing.PairingLink
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -600,6 +601,30 @@ class AppState(
                 mutablePairing.update { it.copy(scanning = false, failure = failure) }
             }
         }
+    }
+
+    /**
+     * Keeps the code of a link that another app opened. Any app or web page can
+     * open such a link, so the code waits until the user confirms it.
+     */
+    fun offerPairingLink(uri: String) {
+        val text = uri.trim()
+        if (text.isEmpty()) {
+            return
+        }
+        mutablePairing.update { it.copy(link = PairingLinkOffer(uri = text, role = PairingLink.role(text))) }
+    }
+
+    /** Pairs with the device of the link the user confirmed. */
+    fun acceptPairingLink() {
+        val link = mutablePairing.value.link ?: return
+        mutablePairing.update { it.copy(link = null) }
+        scanPairingCode(link.uri)
+    }
+
+    /** Drops the code of a link the user refused. */
+    fun dismissPairingLink() {
+        mutablePairing.update { it.copy(link = null) }
     }
 
     /** Stops waiting for the device of a scanned code. */

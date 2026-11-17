@@ -7,11 +7,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.ui.pairing.PAIRING_CODE_TAG
+import app.unison.ui.state.PairingLinkOffer
 import app.unison.ui.state.PairingRequest
 import app.unison.ui.state.PairingResult
 import app.unison.ui.state.PairingState
 import app.unison.ui.theme.UnisonTheme
 import java.util.concurrent.atomic.AtomicBoolean
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -93,6 +95,65 @@ class AddScreenTest {
         compose.onNodeWithText("Pair").performClick()
 
         assertTrue(paired.get())
+    }
+
+    @Test
+    fun linkedCodeAsksBeforePairing() {
+        val accepted = AtomicBoolean(false)
+        val dismissed = AtomicBoolean(false)
+        setLinkContent(
+            link = PairingLinkOffer(uri = CODE, role = Local.Role.ROLE_PERSONAL),
+            onAccept = { accepted.set(true) },
+            onDismiss = { dismissed.set(true) },
+        )
+
+        compose.onNodeWithTag(PAIRING_LINK_TAG).assertIsDisplayed()
+        compose.onNodeWithText("Pair with the device of this link?").assertIsDisplayed()
+        compose.onNodeWithText("will join as Personal", substring = true).assertIsDisplayed()
+        assertFalse(accepted.get())
+
+        compose.onNodeWithText("Pair").performClick()
+        assertTrue(accepted.get())
+        assertFalse(dismissed.get())
+    }
+
+    @Test
+    fun linkedCodeCanBeRefused() {
+        val accepted = AtomicBoolean(false)
+        val dismissed = AtomicBoolean(false)
+        setLinkContent(
+            link = PairingLinkOffer(uri = CODE, role = Local.Role.ROLE_FRIENDS),
+            onAccept = { accepted.set(true) },
+            onDismiss = { dismissed.set(true) },
+        )
+
+        compose.onNodeWithText("will join as Friends", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Cancel").performClick()
+        assertTrue(dismissed.get())
+        assertFalse(accepted.get())
+    }
+
+    private fun setLinkContent(link: PairingLinkOffer, onAccept: () -> Unit, onDismiss: () -> Unit) {
+        compose.setContent {
+            UnisonTheme(dynamicColor = false) {
+                AddScreen(
+                    state = PairingState(link = link),
+                    onRoleChange = {},
+                    onOpenWindow = {},
+                    onExtendWindow = {},
+                    onCloseWindow = {},
+                    onRefreshCandidates = {},
+                    onPairWith = {},
+                    onConfirm = {},
+                    onReject = {},
+                    onScan = {},
+                    onCancelScan = {},
+                    onDismissResult = {},
+                    onAcceptLink = onAccept,
+                    onDismissLink = onDismiss,
+                )
+            }
+        }
     }
 
     @Test

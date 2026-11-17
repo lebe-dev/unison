@@ -90,9 +90,13 @@ class MainActivity : ComponentActivity() {
         policy = PolicyDefaults.config
         historyTtl = HistoryTtlDefaults.values
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
-        // A recreated activity has already passed the code of its intent to the core.
+        // A recreated activity has already taken the code of its intent; a code
+        // that still waits for the user is kept across the recreation.
         if (savedInstanceState == null) {
             takePairingLink(intent)
+        } else {
+            pairingLink = savedInstanceState.getString(STATE_PAIRING_LINK)
+            offerPairingLink()
         }
         setContent {
             UnisonTheme {
@@ -168,6 +172,8 @@ class MainActivity : ComponentActivity() {
                         onConfirmPairing = appState::confirmPairing,
                         onRejectPairing = appState::rejectPairing,
                         onScanPairingCode = appState::scanPairingCode,
+                        onAcceptPairingLink = appState::acceptPairingLink,
+                        onDismissPairingLink = appState::dismissPairingLink,
                         onCancelScan = appState::cancelScan,
                         onDismissPairingResult = appState::dismissPairingResult,
                     )
@@ -249,7 +255,7 @@ class MainActivity : ComponentActivity() {
         appState.refreshHistory()
         appState.refreshRequests()
         startRequestsPoll()
-        scanPairingLink()
+        offerPairingLink()
     }
 
     /** Keeps the pairing code of a link, such as one opened by the system camera. */
@@ -257,17 +263,29 @@ class MainActivity : ComponentActivity() {
         val code = PairingLink.code(intent?.action, intent?.dataString) ?: return
         pairingLink = code
         requestedScreen.value = Destination.ADD
-        scanPairingLink()
+        offerPairingLink()
     }
 
-    /** Pairs with the device of a kept link once the first run screen is done. */
-    private fun scanPairingLink() {
+    /**
+     * Asks the user about the device of a kept link once the first run screen is
+     * done. The link may come from any app or web page, so it never pairs on its
+     * own.
+     */
+    private fun offerPairingLink() {
         if (!onboarded) {
             return
         }
         val code = pairingLink ?: return
         pairingLink = null
-        appState.scanPairingCode(code)
+        appState.offerPairingLink(code)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val waiting = pairingLink ?: appState.pairing.value.link?.uri
+        if (waiting != null) {
+            outState.putString(STATE_PAIRING_LINK, waiting)
+        }
     }
 
     private fun needsNotificationPermission(): Boolean =
@@ -433,5 +451,8 @@ class MainActivity : ComponentActivity() {
 
         /** Interval of the offers while the app is on screen. */
         private const val REQUESTS_POLL_MS = 15_000L
+
+        /** Saved state key of a pairing link that waits for the user. */
+        private const val STATE_PAIRING_LINK = "app.unison.state.PAIRING_LINK"
     }
 }

@@ -1011,6 +1011,53 @@ class AppStateTest {
     }
 
     @Test
+    fun linkedCodeWaitsForTheUser() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val uri = "unison://pair?v=1&role=personal"
+
+        state.offerPairingLink(uri)
+        runCurrent()
+
+        assertTrue(core.scanned.isEmpty())
+        assertFalse(state.pairing.value.scanning)
+        assertEquals(uri, state.pairing.value.link?.uri)
+        assertEquals(Local.Role.ROLE_PERSONAL, state.pairing.value.link?.role)
+        state.close()
+    }
+
+    @Test
+    fun acceptedLinkScansTheCode() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val uri = "unison://pair?v=1&role=friends"
+
+        state.offerPairingLink(uri)
+        state.acceptPairingLink()
+        runCurrent()
+
+        assertEquals(listOf(uri), core.scanned)
+        assertNull(state.pairing.value.link)
+        assertTrue(state.pairing.value.scanning)
+        state.close()
+    }
+
+    @Test
+    fun dismissedLinkIsDropped() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.offerPairingLink("unison://pair?v=1&role=personal")
+        state.dismissPairingLink()
+        state.acceptPairingLink()
+        runCurrent()
+
+        assertTrue(core.scanned.isEmpty())
+        assertNull(state.pairing.value.link)
+        state.close()
+    }
+
+    @Test
     fun closedWindowIsDropped() = runTest {
         val core = FakeCore()
         val state = appState(core)
