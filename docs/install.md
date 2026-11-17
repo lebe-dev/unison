@@ -58,7 +58,8 @@ alive, and the local network permission lets the phone find the other devices an
 The service runs while its notification is visible. `Settings > Service mode` decides when it runs:
 
 - `Always` - in the background, also after a restart of the phone;
-- `Wi-Fi only` - only while the phone is on Wi-Fi;
+- `Wi-Fi only` - only while the phone is on Wi-Fi or Ethernet, also a local network without
+  internet access;
 - `While the app is open` - only while Unison is on the screen.
 
 Received files go to `Download/Unison`. The database, the cached payloads and the keys stay in the

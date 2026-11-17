@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
@@ -117,7 +118,7 @@ func Call(req []byte) (out []byte, err error) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeoutOf(request.GetMethod()))
 	defer cancel()
 
 	response := runningCore().call(ctx, request)
@@ -150,8 +151,14 @@ func SubmitClip(item []byte) (err error) {
 }
 
 // SubmitFile copies the file behind fd into the blob store. The caller hands
-// the descriptor over: the facade closes it.
+// the descriptor over: the facade closes it, also when it refuses the file.
 func SubmitFile(meta []byte, fd int) (err error) {
+	handed := false
+	defer func() {
+		if !handed && fd >= 0 {
+			_ = os.NewFile(uintptr(fd), "submit").Close()
+		}
+	}()
 	defer recoverErr(&err)
 
 	c := runningCore()
@@ -165,8 +172,9 @@ func SubmitFile(meta []byte, fd int) (err error) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), transferTimeout)
 	defer cancel()
+	handed = true
 	return c.submitFile(ctx, payload, fd)
 }
 

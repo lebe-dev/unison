@@ -52,14 +52,16 @@ object UnisonSettings {
             .edit { putString(KEY_OPERATING_MODE, mode.value) }
     }
 
+    /** Name of this device, always within the limit of the core. */
     fun deviceName(context: Context): String {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_DEVICE_NAME, null) ?: Build.MODEL
+        val stored = prefs.getString(KEY_DEVICE_NAME, null)?.let(DeviceNames::fit)
+        return stored?.ifEmpty { null } ?: DeviceNames.fit(Build.MODEL.orEmpty())
     }
 
     fun setDeviceName(context: Context, name: String) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-            .edit { putString(KEY_DEVICE_NAME, name) }
+            .edit { putString(KEY_DEVICE_NAME, DeviceNames.fit(name)) }
     }
 
     /** Hash of the content this device sent or applied last, null when there was none. */

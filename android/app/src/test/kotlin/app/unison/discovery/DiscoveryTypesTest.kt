@@ -42,6 +42,33 @@ class CandidatesTest {
     }
 
     @Test
+    fun recordsFitTheCombinedLimit() {
+        val key = "k".repeat(10)
+        val records = Candidates.records(
+            mapOf(
+                key to "x".repeat(250),
+                "fits" to "x".repeat(250),
+                "a=b" to "value",
+                "ключ" to "value",
+            ),
+        )
+
+        assertEquals(setOf("fits"), records.keys)
+    }
+
+    @Test
+    fun attributeWithoutValueIsKept() {
+        val attributes = HashMap<String, ByteArray?>()
+        attributes["flag"] = null
+        attributes["v"] = "1".toByteArray()
+
+        val txt = MobileProto.CandidateTxt.parseFrom(Candidates.proto(attributes))
+
+        assertEquals("", txt.recordsMap.getValue("flag"))
+        assertEquals("1", txt.recordsMap.getValue("v"))
+    }
+
+    @Test
     fun attributesTravelToTheCore() {
         val bytes = Candidates.proto(
             mapOf(

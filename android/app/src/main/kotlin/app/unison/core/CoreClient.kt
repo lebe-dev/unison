@@ -4,6 +4,7 @@ import app.unison.core.mobile.Mobile
 import app.unison.history.HistoryTtlProto
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyProto
+import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.MessageLite
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -38,6 +39,7 @@ class CoreException(val code: Int, message: String) : Exception(message) {
     companion object {
         const val CODE_INVALID_ARGUMENT = 3
         const val CODE_FAILED_PRECONDITION = 9
+        const val CODE_INTERNAL = 13
         const val CODE_UNAVAILABLE = 14
     }
 }
@@ -49,7 +51,11 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
     val version: String
         get() = Mobile.version()
 
-    /** Runs one local API method and returns its decoded response. */
+    /**
+     * Runs one local API method and returns its decoded response. Every failure,
+     * including one of the facade itself or a response that does not decode,
+     * comes out as a [CoreException].
+     */
     suspend fun <T> call(
         method: String,
         request: MessageLite,
@@ -60,16 +66,28 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
             .setPayload(request.toByteString())
             .build()
         // An empty response arrives as a null array, a failed one as a code.
-        val raw = transport.call(call.toByteArray())
-        val response = if (raw == null) {
-            MobileProto.CallResponse.getDefaultInstance()
-        } else {
-            MobileProto.CallResponse.parseFrom(raw)
+        val raw = try {
+            transport.call(call.toByteArray())
+        } catch (e: Exception) {
+            throw CoreException(CoreException.CODE_INTERNAL, e.message ?: "core call failed")
+        }
+        val response = decode("response of $method") {
+            if (raw == null) {
+                MobileProto.CallResponse.getDefaultInstance()
+            } else {
+                MobileProto.CallResponse.parseFrom(raw)
+            }
         }
         if (response.code != 0) {
             throw CoreException(response.code, response.message)
         }
-        parse(response.payload.toByteArray())
+        decode("payload of $method") { parse(response.payload.toByteArray()) }
+    }
+
+    private inline fun <T> decode(what: String, block: () -> T): T = try {
+        block()
+    } catch (e: InvalidProtocolBufferException) {
+        throw CoreException(CoreException.CODE_INTERNAL, "$what does not decode: ${e.message}")
     }
 
     /** Version and runtime state of the core. */

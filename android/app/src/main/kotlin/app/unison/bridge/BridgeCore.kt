@@ -5,7 +5,11 @@ import android.util.Log
 import app.unison.core.CoreClient
 import app.unison.core.CoreException
 import app.unison.core.CoreStarter
+import app.unison.core.SubmitFailure
 import app.unison.core.mobile.Mobile
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import unison.local.v1.Local
 import unison.mobile.v1.Mobile as MobileProto
 
@@ -79,23 +83,19 @@ class MobileBridgeCore(
             return SubmitOutcome.CORE_UNAVAILABLE
         }
         return try {
-            Mobile.submitClip(payload.toByteArray())
+            withContext(Dispatchers.IO) { Mobile.submitClip(payload.toByteArray()) }
             SubmitOutcome.ACCEPTED
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.d(TAG, "submit failed: ${e.message}")
-            outcomeOf(e.message.orEmpty())
+            when (SubmitFailure.of(e)) {
+                SubmitFailure.PAUSED -> SubmitOutcome.PAUSED
+                SubmitFailure.UNSUPPORTED -> SubmitOutcome.UNSUPPORTED_TYPE
+                SubmitFailure.NOT_RUNNING -> SubmitOutcome.CORE_UNAVAILABLE
+                SubmitFailure.OTHER -> SubmitOutcome.FAILED
+            }
         }
-    }
-
-    /**
-     * The facade reports every failure as an exception that carries the message of the core,
-     * so the outcome is read from that message.
-     */
-    private fun outcomeOf(message: String): SubmitOutcome = when {
-        message.contains(PAUSED_MARK) -> SubmitOutcome.PAUSED
-        message.contains(UNSUPPORTED_MARK) -> SubmitOutcome.UNSUPPORTED_TYPE
-        message.contains(NOT_RUNNING_MARK) -> SubmitOutcome.CORE_UNAVAILABLE
-        else -> SubmitOutcome.FAILED
     }
 
     private suspend fun requireRunning() {
@@ -106,10 +106,5 @@ class MobileBridgeCore(
 
     private companion object {
         private const val TAG = "MobileBridgeCore"
-
-        /** Parts of the error messages of clip.ErrPaused, clip.ErrUnsupportedContent and the facade. */
-        private const val PAUSED_MARK = "synchronization is paused"
-        private const val UNSUPPORTED_MARK = "unsupported content"
-        private const val NOT_RUNNING_MARK = "core is not running"
     }
 }

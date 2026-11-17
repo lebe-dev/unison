@@ -6,6 +6,8 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.google.protobuf.InvalidProtocolBufferException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import unison.mobile.v1.Mobile
@@ -21,6 +23,7 @@ class BlobSink(
 ) {
 
     /** Opens a sink for one file and returns the write descriptor, or -1. */
+    @OptIn(DelicateCoroutinesApi::class)
     fun open(meta: ByteArray): Long {
         val payload = try {
             Mobile.FilePayload.parseFrom(meta)
@@ -41,7 +44,9 @@ class BlobSink(
             return UNSUPPORTED
         }
 
-        scope.launch(Dispatchers.IO) { receive(pipe[0], uri, payload.size) }
+        // Started even when the service is going away: the read end must be drained and closed,
+        // or the core blocks on a full pipe and the pending entry stays behind.
+        scope.launch(Dispatchers.IO, start = CoroutineStart.ATOMIC) { receive(pipe[0], uri, payload.size) }
         return pipe[1].detachFd().toLong()
     }
 

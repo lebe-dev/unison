@@ -33,6 +33,9 @@ class UnisonBridge(
     private val content = BridgeContent(core, scope, File(context.cacheDir, CACHE_DIR))
     private val refresh = Mutex()
 
+    /** Guards the broadcasts to the listeners and the state they carry. */
+    private val broadcast = Any()
+
     @Volatile
     private var state = BridgeState(false, 0, 0)
 
@@ -352,7 +355,7 @@ class UnisonBridge(
         }
     }
 
-    private fun addRecent(summary: ClipSummary) {
+    private fun addRecent(summary: ClipSummary) = synchronized(broadcast) {
         recent = (listOf(summary) + recent.filter { it.id != summary.id }).take(MAX_RECENT_ITEMS)
     }
 
@@ -390,6 +393,8 @@ class UnisonBridge(
             ),
         )
         status
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.d(TAG, "core is not available: ${e.message}")
         null
@@ -410,6 +415,8 @@ class UnisonBridge(
         for (limit in HISTORY_LIMITS) {
             try {
                 return core.history(limit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.d(TAG, "history of $limit entries is not available: ${e.message}")
             }
@@ -418,18 +425,24 @@ class UnisonBridge(
     }
 
     private fun updateState(next: BridgeState) {
-        val previous = state
-        state = next
-        if (previous.paused == next.paused &&
-            previous.untilMs == next.untilMs &&
-            previous.onlinePeers == next.onlinePeers
-        ) {
-            return
+        synchronized(broadcast) {
+            val previous = state
+            state = next
+            if (previous.paused == next.paused &&
+                previous.untilMs == next.untilMs &&
+                previous.onlinePeers == next.onlinePeers
+            ) {
+                return
+            }
+            dispatchState(next)
         }
-        dispatchState(next)
     }
 
-    private fun dispatchState(value: BridgeState) {
+    /**
+     * A RemoteCallbackList runs one broadcast at a time and throws on a second one, while the
+     * bridge broadcasts from binder threads and from several coroutine threads.
+     */
+    private fun dispatchState(value: BridgeState) = synchronized(broadcast) {
         val count = listeners.beginBroadcast()
         try {
             for (index in 0 until count) {
@@ -444,7 +457,7 @@ class UnisonBridge(
         }
     }
 
-    private fun dispatchItem(summary: ClipSummary) {
+    private fun dispatchItem(summary: ClipSummary) = synchronized(broadcast) {
         val count = listeners.beginBroadcast()
         try {
             for (index in 0 until count) {

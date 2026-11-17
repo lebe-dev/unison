@@ -25,30 +25,41 @@ object ServiceTypes {
 
 /** Converts between DNS-SD records and the candidate data of the core. */
 object Candidates {
-    /** Largest key and value of a TXT record. */
+    /** Bound of the key and the value of one TXT record together, as NsdServiceInfo checks it. */
     private const val MAX_RECORD = 255
 
-    /** TXT records of an announcement that fit a DNS-SD record. */
+    /**
+     * TXT records of an announcement that NsdServiceInfo accepts. One record it
+     * refuses would make it refuse the whole announcement, so such a record is
+     * dropped instead.
+     */
     fun records(txt: Map<String, String>): Map<String, String> = buildMap {
         for ((key, value) in txt) {
-            if (key.isEmpty() || key.length > MAX_RECORD) {
+            if (!validKey(key)) {
                 continue
             }
-            if (value.toByteArray(Charsets.UTF_8).size > MAX_RECORD) {
+            if (key.length + value.toByteArray(Charsets.UTF_8).size >= MAX_RECORD) {
                 continue
             }
             put(key, value)
         }
     }
 
-    /** Serialized unison.mobile.v1.CandidateTxt of DNS-SD attributes. */
-    fun proto(attributes: Map<String, ByteArray>): ByteArray {
+    /** Printable ASCII without '=', the keys NsdServiceInfo takes. */
+    private fun validKey(key: String): Boolean =
+        key.isNotEmpty() && key.all { it in ' '..'~' && it != '=' }
+
+    /**
+     * Serialized unison.mobile.v1.CandidateTxt of DNS-SD attributes. Any device
+     * on the network writes these, and a key without a value comes as null.
+     */
+    fun proto(attributes: Map<String, ByteArray?>): ByteArray {
         val records = buildMap {
             for ((key, value) in attributes) {
                 if (key.isEmpty()) {
                     continue
                 }
-                put(key, String(value, Charsets.UTF_8))
+                put(key, value?.toString(Charsets.UTF_8).orEmpty())
             }
         }
         return MobileProto.CandidateTxt.newBuilder()

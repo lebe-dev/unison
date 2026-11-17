@@ -2,11 +2,13 @@ package app.unison.bridge
 
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.IOException
 import java.io.OutputStream
 import unison.local.v1.Local
 
@@ -25,12 +27,20 @@ class BridgeContent(
     suspend fun open(itemId: String, mime: String): ParcelFileDescriptor? {
         val entry = try {
             core.item(itemId)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.d(TAG, "cannot look up the item: ${e.message}")
             null
         } ?: return null
 
-        val pipe = ParcelFileDescriptor.createPipe()
+        // A checked exception must not reach the binder thread that called openItem.
+        val pipe = try {
+            ParcelFileDescriptor.createPipe()
+        } catch (e: IOException) {
+            Log.w(TAG, "cannot create a pipe: ${e.message}")
+            return null
+        }
         val read = pipe[0]
         val write = pipe[1]
         val writer = scope.launch(Dispatchers.IO) {

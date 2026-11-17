@@ -37,6 +37,8 @@ object RequestNotifications {
             .addAction(0, context.getString(R.string.action_accept), answer(context, request.id, accept = true))
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            // The service posts the offer again on every refresh; only the first post alerts.
+            .setOnlyAlertOnce(true)
             .setShowWhen(false)
 
         if (names.isNotEmpty()) {

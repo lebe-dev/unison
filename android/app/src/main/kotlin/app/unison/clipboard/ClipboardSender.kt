@@ -5,8 +5,10 @@ import android.util.Log
 import androidx.annotation.StringRes
 import app.unison.R
 import app.unison.core.CoreStarter
+import app.unison.core.SubmitFailure
 import app.unison.core.mobile.Mobile
 import app.unison.service.UnisonSettings
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -49,9 +51,17 @@ object ClipboardSender {
         }
         try {
             withContext(Dispatchers.IO) { Mobile.submitClip(draft.payload().toByteArray()) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "submit failed: ${e.message}")
-            return SendOutcome.FAILED
+            // The pause may start between the check above and the submit.
+            return when (SubmitFailure.of(e)) {
+                SubmitFailure.PAUSED -> SendOutcome.PAUSED
+                SubmitFailure.UNSUPPORTED -> SendOutcome.UNSUPPORTED
+                SubmitFailure.NOT_RUNNING -> SendOutcome.CORE_UNAVAILABLE
+                SubmitFailure.OTHER -> SendOutcome.FAILED
+            }
         }
         UnisonSettings.setLastClipHash(context, draft.contentHash())
         return SendOutcome.SENT

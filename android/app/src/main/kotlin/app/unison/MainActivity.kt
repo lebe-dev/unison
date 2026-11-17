@@ -33,6 +33,7 @@ import app.unison.pairing.PairingLink
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyDefaults
 import app.unison.policy.PolicyProto
+import app.unison.service.DeviceNames
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
@@ -198,7 +199,8 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         requestsPoll?.cancel()
         requestsPoll = null
-        if (operatingMode == OperatingMode.APP_OPEN) {
+        // A rotation stops and recreates the activity; the core keeps running through it.
+        if (operatingMode == OperatingMode.APP_OPEN && !isChangingConfigurations) {
             UnisonService.stop(this)
         }
         super.onStop()
@@ -339,10 +341,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveDeviceName(name: String) {
-        val trimmed = name.trim()
-        UnisonSettings.setDeviceName(this, trimmed)
-        deviceName = trimmed
-        appState.setDeviceName(trimmed)
+        val fitted = DeviceNames.fit(name)
+        UnisonSettings.setDeviceName(this, fitted)
+        deviceName = fitted
+        appState.setDeviceName(fitted)
     }
 
     private fun saveDownloadsFolder(tree: Uri) {

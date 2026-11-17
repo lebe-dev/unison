@@ -161,8 +161,11 @@ class NetworkMonitor(
     private companion object {
         const val TAG = "NetworkMonitor"
 
+        // The builder asks for internet access by default; a local Wi-Fi without an uplink
+        // still carries the peers, so it counts as Wi-Fi too.
         val wifiRequest: NetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
     }
 }

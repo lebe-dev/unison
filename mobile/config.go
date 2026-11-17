@@ -18,7 +18,20 @@ const (
 	startTimeout = 30 * time.Second
 	callTimeout  = 30 * time.Second
 	stopTimeout  = 10 * time.Second
+	// transferTimeout bounds the calls that move a whole file, which takes
+	// longer than any other call on a slow link or through the relay.
+	transferTimeout = 30 * time.Minute
 )
+
+// callTimeoutOf returns the time bound of one local API method.
+func callTimeoutOf(method string) time.Duration {
+	switch methodName(method) {
+	case "FetchHistoryItem":
+		return transferTimeout
+	default:
+		return callTimeout
+	}
+}
 
 // Size limits of the facade.
 const (

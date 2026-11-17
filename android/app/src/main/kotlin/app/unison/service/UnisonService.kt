@@ -49,7 +49,15 @@ class UnisonService : Service() {
     private val client = CoreClient()
     private val coreMutex = Mutex()
     private var coreRunning = false
+
+    /** A core started by this instance may be running; written on the IO thread. */
+    @Volatile
+    private var coreStarted = false
+
+    @Volatile
+    private var destroyed = false
     private var eventsJob: Job? = null
+    private var requestsDirty = false
     private var statusJob: Job? = null
     private var transfersJob: Job? = null
     private var requestsJob: Job? = null
@@ -102,6 +110,9 @@ class UnisonService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        // Written before coreStarted is read: a start that is still running either sees
+        // this flag or is seen here, so the core never outlives the service.
+        destroyed = true
         network.stop()
         scope.cancel()
         discovery.stop()
@@ -110,15 +121,9 @@ class UnisonService : Service() {
             NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(requestId))
         }
         notifiedRequests.clear()
-        if (coreRunning) {
-            coreRunning = false
-            runBlocking(Dispatchers.IO) {
-                try {
-                    Mobile.stop()
-                } catch (e: Exception) {
-                    Log.w(TAG, "core stop failed: ${e.message}")
-                }
-            }
+        coreRunning = false
+        if (coreStarted) {
+            runBlocking(Dispatchers.IO) { stopCoreBlocking() }
         }
         super.onDestroy()
     }
@@ -180,13 +185,7 @@ class UnisonService : Service() {
     /** Stops the core until the operating mode or the network allows it again. */
     private suspend fun pauseCoreLocked() {
         coreRunning = false
-        withContext(Dispatchers.IO) {
-            try {
-                Mobile.stop()
-            } catch (e: Exception) {
-                Log.w(TAG, "core stop failed: ${e.message}")
-            }
-        }
+        withContext(Dispatchers.IO) { stopCoreBlocking() }
         discovery.stop()
         Log.i(TAG, "core paused until the network allows it")
         show(getString(R.string.service_waiting_wifi))
@@ -219,14 +218,36 @@ class UnisonService : Service() {
             .setDeviceName(UnisonSettings.deviceName(this))
             .setDebugLog(debug)
             .build()
+        // A core left by an earlier instance of the service would make the start fail and
+        // still call back into the platform of that instance.
+        stopCoreBlocking()
         discovery.start()
         Mobile.start(config.toByteArray(), CorePlatform(this, discovery, blobs))
-        Log.i(TAG, "core started")
-        true
+        coreStarted = true
+        // The service may have been destroyed while the core started; then nobody else stops it.
+        if (destroyed) {
+            Log.i(TAG, "core stopped right after the start, the service is gone")
+            stopCoreBlocking()
+            discovery.stop()
+            false
+        } else {
+            Log.i(TAG, "core started")
+            true
+        }
     } catch (e: Exception) {
         Log.e(TAG, "core start failed", e)
         discovery.stop()
         false
+    }
+
+    /** Stops the core of the process; does nothing when none runs. */
+    private fun stopCoreBlocking() {
+        try {
+            Mobile.stop()
+        } catch (e: Exception) {
+            Log.w(TAG, "core stop failed: ${e.message}")
+        }
+        coreStarted = false
     }
 
     /** Reacts to the events of the core that change what the user sees. */
@@ -382,6 +403,8 @@ class UnisonService : Service() {
             .firstOrNull { it.deviceId == deviceId }
             ?.name
             .orEmpty()
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "cannot read the name of $deviceId: ${e.message}")
         ""
@@ -446,21 +469,36 @@ class UnisonService : Service() {
     /** Keeps the request notifications in step with the offers of the core. */
     private fun refreshRequests() {
         if (requestsJob?.isActive == true) {
+            // An offer may have arrived after the running read; read once more when it ends.
+            requestsDirty = true
             return
         }
+        requestsDirty = false
         requestsJob = scope.launch {
-            val requests = listRequests() ?: return@launch
-            val current = requests.map { it.id }.toSet()
-            for (gone in notifiedRequests - current) {
-                NotificationManagerCompat.from(this@UnisonService)
-                    .cancel(RequestNotifications.idOf(gone))
-                notifiedRequests -= gone
+            val requests = listRequests()
+            if (requests != null) {
+                showRequests(requests)
+                scheduleRequestsRefresh()
             }
-            for (request in requests) {
-                notifiedRequests += request.id
-                showRequest(request)
+        }.also { job ->
+            job.invokeOnCompletion { cause ->
+                if (cause == null && requestsDirty) {
+                    scope.launch { refreshRequests() }
+                }
             }
-            scheduleRequestsRefresh()
+        }
+    }
+
+    /** Shows the offers that wait and removes the notifications of the answered ones. */
+    private fun showRequests(requests: List<Local.ShareRequest>) {
+        val current = requests.map { it.id }.toSet()
+        for (gone in notifiedRequests - current) {
+            NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(gone))
+            notifiedRequests -= gone
+        }
+        for (request in requests) {
+            notifiedRequests += request.id
+            showRequest(request)
         }
     }
 
@@ -479,6 +517,8 @@ class UnisonService : Service() {
     /** Offers of Friends that wait for an answer, or null when the core does not answer. */
     private suspend fun listRequests(): List<Local.ShareRequest>? = try {
         withContext(Dispatchers.IO) { client.requests() }.requestsList
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "cannot read the requests: ${e.message}")
         null
@@ -509,6 +549,8 @@ class UnisonService : Service() {
             notifiedRequests -= requestId
             showRequestResult(answered, accept)
             refreshRequests()
+            // The answer replaced the text of the persistent notification.
+            refreshStatus()
         }
     }
 

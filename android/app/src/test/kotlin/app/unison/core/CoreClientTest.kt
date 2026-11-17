@@ -59,6 +59,43 @@ class CoreClientTest {
     }
 
     @Test
+    fun transportFailureBecomesCoreException() = runBlocking {
+        val transport = CoreTransport { throw IllegalStateException("mobile: panic: boom") }
+
+        val error = runCatching { CoreClient(transport).status() }.exceptionOrNull()
+
+        assertTrue(error is CoreException)
+        error as CoreException
+        assertEquals(CoreException.CODE_INTERNAL, error.code)
+        assertEquals("mobile: panic: boom", error.message)
+    }
+
+    @Test
+    fun undecodableResponseBecomesCoreException() = runBlocking {
+        val transport = CoreTransport { byteArrayOf(0xFF.toByte(), 0xFF.toByte()) }
+
+        val error = runCatching { CoreClient(transport).status() }.exceptionOrNull()
+
+        assertTrue(error is CoreException)
+        assertEquals(CoreException.CODE_INTERNAL, (error as CoreException).code)
+    }
+
+    @Test
+    fun undecodablePayloadBecomesCoreException() = runBlocking {
+        val transport = CoreTransport {
+            Mobile.CallResponse.newBuilder()
+                .setPayload(com.google.protobuf.ByteString.copyFrom(byteArrayOf(0xFF.toByte(), 0xFF.toByte())))
+                .build()
+                .toByteArray()
+        }
+
+        val error = runCatching { CoreClient(transport).status() }.exceptionOrNull()
+
+        assertTrue(error is CoreException)
+        assertEquals(CoreException.CODE_INTERNAL, (error as CoreException).code)
+    }
+
+    @Test
     fun malformedEventIsDropped() {
         assertNull(decodeEvent(byteArrayOf(0xFF.toByte(), 0xFF.toByte())))
     }
