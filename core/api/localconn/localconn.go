@@ -31,6 +31,8 @@ const (
 	idleTimeout = 5 * time.Minute
 	// maxHeaderBytes bounds the request head of one client.
 	maxHeaderBytes = 64 << 10
+	// readHeaderTimeout bounds the time a client takes to send its request head.
+	readHeaderTimeout = 10 * time.Second
 )
 
 // Errors reported by the endpoint.
@@ -55,10 +57,11 @@ func Serve(ctx context.Context, ln net.Listener, handler http.Handler) error {
 	protocols := new(http.Protocols)
 	protocols.SetUnencryptedHTTP2(true)
 	server := &http.Server{
-		Handler:        handler,
-		Protocols:      protocols,
-		IdleTimeout:    idleTimeout,
-		MaxHeaderBytes: maxHeaderBytes,
+		Handler:           handler,
+		Protocols:         protocols,
+		IdleTimeout:       idleTimeout,
+		ReadHeaderTimeout: readHeaderTimeout,
+		MaxHeaderBytes:    maxHeaderBytes,
 	}
 
 	done := make(chan struct{})

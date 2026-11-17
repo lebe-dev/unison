@@ -69,7 +69,9 @@ func (d *Dialer) dialWebSocket(ctx context.Context) (carrier, error) {
 		done:    make(chan struct{}),
 	}
 	c.wg.Add(2)
+	//nolint:gosec // The carrier outlives the request that opened it.
 	go c.writeLoop()
+	//nolint:gosec // The carrier outlives the request that opened it.
 	go c.pingLoop()
 	return c, nil
 }

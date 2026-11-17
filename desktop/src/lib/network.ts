@@ -1,8 +1,4 @@
-import {
-  FailureReason,
-  type Device,
-  type Event,
-} from "./api/gen/unison/local/v1/local_pb";
+import { FailureReason, type Device, type Event } from "./api/gen/unison/local/v1/local_pb";
 import { cleanError } from "./errors";
 import { formatDateTime } from "./format";
 
@@ -46,18 +42,14 @@ export function pairingFailure(event: Event): PairingFailure {
 }
 
 /** unreachableDeviceIssue describes a paired device that does not answer. */
-export function unreachableDeviceIssue(
-  device: Device,
-): NetworkIssueText | null {
+export function unreachableDeviceIssue(device: Device): NetworkIssueText | null {
   if (device.online || !device.unreachable) {
     return null;
   }
   const name = device.name || "The device";
   const lines = [];
   if (device.unreachableSinceUnixMs) {
-    lines.push(
-      `Not answering since ${formatDateTime(device.unreachableSinceUnixMs)}.`,
-    );
+    lines.push(`Not answering since ${formatDateTime(device.unreachableSinceUnixMs)}.`);
   }
   if (device.unreachableDetail) {
     lines.push(device.unreachableDetail);
@@ -75,10 +67,7 @@ export function unreachableDeviceIssue(
  * quietWindowIssue warns about an open pairing window that has not seen any
  * device after quietWindowDelay.
  */
-export function quietWindowIssue(
-  openFor: number,
-  addr: string,
-): NetworkIssueText | null {
+export function quietWindowIssue(openFor: number, addr: string): NetworkIssueText | null {
   if (openFor < quietWindowDelay) {
     return null;
   }

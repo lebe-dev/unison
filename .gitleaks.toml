@@ -1,0 +1,21 @@
+[extend]
+useDefault = true
+
+# Build flags and TLS log fields in the recipes and the notes look like credentials.
+[[allowlists]]
+description = "Build flags and TLS log fields of the recipes and the notes"
+regexTarget = "match"
+regexes = ['''CGO_ENABLED=[01]''', '''X25519MLKEM768''']
+paths = ['''Justfile''', '''packaging/''', '''tasks/''']
+
+# Dependencies and build output are not part of the sources.
+[[allowlists]]
+description = "Dependencies and build output"
+paths = [
+  '''desktop/node_modules/''',
+  '''desktop/dist/''',
+  '''desktop/src-tauri/target/''',
+  '''android/.gradle/''',
+  '''android/build/''',
+  '''android/app/build/''',
+]

@@ -158,7 +158,8 @@ export function textSnippet(item: ClipItem | undefined, limit = 80): string {
   if (!item) {
     return "";
   }
-  const text = decodeText(representation(item, "text/plain")) || decodeText(representation(item, "text/html"));
+  const text =
+    decodeText(representation(item, "text/plain")) || decodeText(representation(item, "text/html"));
   const line = text.replace(/\s+/g, " ").trim();
   if (line.length <= limit) {
     return line;

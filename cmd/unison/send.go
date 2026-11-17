@@ -125,6 +125,7 @@ func (a *app) writeStdin(name string) (string, func(), error) {
 	cleanup := func() { _ = os.RemoveAll(dir) }
 
 	path := filepath.Join(dir, name)
+	//nolint:gosec // The file lives in the temporary directory of the command.
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		cleanup()

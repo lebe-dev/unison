@@ -80,7 +80,7 @@ class ChunkQueue {
     reject: (error: unknown) => void;
   } | null = null;
   #done = false;
-  #error: unknown = null;
+  #error: Error | null = null;
 
   push(chunk: Uint8Array): void {
     if (this.#done) {
@@ -100,7 +100,7 @@ class ChunkQueue {
   }
 
   fail(error: unknown): void {
-    this.#error = error;
+    this.#error = error instanceof Error ? error : new Error(String(error));
     this.#settle();
   }
 
@@ -205,6 +205,6 @@ export const client: DaemonClient = createClient(
   createConnectTransport({
     baseUrl: BASE_URL,
     useBinaryFormat: true,
-    fetch: invokeFetch as typeof globalThis.fetch,
+    fetch: invokeFetch,
   }),
 );

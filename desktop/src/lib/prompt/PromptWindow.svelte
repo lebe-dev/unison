@@ -48,7 +48,9 @@
 <main class="prompt">
   {#if current}
     <header>
-      <span class="title">{current.kind === "files" ? "Files" : "Clipboard"} from {current.device}</span>
+      <span class="title"
+        >{current.kind === "files" ? "Files" : "Clipboard"} from {current.device}</span
+      >
       {#if waiting.length > 1}
         <span class="count">1 of {waiting.length}</span>
       {/if}
@@ -66,13 +68,21 @@
     </p>
 
     <div class="actions">
-      <button class="button ghost" type="button" onclick={() => answer(current, "later")}>Later</button>
+      <button class="button ghost" type="button" onclick={() => answer(current, "later")}
+        >Later</button
+      >
       {#if current.kind === "files"}
-        <button class="button danger" type="button" onclick={() => answer(current, "decline")}>Decline</button>
-        <button class="button primary" type="button" onclick={() => answer(current, "accept")}>Accept</button>
+        <button class="button danger" type="button" onclick={() => answer(current, "decline")}
+          >Decline</button
+        >
+        <button class="button primary" type="button" onclick={() => answer(current, "accept")}
+          >Accept</button
+        >
       {:else}
         <button class="button" type="button" onclick={() => answer(current, "skip")}>Skip</button>
-        <button class="button primary" type="button" onclick={() => answer(current, "apply")}>Apply</button>
+        <button class="button primary" type="button" onclick={() => answer(current, "apply")}
+          >Apply</button
+        >
       {/if}
     </div>
   {:else}

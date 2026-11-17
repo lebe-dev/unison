@@ -103,9 +103,7 @@ describe("historyTitle", () => {
   it("describes an image by its size", () => {
     const item = create(ClipItemSchema, {
       kind: Kind.IMAGE,
-      representations: [
-        { mimeType: "image/png", size: 2048n, inlineBytes: new Uint8Array([1]) },
-      ],
+      representations: [{ mimeType: "image/png", size: 2048n, inlineBytes: new Uint8Array([1]) }],
     });
 
     expect(historyTitle(item)).toBe("Image - 2.0 KB");

@@ -208,6 +208,7 @@ var (
 func keychain() (C.SecKeychainRef, error) {
 	keychainOnce.Do(func() {
 		var ref C.SecKeychainRef
+		//nolint:gocritic // Both sides are cgo constants, not duplicated expressions.
 		if C.uk_keychain(&ref) != C.errSecSuccess {
 			keychainErr = ErrNoKeychain
 			return

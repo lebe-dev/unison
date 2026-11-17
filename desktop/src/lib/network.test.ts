@@ -36,7 +36,9 @@ describe("pairingFailure", () => {
 
 describe("unreachableDeviceIssue", () => {
   it("is absent for a device that answers", () => {
-    expect(unreachableDeviceIssue(create(DeviceSchema, { name: "Pixel", online: true }))).toBeNull();
+    expect(
+      unreachableDeviceIssue(create(DeviceSchema, { name: "Pixel", online: true })),
+    ).toBeNull();
     expect(unreachableDeviceIssue(create(DeviceSchema, { name: "Pixel" }))).toBeNull();
   });
 

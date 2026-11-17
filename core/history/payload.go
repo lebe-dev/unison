@@ -167,6 +167,7 @@ func (s *Store) writePayloads(ctx context.Context, item model.ClipItem, path str
 
 // writePayload writes one payload to name.
 func (s *Store) writePayload(ctx context.Context, rep model.Representation, name string) error {
+	//nolint:gosec // The name is built from the payload directory and the sanitized file name.
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("history: create payload file: %w", err)

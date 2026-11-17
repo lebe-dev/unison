@@ -62,7 +62,10 @@ export function parseLifetime(value: string): bigint | null {
 }
 
 /** Request field that changes the lifetime of one kind. */
-export function ttlRequest(kind: TTLKind, seconds: bigint): {
+export function ttlRequest(
+  kind: TTLKind,
+  seconds: bigint,
+): {
   historyTtlTextSeconds?: bigint;
   historyTtlImageSeconds?: bigint;
   historyTtlFilesSeconds?: bigint;

@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { create } from "@bufbuild/protobuf";
-import {
-  PairingMethod,
-  Platform,
-  Role,
-  SasSchema,
-} from "../api/gen/unison/local/v1/local_pb";
+import { PairingMethod, Platform, Role, SasSchema } from "../api/gen/unison/local/v1/local_pb";
 import type { PairingRequest } from "../pairing.svelte";
 import SasPanel from "./SasPanel.svelte";
 

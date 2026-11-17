@@ -69,8 +69,8 @@
 
   $effect(() => {
     // A new filter starts the feed from the newest item.
-    history.kind;
-    history.origin;
+    void history.kind;
+    void history.origin;
     scrollTop = 0;
     if (feed) {
       feed.scrollTop = 0;
@@ -159,7 +159,7 @@
         <select
           aria-label="Type"
           value={history.kind}
-          onchange={(event) => void history.setKind(Number(event.currentTarget.value) as Kind)}
+          onchange={(event) => void history.setKind(Number(event.currentTarget.value))}
         >
           {#each kinds as option (option.value)}
             <option value={option.value}>{option.label}</option>
@@ -280,11 +280,9 @@
                 class="button small"
                 type="button"
                 onclick={() => info && void download(item)}
-                disabled={
-                  !info ||
+                disabled={!info ||
                   history.downloading.includes(info.id) ||
-                  (item.complete && info.kind !== Kind.FILES)
-                }
+                  (item.complete && info.kind !== Kind.FILES)}
               >
                 {item.complete && info?.kind !== Kind.FILES ? "Downloaded" : "Download"}
               </button>

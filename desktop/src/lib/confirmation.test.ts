@@ -45,8 +45,9 @@ describe("confirmation flags of a device", () => {
   it("sends the scope and the side and reloads the status", async () => {
     setDeviceConfirmation.mockResolvedValue(create(SetDeviceConfirmationResponseSchema, {}));
     let shown: boolean | null = null;
-    refresh.mockImplementation(async () => {
+    refresh.mockImplementation(() => {
       shown = confirmation.require(device("device-b"), "files", "peer");
+      return Promise.resolve();
     });
 
     expect(await confirmation.set("device-b", "files", "peer", true)).toBeNull();

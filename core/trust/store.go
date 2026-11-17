@@ -170,6 +170,7 @@ func (s *Store) ByEd25519(ctx context.Context, pub []byte) (Peer, error) {
 // List returns the stored peers ordered by the time they were added. Revoked
 // devices are left out unless the filter asks for them.
 func (s *Store) List(ctx context.Context, filter ListFilter) ([]Peer, error) {
+	//nolint:gosec // The query is built from fixed column names and placeholders.
 	query := "SELECT " + peerColumns + " FROM peers"
 	conditions := make([]string, 0, 2)
 	args := make([]any, 0, 2)
@@ -181,6 +182,7 @@ func (s *Store) List(ctx context.Context, filter ListFilter) ([]Peer, error) {
 		conditions = append(conditions, "revoked = 0")
 	}
 	if len(conditions) > 0 {
+		//nolint:gosec // The conditions are fixed clauses with placeholders.
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 	query += " ORDER BY added_at, device_id"

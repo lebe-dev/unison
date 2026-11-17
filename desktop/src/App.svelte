@@ -188,7 +188,7 @@
         <p class="muted">No events yet.</p>
       {:else}
         <ul>
-          {#each daemon.activity as event}
+          {#each daemon.activity as event (event)}
             <li>
               <span class="kind">{eventKindLabel(event.kind)}</span>
               <span class="device">{event.name || "This device"}</span>

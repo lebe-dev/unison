@@ -46,7 +46,7 @@
       {#if digits}
         <div class="digits mono">{digits}</div>
         <div class="emoji">
-          {#each emoji as symbol}
+          {#each emoji as symbol (symbol)}
             <span>{symbol}</span>
           {/each}
         </div>
@@ -64,9 +64,7 @@
     <button class="button primary" type="button" onclick={onConfirm} disabled={busy || confirmed}>
       {scanned ? "Add device" : "Confirm"}
     </button>
-    <button class="button danger" type="button" onclick={onReject} disabled={busy}>
-      Reject
-    </button>
+    <button class="button danger" type="button" onclick={onReject} disabled={busy}> Reject </button>
   </div>
 </section>
 

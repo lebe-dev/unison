@@ -61,9 +61,7 @@
         </li>
       {/each}
     </ul>
-    <p class="muted">
-      One device can appear under several addresses for IPv4 and IPv6.
-    </p>
+    <p class="muted">One device can appear under several addresses for IPv4 and IPv6.</p>
   {/if}
 </section>
 

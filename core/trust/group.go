@@ -20,7 +20,7 @@ const (
 	discoveryVersionKey   = "trust.group.discovery_ts"
 	discoveryPrevUntilKey = "trust.group.discovery_prev_until"
 	relayURLKey           = "trust.group.relay_url"
-	relayTokenKey         = "trust.group.relay_token"
+	relayTokenKey         = "trust.group.relay_token" //nolint:gosec // Settings key, not a credential.
 	relayVersionKey       = "trust.group.relay_ts"
 )
 

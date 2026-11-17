@@ -174,9 +174,29 @@ vet-windows:
     GOOS=windows go vet ./...
     GOOS=windows go build ./...
 
-# Run the linters and format checks.
-lint:
+# Lint the Go sources, including the security checks of gosec and the format.
+lint-go:
     golangci-lint run
+
+# Lint the protobuf definitions.
+proto-lint:
+    buf lint
+
+# Lint the desktop frontend: ESLint, Prettier and svelte-check.
+lint-desktop:
+    cd desktop && yarn lint
+
+# Lint the Rust shell of the desktop app.
+lint-rust:
+    cd desktop/src-tauri && cargo fmt --check
+    cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
+
+# Run the Android lint checks.
+android-lint:
+    ./android/gradlew -p android lintDebug
+
+# Run every linter of the repository.
+lint: lint-go lint-desktop lint-rust proto-lint android-lint
 
 # Format the Go sources.
 fmt:
@@ -198,10 +218,6 @@ proto-android:
 desktop-proto:
     buf generate --template buf.gen.desktop.yaml --path proto/unison/local proto
 
-# Lint the protobuf definitions.
-proto-lint:
-    buf lint
-
 relay_image := "unison-relay:" + version
 
 # Build the relay container image.
@@ -212,8 +228,32 @@ relay-image:
 relay-run:
     RELAY_IMAGE={{relay_image}} RELAY_VERSION={{version}} docker compose -f deploy/relay/docker-compose.yml up --build
 
+# Scan the dependencies of every component for known vulnerabilities.
+security-deps:
+    osv-scanner scan source --recursive .
+
+# Check the Go modules and the Go sources for known vulnerabilities.
+security-go:
+    govulncheck ./...
+
+# Scan the working tree and the history for secrets.
+security-secrets:
+    gitleaks git . --redact --no-banner
+    gitleaks dir . --redact --no-banner
+
+# Check the deployment files for vulnerabilities and misconfigurations.
+security-infra:
+    trivy config --exit-code 1 deploy/
+
+# Check the relay image for vulnerabilities.
+security-image: relay-image
+    trivy image --exit-code 1 {{relay_image}}
+
+# Run every security check.
+security: security-deps security-go security-secrets security-infra security-image
+
 # Check the code before committing.
-check: lint proto-lint test
+check: lint test
 
 # Run the desktop app with hot reload.
 desktop-dev:
@@ -242,13 +282,6 @@ verify-windows *args:
 # Run the component tests of the desktop app.
 desktop-test:
     cd desktop && yarn test
-
-# Lint the desktop app: frontend checks, component tests, rustfmt and clippy.
-desktop-lint:
-    cd desktop && yarn lint
-    cd desktop && yarn test
-    cd desktop/src-tauri && cargo fmt --check
-    cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
 
 # Bind the Go core into an Android library that the app consumes.
 aar:
@@ -289,10 +322,6 @@ android-test:
 # Run the Android UI tests on the connected device or emulator.
 android-test-ui: aar
     ./android/gradlew -p android connectedDebugAndroidTest
-
-# Run the Android lint checks.
-android-lint:
-    ./android/gradlew -p android lintDebug
 
 # Publish the keyboard bridge contract to the Maven local repository and to android/build/maven.
 bridge-publish:

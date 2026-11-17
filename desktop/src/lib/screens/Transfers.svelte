@@ -132,7 +132,12 @@
             >
               Send
             </button>
-            <button class="button ghost small" type="button" onclick={() => (picked = [])} disabled={busy}>
+            <button
+              class="button ghost small"
+              type="button"
+              onclick={() => (picked = [])}
+              disabled={busy}
+            >
               Clear
             </button>
           </div>
@@ -175,7 +180,10 @@
               <div class="head">
                 <div class="identity">
                   <strong>{transferFilesText(transfer)}</strong>
-                  <span class="badge" class:incoming={transfer.direction === TransferDirection.INCOMING}>
+                  <span
+                    class="badge"
+                    class:incoming={transfer.direction === TransferDirection.INCOMING}
+                  >
                     {transferDirectionLabel(transfer.direction)}
                   </span>
                   <span class="badge">{transferStateLabel(transfer.state)}</span>

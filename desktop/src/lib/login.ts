@@ -2,11 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 /** State of the login item that starts the daemon. */
 export type LoginItemStatus =
-  | "unsupported"
-  | "not_registered"
-  | "enabled"
-  | "requires_approval"
-  | "not_found";
+  "unsupported" | "not_registered" | "enabled" | "requires_approval" | "not_found";
 
 /** Answer of the login item commands. */
 export interface LoginItem {

@@ -56,6 +56,7 @@ func (k *keystore) Load(ctx context.Context, name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	//nolint:gosec // The name is a hex encoded secret name inside the keystore directory.
 	wrapped, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, ports.ErrNotFound

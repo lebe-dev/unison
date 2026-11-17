@@ -172,7 +172,8 @@
         scope === "clipboard" ? { requireConfirmation: value } : { requireFileConfirmation: value },
       );
       requireConfirmation = response.settings?.requireConfirmation ?? requireConfirmation;
-      requireFileConfirmation = response.settings?.requireFileConfirmation ?? requireFileConfirmation;
+      requireFileConfirmation =
+        response.settings?.requireFileConfirmation ?? requireFileConfirmation;
     } catch (error) {
       requireConfirmation = previous.clipboard;
       requireFileConfirmation = previous.files;
@@ -241,11 +242,7 @@
     }
   }
 
-  function setCell(
-    condition: PolicyCondition,
-    kind: PolicyKind,
-    patch: Partial<PolicyCell>,
-  ): void {
+  function setCell(condition: PolicyCondition, kind: PolicyKind, patch: Partial<PolicyCell>): void {
     if (!policy) {
       return;
     }
@@ -371,7 +368,8 @@
         <p class="muted">Connecting to the daemon...</p>
       {:else}
         <p class="notice error">The daemon is not running, so the settings are unavailable.</p>
-        <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button>
+        <button class="button" type="button" onclick={() => void daemon.refresh()}>Try again</button
+        >
       {/if}
     </section>
 
@@ -416,7 +414,12 @@
           />
           <small>Peers see this name. They learn it the next time they connect.</small>
         </label>
-        <button class="button primary" type="button" onclick={() => void saveName()} disabled={busy || !loaded}>
+        <button
+          class="button primary"
+          type="button"
+          onclick={() => void saveName()}
+          disabled={busy || !loaded}
+        >
           Save
         </button>
       </div>
@@ -431,9 +434,8 @@
         <span>
           Ask before applying the clipboard of new devices
           <small>
-            Items wait in the history and a prompt asks whether to apply them. This is the
-            default for devices you pair from now on; change it for a device on the Devices
-            screen.
+            Items wait in the history and a prompt asks whether to apply them. This is the default
+            for devices you pair from now on; change it for a device on the Devices screen.
           </small>
         </span>
       </label>
@@ -588,7 +590,7 @@
                   disabled={busy}
                   onchange={(event) =>
                     setCell(condition.key, kind.key, {
-                      action: Number(event.currentTarget.value) as PolicyAction,
+                      action: Number(event.currentTarget.value),
                     })}
                 >
                   {#each actions as action (action.value)}
@@ -604,7 +606,8 @@
                   aria-label={`${condition.label} ${kind.label} limit`}
                   value={megabytesOf(cell.maxSizeBytes)}
                   disabled={busy || cell.action !== PolicyAction.AUTO}
-                  onchange={(event) => setSize(condition.key, kind.key, event.currentTarget.valueAsNumber)}
+                  onchange={(event) =>
+                    setSize(condition.key, kind.key, event.currentTarget.valueAsNumber)}
                 />
                 <span class="muted">MiB</span>
               </div>

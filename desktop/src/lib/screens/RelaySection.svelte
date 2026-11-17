@@ -16,7 +16,9 @@
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
 
   const stateText = $derived(relayStateText(relay));
-  const canSave = $derived(url.trim().length > 0 && (token.trim().length > 0 || relay?.tokenSet === true));
+  const canSave = $derived(
+    url.trim().length > 0 && (token.trim().length > 0 || relay?.tokenSet === true),
+  );
   const tokenHint = $derived(
     relay?.tokenSet
       ? "An access token is stored on this device. Type a new one to replace it."
@@ -67,7 +69,10 @@
       loaded = true;
     } catch (error) {
       if (!quiet) {
-        notice = { kind: "error", text: errorText(error, "The relay settings could not be loaded.") };
+        notice = {
+          kind: "error",
+          text: errorText(error, "The relay settings could not be loaded."),
+        };
       }
     } finally {
       if (!quiet) {
@@ -98,7 +103,10 @@
         filesOnRequest,
       });
       apply(response.relay);
-      notice = { kind: "info", text: "The relay is stored and sent to the other Personal devices." };
+      notice = {
+        kind: "info",
+        text: "The relay is stored and sent to the other Personal devices.",
+      };
     } catch (error) {
       notice = { kind: "error", text: errorText(error, "The relay settings could not be saved.") };
     } finally {
@@ -164,7 +172,12 @@
     </span>
   </label>
   <div class="toolbar">
-    <button class="button primary" type="button" onclick={() => void save()} disabled={busy || !loaded || !canSave}>
+    <button
+      class="button primary"
+      type="button"
+      onclick={() => void save()}
+      disabled={busy || !loaded || !canSave}
+    >
       Save
     </button>
     <button

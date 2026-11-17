@@ -187,7 +187,10 @@ class DaemonStore {
       paused: this.paused,
       devices: this.devices
         .filter((device) => device.online && !device.revoked)
-        .map((device) => ({ id: device.deviceId, name: device.name || shortDeviceID(device.deviceId) })),
+        .map((device) => ({
+          id: device.deviceId,
+          name: device.name || shortDeviceID(device.deviceId),
+        })),
     };
     void updateTray(state).catch((error: unknown) => {
       console.warn("cannot update the tray", error);

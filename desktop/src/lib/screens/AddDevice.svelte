@@ -54,14 +54,24 @@
       <WindowTimer expiresAt={pairing.window.expiresAt} />
     </div>
     <p class="muted">
-      Pairing window is open. The other device sees this one and compares the same code before
-      both devices accept.
+      Pairing window is open. The other device sees this one and compares the same code before both
+      devices accept.
     </p>
     <div class="toolbar">
-      <button class="button" type="button" onclick={() => void pairing.extend()} disabled={pairing.busy}>
+      <button
+        class="button"
+        type="button"
+        onclick={() => void pairing.extend()}
+        disabled={pairing.busy}
+      >
         Extend for 3 minutes
       </button>
-      <button class="button ghost" type="button" onclick={() => void pairing.close()} disabled={pairing.busy}>
+      <button
+        class="button ghost"
+        type="button"
+        onclick={() => void pairing.close()}
+        disabled={pairing.busy}
+      >
         Close window
       </button>
     </div>
@@ -92,7 +102,7 @@
       disabled={pairing.busy}
       openedAt={pairing.window.openedAt}
       listenAddr={pairing.window.addr}
-      onSelect={(addr) => void pairing.pairWith(addr)}
+      onSelect={(addr: string) => void pairing.pairWith(addr)}
     />
 
     {#if pairing.qr}

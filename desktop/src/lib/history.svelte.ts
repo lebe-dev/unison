@@ -254,9 +254,7 @@ class HistoryStore {
 
   /** #replace updates one item of the list after a call. */
   #replace(item: HistoryItem): void {
-    this.items = this.items.map((current) =>
-      current.item?.id === item.item?.id ? item : current,
-    );
+    this.items = this.items.map((current) => (current.item?.id === item.item?.id ? item : current));
   }
 }
 

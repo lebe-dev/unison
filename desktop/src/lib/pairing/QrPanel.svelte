@@ -1,8 +1,9 @@
 <script lang="ts">
   import { toString as qrToString } from "qrcode";
 
-  let { uri = "" }: { /** Text of the pairing code, empty without an open window. */ uri?: string } =
-    $props();
+  let {
+    uri = "",
+  }: { /** Text of the pairing code, empty without an open window. */ uri?: string } = $props();
 
   let drawing = $state("");
   let failure = $state("");
@@ -50,16 +51,15 @@
 <section class="panel qr">
   <h3>Pair with a phone</h3>
   {#if !uri}
-    <p class="muted">
-      Open the pairing window to show a square that another device can scan.
-    </p>
+    <p class="muted">Open the pairing window to show a square that another device can scan.</p>
   {:else}
     <p class="muted">
-      Scan the square with the other device. The code works once and only while the window is
-      open.
+      Scan the square with the other device. The code works once and only while the window is open.
     </p>
     <div class="code" aria-label="Pairing code">
       {#if drawing}
+        <!-- The markup comes from the local QR encoder. -->
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html drawing}
       {:else if failure}
         <p class="notice error">{failure}</p>
@@ -68,7 +68,8 @@
       {/if}
     </div>
     <div class="toolbar">
-      <button class="button ghost small" type="button" onclick={() => void copy()}>Copy code</button>
+      <button class="button ghost small" type="button" onclick={() => void copy()}>Copy code</button
+      >
       {#if copied}
         <span class="muted">Copied.</span>
       {/if}

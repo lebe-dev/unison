@@ -110,7 +110,10 @@ class TransferStore {
     try {
       await client.cancelTransfer({ id });
     } catch (error) {
-      this.notice = { kind: "error", text: errorText(error, "The transfer could not be canceled.") };
+      this.notice = {
+        kind: "error",
+        text: errorText(error, "The transfer could not be canceled."),
+      };
     }
   }
 
@@ -162,9 +165,7 @@ class TransferStore {
 
 /** sortTransfers orders the transfers from the newest to the oldest. */
 function sortTransfers(transfers: Transfer[]): Transfer[] {
-  return [...transfers].sort(
-    (left, right) => Number(right.createdAtUnixMs - left.createdAtUnixMs),
-  );
+  return [...transfers].sort((left, right) => Number(right.createdAtUnixMs - left.createdAtUnixMs));
 }
 
 /** transfers is the transfer state of the app. */

@@ -87,17 +87,13 @@ beforeEach(() => {
     }),
   );
   getSettings.mockResolvedValue(create(GetSettingsResponseSchema, { settings: settings() }));
-  updateSettings.mockResolvedValue(
-    create(UpdateSettingsResponseSchema, { settings: settings() }),
-  );
+  updateSettings.mockResolvedValue(create(UpdateSettingsResponseSchema, { settings: settings() }));
   renameDevice.mockResolvedValue(
     create(RenameDeviceResponseSchema, {
       device: create(DeviceSchema, { deviceId: "self", name: "This Mac" }),
     }),
   );
-  getRelay.mockResolvedValue(
-    create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }),
-  );
+  getRelay.mockResolvedValue(create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }));
   setFriendsDiscovery.mockResolvedValue(
     create(SetFriendsDiscoveryResponseSchema, {
       friendsDiscovery: create(FriendsDiscoverySchema, {
@@ -190,9 +186,7 @@ describe("settings screen", () => {
         untilUnixMs: BigInt(Date.now() + 60_000),
       }),
     });
-    getRelay.mockResolvedValue(
-      create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }),
-    );
+    getRelay.mockResolvedValue(create(GetRelayResponseSchema, { relay: create(RelaySchema, {}) }));
     setFriendsDiscovery.mockResolvedValue(
       create(SetFriendsDiscoveryResponseSchema, {
         friendsDiscovery: create(FriendsDiscoverySchema, {}),
@@ -210,15 +204,15 @@ describe("settings screen", () => {
     render(Settings);
 
     expect(await screen.findByText("Network policy")).toBeTruthy();
-    expect((screen.getByLabelText("Metered Text action") as HTMLSelectElement).value).toBe(
+    expect(screen.getByLabelText<HTMLSelectElement>("Metered Text action").value).toBe(
       String(PolicyAction.AUTO),
     );
-    expect((screen.getByLabelText("Metered Text limit") as HTMLInputElement).value).toBe("10");
-    expect((screen.getByLabelText("Roaming Images action") as HTMLSelectElement).value).toBe(
+    expect(screen.getByLabelText<HTMLInputElement>("Metered Text limit").value).toBe("10");
+    expect(screen.getByLabelText<HTMLSelectElement>("Roaming Images action").value).toBe(
       String(PolicyAction.METADATA),
     );
-    expect((screen.getByLabelText("Roaming relay") as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText("Relay limit") as HTMLInputElement).value).toBe("1");
+    expect(screen.getByLabelText<HTMLInputElement>("Roaming relay").checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>("Relay limit").value).toBe("1");
   });
 
   it("saves a new threshold with the whole table", async () => {
@@ -249,9 +243,9 @@ describe("settings screen", () => {
   it("shows the lifetimes of the history", async () => {
     render(Settings);
 
-    expect((await screen.findByLabelText("Text lifetime") as HTMLInputElement).value).toBe("7d");
-    expect((screen.getByLabelText("Images lifetime") as HTMLInputElement).value).toBe("3d");
-    expect((screen.getByLabelText("Files lifetime") as HTMLInputElement).value).toBe("1d");
+    expect((await screen.findByLabelText<HTMLInputElement>("Text lifetime")).value).toBe("7d");
+    expect(screen.getByLabelText<HTMLInputElement>("Images lifetime").value).toBe("3d");
+    expect(screen.getByLabelText<HTMLInputElement>("Files lifetime").value).toBe("1d");
   });
 
   it("saves a new lifetime", async () => {
@@ -316,7 +310,9 @@ describe("settings screen", () => {
     );
     render(Settings);
 
-    const clipboard = await screen.findByRole("checkbox", { name: /Ask before applying the clipboard/ });
+    const clipboard = await screen.findByRole("checkbox", {
+      name: /Ask before applying the clipboard/,
+    });
     const files = screen.getByRole("checkbox", { name: /Ask before accepting files/ });
     await screen.findByDisplayValue("This Mac");
     expect((clipboard as HTMLInputElement).checked).toBe(true);

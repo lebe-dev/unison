@@ -17,6 +17,7 @@ type lock struct {
 
 // acquireLock takes the exclusive lock of path without waiting.
 func acquireLock(path string) (*lock, error) {
+	//nolint:gosec // The lock file lives in the data directory of the daemon.
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("daemon: open the lock file: %w", err)

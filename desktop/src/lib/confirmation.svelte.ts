@@ -40,7 +40,9 @@ class ConfirmationStore {
     if (side === "local") {
       return scope === "clipboard" ? device.requireConfirmation : device.requireFileConfirmation;
     }
-    return scope === "clipboard" ? device.peerRequireConfirmation : device.peerRequireFileConfirmation;
+    return scope === "clipboard"
+      ? device.peerRequireConfirmation
+      : device.peerRequireFileConfirmation;
   }
 
   /** isBusy reports a switch with a change in flight. */
@@ -77,7 +79,8 @@ class ConfirmationStore {
     try {
       await daemon.refresh();
     } finally {
-      const { [id]: _, ...rest } = this.#changed;
+      const rest = { ...this.#changed };
+      delete rest[id];
       this.#changed = rest;
     }
     return null;

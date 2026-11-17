@@ -9,9 +9,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 vi.mock("@tauri-apps/api/event", () => ({
   emit: mocks.emit,
-  listen: async (name: string, handler: (event: { payload: unknown }) => void) => {
+  listen: (name: string, handler: (event: { payload: unknown }) => void) => {
     mocks.listeners.set(name, handler);
-    return () => mocks.listeners.delete(name);
+    return Promise.resolve(() => mocks.listeners.delete(name));
   },
 }));
 

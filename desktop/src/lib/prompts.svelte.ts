@@ -100,7 +100,9 @@ class PromptStore {
 function filesPrompt(request: ShareRequest): Prompt {
   const names = request.files.map((file) => file.name).filter((name) => name !== "");
   const summary =
-    names.length === 1 ? names[0] : `${request.files.length} files${names.length ? `: ${names.slice(0, 3).join(", ")}` : ""}`;
+    names.length === 1
+      ? names[0]
+      : `${request.files.length} files${names.length ? `: ${names.slice(0, 3).join(", ")}` : ""}`;
   return {
     id: request.id,
     kind: "files",

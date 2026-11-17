@@ -89,7 +89,7 @@
             </div>
 
             <ul class="files">
-              {#each request.files as file}
+              {#each request.files as file (file.name)}
                 <li>
                   <span class="mono">{file.name}</span>
                   <span class="muted">{formatBytes(file.size)}</span>

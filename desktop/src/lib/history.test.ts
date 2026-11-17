@@ -90,9 +90,7 @@ describe("history list", () => {
     await history.setKind(Kind.IMAGE);
 
     expect(history.kind).toBe(Kind.IMAGE);
-    expect(listHistory).toHaveBeenLastCalledWith(
-      expect.objectContaining({ kind: Kind.IMAGE }),
-    );
+    expect(listHistory).toHaveBeenLastCalledWith(expect.objectContaining({ kind: Kind.IMAGE }));
   });
 
   it("applies a device filter and reloads", async () => {
@@ -101,9 +99,7 @@ describe("history list", () => {
     await history.setOrigin("device-1");
 
     expect(history.origin).toBe("device-1");
-    expect(listHistory).toHaveBeenLastCalledWith(
-      expect.objectContaining({ deviceId: "device-1" }),
-    );
+    expect(listHistory).toHaveBeenLastCalledWith(expect.objectContaining({ deviceId: "device-1" }));
   });
 
   it("reports a failure of the daemon", async () => {
@@ -199,7 +195,7 @@ describe("history actions", () => {
 });
 
 describe("held items", () => {
-  it("collects the items that wait for confirmation", async () => {
+  it("collects the items that wait for confirmation", () => {
     listHistory.mockResolvedValue(create(ListHistoryResponseSchema, {}));
     history.start();
 

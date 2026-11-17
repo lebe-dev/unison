@@ -80,7 +80,10 @@ describe("prompt queue", () => {
       create(ShareRequestSchema, {
         id: "newer",
         deviceName: "Pixel",
-        files: [create(TransferFileSchema, { name: "a.txt" }), create(TransferFileSchema, { name: "b.txt" })],
+        files: [
+          create(TransferFileSchema, { name: "a.txt" }),
+          create(TransferFileSchema, { name: "b.txt" }),
+        ],
         totalBytes: 10n,
       }),
       create(ShareRequestSchema, {

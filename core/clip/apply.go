@@ -270,6 +270,7 @@ func (p *Pipeline) fileContent(ctx context.Context, item model.ClipItem) (ports.
 
 // writeFile copies one payload into a new file.
 func (p *Pipeline) writeFile(ctx context.Context, rep model.Representation, target string) error {
+	//nolint:gosec // The name comes from the download directory and the sanitized file name.
 	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return fmt.Errorf("clip: create file: %w", err)

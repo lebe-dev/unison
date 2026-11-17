@@ -110,6 +110,7 @@ func (s *Store) cleanupStep(ctx context.Context, now int64) (int, error) {
 		}
 
 		placeholders := strings.TrimSuffix(strings.Repeat("?,", len(rowids)), ",")
+		//nolint:gosec // The placeholders come from the number of rows, not from input.
 		if _, err := tx.ExecContext(ctx, `DELETE FROM history_items WHERE rowid IN (`+placeholders+`)`, rowids...); err != nil {
 			return fmt.Errorf("history: remove expired entries: %w", err)
 		}

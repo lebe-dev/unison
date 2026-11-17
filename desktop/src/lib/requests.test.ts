@@ -75,7 +75,7 @@ describe("incoming requests", () => {
     expect(requests.error).toBe("connection refused");
   });
 
-  it("reloads the list when an offer arrives", async () => {
+  it("reloads the list when an offer arrives", () => {
     requests.start();
     listRequests.mockResolvedValue(create(ListRequestsResponseSchema, {}));
 
@@ -93,7 +93,7 @@ describe("incoming requests", () => {
     expect(listRequests).toHaveBeenCalled();
   });
 
-  it("drops an offer that ended without an answer", async () => {
+  it("drops an offer that ended without an answer", () => {
     requests.start();
     requests.requests = [offer("t1", "MacBook"), offer("t2", "Phone")];
 

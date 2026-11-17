@@ -66,6 +66,7 @@ func createFile(dir, name string) (string, *os.File, error) {
 	name = SafeName(name)
 	for attempt := range maxDownloadAttempts {
 		path := filepath.Join(dir, numberedName(name, attempt))
+		//nolint:gosec // The name is sanitized and the path stays in the download directory.
 		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 		if errors.Is(err, os.ErrExist) {
 			continue

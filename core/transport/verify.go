@@ -199,7 +199,7 @@ func clientTLSConfig(id *identity.Identity, protocol string, verify func([][]byt
 		MinVersion:             tls.VersionTLS13,
 		NextProtos:             []string{protocol},
 		CurvePreferences:       []tls.CurveID{tls.X25519MLKEM768},
-		InsecureSkipVerify:     true,
+		InsecureSkipVerify:     true, //nolint:gosec // Every device signs its own certificate, so VerifyPeerCertificate decides.
 		SessionTicketsDisabled: true,
 		VerifyPeerCertificate:  verify,
 	}

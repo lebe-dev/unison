@@ -9,17 +9,29 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@tauri-apps/api/event", () => ({
   emit: mocks.emit,
-  listen: async (name: string, handler: (event: { payload: unknown }) => void) => {
+  listen: (name: string, handler: (event: { payload: unknown }) => void) => {
     mocks.listeners.set(name, handler);
-    return () => mocks.listeners.delete(name);
+    return Promise.resolve(() => mocks.listeners.delete(name));
   },
 }));
 
 import PromptWindow from "./PromptWindow.svelte";
 import type { Prompt } from "./types";
 
-const files: Prompt = { id: "offer-1", kind: "files", device: "Pixel", summary: "report.pdf", size: "1.0 MB" };
-const clip: Prompt = { id: "item-1", kind: "clipboard", device: "MacBook", summary: "Text", size: "12 B" };
+const files: Prompt = {
+  id: "offer-1",
+  kind: "files",
+  device: "Pixel",
+  summary: "report.pdf",
+  size: "1.0 MB",
+};
+const clip: Prompt = {
+  id: "item-1",
+  kind: "clipboard",
+  device: "MacBook",
+  summary: "Text",
+  size: "12 B",
+};
 
 async function show(queue: Prompt[]): Promise<void> {
   await vi.waitFor(() => expect(mocks.listeners.has("prompts")).toBe(true));

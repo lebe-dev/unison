@@ -5,7 +5,11 @@ import NetworkIssue from "./NetworkIssue.svelte";
 describe("NetworkIssue", () => {
   it("shows the summary and hides the technical details until asked", async () => {
     render(NetworkIssue, {
-      props: { summary: "Could not reach the other device.", hint: "Use one network.", details: "1.2.3.4:5: timeout" },
+      props: {
+        summary: "Could not reach the other device.",
+        hint: "Use one network.",
+        details: "1.2.3.4:5: timeout",
+      },
     });
 
     expect(screen.getByText("Could not reach the other device.")).toBeTruthy();

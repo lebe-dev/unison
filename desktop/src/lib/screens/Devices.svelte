@@ -6,7 +6,14 @@
   import { errorText } from "../errors";
   import NetworkIssue from "../NetworkIssue.svelte";
   import { unreachableDeviceIssue } from "../network";
-  import { formatDateTime, formatTime, pathLabel, platformLabel, roleLabel, shortDeviceID } from "../format";
+  import {
+    formatDateTime,
+    formatTime,
+    pathLabel,
+    platformLabel,
+    roleLabel,
+    shortDeviceID,
+  } from "../format";
 
   let { onAdd }: { /** Opens the screen that adds a device. */ onAdd?: () => void } = $props();
 
@@ -85,7 +92,12 @@
       : `${name} asks before accepting files from this device`;
   }
 
-  async function setConfirmation(device: Device, scope: Scope, side: Side, require: boolean): Promise<void> {
+  async function setConfirmation(
+    device: Device,
+    scope: Scope,
+    side: Side,
+    require: boolean,
+  ): Promise<void> {
     notice = null;
     const failure = await confirmation.set(device.deviceId, scope, side, require);
     if (!failure) {
@@ -150,9 +162,7 @@
 
         {#if group.devices.length === 0}
           <p class="empty">
-            {group.role === Role.PERSONAL
-              ? "No Personal devices yet."
-              : "No Friends yet."}
+            {group.role === Role.PERSONAL ? "No Personal devices yet." : "No Friends yet."}
           </p>
         {:else}
           <ul>
@@ -164,7 +174,11 @@
                     <span class="mono muted">{shortDeviceID(device.deviceId)}</span>
                   </div>
                   <div class="badges">
-                    <span class="badge" class:online={device.online} class:unreachable={device.unreachable && !device.online}>
+                    <span
+                      class="badge"
+                      class:online={device.online}
+                      class:unreachable={device.unreachable && !device.online}
+                    >
                       {device.online ? "Online" : device.unreachable ? "Not reachable" : "Offline"}
                     </span>
                     {#if device.online && pathLabel(device.path)}
@@ -186,7 +200,11 @@
                 {#if device.unreachable && !device.online}
                   {@const issue = unreachableDeviceIssue(device)}
                   {#if issue}
-                    <NetworkIssue summary={issue.summary} hint={issue.hint} details={issue.details} />
+                    <NetworkIssue
+                      summary={issue.summary}
+                      hint={issue.hint}
+                      details={issue.details}
+                    />
                   {/if}
                 {/if}
 
@@ -211,7 +229,12 @@
                         disabled={confirmation.isBusy(device.deviceId, flag.scope, flag.side) ||
                           (flag.side === "peer" && !device.online)}
                         onchange={(event) =>
-                          void setConfirmation(device, flag.scope, flag.side, event.currentTarget.checked)}
+                          void setConfirmation(
+                            device,
+                            flag.scope,
+                            flag.side,
+                            event.currentTarget.checked,
+                          )}
                       />
                     {/each}
                     <small class="confirm-hint muted">
@@ -243,7 +266,12 @@
                     >
                       Save
                     </button>
-                    <button class="button ghost small" type="button" onclick={cancelRename} disabled={busy}>
+                    <button
+                      class="button ghost small"
+                      type="button"
+                      onclick={cancelRename}
+                      disabled={busy}
+                    >
                       Cancel
                     </button>
                   </div>

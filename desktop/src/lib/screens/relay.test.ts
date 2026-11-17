@@ -47,9 +47,7 @@ beforeEach(() => {
       }),
     }),
   );
-  relayOff.mockResolvedValue(
-    create(RelayOffResponseSchema, { relay: create(RelaySchema, {}) }),
-  );
+  relayOff.mockResolvedValue(create(RelayOffResponseSchema, { relay: create(RelaySchema, {}) }));
   daemon.status = create(GetStatusResponseSchema, {
     running: true,
     deviceId: "self",

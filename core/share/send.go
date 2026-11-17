@@ -148,6 +148,7 @@ func (s *Service) store(ctx context.Context, path string) (File, error) {
 		return File{}, fmt.Errorf("%w: %q is not a regular file", ErrInvalidFile, filepath.Base(path))
 	}
 
+	//nolint:gosec // The path is the regular file the user chose to share.
 	source, err := os.Open(path)
 	if err != nil {
 		return File{}, fmt.Errorf("share: open %s: %w", filepath.Base(path), err)

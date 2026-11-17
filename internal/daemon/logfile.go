@@ -55,6 +55,7 @@ func openLogFile(path string, limit int64, keep int) (*logFile, error) {
 		return nil, fmt.Errorf("daemon: create the log directory: %w", err)
 	}
 
+	//nolint:gosec // The log file lives in the data directory of the daemon.
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("daemon: open the log file: %w", err)

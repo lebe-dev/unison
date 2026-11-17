@@ -12,7 +12,12 @@ describe("CandidateList", () => {
   it("warns about a quiet network once the window stayed empty for a while", async () => {
     vi.useFakeTimers();
     render(CandidateList, {
-      props: { candidates: [], openedAt: Date.now(), listenAddr: "0.0.0.0:5000", onSelect: () => {} },
+      props: {
+        candidates: [],
+        openedAt: Date.now(),
+        listenAddr: "0.0.0.0:5000",
+        onSelect: () => {},
+      },
     });
     expect(screen.getByText(/No devices yet/)).toBeTruthy();
 

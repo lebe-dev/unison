@@ -1,4 +1,9 @@
-import type { PolicyCell as ProtoCell, PolicyRow as ProtoRow, Settings } from "./api/gen/unison/local/v1/local_pb";import { PolicyAction } from "./api/gen/unison/local/v1/local_pb";
+import type {
+  PolicyCell as ProtoCell,
+  PolicyRow as ProtoRow,
+  Settings,
+} from "./api/gen/unison/local/v1/local_pb";
+import { PolicyAction } from "./api/gen/unison/local/v1/local_pb";
 
 /** One cell of the policy table. */
 export type PolicyCell = {
@@ -110,7 +115,11 @@ export function withCell(
 }
 
 /** Copy of the table with another relay permission. */
-export function withRelay(table: PolicyTable, condition: PolicyCondition, relay: boolean): PolicyTable {
+export function withRelay(
+  table: PolicyTable,
+  condition: PolicyCondition,
+  relay: boolean,
+): PolicyTable {
   return { ...table, [condition]: { ...table[condition], relay } };
 }
 

@@ -54,15 +54,33 @@ describe("devices screen", () => {
     render(Devices);
 
     expect(screen.getAllByRole("checkbox")).toHaveLength(4);
-    expect(screen.getByRole("checkbox", { name: "This device asks before applying the clipboard of MacBook" })).toBeTruthy();
-    expect(screen.getByRole("checkbox", { name: "This device asks before accepting files from MacBook" })).toBeTruthy();
-    expect(screen.getByRole("checkbox", { name: "MacBook asks before applying the clipboard of this device" })).toBeTruthy();
-    expect(screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" })).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "This device asks before applying the clipboard of MacBook",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "This device asks before accepting files from MacBook",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "MacBook asks before applying the clipboard of this device",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "MacBook asks before accepting files from this device",
+      }),
+    ).toBeTruthy();
   });
 
   it("changes the files flag of this device", async () => {
     render(Devices);
-    const toggle = screen.getByRole("checkbox", { name: "This device asks before accepting files from MacBook" });
+    const toggle = screen.getByRole("checkbox", {
+      name: "This device asks before accepting files from MacBook",
+    });
 
     await fireEvent.click(toggle);
 
@@ -78,7 +96,9 @@ describe("devices screen", () => {
     render(Devices);
 
     await fireEvent.click(
-      screen.getByRole("checkbox", { name: "MacBook asks before applying the clipboard of this device" }),
+      screen.getByRole("checkbox", {
+        name: "MacBook asks before applying the clipboard of this device",
+      }),
     );
 
     expect(setDeviceConfirmation).toHaveBeenCalledWith({
@@ -94,7 +114,9 @@ describe("devices screen", () => {
 
     render(Devices);
     await fireEvent.click(
-      screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" }),
+      screen.getByRole("checkbox", {
+        name: "MacBook asks before accepting files from this device",
+      }),
     );
 
     expect(await screen.findByText(/The device is offline/)).toBeTruthy();
@@ -110,8 +132,12 @@ describe("devices screen", () => {
 
     render(Devices);
 
-    const files = screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" });
-    const clipboard = screen.getByRole("checkbox", { name: "MacBook asks before applying the clipboard of this device" });
+    const files = screen.getByRole("checkbox", {
+      name: "MacBook asks before accepting files from this device",
+    });
+    const clipboard = screen.getByRole("checkbox", {
+      name: "MacBook asks before applying the clipboard of this device",
+    });
     expect((files as HTMLInputElement).checked).toBe(true);
     expect((clipboard as HTMLInputElement).checked).toBe(false);
   });
@@ -126,8 +152,12 @@ describe("devices screen", () => {
 
     render(Devices);
 
-    const peer = screen.getByRole("checkbox", { name: "MacBook asks before accepting files from this device" });
-    const local = screen.getByRole("checkbox", { name: "This device asks before accepting files from MacBook" });
+    const peer = screen.getByRole("checkbox", {
+      name: "MacBook asks before accepting files from this device",
+    });
+    const local = screen.getByRole("checkbox", {
+      name: "This device asks before accepting files from MacBook",
+    });
     expect((peer as HTMLInputElement).disabled).toBe(true);
     expect((local as HTMLInputElement).disabled).toBe(false);
   });
@@ -155,7 +185,11 @@ describe("devices screen", () => {
 
 function personal(
   id: string,
-  fields: { peerRequireConfirmation?: boolean; peerRequireFileConfirmation?: boolean; online?: boolean } = {},
+  fields: {
+    peerRequireConfirmation?: boolean;
+    peerRequireFileConfirmation?: boolean;
+    online?: boolean;
+  } = {},
 ) {
   return create(DeviceSchema, {
     deviceId: id,

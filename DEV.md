@@ -10,8 +10,13 @@ available recipes.
 | Go | 1.27 | daemon, CLI, relay, core |
 | just | 1.59 | entry point for all tasks |
 | golangci-lint | 2.x | linting and formatting |
+| govulncheck | latest | vulnerabilities of the Go code |
+| OSV-Scanner | 2.x | vulnerabilities of the dependencies |
+| Gitleaks | 8.x | secrets in the tree and the history |
+| Trivy | latest | vulnerabilities of the images and the deployment files |
 | buf | 1.x | protobuf generation |
 | Node.js | current LTS | Tauri and Svelte frontend |
+| ESLint + Prettier | from desktop/package.json | Svelte and TypeScript linting and formatting |
 | Rust | stable | Tauri |
 | JDK | 21 | Android builds |
 | Android SDK | API 29 min, current target | Android builds |
@@ -26,7 +31,7 @@ Target platforms: macOS 13 Ventura and newer, Windows 10 22H2 / 11, Android 10 (
 Go, the task runner and the linters:
 
 ```sh
-brew install go just golangci-lint buf
+brew install go just golangci-lint govulncheck osv-scanner gitleaks trivy buf
 ```
 
 Node.js and Rust for the Tauri frontend:
@@ -71,14 +76,23 @@ just keychain-reset       # delete the Keychain items of the dev and test servic
 just test-pasteboard      # pasteboard integration tests against the real pasteboard
 just test-clipboard       # Win32 clipboard integration tests, run on Windows
 just test-blob-large      # large blob round trip, writes about 1.2 GiB
-just lint                 # linters and format check
+just lint                 # every linter of the repository
+just lint-go              # golangci-lint with gosec and the format check
+just lint-desktop         # ESLint, Prettier and svelte-check of the desktop frontend
+just lint-rust            # rustfmt and clippy of the desktop shell
+just proto-lint           # lint the protobuf definitions
+just security             # every security check
+just security-deps        # vulnerabilities of the dependencies with OSV-Scanner
+just security-go          # vulnerabilities of the Go code with govulncheck
+just security-secrets     # secrets with Gitleaks
+just security-infra       # deployment files with Trivy
+just security-image       # relay image with Trivy
 just vet-windows          # vet and build everything for Windows from any host
 just fmt                  # format the Go sources
 just tidy                 # update go.mod and go.sum
 just proto                # generate Go code from proto/ with buf
 just proto-android        # generate Java lite classes for the Android app
-just proto-lint           # lint the protobuf definitions
-just check                # lint, proto lint and tests, run before committing
+just check                # every linter and the tests, run before committing
 just aar                  # bind the Go core into android/core/core.aar
 just android-build        # build the Android debug APK
 just bridge-publish       # publish the keyboard bridge contract to the local Maven repository
@@ -89,13 +103,20 @@ just run-daemon-2         # run a second daemon, for pairing on one machine
 just stop-daemon          # stop the daemon of the default data directory
 just desktop-dev          # run the desktop app with hot reload
 just desktop-build        # build the desktop app bundle for the host platform
-just desktop-lint         # svelte-check, rustfmt and clippy for the desktop app
+just desktop-test         # component tests of the desktop app
+just android-lint         # Android lint checks
 just package-macos        # macOS bundle with the daemon, signed and notarized
 just verify-macos         # check the layout and the signature of the macOS bundle
 just package-windows      # Windows installer with the daemon, run on Windows
 just verify-windows       # check the installer and the installed Windows app
 just clean                # remove bin/
 ```
+
+The lint recipes cover every component: golangci-lint with gosec and the gofmt check for Go,
+ESLint with typescript-eslint and eslint-plugin-svelte plus Prettier for the desktop frontend,
+rustfmt and clippy for its shell, and the Gradle lint task for Android. The security recipes need
+network access, because OSV-Scanner and Trivy download their databases, and the secrets scan reads
+the whole git history; `just security-image` builds the relay image before it scans it.
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
 
