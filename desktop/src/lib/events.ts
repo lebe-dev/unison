@@ -14,6 +14,7 @@ const LABELS: Record<number, string> = {
   [EventKind.CLIP_APPLY]: "Item waiting for confirmation",
   [EventKind.TRANSFER]: "Transfer updated",
   [EventKind.DEVICE_UPDATED]: "Device settings changed",
+  [EventKind.PEER_UNREACHABLE]: "Device not reachable",
 };
 
 /** eventKindLabel returns a short English label of a daemon event. */

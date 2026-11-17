@@ -2,6 +2,7 @@ package mobile
 
 import (
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/lebe-dev/unison/core/model"
@@ -104,6 +105,8 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_HISTORY
 	case node.EventDeviceUpdated:
 		return localv1.EventKind_EVENT_KIND_DEVICE_UPDATED
+	case node.EventPeerUnreachable:
+		return localv1.EventKind_EVENT_KIND_PEER_UNREACHABLE
 	case node.EventPeerIncompatible:
 		return localv1.EventKind_EVENT_KIND_PEER_INCOMPATIBLE
 	case node.EventPairingCandidate:
@@ -196,8 +199,18 @@ func localEventToProto(event node.Event) *localv1.Event {
 	}
 	if event.Err != nil {
 		out.Error = event.Err.Error()
+		out.FailureReason = failureReasonOf(event)
 	}
 	return out
+}
+
+// failureReasonOf classifies the failure of an event for the short message of
+// the host.
+func failureReasonOf(event node.Event) localv1.FailureReason {
+	if event.Kind == node.EventPeerUnreachable || errors.Is(event.Err, pairing.ErrUnreachable) {
+		return localv1.FailureReason_FAILURE_REASON_UNREACHABLE
+	}
+	return localv1.FailureReason_FAILURE_REASON_UNSPECIFIED
 }
 
 // eventToMobile converts a node event to the form delivered to the host.

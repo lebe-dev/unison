@@ -14,6 +14,11 @@
   button and start the daemon again to get a new prompt. A bare daemon started from a terminal
   is refused even when the terminal is allowed; `just run-daemon` runs it as an app of its own, see
   `DEV.md`.
+- A network that keeps its clients apart blocks the direct connection as well, not only discovery:
+  pairing by code fails with "Could not reach the other device", and a paired device shows as
+  `Not reachable`. The `Details` toggle under the message lists the addresses that were tried. Turn
+  off client isolation or AP isolation on the router, leave the guest network, or connect both
+  devices to the same VPN. See [Devices and pairing](devices.md#connection-problems).
 - Pairing by code does not need discovery. `unison pair` prints a code, and the other device scans
   it, or joins with `unison pair --qr <code>`. See [Devices and pairing](devices.md#pairing).
 - A paired device can be reached by an address that you enter. `unison status` prints the addresses

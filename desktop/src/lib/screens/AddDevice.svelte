@@ -4,6 +4,7 @@
   import QrPanel from "../pairing/QrPanel.svelte";
   import SasPanel from "../pairing/SasPanel.svelte";
   import WindowTimer from "../pairing/WindowTimer.svelte";
+  import NetworkIssue from "../NetworkIssue.svelte";
   import { daemon } from "../daemon.svelte";
   import { roleLabel } from "../format";
   import { pairing } from "../pairing.svelte";
@@ -65,7 +66,14 @@
       </button>
     </div>
 
-    {#if pairing.result}
+    {#if pairing.result?.details}
+      <NetworkIssue
+        summary={pairing.result.message}
+        hint={pairing.result.hint}
+        details={pairing.result.details}
+        onDismiss={() => (pairing.result = null)}
+      />
+    {:else if pairing.result}
       <p class="notice" class:error={!pairing.result.paired} class:info={pairing.result.paired}>
         {pairing.result.message}
         <button class="button ghost small" type="button" onclick={() => (pairing.result = null)}>
@@ -82,6 +90,8 @@
       candidates={pairing.candidates}
       dialing={pairing.dialing}
       disabled={pairing.busy}
+      openedAt={pairing.window.openedAt}
+      listenAddr={pairing.window.addr}
       onSelect={(addr) => void pairing.pairWith(addr)}
     />
 
@@ -117,7 +127,13 @@
       <p class="notice error">{pairing.error}</p>
     {/if}
 
-    {#if pairing.result}
+    {#if pairing.result?.details}
+      <NetworkIssue
+        summary={pairing.result.message}
+        hint={pairing.result.hint}
+        details={pairing.result.details}
+      />
+    {:else if pairing.result}
       <p class="notice" class:error={!pairing.result.paired} class:info={pairing.result.paired}>
         {pairing.result.message}
       </p>

@@ -54,6 +54,9 @@ var (
 	// ErrUnsupported reports a request of a flow that this window does not
 	// serve.
 	ErrUnsupported = errors.New("pairing: unsupported pairing request")
+	// ErrUnreachable reports a device that did not answer on any address: it
+	// is turned off, or the network keeps the two devices apart.
+	ErrUnreachable = errors.New("pairing: device is not reachable over the network")
 )
 
 // ListenPacketFunc binds a packet connection for the pairing listener and for
@@ -382,29 +385,58 @@ func (w *Window) Dial(ctx context.Context, addr string) error {
 		return ErrClosed
 	}
 
-	pc, err := w.opts.ListenPacket(w.ctx)
+	fl := flow{method: MethodSAS}
+	conn, dialer, err := w.connect(ctx, func(dialer *transport.Dialer) (*transport.PairingConn, error) {
+		conn, err := dialer.DialPairing(ctx, target, identity.CertFingerprint{})
+		if err != nil {
+			return nil, unreachableError(err)
+		}
+		return conn, nil
+	})
 	if err != nil {
-		return fmt.Errorf("pairing: listen: %w", err)
-	}
-	dialer, err := transport.NewDialer(pc, w.opts.Identity, unpairedVerifier{}, w.opts.Config)
-	if err != nil {
-		_ = pc.Close()
+		w.reportFailure(peerInfo{}, fl, err)
 		return err
 	}
 	defer func() { _ = dialer.Close() }()
-
-	conn, err := dialer.DialPairing(ctx, target, identity.CertFingerprint{})
-	if err != nil {
-		return err
-	}
-	if err := w.track(conn); err != nil {
-		_ = conn.Close()
-		return err
-	}
 	defer w.untrack(conn)
 	defer func() { _ = conn.Close() }()
 
-	return w.run(ctx, conn, true, flow{method: MethodSAS})
+	return w.run(ctx, conn, true, fl)
+}
+
+// connect opens a dialer and a tracked pairing connection with dial. The
+// caller closes the connection and the dialer.
+func (w *Window) connect(ctx context.Context, dial func(*transport.Dialer) (*transport.PairingConn, error)) (*transport.PairingConn, *transport.Dialer, error) {
+	pc, err := w.opts.ListenPacket(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("pairing: listen: %w", err)
+	}
+	// The dialer owns the packet connection and closes it.
+	dialer, err := transport.NewDialer(pc, w.opts.Identity, unpairedVerifier{}, w.opts.Config)
+	if err != nil {
+		_ = pc.Close()
+		return nil, nil, err
+	}
+
+	conn, err := dial(dialer)
+	if err != nil {
+		_ = dialer.Close()
+		return nil, nil, err
+	}
+	if err := w.track(conn); err != nil {
+		_ = conn.Close()
+		_ = dialer.Close()
+		return nil, nil, err
+	}
+	return conn, dialer, nil
+}
+
+// unreachableError marks a dial failure of a device that did not answer.
+func unreachableError(err error) error {
+	if transport.IsUnreachable(err) {
+		return fmt.Errorf("%w: %w", ErrUnreachable, err)
+	}
+	return err
 }
 
 // Close stops the listener, withdraws the announcement and drops every exchange

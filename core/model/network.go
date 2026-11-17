@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // NetworkState describes the current network conditions of the local device.
 type NetworkState struct {
 	// Online reports whether a network is available.
@@ -51,4 +53,13 @@ type PeerState struct {
 	Online bool
 	// Path is the network path in use.
 	Path Path
+	// Unreachable reports an offline peer that did not answer on any of its
+	// known addresses at the last attempt: it is turned off, or the network
+	// keeps the two devices apart.
+	Unreachable bool
+	// UnreachableSince is when the peer stopped answering.
+	UnreachableSince time.Time
+	// UnreachableDetail lists the addresses of the last attempt and why each
+	// one failed, one per line, for the technical details of the UI.
+	UnreachableDetail string
 }

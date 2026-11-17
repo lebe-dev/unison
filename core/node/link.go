@@ -9,6 +9,7 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,6 +56,11 @@ type link struct {
 	blocked  bool
 	// offline is when the link lost its connection, zero while it has one.
 	offline time.Time
+	// unreachable is when the peer stopped answering on its known addresses,
+	// zero while it answers or no address is known.
+	unreachable time.Time
+	// unreachableDetail lists the failures of the last attempt.
+	unreachableDetail string
 	// relay stops the relay goroutine of the link.
 	relay context.CancelFunc
 	kick  chan struct{}
@@ -80,6 +86,12 @@ func (l *link) state() model.PeerState {
 	if l.online {
 		state.Online = true
 		state.Path = l.path
+		return state
+	}
+	if !l.unreachable.IsZero() {
+		state.Unreachable = true
+		state.UnreachableSince = l.unreachable
+		state.UnreachableDetail = l.unreachableDetail
 	}
 	return state
 }
@@ -225,6 +237,26 @@ func (l *link) endRelay() {
 	if cancel != nil {
 		cancel()
 	}
+}
+
+// setReachability records the outcome of a connection attempt that did not
+// open a session. An attempt in which every address stayed silent marks the
+// peer unreachable; one in which a device answered, or no address was known,
+// clears the mark. It reports whether the peer just became unreachable.
+func (l *link) setReachability(now time.Time, silent bool, detail string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if !silent || l.online {
+		l.unreachable = time.Time{}
+		l.unreachableDetail = ""
+		return false
+	}
+	l.unreachableDetail = detail
+	if !l.unreachable.IsZero() {
+		return false
+	}
+	l.unreachable = now
+	return true
 }
 
 // dialPurpose is why a link opens a connection.
@@ -686,6 +718,11 @@ func (n *Node) tryDial(ctx context.Context, l *link, purpose dialPurpose) {
 	}
 	defer l.endDial()
 
+	// Only the cached addresses belong to this peer; a discovered address may
+	// be any device of the group, so its failure says nothing about the peer.
+	cached := n.peerAddrs(ctx, l.id)
+	var failures []error
+	silent := len(cached) > 0
 	for _, addr := range n.dialAddrs(ctx, l.id) {
 		if ctx.Err() != nil {
 			return
@@ -693,16 +730,55 @@ func (n *Node) tryDial(ctx context.Context, l *link, purpose dialPurpose) {
 		conn, err := n.dial(ctx, addr)
 		if err != nil {
 			n.log.Debug("connecting to the peer failed", "peer", l.id, "addr", addr, "error", err)
+			if slices.Contains(cached, addr) {
+				failures = append(failures, fmt.Errorf("%s: %w", addr, err))
+				silent = silent && transport.IsUnreachable(err)
+			}
 			continue
 		}
+		answered := conn.Peer().DeviceID() == l.id
 		if _, err := n.attach(ctx, conn, false); err != nil {
 			if !errors.Is(err, errSuperseded) {
 				n.log.Debug("peer connection refused", "peer", l.id, "addr", addr, "error", err)
 			}
+			if answered {
+				silent = false
+			}
 			continue
 		}
+		if answered {
+			return
+		}
+	}
+	if purpose != dialConnect || ctx.Err() != nil {
 		return
 	}
+	n.noteReachability(l, silent, failures)
+}
+
+// noteReachability records the outcome of a failed connection attempt and
+// reports a peer that just stopped answering.
+func (n *Node) noteReachability(l *link, silent bool, failures []error) {
+	lines := make([]string, 0, len(failures))
+	for _, failure := range failures {
+		lines = append(lines, failure.Error())
+	}
+	detail := strings.Join(lines, "\n")
+	if !l.setReachability(n.clock.Now(), silent, detail) {
+		return
+	}
+	l.mu.Lock()
+	peer := l.peer
+	l.mu.Unlock()
+	n.log.Info("peer does not answer on its known addresses", "peer", l.id, "addresses", len(failures))
+	n.publish(Event{
+		Kind:     EventPeerUnreachable,
+		Peer:     l.id,
+		Name:     peer.Name,
+		Role:     peer.Role,
+		Platform: peer.Platform,
+		Err:      errors.New(detail),
+	})
 }
 
 // dialAddrs returns the addresses to try for the peer: its cached addresses and
@@ -749,6 +825,12 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 	if err != nil {
 		current := l.drop(gen)
 		_ = conn.Close()
+		if current {
+			// The link loop may wait for a wake-up only, as it does while the
+			// peer is online, so it has to learn that the peer is gone.
+			l.markOffline(n.clock.Now())
+			l.wake()
+		}
 		if current && wasOnline {
 			n.peerOffline(l, peer, err)
 		}
@@ -778,6 +860,8 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 	l.attempts = 0
 	l.blocked = false
 	l.offline = time.Time{}
+	l.unreachable = time.Time{}
+	l.unreachableDetail = ""
 	upgrade := shouldUpgrade(local, l.id, incoming)
 	l.upgrade = upgrade
 	l.mu.Unlock()

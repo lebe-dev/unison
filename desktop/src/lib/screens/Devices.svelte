@@ -4,6 +4,8 @@
   import { confirmation, type Scope, type Side } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
+  import NetworkIssue from "../NetworkIssue.svelte";
+  import { unreachableDeviceIssue } from "../network";
   import { formatDateTime, formatTime, pathLabel, platformLabel, roleLabel, shortDeviceID } from "../format";
 
   let { onAdd }: { /** Opens the screen that adds a device. */ onAdd?: () => void } = $props();
@@ -162,8 +164,8 @@
                     <span class="mono muted">{shortDeviceID(device.deviceId)}</span>
                   </div>
                   <div class="badges">
-                    <span class="badge" class:online={device.online}>
-                      {device.online ? "Online" : "Offline"}
+                    <span class="badge" class:online={device.online} class:unreachable={device.unreachable && !device.online}>
+                      {device.online ? "Online" : device.unreachable ? "Not reachable" : "Offline"}
                     </span>
                     {#if device.online && pathLabel(device.path)}
                       <span class="badge">{pathLabel(device.path)}</span>
@@ -180,6 +182,13 @@
                     - last seen {formatTime(device.lastSeenAtUnixMs)}
                   {/if}
                 </p>
+
+                {#if device.unreachable && !device.online}
+                  {@const issue = unreachableDeviceIssue(device)}
+                  {#if issue}
+                    <NetworkIssue summary={issue.summary} hint={issue.hint} details={issue.details} />
+                  {/if}
+                {/if}
 
                 {#if device.role === Role.PERSONAL}
                   <div class="confirm" role="group" aria-label="Ask before taking">

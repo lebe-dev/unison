@@ -51,6 +51,10 @@ const (
 	// EventDeviceUpdated reports changed confirmation flags of a paired
 	// device, on this device or on that one.
 	EventDeviceUpdated
+	// EventPeerUnreachable reports an offline paired device that stopped
+	// answering on its known addresses. Err lists the addresses and the
+	// failures.
+	EventPeerUnreachable
 )
 
 // String returns the name of the event kind.
@@ -84,6 +88,8 @@ func (k EventKind) String() string {
 		return "history"
 	case EventDeviceUpdated:
 		return "device-updated"
+	case EventPeerUnreachable:
+		return "peer-unreachable"
 	default:
 		return "unknown"
 	}

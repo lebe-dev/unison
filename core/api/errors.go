@@ -82,7 +82,8 @@ func codeOf(err error) connect.Code {
 		return connect.CodeUnimplemented
 	case errors.Is(err, history.ErrUnavailable):
 		return connect.CodeFailedPrecondition
-	case errors.Is(err, node.ErrPeerOffline):
+	case errors.Is(err, node.ErrPeerOffline),
+		errors.Is(err, pairing.ErrUnreachable):
 		return connect.CodeUnavailable
 	case errors.Is(err, history.ErrNoSource):
 		return connect.CodeUnavailable

@@ -287,7 +287,7 @@ func TestScanAfterWindowClosed(t *testing.T) {
 	if len(result.events) != 1 || result.events[0].Kind != EventFailed || result.events[0].Method != MethodQR {
 		t.Fatalf("events of the scan = %v, want one QR failure", result.events)
 	}
-	if result.events[0].DeviceID != showing.deviceID() || result.events[0].Err == nil {
+	if result.events[0].DeviceID != showing.deviceID() || !errors.Is(result.events[0].Err, ErrUnreachable) {
 		t.Errorf("failure = %+v, want the device of the code and an error", result.events[0])
 	}
 	if _, err := showing.window.QR(); !errors.Is(err, ErrClosed) {

@@ -645,6 +645,51 @@ class AppStateTest {
     }
 
     @Test
+    fun unreachableDeviceReloadsTheStatus() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val before = core.statusCalls
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setEvent(Local.Event.newBuilder().setKind(Local.EventKind.EVENT_KIND_PEER_UNREACHABLE).build())
+                .build(),
+        )
+        advanceUntilIdle()
+
+        assertTrue(core.statusCalls > before)
+        state.close()
+    }
+
+    @Test
+    fun unreachablePairingKeepsTheTechnicalDetails() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        events.emit(
+            Mobile.Event.newBuilder()
+                .setType(Mobile.EventType.EVENT_TYPE_PAIRING_FAILED)
+                .setEvent(
+                    Local.Event.newBuilder()
+                        .setKind(Local.EventKind.EVENT_KIND_PAIRING_FAILED)
+                        .setFailureReason(Local.FailureReason.FAILURE_REASON_UNREACHABLE)
+                        .setError("pairing: device is not reachable over the network: 192.168.1.2:4000: timeout")
+                        .build(),
+                )
+                .build(),
+        )
+        runCurrent()
+
+        val result = state.pairing.value.result
+        assertNotNull(result)
+        assertFalse(result!!.paired)
+        assertTrue(result.unreachable)
+        assertTrue(result.error.contains("192.168.1.2:4000"))
+        assertFalse(state.pairing.value.scanning)
+        state.close()
+    }
+
+    @Test
     fun promptsListHeldItemsThenOffers() = runTest {
         val core = FakeCore()
         core.requests = listOf(

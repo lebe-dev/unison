@@ -12,7 +12,8 @@ import {
   type Sas,
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
-import { cleanError, errorText } from "./errors";
+import { errorText } from "./errors";
+import { pairingFailure } from "./network";
 
 /** Interval of the candidate list while the pairing window is open. */
 const CANDIDATE_INTERVAL = 2_000;
@@ -22,6 +23,8 @@ export interface OpenWindow {
   role: Role;
   addr: string;
   expiresAt: number;
+  /** Time the window was opened, unix milliseconds. Extending keeps it. */
+  openedAt: number;
 }
 
 /** A device that asks to pair. */
@@ -40,6 +43,10 @@ export interface PairingRequest {
 export interface PairingResult {
   paired: boolean;
   message: string;
+  /** What the user can do about a failure. */
+  hint?: string;
+  /** Technical information of a failure, shown on request. */
+  details?: string;
 }
 
 /**
@@ -264,10 +271,7 @@ class PairingStore {
         this.request = null;
         this.confirmed = false;
         this.dialing = null;
-        this.result = {
-          paired: false,
-          message: cleanError(event.error) || "The pairing exchange failed.",
-        };
+        this.result = pairingFailure(event);
         break;
       case EventKind.PAIRING_CLOSED:
         this.request = null;
@@ -289,6 +293,7 @@ class PairingStore {
       role: role ?? this.window?.role ?? this.role,
       addr: window.addr,
       expiresAt,
+      openedAt: this.window?.openedAt ?? Date.now(),
     };
     this.#startCandidates();
     this.#scheduleExpiry(expiresAt);

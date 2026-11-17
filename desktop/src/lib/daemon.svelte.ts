@@ -208,7 +208,8 @@ class DaemonStore {
           if (
             event.kind === EventKind.PEER_ONLINE ||
             event.kind === EventKind.PEER_OFFLINE ||
-            event.kind === EventKind.DEVICE_UPDATED
+            event.kind === EventKind.DEVICE_UPDATED ||
+            event.kind === EventKind.PEER_UNREACHABLE
           ) {
             void this.refresh();
           }

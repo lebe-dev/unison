@@ -832,7 +832,11 @@ class AppState(
                     request = null,
                     dialing = "",
                     scanning = false,
-                    result = PairingResult(paired = false, error = payload.error),
+                    result = PairingResult(
+                        paired = false,
+                        error = payload.error,
+                        unreachable = payload.failureReason == Local.FailureReason.FAILURE_REASON_UNREACHABLE,
+                    ),
                 )
             }
             Local.EventKind.EVENT_KIND_PAIRING_CLOSED -> closePairingState()
@@ -859,7 +863,10 @@ class AppState(
         Mobile.EventType.EVENT_TYPE_PEER_OFFLINE,
         Mobile.EventType.EVENT_TYPE_PAIRING_PAIRED,
         -> true
-        else -> hasEvent() && event.kind == Local.EventKind.EVENT_KIND_DEVICE_UPDATED
+        else -> hasEvent() && (
+            event.kind == Local.EventKind.EVENT_KIND_DEVICE_UPDATED ||
+                event.kind == Local.EventKind.EVENT_KIND_PEER_UNREACHABLE
+            )
     }
 
     /** Events that change the entries of the history. */

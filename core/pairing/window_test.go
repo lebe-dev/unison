@@ -390,6 +390,30 @@ func TestWindowDialAndConfirmErrors(t *testing.T) {
 	}
 }
 
+// TestWindowDialUnreachable checks that a device that does not answer ends the
+// exchange with a failure event, so the screen that started it stops waiting.
+func TestWindowDialUnreachable(t *testing.T) {
+	network, bus := testNetwork(t)
+	dialing := newNode(t, network, bus, 1, 41000)
+	silent := newNode(t, network, bus, 2, 42000)
+	silent.open(t, ports.SystemClock, model.RolePersonal)
+	addr := silent.window.Addr().String()
+	if err := silent.window.Close(); err != nil {
+		t.Fatalf("close the silent window: %v", err)
+	}
+	dialing.open(t, ports.SystemClock, model.RolePersonal)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := dialing.window.Dial(ctx, addr); !errors.Is(err, ErrUnreachable) {
+		t.Fatalf("dial error = %v, want %v", err, ErrUnreachable)
+	}
+	failure := waitEvent(t, dialing.window, EventFailed)
+	if !errors.Is(failure.Err, ErrUnreachable) || failure.Method != MethodSAS {
+		t.Errorf("failure = %+v, want an unreachable SAS exchange", failure)
+	}
+}
+
 // TestWindowRefusesTokenRequest checks that a QR request with a token does not
 // open a SAS exchange.
 func TestWindowRefusesTokenRequest(t *testing.T) {

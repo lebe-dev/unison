@@ -52,7 +52,8 @@ screen of the app shows the same code. See [Command line](cli.md).
 On Android the code can be read by the Scan a code button of the Add screen or by the system
 camera: the camera opens the `unison://pair` link in Unison, which starts the pairing at once.
 The scanning device has to reach one of the addresses in the code. When none answers, for example
-on a Wi-Fi network that keeps its clients apart, the scan ends with an error instead of waiting.
+on a Wi-Fi network that keeps its clients apart, the scan ends with an error instead of waiting. See
+[Connection problems](#connection-problems).
 
 The command line lists the devices that are open for pairing, one line per device, named by the
 port of its window. A device has no name and no fingerprint before the pairing, and one device is
@@ -89,6 +90,24 @@ The address is stored with the device, tried before the discovered and cached on
 waits a few seconds for the connection; the daemon keeps trying after that. It survives a restart,
 so two devices are reachable again after both sides restarted. An IPv6 address is written in
 brackets, for example `[fe80::1%en0]:47123`.
+
+## Connection problems
+
+When two devices cannot reach each other, the app says so in two levels: a short message in plain
+words with what to try, and a `Details` toggle with the technical information. The details are
+meant for a bug report or for checking the network; they quote the daemon and are not translated.
+
+- **Pairing.** An exchange that cannot reach the other device ends with "Could not reach the other
+  device". The details list every address that was tried and why it failed.
+- **Pairing window.** A window that has not seen any device for 30 seconds says "No devices found on
+  this network yet". The details give the address the window listens on.
+- **Paired devices.** A device that is offline and did not answer on any of its known addresses at
+  the last attempt is shown as `Not reachable`, with the time it stopped answering and the failures
+  per address in the details. The activity list records the moment it stops answering. A device
+  that answers and refuses the connection, or one without any known address, stays `Offline`.
+
+A device that is turned off and a network that keeps its devices apart look the same from the other
+side, so the message names both. See [Troubleshooting](troubleshooting.md).
 
 ## Group discovery
 

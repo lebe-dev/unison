@@ -152,6 +152,9 @@ func deviceState(device *localv1.Device) string {
 	if device.GetRevoked() {
 		return "revoked"
 	}
+	if !device.GetOnline() && device.GetUnreachable() {
+		return "unreachable"
+	}
 	if !device.GetOnline() {
 		return "offline"
 	}

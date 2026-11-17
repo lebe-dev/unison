@@ -1,5 +1,6 @@
 package app.unison.ui.screens
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -41,6 +43,7 @@ import app.unison.R
 import app.unison.clipboard.ClipboardDraft
 import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
+import app.unison.ui.NetworkIssueCard
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
 import app.unison.ui.networkLabel
@@ -49,6 +52,8 @@ import app.unison.ui.pauseLabel
 import app.unison.ui.platformLabel
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
+import app.unison.ui.state.NetworkIssues
+import java.util.Date
 import unison.local.v1.Local
 
 /** Paired devices and the state of this device. */
@@ -252,6 +257,25 @@ private fun DeviceSection(
 }
 
 /** One paired device with its live connection state and its settings. */
+/** A paired device that does not answer, with the addresses it was tried on. */
+@Composable
+private fun UnreachableCard(device: Local.Device) {
+    val timeFormat = DateFormat.getTimeFormat(LocalContext.current)
+    val since = stringResource(
+        R.string.device_unreachable_since,
+        timeFormat.format(Date(device.unreachableSinceUnixMs)),
+    )
+    NetworkIssueCard(
+        summary = stringResource(
+            R.string.device_unreachable_summary,
+            device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
+        ),
+        hint = stringResource(R.string.device_unreachable_hint),
+        details = NetworkIssues.deviceDetails(device) { since },
+        modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
 @Composable
 private fun DeviceRow(
     device: Local.Device,
@@ -259,6 +283,7 @@ private fun DeviceRow(
     onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
 ) {
+    val unreachable = NetworkIssues.isUnreachable(device)
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -297,15 +322,23 @@ private fun DeviceRow(
             }
             Text(
                 text = stringResource(
-                    if (device.online) R.string.device_online else R.string.device_offline,
+                    when {
+                        device.online -> R.string.device_online
+                        unreachable -> R.string.device_unreachable
+                        else -> R.string.device_offline
+                    },
                 ),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (device.online) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                color = when {
+                    device.online -> MaterialTheme.colorScheme.primary
+                    unreachable -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
+        }
+
+        if (unreachable) {
+            UnreachableCard(device = device)
         }
 
         if (device.role == Local.Role.ROLE_PERSONAL) {

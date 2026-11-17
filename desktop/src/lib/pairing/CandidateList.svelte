@@ -1,10 +1,15 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { PairingCandidate } from "../api/gen/unison/local/v1/local_pb";
+  import NetworkIssue from "../NetworkIssue.svelte";
+  import { quietWindowIssue } from "../network";
 
   let {
     candidates,
     dialing = null,
     disabled = false,
+    openedAt = 0,
+    listenAddr = "",
     onSelect,
   }: {
     /** Devices that are open for pairing. */
@@ -12,13 +17,27 @@
     /** Address of the candidate the exchange was started with. */
     dialing?: string | null;
     disabled?: boolean;
+    /** Time the window was opened, unix milliseconds; zero turns the warning off. */
+    openedAt?: number;
+    /** Address the window listens on, for the technical details. */
+    listenAddr?: string;
     onSelect: (addr: string) => void;
   } = $props();
+
+  let now = $state(Date.now());
+  const ticker = setInterval(() => (now = Date.now()), 1_000);
+  onDestroy(() => clearInterval(ticker));
+
+  const quiet = $derived(
+    openedAt > 0 && candidates.length === 0 ? quietWindowIssue(now - openedAt, listenAddr) : null,
+  );
 </script>
 
 <section class="panel">
   <h3>Devices open for pairing</h3>
-  {#if candidates.length === 0}
+  {#if quiet}
+    <NetworkIssue summary={quiet.summary} hint={quiet.hint} details={quiet.details} />
+  {:else if candidates.length === 0}
     <p class="muted">
       No devices yet. Open the pairing window on the other device and keep both on the same network.
     </p>

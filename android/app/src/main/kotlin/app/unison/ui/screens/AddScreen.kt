@@ -1,5 +1,6 @@
 package app.unison.ui.screens
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.unison.R
+import app.unison.ui.NetworkIssueCard
 import app.unison.ui.ScreenTitle
 import app.unison.ui.pairing.PairingCode
 import app.unison.ui.pairing.PairingRequestBody
@@ -41,7 +45,11 @@ import app.unison.ui.roleLabel
 import app.unison.ui.state.PairingRequest
 import app.unison.ui.state.PairingResult
 import app.unison.ui.state.PairingState
+import kotlinx.coroutines.delay
 import unison.local.v1.Local
+
+/** How long an open window may stay without a candidate before it warns. */
+private const val QUIET_WINDOW_MS = 30_000L
 
 /**
  * Entry point of pairing: the code of this device, the camera scanner and the
@@ -123,6 +131,7 @@ fun AddScreen(
                     candidates = state.candidates,
                     dialing = state.dialing,
                     busy = state.busy,
+                    windowAddr = state.window.addr,
                     onRefresh = onRefreshCandidates,
                     onPairWith = onPairWith,
                 )
@@ -266,9 +275,21 @@ private fun CandidateSection(
     candidates: List<Local.PairingCandidate>,
     dialing: String,
     busy: Boolean,
+    windowAddr: String,
     onRefresh: () -> Unit,
     onPairWith: (String) -> Unit,
 ) {
+    // The window counts as quiet once it stayed without a candidate for a while.
+    val openedAt = remember { SystemClock.elapsedRealtime() }
+    var quiet by remember { mutableStateOf(false) }
+    LaunchedEffect(candidates.isEmpty()) {
+        quiet = false
+        if (candidates.isNotEmpty()) {
+            return@LaunchedEffect
+        }
+        delay((QUIET_WINDOW_MS - (SystemClock.elapsedRealtime() - openedAt)).coerceAtLeast(0))
+        quiet = true
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -284,6 +305,15 @@ private fun CandidateSection(
         TextButton(onClick = onRefresh, enabled = !busy) {
             Text(text = stringResource(R.string.action_refresh))
         }
+    }
+    if (candidates.isEmpty() && quiet) {
+        val seconds = ((SystemClock.elapsedRealtime() - openedAt) / 1000).toInt()
+        NetworkIssueCard(
+            summary = stringResource(R.string.pairing_quiet),
+            hint = stringResource(R.string.pairing_quiet_hint),
+            details = stringResource(R.string.pairing_quiet_detail, seconds, windowAddr),
+        )
+        return
     }
     if (candidates.isEmpty()) {
         Text(
@@ -362,6 +392,15 @@ private fun ScanningCard(onCancel: () -> Unit) {
 /** Outcome of the last exchange. */
 @Composable
 private fun ResultCard(result: PairingResult, onDismiss: () -> Unit) {
+    if (!result.paired && result.unreachable) {
+        NetworkIssueCard(
+            summary = stringResource(R.string.pairing_unreachable),
+            hint = stringResource(R.string.pairing_unreachable_hint),
+            details = result.error,
+            onDismiss = onDismiss,
+        )
+        return
+    }
     val message = when {
         result.paired && result.name.isNotEmpty() -> stringResource(R.string.pairing_paired, result.name)
         result.paired -> stringResource(R.string.pairing_paired_generic)

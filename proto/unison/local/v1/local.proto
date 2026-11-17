@@ -74,6 +74,18 @@ enum EventKind {
   // The confirmation flags of a paired device changed, on this device or on
   // that one.
   EVENT_KIND_DEVICE_UPDATED = 14;
+  // An offline paired device stopped answering on its known addresses. The
+  // error field lists the addresses and the failures.
+  EVENT_KIND_PEER_UNREACHABLE = 15;
+}
+
+// Why an operation failed, so a client can show a short message in plain
+// words and keep the error text for the technical details.
+enum FailureReason {
+  FAILURE_REASON_UNSPECIFIED = 0;
+  // The other device did not answer on any address: it is turned off, or the
+  // network keeps the two devices apart.
+  FAILURE_REASON_UNREACHABLE = 1;
 }
 
 // Content a confirmation flag covers.
@@ -255,6 +267,15 @@ message Device {
   // The device asks before it accepts a file transfer of this device, as it
   // reported last.
   bool peer_require_file_confirmation = 15;
+  // The device is offline and did not answer on any of its known addresses at
+  // the last attempt: it is turned off, or the network keeps the two devices
+  // apart.
+  bool unreachable = 16;
+  // Time the device stopped answering, unix milliseconds.
+  int64 unreachable_since_unix_ms = 17;
+  // Addresses of the last attempt and why each one failed, one per line. It
+  // is meant for the technical details of the UI.
+  string unreachable_detail = 18;
 }
 
 // State of the clipboard pause.
@@ -344,6 +365,9 @@ message Event {
   Transfer transfer = 14;
   // How the pairing exchange of the event was started.
   PairingMethod pairing_method = 15;
+  // Why the operation of the event failed, set together with error when the
+  // reason is known.
+  FailureReason failure_reason = 16;
 }
 
 // State of the pairing window.

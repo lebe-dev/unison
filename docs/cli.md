@@ -60,7 +60,9 @@ W5MF-NWIT-4C6K-P7KR  MacBook  personal  macos     online lan  on        off     
 QK3A-7T2M-VX5E-J9BD  Phone    personal  android   offline     off       on         no              no
 ```
 
-`STATE` is `online lan`, `online relay` or `offline`. `ASK CLIP` and `ASK FILES` are the flags of
+`STATE` is `online lan`, `online relay`, `offline` or `unreachable`. A device is `unreachable` when
+it is offline and did not answer on any of its known addresses at the last attempt: it is turned
+off, or the network keeps the two devices apart. `ASK CLIP` and `ASK FILES` are the flags of
 this device for the device: its clipboard items or its files wait for you here instead of being
 taken at once. `PEER ASKS CLIP` and `PEER ASKS FILES` are the flags of the device for this one, as it
 reported them last; a device reports them when a session opens and after every change.

@@ -47,4 +47,6 @@ data class PairingResult(
     val error: String = "",
     /** The other device was refused by the user. */
     val rejected: Boolean = false,
+    /** The other device did not answer on any address; error holds the details. */
+    val unreachable: Boolean = false,
 )

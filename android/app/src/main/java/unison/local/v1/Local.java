@@ -674,6 +674,15 @@ public final class Local {
      * <code>EVENT_KIND_DEVICE_UPDATED = 14;</code>
      */
     EVENT_KIND_DEVICE_UPDATED(14),
+    /**
+     * <pre>
+     * An offline paired device stopped answering on its known addresses. The
+     * error field lists the addresses and the failures.
+     * </pre>
+     *
+     * <code>EVENT_KIND_PEER_UNREACHABLE = 15;</code>
+     */
+    EVENT_KIND_PEER_UNREACHABLE(15),
     UNRECOGNIZED(-1),
     ;
 
@@ -794,6 +803,15 @@ public final class Local {
      * <code>EVENT_KIND_DEVICE_UPDATED = 14;</code>
      */
     public static final int EVENT_KIND_DEVICE_UPDATED_VALUE = 14;
+    /**
+     * <pre>
+     * An offline paired device stopped answering on its known addresses. The
+     * error field lists the addresses and the failures.
+     * </pre>
+     *
+     * <code>EVENT_KIND_PEER_UNREACHABLE = 15;</code>
+     */
+    public static final int EVENT_KIND_PEER_UNREACHABLE_VALUE = 15;
 
 
     @java.lang.Override
@@ -831,6 +849,7 @@ public final class Local {
         case 12: return EVENT_KIND_TRANSFER;
         case 13: return EVENT_KIND_HISTORY;
         case 14: return EVENT_KIND_DEVICE_UPDATED;
+        case 15: return EVENT_KIND_PEER_UNREACHABLE;
         default: return null;
       }
     }
@@ -870,6 +889,110 @@ public final class Local {
     }
 
     // @@protoc_insertion_point(enum_scope:unison.local.v1.EventKind)
+  }
+
+  /**
+   * <pre>
+   * Why an operation failed, so a client can show a short message in plain
+   * words and keep the error text for the technical details.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.FailureReason}
+   */
+  public enum FailureReason
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>FAILURE_REASON_UNSPECIFIED = 0;</code>
+     */
+    FAILURE_REASON_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * The other device did not answer on any address: it is turned off, or the
+     * network keeps the two devices apart.
+     * </pre>
+     *
+     * <code>FAILURE_REASON_UNREACHABLE = 1;</code>
+     */
+    FAILURE_REASON_UNREACHABLE(1),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>FAILURE_REASON_UNSPECIFIED = 0;</code>
+     */
+    public static final int FAILURE_REASON_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * The other device did not answer on any address: it is turned off, or the
+     * network keeps the two devices apart.
+     * </pre>
+     *
+     * <code>FAILURE_REASON_UNREACHABLE = 1;</code>
+     */
+    public static final int FAILURE_REASON_UNREACHABLE_VALUE = 1;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static FailureReason valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static FailureReason forNumber(int value) {
+      switch (value) {
+        case 0: return FAILURE_REASON_UNSPECIFIED;
+        case 1: return FAILURE_REASON_UNREACHABLE;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<FailureReason>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        FailureReason> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<FailureReason>() {
+            @java.lang.Override
+            public FailureReason findValueByNumber(int number) {
+              return FailureReason.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return FailureReasonVerifier.INSTANCE;
+    }
+
+    private static final class FailureReasonVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new FailureReasonVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return FailureReason.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private FailureReason(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.FailureReason)
   }
 
   /**
@@ -2700,6 +2823,50 @@ public final class Local {
      * @return The peerRequireFileConfirmation.
      */
     boolean getPeerRequireFileConfirmation();
+
+    /**
+     * <pre>
+     * The device is offline and did not answer on any of its known addresses at
+     * the last attempt: it is turned off, or the network keeps the two devices
+     * apart.
+     * </pre>
+     *
+     * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+     * @return The unreachable.
+     */
+    boolean getUnreachable();
+
+    /**
+     * <pre>
+     * Time the device stopped answering, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+     * @return The unreachableSinceUnixMs.
+     */
+    long getUnreachableSinceUnixMs();
+
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     * @return The unreachableDetail.
+     */
+    java.lang.String getUnreachableDetail();
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     * @return The bytes for unreachableDetail.
+     */
+    com.google.protobuf.ByteString
+        getUnreachableDetailBytes();
   }
   /**
    * <pre>
@@ -2717,6 +2884,7 @@ public final class Local {
       deviceId_ = "";
       name_ = "";
       introducedBy_ = "";
+      unreachableDetail_ = "";
     }
     public static final int DEVICE_ID_FIELD_NUMBER = 1;
     private java.lang.String deviceId_;
@@ -3317,6 +3485,160 @@ public final class Local {
     private void clearPeerRequireFileConfirmation() {
 
       peerRequireFileConfirmation_ = false;
+    }
+
+    public static final int UNREACHABLE_FIELD_NUMBER = 16;
+    private boolean unreachable_;
+    /**
+     * <pre>
+     * The device is offline and did not answer on any of its known addresses at
+     * the last attempt: it is turned off, or the network keeps the two devices
+     * apart.
+     * </pre>
+     *
+     * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+     * @return The unreachable.
+     */
+    @java.lang.Override
+    public boolean getUnreachable() {
+      return unreachable_;
+    }
+    /**
+     * <pre>
+     * The device is offline and did not answer on any of its known addresses at
+     * the last attempt: it is turned off, or the network keeps the two devices
+     * apart.
+     * </pre>
+     *
+     * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+     * @param value The unreachable to set.
+     */
+    private void setUnreachable(boolean value) {
+      
+      unreachable_ = value;
+    }
+    /**
+     * <pre>
+     * The device is offline and did not answer on any of its known addresses at
+     * the last attempt: it is turned off, or the network keeps the two devices
+     * apart.
+     * </pre>
+     *
+     * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+     */
+    private void clearUnreachable() {
+
+      unreachable_ = false;
+    }
+
+    public static final int UNREACHABLE_SINCE_UNIX_MS_FIELD_NUMBER = 17;
+    private long unreachableSinceUnixMs_;
+    /**
+     * <pre>
+     * Time the device stopped answering, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+     * @return The unreachableSinceUnixMs.
+     */
+    @java.lang.Override
+    public long getUnreachableSinceUnixMs() {
+      return unreachableSinceUnixMs_;
+    }
+    /**
+     * <pre>
+     * Time the device stopped answering, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+     * @param value The unreachableSinceUnixMs to set.
+     */
+    private void setUnreachableSinceUnixMs(long value) {
+      
+      unreachableSinceUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * Time the device stopped answering, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+     */
+    private void clearUnreachableSinceUnixMs() {
+
+      unreachableSinceUnixMs_ = 0L;
+    }
+
+    public static final int UNREACHABLE_DETAIL_FIELD_NUMBER = 18;
+    private java.lang.String unreachableDetail_;
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     * @return The unreachableDetail.
+     */
+    @java.lang.Override
+    public java.lang.String getUnreachableDetail() {
+      return unreachableDetail_;
+    }
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     * @return The bytes for unreachableDetail.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getUnreachableDetailBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(unreachableDetail_);
+    }
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     * @param value The unreachableDetail to set.
+     */
+    private void setUnreachableDetail(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      unreachableDetail_ = value;
+    }
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     */
+    private void clearUnreachableDetail() {
+
+      unreachableDetail_ = getDefaultInstance().getUnreachableDetail();
+    }
+    /**
+     * <pre>
+     * Addresses of the last attempt and why each one failed, one per line. It
+     * is meant for the technical details of the UI.
+     * </pre>
+     *
+     * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+     * @param value The bytes for unreachableDetail to set.
+     */
+    private void setUnreachableDetailBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      unreachableDetail_ = value.toStringUtf8();
+
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -4055,6 +4377,166 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * The device is offline and did not answer on any of its known addresses at
+       * the last attempt: it is turned off, or the network keeps the two devices
+       * apart.
+       * </pre>
+       *
+       * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+       * @return The unreachable.
+       */
+      @java.lang.Override
+      public boolean getUnreachable() {
+        return instance.getUnreachable();
+      }
+      /**
+       * <pre>
+       * The device is offline and did not answer on any of its known addresses at
+       * the last attempt: it is turned off, or the network keeps the two devices
+       * apart.
+       * </pre>
+       *
+       * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+       * @param value The unreachable to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUnreachable(boolean value) {
+        copyOnWrite();
+        instance.setUnreachable(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device is offline and did not answer on any of its known addresses at
+       * the last attempt: it is turned off, or the network keeps the two devices
+       * apart.
+       * </pre>
+       *
+       * <code>bool unreachable = 16 [json_name = "unreachable"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUnreachable() {
+        copyOnWrite();
+        instance.clearUnreachable();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Time the device stopped answering, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+       * @return The unreachableSinceUnixMs.
+       */
+      @java.lang.Override
+      public long getUnreachableSinceUnixMs() {
+        return instance.getUnreachableSinceUnixMs();
+      }
+      /**
+       * <pre>
+       * Time the device stopped answering, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+       * @param value The unreachableSinceUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUnreachableSinceUnixMs(long value) {
+        copyOnWrite();
+        instance.setUnreachableSinceUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Time the device stopped answering, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 unreachable_since_unix_ms = 17 [json_name = "unreachableSinceUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUnreachableSinceUnixMs() {
+        copyOnWrite();
+        instance.clearUnreachableSinceUnixMs();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Addresses of the last attempt and why each one failed, one per line. It
+       * is meant for the technical details of the UI.
+       * </pre>
+       *
+       * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+       * @return The unreachableDetail.
+       */
+      @java.lang.Override
+      public java.lang.String getUnreachableDetail() {
+        return instance.getUnreachableDetail();
+      }
+      /**
+       * <pre>
+       * Addresses of the last attempt and why each one failed, one per line. It
+       * is meant for the technical details of the UI.
+       * </pre>
+       *
+       * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+       * @return The bytes for unreachableDetail.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getUnreachableDetailBytes() {
+        return instance.getUnreachableDetailBytes();
+      }
+      /**
+       * <pre>
+       * Addresses of the last attempt and why each one failed, one per line. It
+       * is meant for the technical details of the UI.
+       * </pre>
+       *
+       * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+       * @param value The unreachableDetail to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUnreachableDetail(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setUnreachableDetail(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of the last attempt and why each one failed, one per line. It
+       * is meant for the technical details of the UI.
+       * </pre>
+       *
+       * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearUnreachableDetail() {
+        copyOnWrite();
+        instance.clearUnreachableDetail();
+        return this;
+      }
+      /**
+       * <pre>
+       * Addresses of the last attempt and why each one failed, one per line. It
+       * is meant for the technical details of the UI.
+       * </pre>
+       *
+       * <code>string unreachable_detail = 18 [json_name = "unreachableDetail"];</code>
+       * @param value The bytes for unreachableDetail to set.
+       * @return This builder for chaining.
+       */
+      public Builder setUnreachableDetailBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setUnreachableDetailBytes(value);
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -4085,11 +4567,14 @@ public final class Local {
               "introducedBy_",
               "requireFileConfirmation_",
               "peerRequireFileConfirmation_",
+              "unreachable_",
+              "unreachableSinceUnixMs_",
+              "unreachableDetail_",
             };
             java.lang.String info =
-                "\u0000\u000e\u0000\u0000\u0001\u000f\u000e\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0000\u0011\u0000\u0000\u0001\u0012\u0011\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
                 "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
-                "\r\u0208\u000e\u0007\u000f\u0007";
+                "\r\u0208\u000e\u0007\u000f\u0007\u0010\u0007\u0011\u0002\u0012\u0208";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -7988,6 +8473,27 @@ public final class Local {
      * @return The pairingMethod.
      */
     unison.local.v1.Local.PairingMethod getPairingMethod();
+
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     * @return The enum numeric value on the wire for failureReason.
+     */
+    int getFailureReasonValue();
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     * @return The failureReason.
+     */
+    unison.local.v1.Local.FailureReason getFailureReason();
   }
   /**
    * <pre>
@@ -8807,6 +9313,74 @@ public final class Local {
     private void clearPairingMethod() {
 
       pairingMethod_ = 0;
+    }
+
+    public static final int FAILURE_REASON_FIELD_NUMBER = 16;
+    private int failureReason_;
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     * @return The enum numeric value on the wire for failureReason.
+     */
+    @java.lang.Override
+    public int getFailureReasonValue() {
+      return failureReason_;
+    }
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     * @return The failureReason.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.FailureReason getFailureReason() {
+      unison.local.v1.Local.FailureReason result = unison.local.v1.Local.FailureReason.forNumber(failureReason_);
+      return result == null ? unison.local.v1.Local.FailureReason.UNRECOGNIZED : result;
+    }
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     * @param value The enum numeric value on the wire for failureReason to set.
+     */
+    private void setFailureReasonValue(int value) {
+        failureReason_ = value;
+    }
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     * @param value The failureReason to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setFailureReason(unison.local.v1.Local.FailureReason value) {
+      failureReason_ = value.getNumber();
+
+    }
+    /**
+     * <pre>
+     * Why the operation of the event failed, set together with error when the
+     * reason is known.
+     * </pre>
+     *
+     * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+     */
+    private void clearFailureReason() {
+
+      failureReason_ = 0;
     }
 
     public static unison.local.v1.Local.Event parseFrom(
@@ -9757,6 +10331,78 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * Why the operation of the event failed, set together with error when the
+       * reason is known.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+       * @return The enum numeric value on the wire for failureReason.
+       */
+      @java.lang.Override
+      public int getFailureReasonValue() {
+        return instance.getFailureReasonValue();
+      }
+      /**
+       * <pre>
+       * Why the operation of the event failed, set together with error when the
+       * reason is known.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+       * @param value The failureReason to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setFailureReasonValue(int value) {
+        copyOnWrite();
+        instance.setFailureReasonValue(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Why the operation of the event failed, set together with error when the
+       * reason is known.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+       * @return The failureReason.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.FailureReason getFailureReason() {
+        return instance.getFailureReason();
+      }
+      /**
+       * <pre>
+       * Why the operation of the event failed, set together with error when the
+       * reason is known.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+       * @param value The enum numeric value on the wire for failureReason to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFailureReason(unison.local.v1.Local.FailureReason value) {
+        copyOnWrite();
+        instance.setFailureReason(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Why the operation of the event failed, set together with error when the
+       * reason is known.
+       * </pre>
+       *
+       * <code>.unison.local.v1.FailureReason failure_reason = 16 [json_name = "failureReason"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFailureReason() {
+        copyOnWrite();
+        instance.clearFailureReason();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Event)
     }
     @java.lang.Override
@@ -9789,11 +10435,12 @@ public final class Local {
               "atUnixMs_",
               "transfer_",
               "pairingMethod_",
+              "failureReason_",
             };
             java.lang.String info =
-                "\u0000\u000f\u0000\u0001\u0001\u000f\u000f\u0000\u0000\u0000\u0001\f\u0002\u0208" +
+                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\f\u0002\u0208" +
                 "\u0003\u0208\u0004\f\u0005\f\u0006\f\u0007\u0007\b\u1009\u0000\t\u0208\n\u1009\u0001" +
-                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f";
+                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f\u0010\f";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

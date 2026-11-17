@@ -93,6 +93,7 @@ describe("PairingStore", () => {
       role: Role.PERSONAL,
       addr: "192.0.2.5:5555",
       expiresAt,
+      openedAt: expect.any(Number),
     });
     expect(pairing.candidates.map((candidate) => candidate.addr)).toEqual(["192.0.2.6:1234"]);
     expect(client.openPairingWindow).toHaveBeenCalledWith({ role: Role.PERSONAL });

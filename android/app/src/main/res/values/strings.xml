@@ -196,6 +196,17 @@
     <string name="pairing_failed">Pairing failed</string>
     <string name="pairing_failed_with">Pairing failed: %1$s</string>
     <string name="pairing_rejected">Pairing rejected</string>
+    <string name="pairing_unreachable">Could not reach the other device.</string>
+    <string name="pairing_unreachable_hint">Keep both devices on the same network. Guest Wi-Fi and some routers keep their devices apart, and a VPN can do the same.</string>
+    <string name="pairing_quiet">No devices found on this network yet.</string>
+    <string name="pairing_quiet_hint">Open the pairing window on the other device. If it is open, this network may keep the devices apart: connect both to another network, or to the same VPN.</string>
+    <string name="pairing_quiet_detail">Seconds without a pairing announcement: %1$d.\nThis window listens at %2$s.</string>
+    <string name="device_unreachable">Not reachable</string>
+    <string name="device_unreachable_summary">%1$s does not answer.</string>
+    <string name="device_unreachable_hint">It may be turned off. If it is on, check that both devices are on the same network and that the network does not keep its devices apart.</string>
+    <string name="device_unreachable_since">Not answering since %1$s.</string>
+    <string name="network_details_show">Details</string>
+    <string name="network_details_hide">Hide details</string>
 
     <string name="history_empty">History is empty</string>
     <string name="history_empty_body">Copied items appear here.</string>

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
@@ -72,7 +73,9 @@ func (w *Window) scan(ctx context.Context, code QR) error {
 		pin:    code.Fingerprint,
 		id:     code.DeviceID,
 	}
-	conn, dialer, err := w.connectCode(ctx, code)
+	conn, dialer, err := w.connect(ctx, func(dialer *transport.Dialer) (*transport.PairingConn, error) {
+		return w.dialCode(ctx, dialer, code)
+	})
 	if err != nil {
 		w.reportFailure(peerInfo{id: code.DeviceID}, fl, err)
 		return err
@@ -82,33 +85,6 @@ func (w *Window) scan(ctx context.Context, code QR) error {
 	defer func() { _ = conn.Close() }()
 
 	return w.run(ctx, conn, true, fl)
-}
-
-// connectCode opens a tracked connection to the device of the code. The caller
-// closes the connection and the dialer.
-func (w *Window) connectCode(ctx context.Context, code QR) (*transport.PairingConn, *transport.Dialer, error) {
-	pc, err := w.opts.ListenPacket(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("pairing: listen: %w", err)
-	}
-	// The dialer owns the packet connection and closes it.
-	dialer, err := transport.NewDialer(pc, w.opts.Identity, unpairedVerifier{}, w.opts.Config)
-	if err != nil {
-		_ = pc.Close()
-		return nil, nil, err
-	}
-
-	conn, err := w.dialCode(ctx, dialer, code)
-	if err != nil {
-		_ = dialer.Close()
-		return nil, nil, err
-	}
-	if err := w.track(conn); err != nil {
-		_ = conn.Close()
-		_ = dialer.Close()
-		return nil, nil, err
-	}
-	return conn, dialer, nil
 }
 
 // dialCode connects to the first address of the code that answers.
@@ -136,7 +112,11 @@ func (w *Window) dialCode(ctx context.Context, dialer *transport.Dialer, code QR
 			break
 		}
 	}
-	return nil, fmt.Errorf("pairing: connect to the device of the code: %w", errors.Join(failures...))
+	joined := errors.Join(failures...)
+	if len(failures) > 0 && !slices.ContainsFunc(failures, func(err error) bool { return !transport.IsUnreachable(err) }) {
+		return nil, fmt.Errorf("%w: no address of the code answered: %w", ErrUnreachable, joined)
+	}
+	return nil, fmt.Errorf("pairing: connect to the device of the code: %w", joined)
 }
 
 // closeScan releases a window that has no listener or announcement.

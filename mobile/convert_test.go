@@ -1,9 +1,11 @@
 package mobile
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/lebe-dev/unison/core/node"
+	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/ports"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
@@ -13,6 +15,7 @@ import (
 func TestEventKindToProto(t *testing.T) {
 	cases := map[node.EventKind]localv1.EventKind{
 		node.EventPeerOnline:       localv1.EventKind_EVENT_KIND_PEER_ONLINE,
+		node.EventPeerUnreachable:  localv1.EventKind_EVENT_KIND_PEER_UNREACHABLE,
 		node.EventPeerOffline:      localv1.EventKind_EVENT_KIND_PEER_OFFLINE,
 		node.EventClipboard:        localv1.EventKind_EVENT_KIND_CLIPBOARD,
 		node.EventClipDownload:     localv1.EventKind_EVENT_KIND_CLIP_DOWNLOAD,
@@ -44,5 +47,20 @@ func TestContentToPayloadCarriesTheItemID(t *testing.T) {
 
 	if got := payload.GetItemId(); got != content.ItemID {
 		t.Fatalf("payload names item %q, want %q", got, content.ItemID)
+	}
+}
+
+// TestLocalEventFailureReason checks that the host gets the reason of an
+// unreachable device next to the technical error.
+func TestLocalEventFailureReason(t *testing.T) {
+	event := localEventToProto(node.Event{
+		Kind: node.EventPairingFailed,
+		Err:  fmt.Errorf("%w: 192.168.1.2:4000: timeout", pairing.ErrUnreachable),
+	})
+	if event.GetFailureReason() != localv1.FailureReason_FAILURE_REASON_UNREACHABLE || event.GetError() == "" {
+		t.Errorf("event = %v, want an unreachable failure with details", event)
+	}
+	if got := localEventToProto(node.Event{Kind: node.EventPairingFailed, Err: pairing.ErrRejected}); got.GetFailureReason() != localv1.FailureReason_FAILURE_REASON_UNSPECIFIED {
+		t.Errorf("reason of a refusal = %v, want none", got.GetFailureReason())
 	}
 }

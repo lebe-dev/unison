@@ -435,6 +435,16 @@ select:focus-visible,
   background-color: color-mix(in srgb, var(--online) 12%, transparent);
 }
 
+.badge.unreachable {
+  color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+.badge.unreachable {
+  color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
 .badge.personal {
   color: var(--accent);
   background-color: var(--accent-soft);

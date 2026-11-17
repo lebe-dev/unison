@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/lebe-dev/unison/core/model"
@@ -140,6 +141,9 @@ func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 		Revoked:                     peer.Revoked,
 		AddedAtUnixMs:               unixMilli(peer.AddedAt),
 		LastSeenAtUnixMs:            unixMilli(peer.LastSeenAt),
+		Unreachable:                 state.Unreachable,
+		UnreachableSinceUnixMs:      unixMilli(state.UnreachableSince),
+		UnreachableDetail:           state.UnreachableDetail,
 	}
 	if !peer.IntroducedBy.IsZero() {
 		device.IntroducedBy = peer.IntroducedBy.String()
@@ -217,6 +221,8 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_TRANSFER
 	case node.EventDeviceUpdated:
 		return localv1.EventKind_EVENT_KIND_DEVICE_UPDATED
+	case node.EventPeerUnreachable:
+		return localv1.EventKind_EVENT_KIND_PEER_UNREACHABLE
 	default:
 		return localv1.EventKind_EVENT_KIND_UNSPECIFIED
 	}
@@ -258,6 +264,16 @@ func eventToProto(event node.Event) *localv1.Event {
 	}
 	if event.Err != nil {
 		out.Error = event.Err.Error()
+		out.FailureReason = failureReasonOf(event)
 	}
 	return out
+}
+
+// failureReasonOf classifies the failure of an event for the short message of
+// a client.
+func failureReasonOf(event node.Event) localv1.FailureReason {
+	if event.Kind == node.EventPeerUnreachable || errors.Is(event.Err, pairing.ErrUnreachable) {
+		return localv1.FailureReason_FAILURE_REASON_UNREACHABLE
+	}
+	return localv1.FailureReason_FAILURE_REASON_UNSPECIFIED
 }
