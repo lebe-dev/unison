@@ -94,6 +94,9 @@ fuzz time="10m":
     just fuzz-target ./core/blob/transfer FuzzHaveBlob {{time}}
     just fuzz-target ./core/discovery FuzzParseTXT {{time}}
     just fuzz-target ./core/discovery FuzzMDNSPacket {{time}}
+    just fuzz-target ./core/transport FuzzPeerCertificate {{time}}
+    just fuzz-target ./core/transport FuzzAuthProof {{time}}
+    just fuzz-target ./core/identity FuzzPublicIdentity {{time}}
     just fuzz-target ./core/pairing FuzzPairingFrame {{time}}
     just fuzz-target ./core/pairing FuzzParseQR {{time}}
     just fuzz-target ./core/relay FuzzRelayFrame {{time}}

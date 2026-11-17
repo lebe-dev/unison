@@ -22,7 +22,7 @@ import (
 )
 
 // testIdentity returns an identity derived from the seed.
-func testIdentity(t *testing.T, seed byte) *identity.Identity {
+func testIdentity(t testing.TB, seed byte) *identity.Identity {
 	t.Helper()
 	edSeed := make([]byte, identity.SeedSize)
 	pqSeed := make([]byte, identity.SeedSize)
