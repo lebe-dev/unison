@@ -7,6 +7,7 @@ import app.unison.R
 import app.unison.clipboard.ClipboardDraft
 import app.unison.core.CoreStarter
 import app.unison.core.mobile.Mobile
+import app.unison.diagnostics.Journal
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +60,7 @@ object ShareSender {
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "share failed: ${e.message}")
+            Journal.warn("share failed", "error" to e.message)
             ShareOutcome.FAILED
         }
     }

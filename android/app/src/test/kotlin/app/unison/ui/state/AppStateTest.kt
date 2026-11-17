@@ -43,6 +43,7 @@ class AppStateTest {
         val selfConfirmations = mutableListOf<Pair<Local.ConfirmationScope, Boolean>>()
         val confirmations = mutableListOf<DeviceConfirmation>()
         val sentrySettings = mutableListOf<Boolean>()
+        val journalSettings = mutableListOf<Boolean>()
         val stripTrackingSettings = mutableListOf<Boolean>()
         var confirmationFailure: Exception? = null
         val revoked = mutableListOf<String>()
@@ -95,6 +96,12 @@ class AppStateTest {
         override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
             sentrySettings += enabled
             settings = settings.toBuilder().setSentryEnabled(enabled).build()
+            return settings
+        }
+
+        override suspend fun setJournalEnabled(enabled: Boolean): Local.Settings {
+            journalSettings += enabled
+            settings = settings.toBuilder().setJournalEnabled(enabled).build()
             return settings
         }
 
@@ -604,6 +611,30 @@ class AppStateTest {
 
         assertEquals(listOf(true), core.sentrySettings)
         assertTrue(state.state.value.reportsErrors)
+    }
+
+    @Test
+    fun journalSettingIsSaved() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.setJournalEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(listOf(true), core.journalSettings)
+        assertTrue(state.state.value.journalEnabled)
+    }
+
+    @Test
+    fun refreshLoadsTheJournalSetting() = runTest {
+        val core = FakeCore()
+        core.settings = Local.Settings.newBuilder().setJournalEnabled(true).build()
+        val state = appState(core)
+
+        state.refresh()
+        advanceUntilIdle()
+
+        assertTrue(state.state.value.journalEnabled)
     }
 
     @Test

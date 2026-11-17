@@ -128,6 +128,9 @@
     <string name="settings_diagnostics">Send errors to the developer</string>
     <string name="settings_diagnostics_hint">Crash reports help fix problems. The clipboard, device names and files are never included.</string>
     <string name="settings_diagnostics_failed">Cannot save the diagnostics setting</string>
+    <string name="settings_journal">Record the application log</string>
+    <string name="settings_journal_hint">Records service events for support. Clipboard content, file names and passwords are never written.</string>
+    <string name="settings_journal_failed">Cannot save the application log setting</string>
     <string name="relay_title">Relay</string>
     <string name="relay_url_label">Relay address</string>
     <string name="relay_url_hint">Host and port of the group relay, or https://host:port. Shared with your other devices.</string>
@@ -164,6 +167,17 @@
     <string name="settings_page_history_summary">How long copied items are kept</string>
     <string name="settings_page_network_summary">What arrives on each network, relay server</string>
     <string name="settings_page_about_summary">Version and diagnostics</string>
+    <string name="settings_page_journal">Application log</string>
+    <string name="settings_page_journal_summary">Records for support</string>
+    <string name="journal_disabled">The application log is off. New records are not written. The records below can still be copied or shared.</string>
+    <string name="journal_level">Show records</string>
+    <string name="journal_level_info">INFO</string>
+    <string name="journal_level_debug">DEBUG</string>
+    <string name="journal_share">Share</string>
+    <string name="journal_empty">No records yet.</string>
+    <string name="journal_copied">Log copied</string>
+    <string name="journal_copy_failed">Cannot copy the log</string>
+    <string name="journal_share_failed">Cannot share the log</string>
     <string name="settings_summary_pair">%1$s · %2$s</string>
     <string name="mode_always">Always</string>
     <string name="mode_always_hint">Runs in the background, including after a restart</string>

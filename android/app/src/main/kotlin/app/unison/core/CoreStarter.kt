@@ -3,6 +3,7 @@ package app.unison.core
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
+import app.unison.diagnostics.Journal
 import app.unison.service.UnisonService
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ object CoreStarter {
         } catch (e: IllegalStateException) {
             // A foreground service cannot start while the app is in the background.
             Log.w(TAG, "core service cannot start now: ${e.message}")
+            Journal.warn("core service cannot start now", "error" to e.message)
             return false
         }
         val deadline = SystemClock.elapsedRealtime() + timeoutMs
@@ -38,6 +40,7 @@ object CoreStarter {
             }
         }
         Log.w(TAG, "core did not answer in $timeoutMs ms")
+        Journal.warn("core did not answer", "timeout_ms" to timeoutMs)
         return false
     }
 

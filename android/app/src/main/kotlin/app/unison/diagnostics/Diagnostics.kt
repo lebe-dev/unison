@@ -73,6 +73,7 @@ object Diagnostics {
             started = true
         } catch (e: Exception) {
             Log.w(TAG, "the SDK did not start: ${e.message}")
+            Journal.warn("diagnostics did not start", "error" to e.message)
         }
     }
 

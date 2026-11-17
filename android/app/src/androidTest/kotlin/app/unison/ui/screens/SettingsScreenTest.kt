@@ -279,6 +279,8 @@ class SettingsScreenTest {
         onLeaveGroup: () -> Unit = {},
         diagnosticsEnabled: Boolean = false,
         onDiagnosticsChange: (Boolean) -> Unit = {},
+        journalEnabled: Boolean = false,
+        onJournalChange: (Boolean) -> Unit = {},
         stripTracking: Boolean = true,
         onStripTrackingChange: (Boolean) -> Unit = {},
     ) {
@@ -307,6 +309,8 @@ class SettingsScreenTest {
                     onLeaveGroup = onLeaveGroup,
                     diagnosticsEnabled = diagnosticsEnabled,
                     onDiagnosticsChange = onDiagnosticsChange,
+                    journalEnabled = journalEnabled,
+                    onJournalChange = onJournalChange,
                     stripTracking = stripTracking,
                     onStripTrackingChange = onStripTrackingChange,
                     onRefresh = {},

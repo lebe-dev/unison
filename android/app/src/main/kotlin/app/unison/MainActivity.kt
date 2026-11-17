@@ -154,6 +154,8 @@ class MainActivity : ComponentActivity() {
                         onLeaveGroup = appState::leaveGroup,
                         diagnosticsEnabled = diagnosticsEnabled,
                         onDiagnosticsChange = ::saveDiagnostics,
+                        journalEnabled = state.journalEnabled,
+                        onJournalChange = appState::setJournalEnabled,
                         stripTracking = state.stripTracking,
                         onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->
