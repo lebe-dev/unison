@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/internal/daemon"
+	"github.com/lebe-dev/unison/internal/journal"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -366,5 +368,48 @@ func TestRunRemovesEndpointOnStop(t *testing.T) {
 
 	if _, err := os.Lstat(inst.endpoint); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the endpoint is still there after the stop: %v", err)
+	}
+}
+
+// TestApplicationLog checks that a daemon follows the marker of the journal and
+// turns it off through the settings.
+func TestApplicationLog(t *testing.T) {
+	dataDir := shortDir(t)
+	if err := os.MkdirAll(filepath.Dir(journal.Marker(dataDir)), 0o700); err != nil {
+		t.Fatalf("create the log directory: %v", err)
+	}
+	if err := os.WriteFile(journal.Marker(dataDir), []byte("on\n"), 0o600); err != nil {
+		t.Fatalf("write the marker: %v", err)
+	}
+
+	inst := start(t, dataDir, "journal", newAdapters())
+
+	content, err := os.ReadFile(journal.Path(dataDir))
+	if err != nil {
+		t.Fatalf("read the journal: %v", err)
+	}
+	if !strings.Contains(string(content), "starting daemon") {
+		t.Errorf("the journal of a started daemon is empty: %q", content)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
+	defer cancel()
+	client := localconn.NewClient(inst.endpoint)
+	off := false
+	if _, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		JournalEnabled: &off,
+	})); err != nil {
+		t.Fatalf("turn the journal off: %v", err)
+	}
+	if _, err := os.Stat(journal.Marker(dataDir)); !os.IsNotExist(err) {
+		t.Errorf("the marker of a disabled journal is kept: %v", err)
+	}
+
+	content, err = os.ReadFile(journal.Path(dataDir))
+	if err != nil {
+		t.Fatalf("read the journal: %v", err)
+	}
+	if !strings.Contains(string(content), "application log disabled") {
+		t.Errorf("the journal does not report that it was turned off: %q", content)
 	}
 }

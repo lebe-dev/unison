@@ -81,7 +81,7 @@ One data directory per device instance holds everything:
 |---------|-------|
 | SQLite database | `<data dir>/unison.db` |
 | Blob store | `<data dir>/blobs` |
-| Logs | `<data dir>/logs/unisond.log` |
+| Logs | `<data dir>/logs/unisond.log`, and the optional application log below `logs/` |
 | Lock | `<data dir>/unisond.lock` |
 | Local API endpoint | `<data dir>/unisond.sock` (macOS), derived named pipe (Windows) |
 | Secrets | platform keystore, never in the directory |
@@ -113,3 +113,4 @@ See [Security](../security.md) for the model in short and
 - [macOS](macos.md) - the darwin ports and the bundle
 - [Windows](windows.md) - the windows ports and the installer
 - [Android](android.md) - the mobile binding, the service and the app
+- [Application log](application-log.md) - the log the user can turn on and share

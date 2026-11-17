@@ -51,6 +51,14 @@ error about the keystore.
 - macOS does not ask before an app reads the clipboard today. If the daemon reports in its log that
   reading may be refused, allow it in System Settings > Privacy & Security > Paste from Other Apps.
 
+## Sending a log to support
+
+The application log is off until you turn it on. Settings > Application log collects the records
+of the app and of the daemon, then `Copy` or `Share` sends a file with the versions and the settings
+of this device on top. The log never carries clipboard content, file names, paths, keys or tokens.
+The display switch changes what the window shows only: a shared log always contains the debug
+records.
+
 ## Keychain errors
 
 - macOS asks once for a service, and again after the program changed. Choosing `Always Allow` keeps
