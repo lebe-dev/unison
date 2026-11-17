@@ -136,7 +136,7 @@ func (p fixedPlanner) Plan(context.Context, model.DeviceID, model.ClipItem) (Out
 }
 
 // imageBytes encodes a small test image in the given format.
-func imageBytes(t *testing.T, format string, width, height int) []byte {
+func imageBytes(t testing.TB, format string, width, height int) []byte {
 	t.Helper()
 
 	source := image.NewRGBA(image.Rect(0, 0, width, height))

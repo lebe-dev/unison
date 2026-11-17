@@ -79,6 +79,7 @@ fuzz time="10m":
     just fuzz-target ./core/session FuzzParseHello {{time}}
     just fuzz-target ./core/session FuzzStreamHeader {{time}}
     just fuzz-target ./core/clip FuzzClipAnnounce {{time}}
+    just fuzz-target ./core/clip FuzzSanitizeImage {{time}}
     just fuzz-target ./core/history FuzzHistorySync {{time}}
     just fuzz-target ./core/history FuzzHistoryBatch {{time}}
     just fuzz-target ./core/trust FuzzIntroduction {{time}}
