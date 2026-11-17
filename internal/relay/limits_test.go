@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 	"time"
 
@@ -217,4 +218,54 @@ func TestFirstFrameNotRegister(t *testing.T) {
 	if got := reply.GetStatus(); got != relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT {
 		t.Fatalf("status: got %v, want %v", got, relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT)
 	}
+}
+
+// TestUnregisteredBufferBound keeps the data a connection may push before it
+// registers small. The first stream holds the server in the middle of a length
+// prefix, and the other streams are never read, so everything they carry would
+// stay in the memory of the server.
+func TestUnregisteredBufferBound(t *testing.T) {
+	server := startServer(t, testConfig(t))
+	conn := dialRawQUIC(t, server, &quic.Config{EnableDatagrams: true})
+
+	first, err := conn.OpenStream()
+	if err != nil {
+		t.Fatalf("open stream: %v", err)
+	}
+	if _, err := first.Write([]byte{0x80}); err != nil {
+		t.Fatalf("write length prefix: %v", err)
+	}
+
+	pushed := 0
+	for range 8 {
+		stream, err := conn.OpenStream()
+		if err != nil {
+			break
+		}
+		if err := stream.SetWriteDeadline(time.Now().Add(300 * time.Millisecond)); err != nil {
+			t.Fatalf("set deadline: %v", err)
+		}
+		n, _ := stream.Write(make([]byte, 1<<20))
+		pushed += n
+	}
+
+	const limit = 4 * maxRegisterBytes
+	if pushed > limit {
+		t.Fatalf("an unregistered connection pushed %d bytes, limit %d", pushed, limit)
+	}
+}
+
+// TestRegisterWithinStreamWindow still accepts a registration of the largest
+// size after the windows were reduced.
+func TestRegisterWithinStreamWindow(t *testing.T) {
+	cfg := testConfig(t)
+	cfg.MaxMailboxes = maxLimitsMailboxes
+	server := startServer(t, cfg)
+
+	boxes := make([]mailboxID, 0, maxLimitsMailboxes)
+	for i := range maxLimitsMailboxes {
+		boxes = append(boxes, newMailboxID(fmt.Sprintf("box-%d", i)))
+	}
+	client := dialQUIC(t, server, testToken, boxes...)
+	client.expectStatus(relayv1.RelayStatus_RELAY_STATUS_OK)
 }

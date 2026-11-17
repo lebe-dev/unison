@@ -59,16 +59,26 @@ func quicTLSConfig(cert tls.Certificate) *tls.Config {
 	}
 }
 
+// streamWindow is the flow control window of the registration stream and of
+// the whole connection. Datagrams are not flow controlled, so the window only
+// has to fit the registration, and an unregistered client cannot make the
+// server buffer more than that.
+const streamWindow = 2 * maxRegisterBytes
+
 // quicConfig returns the QUIC configuration of the server. Datagrams carry the
 // traffic and the only stream is the registration.
 func (s *Server) quicConfig() *quic.Config {
 	return &quic.Config{
-		EnableDatagrams:       true,
-		MaxIdleTimeout:        quicIdleTimeout,
-		KeepAlivePeriod:       quicKeepAlive,
-		HandshakeIdleTimeout:  quicHandshakeTimeout,
-		MaxIncomingStreams:    4,
-		MaxIncomingUniStreams: -1,
+		EnableDatagrams:                true,
+		MaxIdleTimeout:                 quicIdleTimeout,
+		KeepAlivePeriod:                quicKeepAlive,
+		HandshakeIdleTimeout:           quicHandshakeTimeout,
+		MaxIncomingStreams:             1,
+		MaxIncomingUniStreams:          -1,
+		InitialStreamReceiveWindow:     streamWindow,
+		MaxStreamReceiveWindow:         streamWindow,
+		InitialConnectionReceiveWindow: streamWindow,
+		MaxConnectionReceiveWindow:     streamWindow,
 	}
 }
 
