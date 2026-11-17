@@ -60,6 +60,17 @@ type flow struct {
 	claimed bool
 }
 
+// checkConnIdentity binds the identity a message claims to the certificate of
+// the connection. Without it any device could present the identity of another
+// one, and the SAS would be computed over keys that the connection does not
+// authenticate.
+func checkConnIdentity(conn transport.PairingPeer, peer peerInfo) error {
+	if conn.DeviceID != peer.id {
+		return fmt.Errorf("%w: identity %s, certificate of %s", ErrInvalidPeer, peer.id, conn.DeviceID)
+	}
+	return nil
+}
+
 // checkScan binds the answer of a QR exchange to the code: the certificate of the
 // connection and the identity of the answer belong to the device that showed the
 // code.
@@ -67,8 +78,6 @@ func (fl flow) checkScan(conn transport.PairingPeer, peer peerInfo) error {
 	switch {
 	case conn.CertFingerprint != fl.pin:
 		return fmt.Errorf("%w: certificate fingerprint mismatch", ErrInvalidPeer)
-	case conn.DeviceID != fl.id:
-		return fmt.Errorf("%w: certificate of %s, code of %s", ErrInvalidPeer, conn.DeviceID, fl.id)
 	case peer.id != fl.id:
 		return fmt.Errorf("%w: identity of %s, code of %s", ErrInvalidPeer, peer.id, fl.id)
 	}
@@ -232,6 +241,9 @@ func (w *Window) handshake(ctx context.Context, conn *transport.PairingConn, rea
 		if err != nil {
 			return peer, fl, err
 		}
+		if err := checkConnIdentity(conn.Peer(), peer); err != nil {
+			return peer, fl, err
+		}
 		if fl.method == MethodQR {
 			if err := fl.checkScan(conn.Peer(), peer); err != nil {
 				return peer, fl, err
@@ -247,6 +259,9 @@ func (w *Window) handshake(ctx context.Context, conn *transport.PairingConn, rea
 	}
 	peer, err := w.peerFromRequest(request)
 	if err != nil {
+		return peer, fl, err
+	}
+	if err := checkConnIdentity(conn.Peer(), peer); err != nil {
 		return peer, fl, err
 	}
 	if len(request.Token) > 0 {

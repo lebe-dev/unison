@@ -26,6 +26,12 @@ const (
 	DefaultRequestTimeout = 2 * time.Minute
 	// maxPending bounds the exchanges running at the same time.
 	maxPending = 8
+	// maxAttempts bounds the pairing connections a window accepts in
+	// attemptWindow. Each connection is one try at the short code, so the limit
+	// keeps a device from testing codes against the window.
+	maxAttempts = 4
+	// attemptWindow is the period of the attempt limit.
+	attemptWindow = 10 * time.Second
 	// eventBuffer is the number of events buffered for the UI.
 	eventBuffer = 32
 )
@@ -57,6 +63,9 @@ var (
 	// ErrUnreachable reports a device that did not answer on any address: it
 	// is turned off, or the network keeps the two devices apart.
 	ErrUnreachable = errors.New("pairing: device is not reachable over the network")
+	// ErrTooManyAttempts reports a window that received more pairing
+	// connections than it accepts in one attempt window.
+	ErrTooManyAttempts = errors.New("pairing: too many pairing attempts")
 )
 
 // ListenPacketFunc binds a packet connection for the pairing listener and for
@@ -130,9 +139,11 @@ type Window struct {
 	// tokenBusy reports that a scanning device holds the token until its
 	// exchange ends.
 	tokenBusy bool
-	requests  map[model.DeviceID]*exchange
-	conns     map[*transport.PairingConn]struct{}
-	closed    bool
+	// attempts holds when the window accepted the recent pairing connections.
+	attempts []time.Time
+	requests map[model.DeviceID]*exchange
+	conns    map[*transport.PairingConn]struct{}
+	closed   bool
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -510,7 +521,7 @@ func (w *Window) runAccept() {
 			}
 			continue
 		}
-		if err := w.track(conn); err != nil {
+		if err := w.trackAccepted(conn); err != nil {
 			if w.log != nil && !errors.Is(err, ErrClosed) {
 				w.log.Warn("pairing connection dropped", "error", err)
 			}
@@ -574,6 +585,32 @@ func (w *Window) runTimer() {
 func (w *Window) track(conn *transport.PairingConn) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	return w.trackLocked(conn)
+}
+
+// trackAccepted registers a connection that a device dialed, after counting the
+// attempt. A device that tests the short code needs one connection per try, so
+// a window refuses more than maxAttempts of them in attemptWindow.
+func (w *Window) trackAccepted(conn *transport.PairingConn) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	now := w.clock.Now()
+	recent := w.attempts[:0]
+	for _, at := range w.attempts {
+		if now.Sub(at) < attemptWindow {
+			recent = append(recent, at)
+		}
+	}
+	w.attempts = recent
+	if len(w.attempts) >= maxAttempts {
+		return ErrTooManyAttempts
+	}
+	w.attempts = append(w.attempts, now)
+	return w.trackLocked(conn)
+}
+
+// trackLocked registers a connection with mu held.
+func (w *Window) trackLocked(conn *transport.PairingConn) error {
 	if w.closed {
 		return ErrClosed
 	}
