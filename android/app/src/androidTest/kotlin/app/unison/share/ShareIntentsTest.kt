@@ -104,6 +104,18 @@ class ShareIntentsTest {
     }
 
     @Test
+    fun fileStreamIsRefused() {
+        // A file link would be opened with the permissions of Unison, so another
+        // app could send a private file of Unison this way.
+        val private = File(context.filesDir, "private.bin").apply { writeBytes(ByteArray(8)) }
+        val intent = Intent(Intent.ACTION_SEND)
+            .setType("application/octet-stream")
+            .putExtra(Intent.EXTRA_STREAM, Uri.fromFile(private))
+
+        assertNull(ShareIntents.read(intent, context.contentResolver))
+    }
+
+    @Test
     fun onlyFilesAllowFriends() {
         val text = ShareIntents.read(
             Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "hi"),

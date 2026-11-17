@@ -92,12 +92,22 @@ object ShareIntents {
 
     /** Files behind the shared streams, without the ones that cannot be read. */
     private fun files(uris: List<Uri>, type: String?, resolver: ContentResolver): ShareContent? {
-        val files = uris.mapNotNull { descriptorOf(it, type, resolver) }
+        val files = uris
+            .filter { acceptsScheme(it.scheme) }
+            .mapNotNull { descriptorOf(it, type, resolver) }
         if (files.isEmpty()) {
             return null
         }
         return ShareContent.Files(files)
     }
+
+    /**
+     * True for a stream that a content provider serves. A file link is opened
+     * with the permissions of Unison, so another app could hand over a private
+     * file of Unison that way.
+     */
+    fun acceptsScheme(scheme: String?): Boolean =
+        scheme.equals(ContentResolver.SCHEME_CONTENT, ignoreCase = true)
 
     /** Name, size and type of one shared stream, or null when it cannot be read. */
     private fun descriptorOf(uri: Uri, type: String?, resolver: ContentResolver): SharedFile? = try {
