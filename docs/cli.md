@@ -71,7 +71,7 @@ reported them last; a device reports them when a session opens and after every c
 returns at once. `devices rename <id>` changes the name of a paired device on this device, and
 `devices rename self` changes the name this device announces; see
 [Devices and pairing](devices.md#renaming). `devices confirm self on` makes this device ask
-before it applies the clipboard of any device, and `devices confirm <id> on` before it applies the
+before it applies the clipboard of devices it pairs from now on, and `devices confirm <id> on` before it applies the
 clipboard of one device. `--files` changes the flag of the files instead, and `--peer` changes the
 flag of the device for this one, which needs the device online; see
 [Devices and pairing](devices.md#confirmation-flags). `devices revoke` asks for a confirmation

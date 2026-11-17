@@ -155,8 +155,8 @@
   }
 
   /**
-   * setConfirmation changes a flag of this device for every device: the
-   * clipboard items or the file transfers of any device wait for the user.
+   * setConfirmation changes the default flag for devices paired from now on:
+   * their clipboard items or file transfers wait for the user.
    */
   async function setConfirmation(scope: "clipboard" | "files", value: boolean): Promise<void> {
     const previous = { clipboard: requireConfirmation, files: requireFileConfirmation };
@@ -429,10 +429,11 @@
           onchange={(event) => void setConfirmation("clipboard", event.currentTarget.checked)}
         />
         <span>
-          Ask before applying the clipboard of any device
+          Ask before applying the clipboard of new devices
           <small>
-            Items wait in the history and a prompt asks whether to apply them. Each device
-            can also ask on its own on the Devices screen.
+            Items wait in the history and a prompt asks whether to apply them. This is the
+            default for devices you pair from now on; change it for a device on the Devices
+            screen.
           </small>
         </span>
       </label>
@@ -445,7 +446,7 @@
           onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
         />
         <span>
-          Ask before accepting files from any device
+          Ask before accepting files from new devices
           <small>
             Nothing is downloaded until you accept the files in the prompt or on the Requests
             screen.

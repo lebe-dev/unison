@@ -282,31 +282,6 @@ func TestSharePersonalFileConfirmation(t *testing.T) {
 	waitTransfer(t, a, ids[0], share.StateDone)
 }
 
-// TestSharePersonalSelfFileConfirmation checks that the files flag for every
-// device holds the offers of a Personal device.
-func TestSharePersonalSelfFileConfirmation(t *testing.T) {
-	a, b := shareNodes(t, 53500, model.RolePersonal)
-
-	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
-	defer cancel()
-	if err := b.SetConfirmation(ctx, b.DeviceID(), trust.ScopeFiles, true); err != nil {
-		t.Fatalf("set the files flag for every device: %v", err)
-	}
-	path, _ := shareFile(t, "held.bin", 1<<10)
-	ids, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()})
-	if err != nil {
-		t.Fatalf("send: %v", err)
-	}
-	pending := waitIncoming(t, b, a.DeviceID(), share.StatePending)
-	if err := b.Share().Reject(ctx, pending.ID); err != nil {
-		t.Fatalf("reject: %v", err)
-	}
-	waitTransfer(t, a, ids[0], share.StateDeclined)
-	if names := downloads(t, b); len(names) != 0 {
-		t.Fatalf("a rejected offer wrote %v", names)
-	}
-}
-
 // TestShareFriendRejects checks that a rejected offer leaves nothing on the
 // disk and reaches its final state on both sides.
 func TestShareFriendRejects(t *testing.T) {

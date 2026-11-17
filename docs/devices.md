@@ -165,9 +165,11 @@ so a flag of the other device travels there as a signed request, and that device
 it has to be online for that. After every change, and whenever a session opens, a device reports its
 flags for the other one, so both cards show the same state.
 
-Settings also have two flags for every device: ask before applying the clipboard of any device, and
-ask before accepting files from any device. They add to the flags of the pairs: a device asks when
-either one is on. They stay on the device and are not shown to the others.
+Settings also have two default flags: ask before applying the clipboard of new devices, and ask
+before accepting files from new devices. A Personal device you pair starts with these values on its
+card, and from then on its own flags decide: changing a default later does not touch the devices
+that are already paired, and a flag you set on a card always wins. The defaults stay on the device
+and are not shown to the others.
 
 When something waits for an answer, the app asks at once. The macOS app opens a small window above
 the others with the buttons to apply or skip the item, or to accept or decline the files; `Later`
@@ -177,8 +179,8 @@ buttons and asks again in a dialog while it is open.
 From the command line:
 
 ```sh
-unison devices confirm self on                # clipboard of every device
-unison devices confirm --files self on        # files of every device
+unison devices confirm self on                # clipboard default for new devices
+unison devices confirm --files self on        # files default for new devices
 unison devices confirm <id> on                # this device asks about the clipboard of <id>
 unison devices confirm --files --peer <id> on # <id> asks about the files of this device
 ```

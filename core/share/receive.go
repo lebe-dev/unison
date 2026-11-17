@@ -51,9 +51,6 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 	}
 
 	decision := record.Decision(trust.ActionReceiveShare)
-	if decision == trust.Allow && s.holdAll != nil && s.holdAll(ctx) {
-		decision = trust.Confirm
-	}
 	if decision == trust.Allow {
 		if err := s.checkOffer(ctx, files); err != nil {
 			s.log.Warn("refused an offer", "peer", peer, "error", err)

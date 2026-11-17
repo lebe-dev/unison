@@ -66,9 +66,6 @@ type Options struct {
 	// PendingTTL is how long an offer waits for a decision. The package
 	// default is used when zero.
 	PendingTTL time.Duration
-	// HoldAll reports whether every offer waits for a decision, whoever sent
-	// it. Only the matrix decides when nil.
-	HoldAll func(ctx context.Context) bool
 	// Logger receives service events. Nothing is logged when nil.
 	Logger *slog.Logger
 }
@@ -88,8 +85,6 @@ type Service struct {
 	serve     *transfer.Service
 	// pendingTTL is how long an incoming offer waits for a decision.
 	pendingTTL time.Duration
-	// holdAll reports whether every offer waits for a decision.
-	holdAll func(ctx context.Context) bool
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -159,7 +154,6 @@ func New(opts Options) (*Service, error) {
 		clock:      clock,
 		log:        log,
 		pendingTTL: pendingTTL,
-		holdAll:    opts.HoldAll,
 		ctx:        ctx,
 		cancel:     cancel,
 		sessions:   make(map[model.DeviceID]*session.Session),

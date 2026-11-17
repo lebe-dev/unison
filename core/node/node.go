@@ -625,7 +625,7 @@ func (n *Node) open(ctx context.Context) error {
 		Store:     db,
 		Origin:    id.DeviceID(),
 		Announcer: n,
-		Planner:   policyPlanner{decider: decider, self: n.selfRequireConfirmation},
+		Planner:   policyPlanner{decider: decider},
 		History:   hist,
 		Payloads:  blobPayloads{blobs: n.blobs},
 		Fetch:     clip.FetchFunc(n.fetchPayload),

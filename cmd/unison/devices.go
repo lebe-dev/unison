@@ -130,7 +130,7 @@ func (a *app) renameTarget(ctx context.Context, client localv1connect.UnisonServ
 	return device.GetDeviceId(), false, nil
 }
 
-// devicesConfirm sets a confirmation flag: of this device for every device, of
+// devicesConfirm sets a confirmation flag: of this device for the devices paired later, of
 // this device for a paired one, or with --peer of the paired device for this
 // one. A paired device changes its own flag, so that request travels there.
 func (a *app) devicesConfirm(ctx context.Context, args []string) error {

@@ -209,18 +209,6 @@ func (n *Node) publishDeviceUpdated(peer trust.Peer) {
 	})
 }
 
-// selfRequireConfirmation reports whether this device holds the content of the
-// scope of every peer. It fails closed: a flag that cannot be read asks the
-// user.
-func (n *Node) selfRequireConfirmation(ctx context.Context, scope trust.Scope) bool {
-	require, err := n.trust.SelfRequireConfirmation(ctx, scope)
-	if err != nil {
-		n.log.Warn("reading the confirmation flag for every device failed", "scope", scope.String(), "error", err)
-		return true
-	}
-	return require
-}
-
 // RelayFilesOnRequest reports whether files travel over the relay only when the
 // user asks for them.
 func (n *Node) RelayFilesOnRequest() bool {

@@ -107,9 +107,9 @@
     <string name="settings_downloads_failed">Cannot use this folder</string>
     <string name="settings_section_service">Service mode</string>
     <string name="settings_section_confirmation">Confirmation</string>
-    <string name="settings_confirmation">Ask before applying the clipboard of any device</string>
+    <string name="settings_confirmation">Ask before applying the clipboard of new devices</string>
     <string name="settings_confirmation_hint">Items wait in the history and a question asks whether to apply them. Each device can also ask on its own on the Devices screen.</string>
-    <string name="settings_file_confirmation">Ask before accepting files from any device</string>
+    <string name="settings_file_confirmation">Ask before accepting files from new devices</string>
     <string name="settings_file_confirmation_hint">Nothing is downloaded until you accept the files.</string>
     <string name="settings_confirmation_saved">Confirmation setting saved</string>
     <string name="settings_confirmation_failed">Cannot change the confirmation setting</string>

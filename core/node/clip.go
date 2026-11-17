@@ -10,7 +10,6 @@ import (
 	"github.com/lebe-dev/unison/core/model/protoconv"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/session"
-	"github.com/lebe-dev/unison/core/trust"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
 
@@ -121,21 +120,14 @@ func (n *Node) clipIncoming(ctx context.Context) {
 // policyPlanner turns the clipboard policy into the outcome of the pipeline.
 type policyPlanner struct {
 	decider *policy.Decider
-	// self reports whether the local device holds incoming items for
-	// confirmation.
-	self func(ctx context.Context, scope trust.Scope) bool
 }
 
-// Plan returns the outcome for an item announced by a peer. An item the policy
-// applies automatically waits for the user while the confirmation flag of the
-// local device is on.
+// Plan returns the outcome for an item announced by a peer. The confirmation
+// flag of the peer is part of the decision of the policy.
 func (p policyPlanner) Plan(ctx context.Context, from model.DeviceID, item model.ClipItem) (clip.Outcome, error) {
 	result, err := p.decider.DecideItem(ctx, from, item, model.SourceClipboard)
 	if err != nil {
 		return clip.Outcome{}, err
-	}
-	if p.self != nil && result.Action == policy.ActionAutoApply && p.self(ctx, trust.ScopeClipboard) {
-		return clip.Outcome{Action: clip.ActionConfirm}, nil
 	}
 	return clip.Outcome{Action: actionOf(result.Action), Eager: result.Eager}, nil
 }

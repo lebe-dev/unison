@@ -88,6 +88,13 @@ func (s *Store) Add(ctx context.Context, peer Peer) error {
 	if peer.LastSeenAt.IsZero() {
 		peer.LastSeenAt = peer.AddedAt
 	}
+	if peer.Role == model.RolePersonal && !peer.Confirm.Any() {
+		defaults, err := s.SelfConfirmations(ctx)
+		if err != nil {
+			return fmt.Errorf("trust: read the default confirmation flags: %w", err)
+		}
+		peer.Confirm = defaults
+	}
 
 	return s.db.WithTx(ctx, func(tx *sql.Tx) error {
 		if err := checkDenyList(ctx, tx, peer); err != nil {

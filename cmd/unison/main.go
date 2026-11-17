@@ -267,8 +267,8 @@ commands:
                               to it, for networks where discovery does not work
   devices confirm <id|self> on|off [--files] [--peer]
                               ask before taking the clipboard items (or with
-                              --files the file transfers) of a device or of
-                              every device; with --peer the paired device asks
+                              --files the file transfers) of a device or, for
+                              self, the default of new devices; with --peer the paired device asks
                               before taking those of this device
   devices revoke <id|self> [--yes]
                               revoke a device or leave the group; the device is

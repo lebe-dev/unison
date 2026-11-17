@@ -142,7 +142,7 @@ func TestHistoryApply(t *testing.T) {
 	other.pair(t, device)
 	waitOnline(t, device, other)
 
-	if err := other.Trust().SetSelfRequireConfirmation(t.Context(), trust.ScopeClipboard, true); err != nil {
+	if err := other.SetConfirmation(t.Context(), device.DeviceID(), trust.ScopeClipboard, true); err != nil {
 		t.Fatalf("set the confirmation flag: %v", err)
 	}
 	device.emit(t, "held item")

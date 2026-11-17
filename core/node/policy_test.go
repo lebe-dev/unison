@@ -128,11 +128,11 @@ func TestNodesConfirmationAnnouncedOnOpen(t *testing.T) {
 	waitPeerFlags(t, a, b.DeviceID(), true, trust.Confirmations{Clipboard: true})
 }
 
-// TestNodesSelfConfirmation checks that the flag for every device holds the
-// items of every peer.
-func TestNodesSelfConfirmation(t *testing.T) {
+// TestNodesSelfConfirmationIsDefaultOnly checks that the flag for every device
+// does not hold the items of a device that is already paired: the flag of the
+// device decides.
+func TestNodesSelfConfirmationIsDefaultOnly(t *testing.T) {
 	a, b := clipNodes(t, 58000)
-	events := b.subscribe(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
@@ -140,14 +140,16 @@ func TestNodesSelfConfirmation(t *testing.T) {
 		t.Fatalf("set the flag for every device: %v", err)
 	}
 
-	a.clipboard.Emit(textSnapshot("local confirm"))
-	event := waitEvent(t, events, EventClipApply, a.DeviceID())
-	if _, ok := b.clipboard.LastWrite(); ok {
-		t.Fatal("the item reached the clipboard without confirmation")
+	a.clipboard.Emit(textSnapshot("applied anyway"))
+	waitClipboard(t, b.clipboard, "applied anyway")
+
+	if err := b.SetConfirmation(ctx, a.DeviceID(), trust.ScopeClipboard, true); err != nil {
+		t.Fatalf("set the flag of the device: %v", err)
 	}
-	if _, err := b.History().Get(ctx, event.Item.ID); err != nil {
-		t.Fatalf("the held item is not in the history: %v", err)
-	}
+	events := b.subscribe(t)
+	a.clipboard.Emit(textSnapshot("held by the device"))
+	waitEvent(t, events, EventClipApply, a.DeviceID())
+
 	if err := a.RequestPeerConfirmation(ctx, a.DeviceID(), trust.ScopeClipboard, true); !errors.Is(err, trust.ErrInvalidPeer) {
 		t.Fatalf("a request to this device error %v, want %v", err, trust.ErrInvalidPeer)
 	}
