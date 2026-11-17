@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/lebe-dev/unison/core/model"
@@ -429,17 +430,31 @@ func (n *Node) waitRelay(ctx context.Context, client *relay.Dialer) bool {
 
 // relayConnect opens the relay connection of the peer. Only the device with the
 // lower device ID dials, so the two sides do not open two connections at once.
+// The mailbox belongs to the pair, so a connection with any other device is
+// refused.
 func (n *Node) relayConnect(ctx context.Context, l *link, listener *transport.Listener, dialer *transport.Dialer) (*transport.Conn, bool, error) {
+	var (
+		conn     *transport.Conn
+		incoming bool
+		err      error
+	)
 	local := n.identity.DeviceID()
 	if bytes.Compare(local[:], l.id[:]) >= 0 {
-		conn, err := listener.Accept(ctx)
-		return conn, true, err
+		incoming = true
+		conn, err = listener.Accept(ctx)
+	} else {
+		dialCtx, cancel := context.WithTimeout(ctx, n.limits.DialTimeout)
+		conn, err = dialer.Dial(dialCtx, listener.Addr())
+		cancel()
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, n.limits.DialTimeout)
-	defer cancel()
-	conn, err := dialer.Dial(ctx, listener.Addr())
-	return conn, false, err
+	if err != nil {
+		return nil, incoming, err
+	}
+	if conn.Peer().DeviceID() != l.id {
+		_ = conn.Close()
+		return nil, incoming, fmt.Errorf("node: relay mailbox of %s answered by %s", l.id, conn.Peer().DeviceID())
+	}
+	return conn, incoming, nil
 }
 
 // rendezvousKey returns the mailbox secret of the pair. A pair that never
