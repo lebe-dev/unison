@@ -49,7 +49,8 @@ written to a log.
 The command line prints the code of its window next to the short code flow, and the Add device
 screen of the app shows the same code. See [Command line](cli.md).
 
-On Android the code can be read by the Scan a code button of the Add screen or by the system
+On Android pairing opens from the `Add device` button of the Devices screen, and the code can be
+read by its Scan a code button or by the system
 camera: the camera opens the `unison://pair` link in Unison, which asks once more and names the
 role the other device will get. Any app or web page can open such a link, so a link never pairs on
 its own. The scanning device has to reach one of the addresses in the code. When none answers, for example
@@ -104,9 +105,10 @@ report or for checking the network; they quote the daemon and are not translated
   this network yet". The details give the address the window listens on.
 - **Paired devices.** macOS shows a device that is offline and did not answer on any of its known
   addresses at the last attempt as `Not reachable`, with the time it stopped answering and the
-  failures per address behind a `Details` toggle. Android shows the state as a dot next to the
-  name: green while the device answers, red while it does not, and the red dot of such a device
-  opens the time and the failures in a popup. The activity list records the moment it stops
+  failures per address behind a `Details` toggle. Android shows the state as a dot on the
+  icon of the device: green while the device answers, red while it does not, grey while it is
+  offline. The page of a device that does not answer, opened by a tap on it, shows the time and
+  the failures. The activity list records the moment it stops
   answering. A device that answers and refuses the connection, or one without any known address,
   is not marked as unreachable.
 
@@ -152,7 +154,8 @@ Android: the pairing works and the device is listed, but nothing is exchanged.
 
 A device can ask before it takes what another Personal device sends, instead of taking it at once.
 The flags are separate for the clipboard and for files, and for each direction of a pair, so every
-Personal device has four of them on its card:
+Personal device has four of them on its card (on Android, on the page that opens by a tap on the
+device):
 
 | Row | Clipboard | Files |
 | --- | --- | --- |
@@ -161,7 +164,7 @@ Personal device has four of them on its card:
 
 A held clipboard item goes to the history, waiting for you, and is applied only when you say so;
 see [Clipboard and history](clipboard.md#holding-items-until-you-apply-them). A held file offer
-waits in `Requests` exactly like the offer of a Friends device: nothing is downloaded until you
+waits in `Requests` (`Inbox` on Android) exactly like the offer of a Friends device: nothing is downloaded until you
 accept it, and it expires after ten minutes. Friends always ask, so their cards have no flags.
 
 Either device of a pair can change any of the four flags. A flag belongs to the device that asks,

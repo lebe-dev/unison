@@ -1,10 +1,12 @@
 package app.unison.ui.screens
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,14 +15,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,13 +36,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.history.HistoryText
 import app.unison.ui.ErrorCard
+import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
+import app.unison.ui.groupItemColor
+import app.unison.ui.groupShape
 import app.unison.ui.state.HistoryState
 import unison.local.v1.Local
 
@@ -80,9 +90,8 @@ fun HistoryScreen(
             }
         }
 
-        KindFilter(selected = history.kind, onChange = onKindChange)
-        Spacer(modifier = Modifier.height(8.dp))
-        DeviceFilter(history = history, status = status, onChange = onDeviceChange)
+        Filters(history = history, status = status, onKindChange = onKindChange, onDeviceChange = onDeviceChange)
+        Spacer(modifier = Modifier.height(12.dp))
 
         history.failure?.let { failure ->
             Spacer(modifier = Modifier.height(16.dp))
@@ -104,10 +113,16 @@ fun HistoryScreen(
         if (history.isEmpty) {
             EmptyHistory()
         } else {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                items(history.items, key = { it.item.id }) { entry ->
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
+                itemsIndexed(history.items, key = { _, entry -> entry.item.id }) { index, entry ->
                     HistoryRow(
                         entry = entry,
+                        shape = groupShape(index, history.items.size),
                         device = deviceName(status, entry.item.origin),
                         busy = entry.item.id in history.busy,
                         held = entry.item.id in held,
@@ -116,16 +131,20 @@ fun HistoryScreen(
                         onDownload = { onDownload(entry) },
                         onDelete = { onDelete(entry) },
                     )
-                    HorizontalDivider()
                 }
             }
         }
     }
 }
 
-/** Rows of the kind filter. */
+/** Kind chips and the device chip in one row that scrolls sideways. */
 @Composable
-private fun KindFilter(selected: Local.Kind, onChange: (Local.Kind) -> Unit) {
+private fun Filters(
+    history: HistoryState,
+    status: Local.GetStatusResponse?,
+    onKindChange: (Local.Kind) -> Unit,
+    onDeviceChange: (String) -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -134,11 +153,23 @@ private fun KindFilter(selected: Local.Kind, onChange: (Local.Kind) -> Unit) {
     ) {
         KINDS.forEach { kind ->
             FilterChip(
-                selected = kind.kind == selected,
-                onClick = { onChange(kind.kind) },
+                selected = kind.kind == history.kind,
+                onClick = { onKindChange(kind.kind) },
                 label = { Text(text = stringResource(kind.label)) },
+                leadingIcon = if (kind.kind == history.kind) {
+                    {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_check),
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize),
+                        )
+                    }
+                } else {
+                    null
+                },
             )
         }
+        DeviceFilter(history = history, status = status, onChange = onDeviceChange)
     }
 }
 
@@ -155,9 +186,18 @@ private fun DeviceFilter(
         ?: stringResource(R.string.history_all_devices)
 
     Box {
-        TextButton(onClick = { expanded = true }) {
-            Text(text = stringResource(R.string.history_filter_device, label))
-        }
+        FilterChip(
+            selected = history.deviceId.isNotEmpty(),
+            onClick = { expanded = true },
+            label = { Text(text = stringResource(R.string.history_filter_device, label)) },
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_expand),
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize),
+                )
+            },
+        )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
                 text = { Text(text = stringResource(R.string.history_all_devices)) },
@@ -183,6 +223,7 @@ private fun DeviceFilter(
 @Composable
 private fun HistoryRow(
     entry: Local.HistoryItem,
+    shape: Shape,
     device: String,
     busy: Boolean,
     held: Boolean,
@@ -192,81 +233,112 @@ private fun HistoryRow(
     onDelete: () -> Unit,
 ) {
     val item = entry.item
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(kindLabel(item.kind)),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            if (held) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(groupItemColor)
+            .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 4.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            KindTile(kind = item.kind)
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(kindLabel(item.kind)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (held) {
+                        Text(
+                            text = stringResource(R.string.history_held),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (busy) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(
+                            text = relativeTime(item.createdAtUnixMs),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                    }
+                }
+
+                val preview = previewOf(item)
+                if (preview.isNotEmpty()) {
+                    Text(
+                        text = preview,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp, end = 8.dp),
+                    )
+                }
+
+                val size = HistoryText.formatSize(HistoryText.size(item))
                 Text(
-                    text = stringResource(R.string.history_held),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            if (busy) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp))
-            } else {
-                Text(
-                    text = relativeTime(item.createdAtUnixMs),
-                    style = MaterialTheme.typography.bodySmall,
+                    text = stringResource(
+                        if (entry.complete) R.string.history_item_detail else R.string.history_item_detail_incomplete,
+                        device,
+                        size,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
-
-        val preview = previewOf(item)
-        if (preview.isNotEmpty()) {
-            Text(
-                text = preview,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-
-        val size = HistoryText.formatSize(HistoryText.size(item))
-        Text(
-            text = stringResource(
-                if (entry.complete) R.string.history_item_detail else R.string.history_item_detail_incomplete,
-                device,
-                size,
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (held) {
-                TextButton(onClick = onApply, enabled = !busy) {
-                    Text(text = stringResource(R.string.action_apply))
-                }
-            } else if (item.kind != Local.Kind.KIND_FILES) {
-                TextButton(onClick = onCopy, enabled = !busy) {
-                    Text(text = stringResource(R.string.action_copy))
-                }
+            TextButton(onClick = onDelete, enabled = !busy) {
+                Text(text = stringResource(R.string.action_delete))
             }
             TextButton(onClick = onDownload, enabled = !busy) {
                 Text(text = stringResource(R.string.action_download))
             }
-            TextButton(onClick = onDelete, enabled = !busy) {
-                Text(text = stringResource(R.string.action_delete))
+            if (held) {
+                FilledTonalButton(onClick = onApply, enabled = !busy) {
+                    Text(text = stringResource(R.string.action_apply))
+                }
+            } else if (item.kind != Local.Kind.KIND_FILES) {
+                FilledTonalButton(onClick = onCopy, enabled = !busy) {
+                    Text(text = stringResource(R.string.action_copy))
+                }
             }
         }
+    }
+}
+
+/** Icon of a content kind in a tile tinted by the kind. */
+@Composable
+private fun KindTile(kind: Local.Kind) {
+    val colors = MaterialTheme.colorScheme
+    when (kind) {
+        Local.Kind.KIND_IMAGE -> IconTile(
+            icon = R.drawable.ic_kind_image,
+            container = colors.tertiaryContainer,
+            content = colors.onTertiaryContainer,
+        )
+        Local.Kind.KIND_FILES -> IconTile(
+            icon = R.drawable.ic_kind_file,
+            container = colors.secondaryContainer,
+            content = colors.onSecondaryContainer,
+        )
+        else -> IconTile(icon = R.drawable.ic_kind_text)
     }
 }
 

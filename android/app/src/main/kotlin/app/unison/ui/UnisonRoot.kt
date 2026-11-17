@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -119,19 +121,26 @@ fun UnisonRoot(
         }
     }
 
+    if (destination == Destination.ADD) {
+        BackHandler { destination = Destination.DEVICES }
+    }
+
     Scaffold(
+        containerColor = screenColor,
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            NavigationBar {
-                Destination.entries.forEach { item ->
-                    NavigationBarItem(
-                        selected = item == destination,
-                        onClick = { destination = item },
-                        icon = {
-                            DestinationIcon(item = item, pending = requests.pending)
-                        },
-                        label = { Text(text = stringResource(item.label)) },
-                    )
+            if (destination.inBar) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Destination.entries.filter { it.inBar }.forEach { item ->
+                        NavigationBarItem(
+                            selected = item == destination,
+                            onClick = { destination = item },
+                            icon = {
+                                DestinationIcon(item = item, pending = requests.pending)
+                            },
+                            label = { Text(text = stringResource(item.label)) },
+                        )
+                    }
                 }
             }
         },
@@ -148,6 +157,8 @@ fun UnisonRoot(
                 onRename = onRenameDevice,
                 onRevoke = onRevokeDevice,
                 modifier = content,
+                onPause = onPause,
+                onAdd = { destination = Destination.ADD },
             )
             Destination.ADD -> AddScreen(
                 state = pairing,
@@ -165,6 +176,7 @@ fun UnisonRoot(
                 onCancelScan = onCancelScan,
                 onDismissResult = onDismissPairingResult,
                 modifier = content,
+                onClose = { destination = Destination.DEVICES },
             )
             Destination.REQUESTS -> {
                 LaunchedEffect(Unit) { onRefreshRequests() }

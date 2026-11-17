@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -37,10 +38,15 @@ import app.unison.share.ShareContent
 import app.unison.share.ShareIntents
 import app.unison.share.allowsFriends
 import app.unison.ui.ErrorCard
+import app.unison.ui.GroupItem
+import app.unison.ui.ItemGroup
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
+import app.unison.ui.groupItemColor
+import app.unison.ui.groupShape
 import app.unison.ui.pathLabel
 import app.unison.ui.platformLabel
+import app.unison.ui.screenColor
 import app.unison.ui.state.CoreState
 import unison.local.v1.Local
 
@@ -63,6 +69,7 @@ fun ShareScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = screenColor,
         bottomBar = {
             ShareAction(
                 sending = sending,
@@ -169,7 +176,11 @@ private fun canSend(
 /** Content of the share request with its size or its first characters. */
 @Composable
 private fun ShareSummary(content: ShareContent) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = groupItemColor,
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             when (content) {
                 is ShareContent.Text -> {
@@ -263,9 +274,11 @@ private fun DeviceSection(
         )
         return
     }
-    Column {
-        devices.forEach { device ->
+    ItemGroup {
+        devices.forEachIndexed { index, device ->
             SelectableDeviceRow(
+                index = index,
+                count = devices.size,
                 device = device,
                 checked = device.deviceId in selection,
                 enabled = enabled && device.online,
@@ -278,20 +291,20 @@ private fun DeviceSection(
 /** One device with a checkbox; offline devices cannot be picked. */
 @Composable
 private fun SelectableDeviceRow(
+    index: Int,
+    count: Int,
     device: Local.Device,
     checked: Boolean,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
-    Row(
+    GroupItem(
+        index = index,
+        count = count,
         modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onToggle)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .clip(groupShape(index, count))
+            .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onToggle),
     ) {
-        Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) },
@@ -319,20 +332,22 @@ private fun SelectableDeviceRow(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
         )
+        Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 
 /** Send button of the screen. */
 @Composable
 private fun ShareAction(sending: Boolean, enabled: Boolean, onSend: () -> Unit) {
-    Surface(shadowElevation = 8.dp) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Button(
             onClick = onSend,
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(16.dp),
+                .padding(16.dp)
+                .heightIn(min = 56.dp),
         ) {
             if (sending) {
                 CircularProgressIndicator(

@@ -80,7 +80,7 @@ service.
 ## Items arrive but are not applied
 
 - A confirmation flag is on: this device holds the items in its history, and an item is applied
-  when you press `Apply`. Files wait in `Requests` the same way. See [Clipboard and history](clipboard.md#holding-items-until-you-apply-them).
+  when you press `Apply`. Files wait in `Requests` (`Inbox` on Android) the same way. See [Clipboard and history](clipboard.md#holding-items-until-you-apply-them).
 - The network policy keeps the item as metadata, or asks for a confirmation, on this kind of
   network. `unison policy` shows the table.
 - A Friends device cannot send clipboard items at all; it can only offer files.
@@ -89,7 +89,7 @@ service.
 ## A file does not arrive
 
 - An offer of a Friends device, or of a Personal device you ask about, waits in `Requests`
-  (`unison requests`) and expires after ten minutes.
+  (`Inbox` on Android, `unison requests`) and expires after ten minutes.
 - An item that is listed as not downloaded needs the device that has it to be online.
 - Files land in `~/Downloads/Unison` on macOS and in `Download/Unison` on Android, unless you chose
   another folder in Settings.

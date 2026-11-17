@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -17,28 +19,39 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.unison.R
+import app.unison.ui.GroupItem
+import app.unison.ui.IconTile
+import app.unison.ui.ItemGroup
 import app.unison.ui.NetworkIssueCard
 import app.unison.ui.ScreenTitle
+import app.unison.ui.SectionTitle
+import app.unison.ui.groupItemColor
 import app.unison.ui.pairing.PairingCode
 import app.unison.ui.pairing.PairingRequestBody
 import app.unison.ui.pairing.rememberWindowRemaining
@@ -74,6 +87,7 @@ fun AddScreen(
     modifier: Modifier = Modifier,
     onAcceptLink: () -> Unit = {},
     onDismissLink: () -> Unit = {},
+    onClose: (() -> Unit)? = null,
 ) {
     var scanning by rememberSaveable { mutableStateOf(false) }
 
@@ -93,16 +107,35 @@ fun AddScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
+            if (onClose != null) {
+                IconButton(onClick = onClose, modifier = Modifier.padding(top = 8.dp)) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close),
+                        contentDescription = stringResource(R.string.action_back),
+                    )
+                }
+            }
             ScreenTitle(title = stringResource(R.string.add_title))
             Text(
                 text = stringResource(R.string.add_body),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = { scanning = true },
                 enabled = !state.scanning,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp),
             ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_scan),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(text = stringResource(R.string.pairing_scan_action))
             }
             if (state.scanning) {
@@ -166,25 +199,23 @@ private fun ClosedWindow(
     onRoleChange: (Local.Role) -> Unit,
     onOpenWindow: () -> Unit,
 ) {
-    Text(
-        text = stringResource(R.string.pairing_role),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    SectionTitle(text = stringResource(R.string.pairing_role))
+    val roles = listOf(
+        Local.Role.ROLE_PERSONAL to R.string.pairing_role_personal,
+        Local.Role.ROLE_FRIENDS to R.string.pairing_role_friends,
     )
-    Spacer(modifier = Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = role == Local.Role.ROLE_PERSONAL,
-            onClick = { onRoleChange(Local.Role.ROLE_PERSONAL) },
-            label = { Text(text = stringResource(R.string.pairing_role_personal)) },
-        )
-        FilterChip(
-            selected = role == Local.Role.ROLE_FRIENDS,
-            onClick = { onRoleChange(Local.Role.ROLE_FRIENDS) },
-            label = { Text(text = stringResource(R.string.pairing_role_friends)) },
-        )
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        roles.forEachIndexed { index, (value, label) ->
+            SegmentedButton(
+                selected = role == value,
+                onClick = { onRoleChange(value) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = roles.size),
+            ) {
+                Text(text = stringResource(label))
+            }
+        }
     }
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(modifier = Modifier.height(8.dp))
     Text(
         text = stringResource(
             if (role == Local.Role.ROLE_FRIENDS) {
@@ -197,7 +228,13 @@ private fun ClosedWindow(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(modifier = Modifier.height(16.dp))
-    Button(onClick = onOpenWindow, enabled = !busy) {
+    Button(
+        onClick = onOpenWindow,
+        enabled = !busy,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp),
+    ) {
         Text(text = stringResource(R.string.pairing_open_window))
     }
     Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +249,11 @@ private fun ClosedWindow(
 @Composable
 private fun OpenWindow(state: PairingState, onExtend: () -> Unit, onClose: () -> Unit) {
     val window = state.window ?: return
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = groupItemColor,
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -256,7 +297,11 @@ private fun OpenWindow(state: PairingState, onExtend: () -> Unit, onClose: () ->
 /** Code of the window for another device to scan. */
 @Composable
 private fun CodeCard(uri: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = groupItemColor,
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -301,13 +346,11 @@ private fun CandidateSection(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp),
+            .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
+        SectionTitle(
             text = stringResource(R.string.pairing_nearby),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
         TextButton(onClick = onRefresh, enabled = !busy) {
@@ -335,36 +378,38 @@ private fun CandidateSection(
         )
         return
     }
-    Column {
+    ItemGroup {
         candidates.forEachIndexed { index, candidate ->
             CandidateRow(
+                index = index,
+                count = candidates.size,
                 addr = candidate.addr,
                 dialing = dialing == candidate.addr,
                 enabled = !busy,
                 onPair = { onPairWith(candidate.addr) },
             )
-            if (index != candidates.lastIndex) {
-                HorizontalDivider()
-            }
         }
     }
 }
 
 /** One discovered device with the action that starts the exchange. */
 @Composable
-private fun CandidateRow(addr: String, dialing: Boolean, enabled: Boolean, onPair: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+private fun CandidateRow(
+    index: Int,
+    count: Int,
+    addr: String,
+    dialing: Boolean,
+    enabled: Boolean,
+    onPair: () -> Unit,
+) {
+    GroupItem(index = index, count = count) {
+        IconTile(icon = R.drawable.ic_nav_devices)
         Text(
             text = addr,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onPair, enabled = enabled && !dialing) {
+        FilledTonalButton(onClick = onPair, enabled = enabled && !dialing) {
             Text(
                 text = stringResource(
                     if (dialing) R.string.pairing_dialing else R.string.pairing_pair,
@@ -377,7 +422,11 @@ private fun CandidateRow(addr: String, dialing: Boolean, enabled: Boolean, onPai
 /** A scanned code that waits for the other device. */
 @Composable
 private fun ScanningCard(onCancel: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = groupItemColor,
+    ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,

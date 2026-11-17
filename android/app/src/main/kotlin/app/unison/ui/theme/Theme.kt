@@ -2,7 +2,9 @@ package app.unison.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -10,44 +12,102 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+
+/** Brand blue of Unison, the primary color of the light scheme and of the launcher icon. */
+val UnisonBlue = Color(0xFF004074)
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF2C5F7C),
+    primary = UnisonBlue,
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFC7E5F6),
-    onPrimaryContainer = Color(0xFF0A3448),
-    secondary = Color(0xFF4E616D),
+    primaryContainer = Color(0xFFD3E4FF),
+    onPrimaryContainer = Color(0xFF001C38),
+    inversePrimary = Color(0xFFA2C9FF),
+    secondary = Color(0xFF535F70),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFD1E5F2),
-    onSecondaryContainer = Color(0xFF0A3448),
-    tertiary = Color(0xFF5F5C7A),
+    secondaryContainer = Color(0xFFD7E3F8),
+    onSecondaryContainer = Color(0xFF101C2B),
+    tertiary = Color(0xFF6B5778),
     onTertiary = Color(0xFFFFFFFF),
-    surface = Color(0xFFF7FAFC),
-    background = Color(0xFFF7FAFC),
-    error = Color(0xFFB3261E),
+    tertiaryContainer = Color(0xFFF3DAFF),
+    onTertiaryContainer = Color(0xFF251431),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFF8F9FF),
+    onBackground = Color(0xFF191C20),
+    surface = Color(0xFFF8F9FF),
+    onSurface = Color(0xFF191C20),
+    surfaceVariant = Color(0xFFDFE2EB),
+    onSurfaceVariant = Color(0xFF43474E),
+    outline = Color(0xFF73777F),
+    outlineVariant = Color(0xFFC3C6CF),
+    inverseSurface = Color(0xFF2E3135),
+    inverseOnSurface = Color(0xFFEFF0F7),
+    surfaceDim = Color(0xFFD8DAE0),
+    surfaceBright = Color(0xFFF8F9FF),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF2F3FA),
+    surfaceContainer = Color(0xFFECEEF4),
+    surfaceContainerHigh = Color(0xFFE6E8EE),
+    surfaceContainerHighest = Color(0xFFE1E2E8),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF93C9E4),
-    onPrimary = Color(0xFF00344B),
-    primaryContainer = Color(0xFF164B65),
-    onPrimaryContainer = Color(0xFFC7E5F6),
-    secondary = Color(0xFFB5C9D6),
-    onSecondary = Color(0xFF20333E),
-    secondaryContainer = Color(0xFF364955),
-    onSecondaryContainer = Color(0xFFD1E5F2),
-    tertiary = Color(0xFFC8C4E3),
-    onTertiary = Color(0xFF303048),
-    surface = Color(0xFF101416),
-    background = Color(0xFF101416),
-    error = Color(0xFFF2B8B5),
+    primary = Color(0xFFA2C9FF),
+    onPrimary = Color(0xFF00315D),
+    primaryContainer = UnisonBlue,
+    onPrimaryContainer = Color(0xFFD3E4FF),
+    inversePrimary = UnisonBlue,
+    secondary = Color(0xFFBBC7DB),
+    onSecondary = Color(0xFF253141),
+    secondaryContainer = Color(0xFF3B4858),
+    onSecondaryContainer = Color(0xFFD7E3F8),
+    tertiary = Color(0xFFD7BEE4),
+    onTertiary = Color(0xFF3B2948),
+    tertiaryContainer = Color(0xFF523F5F),
+    onTertiaryContainer = Color(0xFFF3DAFF),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF111418),
+    onBackground = Color(0xFFE1E2E8),
+    surface = Color(0xFF111418),
+    onSurface = Color(0xFFE1E2E8),
+    surfaceVariant = Color(0xFF43474E),
+    onSurfaceVariant = Color(0xFFC3C6CF),
+    outline = Color(0xFF8D9199),
+    outlineVariant = Color(0xFF43474E),
+    inverseSurface = Color(0xFFE1E2E8),
+    inverseOnSurface = Color(0xFF2E3135),
+    surfaceDim = Color(0xFF111418),
+    surfaceBright = Color(0xFF37393E),
+    surfaceContainerLowest = Color(0xFF0C0E13),
+    surfaceContainerLow = Color(0xFF191C20),
+    surfaceContainer = Color(0xFF1D2024),
+    surfaceContainerHigh = Color(0xFF282A2F),
+    surfaceContainerHighest = Color(0xFF33353A),
 )
 
-/** Material 3 theme with the colors of the system on Android 12 and later. */
+/** Rounder corners than the baseline, in the expressive style of Material 3. */
+private val UnisonShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/**
+ * Material 3 theme in the brand colors of Unison. The colors of the wallpaper
+ * replace them only when [dynamicColor] is set, on Android 12 and later.
+ */
 @Composable
 fun UnisonTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -57,5 +117,5 @@ fun UnisonTheme(
         darkTheme -> DarkColors
         else -> LightColors
     }
-    MaterialTheme(colorScheme = colors, content = content)
+    MaterialTheme(colorScheme = colors, shapes = UnisonShapes, content = content)
 }

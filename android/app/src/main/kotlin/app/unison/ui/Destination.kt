@@ -4,10 +4,17 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import app.unison.R
 
-/** Top level destinations of the app. */
-enum class Destination(@StringRes val label: Int, @DrawableRes val icon: Int) {
+/**
+ * Top level destinations of the app. Pairing is a task started from the
+ * devices, so it opens over the whole screen instead of sitting in the bar.
+ */
+enum class Destination(
+    @StringRes val label: Int,
+    @DrawableRes val icon: Int,
+    val inBar: Boolean = true,
+) {
     DEVICES(R.string.nav_devices, R.drawable.ic_nav_devices),
-    ADD(R.string.nav_add, R.drawable.ic_nav_add),
+    ADD(R.string.nav_add, R.drawable.ic_nav_add, inBar = false),
     REQUESTS(R.string.nav_requests, R.drawable.ic_nav_requests),
     HISTORY(R.string.nav_history, R.drawable.ic_nav_history),
     SETTINGS(R.string.nav_settings, R.drawable.ic_nav_settings);

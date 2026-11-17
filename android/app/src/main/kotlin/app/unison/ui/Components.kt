@@ -1,5 +1,22 @@
 package app.unison.ui
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +42,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import app.unison.R
 
-/** Heading of a screen body, with an optional action on the trailing side. */
+/** Heading of a screen body, with optional actions on the trailing side. */
 @Composable
 fun ScreenTitle(
     title: String,
@@ -35,12 +52,12 @@ fun ScreenTitle(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 8.dp),
+            .padding(start = 4.dp, top = 20.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.weight(1f),
         )
         trailing?.invoke(this)
@@ -53,10 +70,132 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(top = 24.dp, bottom = 8.dp),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp),
     )
 }
+
+/** Background of a screen whose rows sit in grouped containers. */
+val screenColor: Color
+    @Composable get() = MaterialTheme.colorScheme.surfaceContainer
+
+/** Container of a row in a group, lighter than the screen behind it. */
+val groupItemColor: Color
+    @Composable get() = MaterialTheme.colorScheme.surfaceBright
+
+/**
+ * Shape of the row at [index] in a group of [count] rows: the outer corners of
+ * the group are round, the corners between the rows are tight.
+ */
+fun groupShape(index: Int, count: Int): Shape {
+    val top = if (index == 0) GROUP_OUTER else GROUP_INNER
+    val bottom = if (index == count - 1) GROUP_OUTER else GROUP_INNER
+    return RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
+}
+
+/** Rows of one group, separated by a thin gap. */
+@Composable
+fun ItemGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(GROUP_GAP),
+        content = content,
+    )
+}
+
+/** One row of a group, clickable when [onClick] is set. */
+@Composable
+fun GroupItem(
+    index: Int,
+    count: Int,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val shape = groupShape(index, count)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clip(shape)
+            .background(groupItemColor)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        content = content,
+    )
+}
+
+/** A block of settings in one container, with its heading inside. */
+@Composable
+fun SettingsCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .clip(MaterialTheme.shapes.large)
+            .background(groupItemColor)
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        content = content,
+    )
+}
+
+/** Icon in a rounded tile, the leading element of a row. */
+@Composable
+fun IconTile(
+    @DrawableRes icon: Int,
+    modifier: Modifier = Modifier,
+    container: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    content: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    size: Dp = 44.dp,
+    badge: Color? = null,
+) {
+    Box(modifier = modifier.size(size)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(size * TILE_ROUNDNESS))
+                .background(container),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = content,
+                modifier = Modifier.size(size * ICON_SCALE),
+            )
+        }
+        if (badge != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 2.dp, y = 2.dp)
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .background(groupItemColor)
+                    .padding(2.dp)
+                    .clip(CircleShape)
+                    .background(badge),
+            )
+        }
+    }
+}
+
+/** Outer corner radius of a group of rows. */
+private val GROUP_OUTER = 20.dp
+
+/** Corner radius between two rows of a group. */
+private val GROUP_INNER = 4.dp
+
+/** Gap between two rows of a group. */
+private val GROUP_GAP = 2.dp
+
+/** Corner radius of an icon tile relative to its size. */
+private const val TILE_ROUNDNESS = 0.32f
+
+/** Size of the icon relative to its tile. */
+private const val ICON_SCALE = 0.55f
 
 /** Failure of the core with a way to load the status again. */
 @Composable

@@ -44,6 +44,7 @@ import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
+import app.unison.ui.SettingsCard
 import app.unison.ui.pauseLabel
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
@@ -90,34 +91,56 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        DeviceName(deviceName = deviceName, onDeviceNameChange = onDeviceNameChange)
-        ServiceMode(operatingMode = operatingMode, onOperatingModeChange = onOperatingModeChange)
-        PolicySection(
-            policy = policy,
-            network = state.status?.network,
-            onPolicyChange = onPolicyChange,
-            onReset = onPolicyReset,
-        )
-        HistoryTtlSection(ttl = ttl, onSave = onTtlSave, onReset = onTtlReset)
-        DownloadsFolderSection(
-            folder = downloadsFolder,
-            onPick = onDownloadsFolderPick,
-            onReset = onDownloadsFolderReset,
-        )
-        Pause(pause = state.status?.pause, onPause = onPause)
-        RelaySection(
-            relay = state.relay,
-            onSave = onRelaySave,
-            onOff = onRelayOff,
-            onRefresh = onRefreshRelay,
-        )
-        Confirmation(
-            clipboard = state.requiresConfirmation,
-            files = state.requiresFileConfirmation,
-            onChange = onSelfConfirmationChange,
-        )
-        Group(onLeave = { leaving = true })
-        About(state = state)
+        SettingsCard {
+            DeviceName(deviceName = deviceName, onDeviceNameChange = onDeviceNameChange)
+        }
+        SettingsCard {
+            ServiceMode(operatingMode = operatingMode, onOperatingModeChange = onOperatingModeChange)
+        }
+        SettingsCard {
+            Confirmation(
+                clipboard = state.requiresConfirmation,
+                files = state.requiresFileConfirmation,
+                onChange = onSelfConfirmationChange,
+            )
+        }
+        SettingsCard {
+            Pause(pause = state.status?.pause, onPause = onPause)
+        }
+        SettingsCard {
+            DownloadsFolderSection(
+                folder = downloadsFolder,
+                onPick = onDownloadsFolderPick,
+                onReset = onDownloadsFolderReset,
+            )
+        }
+        SettingsCard {
+            PolicySection(
+                policy = policy,
+                network = state.status?.network,
+                onPolicyChange = onPolicyChange,
+                onReset = onPolicyReset,
+            )
+        }
+        SettingsCard {
+            RelaySection(
+                relay = state.relay,
+                onSave = onRelaySave,
+                onOff = onRelayOff,
+                onRefresh = onRefreshRelay,
+            )
+        }
+        SettingsCard {
+            HistoryTtlSection(ttl = ttl, onSave = onTtlSave, onReset = onTtlReset)
+        }
+        SettingsCard {
+            Group(onLeave = { leaving = true })
+        }
+        state.status?.let {
+            SettingsCard {
+                About(state = state)
+            }
+        }
         Spacer(modifier = Modifier.height(24.dp))
     }
 

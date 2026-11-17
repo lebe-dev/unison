@@ -1,23 +1,28 @@
 package app.unison.ui.pairing
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.unison.R
 import app.unison.ui.state.PairingRequest
 import com.google.zxing.WriterException
@@ -91,8 +96,14 @@ fun SasCode(sas: Local.Sas, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = formatSasDigits(sas.digits),
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.displaySmall,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 4.sp,
             textAlign = TextAlign.Center,
+            modifier = Modifier
+                .clip(MaterialTheme.shapes.large)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         )
         if (sas.emojiCount > 0) {
             Text(

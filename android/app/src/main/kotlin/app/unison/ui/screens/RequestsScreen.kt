@@ -1,26 +1,31 @@
 package app.unison.ui.screens
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.history.HistoryText
 import app.unison.ui.ErrorCard
+import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
+import app.unison.ui.groupItemColor
 import app.unison.ui.state.RequestsState
 import unison.local.v1.Local
 
@@ -74,7 +81,11 @@ fun RequestsScreen(
             return@Column
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
+        ) {
             items(requests.requests, key = { it.id }) { request ->
                 RequestRow(
                     request = request,
@@ -82,7 +93,6 @@ fun RequestsScreen(
                     onAccept = { onAccept(request) },
                     onDecline = { onDecline(request) },
                 )
-                HorizontalDivider()
             }
         }
     }
@@ -96,40 +106,54 @@ private fun RequestRow(
     onAccept: () -> Unit,
     onDecline: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = request.deviceName.ifBlank { request.deviceId.take(SHORT_ID_LENGTH) },
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
-            )
-            if (answering) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp))
-            }
-        }
-
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(groupItemColor)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         val files = request.filesList
         val size = HistoryText.formatSize(request.totalBytes)
-        Text(
-            text = pluralStringResource(R.plurals.request_files, files.size, files.size, size),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            IconTile(
+                icon = R.drawable.ic_kind_file,
+                container = MaterialTheme.colorScheme.tertiaryContainer,
+                content = MaterialTheme.colorScheme.onTertiaryContainer,
+                size = 40.dp,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = request.deviceName.ifBlank { request.deviceId.take(SHORT_ID_LENGTH) },
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = pluralStringResource(R.plurals.request_files, files.size, files.size, size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (answering) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+        }
 
         val names = files.mapNotNull { it.name.ifBlank { null } }
         if (names.isNotEmpty()) {
             Text(
                 text = names.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
             )
         }
 
@@ -145,18 +169,26 @@ private fun RequestRow(
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
             )
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            TextButton(onClick = onDecline, enabled = !answering) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onDecline,
+                enabled = !answering,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+            ) {
                 Text(text = stringResource(R.string.action_decline))
             }
-            TextButton(onClick = onAccept, enabled = !answering) {
+            Button(
+                onClick = onAccept,
+                enabled = !answering,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+            ) {
                 Text(text = stringResource(R.string.action_accept))
             }
         }

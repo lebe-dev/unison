@@ -9,8 +9,8 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.clipboard.ClipboardDraft
@@ -47,8 +47,8 @@ class DevicesScreenTest {
         compose.onNodeWithText("Friends").assertIsDisplayed()
         compose.onNodeWithText("Mac").assertIsDisplayed()
         compose.onNodeWithText("Friend").assertIsDisplayed()
-        compose.onNodeWithText("macOS, LAN").assertIsDisplayed()
-        compose.onAllNodesWithText("Online").assertCountEquals(2)
+        compose.onNodeWithText("Online · macOS, LAN").assertIsDisplayed()
+        compose.onNodeWithText("Online · macOS, Relay").assertIsDisplayed()
     }
 
     @Test
@@ -138,6 +138,8 @@ class DevicesScreenTest {
             }
         }
 
+        compose.onAllNodes(isToggleable()).assertCountEquals(0)
+        compose.onNodeWithText("Mac").performClick()
         compose.onAllNodes(isToggleable()).assertCountEquals(4)
         compose.onNodeWithContentDescription("Mac asks before accepting files from this device").performClick()
 
@@ -165,6 +167,7 @@ class DevicesScreenTest {
                 .build(),
         )
         setContent(state)
+        compose.onNodeWithText("Mac").performClick()
 
         compose.onNodeWithContentDescription("Mac asks before applying the clipboard of this device")
             .assertIsOn()
@@ -199,11 +202,12 @@ class DevicesScreenTest {
             }
         }
 
-        compose.onNodeWithText("Remove").performClick()
+        compose.onNodeWithText("Mac").performClick()
+        compose.onNodeWithText("Remove device").performScrollTo().performClick()
         compose.onNodeWithText("Remove Mac?").assertIsDisplayed()
         assertNull(removed)
 
-        compose.onAllNodesWithText("Remove")[1].performClick()
+        compose.onNodeWithText("Remove").performClick()
 
         assertEquals("Mac", removed?.name)
     }
