@@ -28,10 +28,12 @@ limited.
 
 ## Pairing
 
-The short code is computed from the keys of the connection, so a device between the two produces a
-different code on each side and the users notice. The QR code pins the fingerprint of the
-certificate it belongs to and carries a token that is accepted once, in one window, for one
-pairing.
+The short code is computed from the keys of the connection and from the identities behind its
+certificates, so a device between the two produces a different code on each side and the users
+notice. A pairing message that names another identity than the certificate of its connection is
+refused before a code is shown, and a window accepts only a few connections per ten seconds, so a
+device cannot test codes in bulk. The QR code pins the fingerprint of the certificate it belongs to
+and carries a token that is accepted once, in one window, for one pairing.
 
 ## Data at rest
 

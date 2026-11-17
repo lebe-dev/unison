@@ -27,9 +27,11 @@ listener does not exist.
 
 **Short code.** Both devices open the window, one of them picks the other in the list of devices
 that are open for pairing, and both screens show the same six digits and four emoji. The exchange
-starts with a fresh key exchange, and the code is computed from it, so a device between the two
-gets a different code on each side and the users see the difference. A device is stored only after
-both users confirmed the code.
+starts with a fresh key exchange, and the code is computed from it and from the identities of the
+two certificates, so a device between the two gets a different code on each side and the users see
+the difference. A request that names another identity than the certificate of its connection is
+refused, and a window takes only a few connections per ten seconds: one connection is one try at
+the code. A device is stored only after both users confirmed the code.
 
 **QR code.** The window of one device also shows a code for the camera of the other one:
 
