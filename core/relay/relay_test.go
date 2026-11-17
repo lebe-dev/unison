@@ -471,3 +471,29 @@ func TestClientRegistersTheNextDay(t *testing.T) {
 		t.Fatalf("the client is not connected after midnight: %+v", status)
 	}
 }
+
+// TestClosedClientWakesWaiters closes a client and checks that a caller that
+// waits for a state change learns about it, since a closed client never
+// connects again.
+func TestClosedClientWakesWaiters(t *testing.T) {
+	dialer, err := NewDialer(Config{URL: "relay.example.com:443", Token: testToken})
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	if dialer.Closed() {
+		t.Fatal("a new client reports that it is closed")
+	}
+
+	changes := dialer.Changes()
+	if err := dialer.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	select {
+	case <-changes:
+	case <-time.After(time.Second):
+		t.Fatal("closing the client did not signal a change")
+	}
+	if !dialer.Closed() {
+		t.Fatal("a closed client does not report that it is closed")
+	}
+}

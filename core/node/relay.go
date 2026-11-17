@@ -408,6 +408,13 @@ func (n *Node) openRelayPath(ctx context.Context, l *link) (*relayPath, error) {
 func (n *Node) watchRelay(ctx context.Context, id model.DeviceID, sess *session.Session, client *relay.Dialer) {
 	for {
 		changes := client.Changes()
+		if client.Closed() {
+			// The relay settings changed, so the session cannot continue
+			// over this client.
+			n.log.Debug("relay path dropped after a relay change", "peer", id)
+			sess.Close()
+			return
+		}
 		if client.Status().Connected {
 			select {
 			case <-ctx.Done():
@@ -438,10 +445,15 @@ func (n *Node) watchRelay(ctx context.Context, id model.DeviceID, sess *session.
 	}
 }
 
-// waitRelay waits until the relay client has a connection.
+// waitRelay waits until the relay client has a connection. It gives up when
+// the client is closed, which happens when the relay settings change, so the
+// relay path opens again with the current client.
 func (n *Node) waitRelay(ctx context.Context, client *relay.Dialer) bool {
 	for {
 		changes := client.Changes()
+		if client.Closed() {
+			return false
+		}
 		if client.Status().Connected {
 			return true
 		}

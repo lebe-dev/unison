@@ -489,6 +489,48 @@ func TestRelayPathReconnects(t *testing.T) {
 	waitClipboard(t, a.clipboard, "hello after the reconnect")
 }
 
+// TestRelayPathFollowsNewRelaySettings moves the group to another relay while
+// the relay path runs. The node closes the old relay client, so the relay path
+// has to leave it and register the mailbox on the new relay.
+func TestRelayPathFollowsNewRelaySettings(t *testing.T) {
+	network := vnet.NewNetwork()
+	bus := fake.NewBus()
+	first := startNodeTestRelay(t)
+	second := startNodeTestRelay(t)
+
+	trusted := relay.Config{TLS: &tls.Config{InsecureSkipVerify: true}}
+	a := newRelayNode(t, network, bus, 21068, Config{Relay: trusted})
+	b := newRelayNode(t, network, bus, 21072, Config{Relay: trusted})
+
+	a.start(t)
+	b.start(t)
+	a.sockets.disconnect()
+	b.sockets.disconnect()
+
+	setRelay(t, a, first.url)
+	setRelay(t, b, first.url)
+	a.pair(t, b)
+	b.pair(t, a)
+
+	waitPath(t, a, b.DeviceID(), model.PathRelay)
+	waitPath(t, b, a.DeviceID(), model.PathRelay)
+	settle(t, a, b)
+
+	// The group moves to another relay, and the old one goes away.
+	setRelay(t, a, second.url)
+	setRelay(t, b, second.url)
+	first.stop(t)
+	waitOffline(t, a, b.DeviceID())
+	waitOffline(t, b, a.DeviceID())
+
+	waitPath(t, a, b.DeviceID(), model.PathRelay)
+	waitPath(t, b, a.DeviceID(), model.PathRelay)
+	settle(t, a, b)
+
+	submitText(t, b, "hello over the new relay")
+	waitClipboard(t, a.clipboard, "hello over the new relay")
+}
+
 // TestDerivedRendezvousKeyUsesGroupToken derives the mailbox secret of a pair
 // that never paired directly from the relay token of the group, so the device
 // IDs alone do not reveal the mailboxes of the pair.

@@ -199,6 +199,14 @@ func (d *Dialer) Status() Status {
 	return d.status
 }
 
+// Closed reports whether the client was closed. A closed client never connects
+// again, so a caller that waits for it has to give up.
+func (d *Dialer) Closed() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.closed
+}
+
 // PacketSize returns the largest QUIC packet that fits into one datagram of the
 // connected relay, or zero when it is not connected.
 func (d *Dialer) PacketSize() int {
