@@ -10,5 +10,7 @@
 //
 // Schema changes are forward-only SQL migrations applied by Open. Packages that
 // own a domain embed their own files, read them with MigrationsFromFS and pass
-// them through Options.Migrations.
+// them through Options.Migrations. The database records every applied version,
+// so a migration added to a lower block still runs on a database that already
+// has migrations of higher blocks.
 package store

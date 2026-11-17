@@ -92,8 +92,12 @@ func migrationVersion(name string, base int64) (int64, error) {
 	return base + version, nil
 }
 
-// migrate applies every migration that is newer than the recorded schema
-// version.
+// migrationsTable records the version of every applied migration. A single
+// version is not enough: each domain owns a block of versions, so a migration
+// added to a lower block sorts below the ones already applied.
+const migrationsTable = "schema_migrations"
+
+// migrate applies every migration that the database has not recorded yet.
 func (s *Store) migrate(ctx context.Context, extra []Migration) error {
 	migrations, err := mergeMigrations(extra)
 	if err != nil {
@@ -109,31 +113,125 @@ func (s *Store) migrate(ctx context.Context, extra []Migration) error {
 		return fmt.Errorf("%w: database is at %d, migrations end at %d", ErrSchemaNewer, current, newest)
 	}
 
+	applied, legacy, err := s.appliedMigrations(ctx)
+	if err != nil {
+		return err
+	}
+	for version := range applied {
+		if !slices.ContainsFunc(migrations, func(m Migration) bool { return m.Version == version }) {
+			return fmt.Errorf("%w: database has migration %d, which is unknown", ErrSchemaNewer, version)
+		}
+	}
+
 	for _, m := range migrations {
-		if m.Version <= current {
+		if applied[m.Version] {
 			continue
 		}
-		if err := s.applyMigration(ctx, m); err != nil {
+		if legacy && m.Version <= current {
+			if err := s.repairMigration(ctx, m); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := s.applyMigration(ctx, m, max(current, m.Version)); err != nil {
 			return err
 		}
-		current = m.Version
+		current = max(current, m.Version)
 	}
 	return nil
 }
 
-// applyMigration runs one migration and records its version.
-func (s *Store) applyMigration(ctx context.Context, m Migration) error {
+// appliedMigrations returns the recorded migration versions. It reports a
+// legacy database, one that predates the record and knows only its highest
+// version, and creates the record for it.
+func (s *Store) appliedMigrations(ctx context.Context) (map[int64]bool, bool, error) {
+	var exists int64
+	const lookup = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?"
+	if err := s.read.QueryRowContext(ctx, lookup, migrationsTable).Scan(&exists); err != nil {
+		return nil, false, fmt.Errorf("look up applied migrations: %w", err)
+	}
+	if exists == 0 {
+		current, err := s.SchemaVersion(ctx)
+		if err != nil {
+			return nil, false, err
+		}
+		create := "CREATE TABLE " + migrationsTable + " (version INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL) STRICT"
+		if _, err := s.write.ExecContext(ctx, create); err != nil {
+			return nil, false, fmt.Errorf("create applied migrations: %w", err)
+		}
+		return map[int64]bool{}, current > 0, nil
+	}
+
+	rows, err := s.read.QueryContext(ctx, "SELECT version FROM "+migrationsTable)
+	if err != nil {
+		return nil, false, fmt.Errorf("read applied migrations: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	applied := make(map[int64]bool)
+	for rows.Next() {
+		var version int64
+		if err := rows.Scan(&version); err != nil {
+			return nil, false, fmt.Errorf("read applied migrations: %w", err)
+		}
+		applied[version] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, fmt.Errorf("read applied migrations: %w", err)
+	}
+	return applied, false, nil
+}
+
+// repairMigration handles a migration at or below the version of a legacy
+// database, which may have skipped it. Migrations create schema objects, so
+// one that fails was applied before and is only recorded; one that succeeds
+// fills the gap.
+func (s *Store) repairMigration(ctx context.Context, m Migration) error {
+	current, err := s.SchemaVersion(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.applyMigration(ctx, m, current); err == nil {
+		return nil
+	}
+	if err := s.recordMigration(ctx, m); err != nil {
+		return fmt.Errorf("migration %s (%d): %w", m.Name, m.Version, err)
+	}
+	return nil
+}
+
+// applyMigration runs one migration, records it and sets the schema version.
+func (s *Store) applyMigration(ctx context.Context, m Migration, version int64) error {
 	err := s.WithTx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, m.SQL); err != nil {
 			return fmt.Errorf("run: %w", err)
 		}
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", m.Version)); err != nil {
+		if err := insertMigration(ctx, tx, m); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", version)); err != nil {
 			return fmt.Errorf("record version: %w", err)
 		}
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("migration %s (%d): %w", m.Name, m.Version, err)
+	}
+	return nil
+}
+
+// recordMigration records a migration without running it.
+func (s *Store) recordMigration(ctx context.Context, m Migration) error {
+	return s.WithTx(ctx, func(tx *sql.Tx) error {
+		return insertMigration(ctx, tx, m)
+	})
+}
+
+// insertMigration adds a migration to the record of applied ones.
+func insertMigration(ctx context.Context, tx *sql.Tx, m Migration) error {
+	query := "INSERT INTO " + migrationsTable + " (version, name) VALUES (?, ?)"
+	if _, err := tx.ExecContext(ctx, query, m.Version, m.Name); err != nil {
+		return fmt.Errorf("record migration: %w", err)
 	}
 	return nil
 }

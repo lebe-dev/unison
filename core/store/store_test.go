@@ -141,6 +141,72 @@ func TestMigrationsOnExistingDatabase(t *testing.T) {
 	}
 }
 
+func TestMigrationsApplyLowerBlockAddedLater(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	keystore := fake.NewKeystore()
+
+	history := Migration{Version: 200, Name: "200_history", SQL: "CREATE TABLE history (id INTEGER) STRICT;"}
+	peers := Migration{Version: 101, Name: "101_peers", SQL: "CREATE TABLE peers (id INTEGER) STRICT;"}
+
+	first := openTestStore(t, Options{Dir: dir, Keystore: keystore, Migrations: []Migration{history}})
+	if err := first.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	second := openTestStore(t, Options{Dir: dir, Keystore: keystore, Migrations: []Migration{history, peers}})
+	assertTable(t, second, "peers")
+	if version, err := second.SchemaVersion(ctx); err != nil || version != 200 {
+		t.Fatalf("schema version: got %d, %v, want 200", version, err)
+	}
+}
+
+func TestMigrationsRepairLegacyDatabase(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	keystore := fake.NewKeystore()
+
+	peers := Migration{Version: 101, Name: "101_peers", SQL: "CREATE TABLE peers (id INTEGER) STRICT;"}
+	revocations := Migration{Version: 102, Name: "102_revocations", SQL: "CREATE TABLE revocations (id INTEGER) STRICT;"}
+	history := Migration{Version: 200, Name: "200_history", SQL: "CREATE TABLE history (id INTEGER) STRICT;"}
+
+	// A database written by the old runner knows only the highest version, so
+	// a migration of a lower block added later was never applied.
+	first := openTestStore(t, Options{Dir: dir, Keystore: keystore, Migrations: []Migration{peers, history}})
+	if err := first.WithTx(ctx, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, "DROP TABLE "+migrationsTable)
+		return err
+	}); err != nil {
+		t.Fatalf("drop applied migrations: %v", err)
+	}
+	if err := first.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	second := openTestStore(t, Options{Dir: dir, Keystore: keystore, Migrations: []Migration{peers, revocations, history}})
+	assertTable(t, second, "revocations")
+	if err := second.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	third := openTestStore(t, Options{Dir: dir, Keystore: keystore, Migrations: []Migration{peers, revocations, history}})
+	assertTable(t, third, "revocations")
+}
+
+// assertTable fails the test when the database has no table with the name.
+func assertTable(t *testing.T, s *Store, name string) {
+	t.Helper()
+	var count int64
+	if err := s.View(context.Background(), func(tx *sql.Tx) error {
+		return tx.QueryRowContext(context.Background(), "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?", name).Scan(&count)
+	}); err != nil {
+		t.Fatalf("look up table %s: %v", name, err)
+	}
+	if count != 1 {
+		t.Fatalf("table %s is missing", name)
+	}
+}
+
 func TestMigrationsRejectInvalidSets(t *testing.T) {
 	ctx := context.Background()
 	keystore := fake.NewKeystore()
