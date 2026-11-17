@@ -15,10 +15,12 @@ import (
 )
 
 // pathPattern matches absolute paths of common system directories and Windows
-// drive paths. The leading character is kept, so a path inside a URL is not
-// touched when no separator precedes it.
+// drive paths. The first token has no spaces; a following token continues the
+// path only while it carries a separator, so prose after a path stays. The
+// leading character is kept, so a path inside a URL is not touched when no
+// separator precedes it.
 var pathPattern = regexp.MustCompile(
-	`(?i)(^|[\s"'(<]|\[)((?:/(?:Users|home|root|tmp|private|var|opt|mnt|data|storage)/|[A-Za-z]:[\\/])[^\r\n\t"'<>|:)\]},;]*)`,
+	`(?i)(^|[\s"'(<]|\[)((?:/(?:Users|home|root|tmp|private|var|opt|mnt|data|storage)/|[A-Za-z]:[\\/])[^\s"'<>|:)\]},;]*(?:[ \t]+[^\s"'<>|:)\]},;]*[\\/][^\s"'<>|:)\]},;]*)*)`,
 )
 
 // Values set at build time with -ldflags.

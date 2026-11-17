@@ -143,8 +143,9 @@ func Run(ctx context.Context, opts Options) error {
 	if err != nil {
 		return err
 	}
+	stopReported := false
 	defer func() {
-		if err := stopNode(n, log); err != nil {
+		if err := stopNode(n, log); err != nil && !stopReported {
 			observability.CaptureException(err)
 		}
 	}()
@@ -209,7 +210,10 @@ func Run(ctx context.Context, opts Options) error {
 	if err := <-serveDone; err != nil {
 		return fmt.Errorf("daemon: the local API stopped: %w", err)
 	}
-	_ = stopNode(n, log)
+	if err := stopNode(n, log); err != nil {
+		observability.CaptureException(err)
+		stopReported = true
+	}
 	log.Info("daemon stopped")
 	return nil
 }
