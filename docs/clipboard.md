@@ -56,6 +56,11 @@ downloads folder:
 | macOS | `~/Downloads/Unison` |
 | Android | `Download/Unison` |
 
+On the Mac the folder can be changed in Settings under "Received files". "Use default folder"
+brings back `~/Downloads/Unison`. The new folder applies to the files that arrive afterwards;
+files already received stay where they are. The command line client shows the current folder
+with `unison settings`.
+
 Files are fetched in verified chunks, so an interrupted transfer resumes where it stopped. Every
 received file is checked against the hash of the announcement.
 

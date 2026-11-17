@@ -233,6 +233,16 @@ pub async fn pick_files(app: AppHandle) -> Result<Vec<String>, String> {
         .collect())
 }
 
+/// pick_folder opens the native folder dialog and returns the picked path.
+#[tauri::command]
+pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
+    let picked =
+        tauri::async_runtime::spawn_blocking(move || app.dialog().file().blocking_pick_folder())
+            .await
+            .map_err(|err| err.to_string())?;
+    Ok(picked.and_then(path_string))
+}
+
 /// path_string turns a picked file path into plain text.
 fn path_string(path: tauri_plugin_dialog::FilePath) -> Option<String> {
     path.into_path()

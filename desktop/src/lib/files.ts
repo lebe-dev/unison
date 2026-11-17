@@ -7,3 +7,11 @@ import { invoke } from "@tauri-apps/api/core";
 export function pickFiles(): Promise<string[]> {
   return invoke<string[]>("pick_files");
 }
+
+/**
+ * pickFolder opens the native folder dialog and returns the absolute path the
+ * user picked, or null when the dialog was closed.
+ */
+export function pickFolder(): Promise<string | null> {
+  return invoke<string | null>("pick_folder");
+}

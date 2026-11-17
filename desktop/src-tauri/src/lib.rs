@@ -189,6 +189,7 @@ pub fn run() {
             set_login_item,
             tray::set_tray_state,
             tray::pick_files,
+            tray::pick_folder,
             prompt::show_prompt,
             prompt::hide_prompt
         ])

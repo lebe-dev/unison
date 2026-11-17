@@ -40,7 +40,7 @@ login Keychain from inside the app, so the window reports `Daemon offline`.
 3. Delete `~/Library/Application Support/Unison`.
 4. Delete the items of the service `app.unison` in Keychain Access.
 
-Copies of received files stay in `~/Downloads/Unison`.
+Copies of received files stay in `~/Downloads/Unison`, or in the folder chosen in Settings.
 
 ## Android
 

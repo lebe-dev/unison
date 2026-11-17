@@ -19,7 +19,15 @@ import {
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
+import { pickFolder } from "../files";
 import Settings from "./Settings.svelte";
+
+vi.mock("../files", () => ({
+  pickFiles: vi.fn(),
+  pickFolder: vi.fn(),
+}));
+
+const pickFolderMock = vi.mocked(pickFolder);
 
 vi.mock("../api/client", () => ({
   client: {
@@ -64,6 +72,7 @@ function settings(): SettingsMessage {
     historyTtlTextSeconds: 7n * 86400n,
     historyTtlImageSeconds: 3n * 86400n,
     historyTtlFilesSeconds: 86400n,
+    downloadsDir: "/Users/me/Downloads/Unison",
   });
 }
 
@@ -107,6 +116,38 @@ beforeEach(() => {
 });
 
 describe("settings screen", () => {
+  it("shows the folder of the received files", async () => {
+    render(Settings);
+
+    expect(await screen.findByText("/Users/me/Downloads/Unison")).toBeTruthy();
+  });
+
+  it("saves the folder the user picked", async () => {
+    pickFolderMock.mockResolvedValue("/Volumes/Data/Inbox");
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({ downloadsDir: "/Volumes/Data/Inbox" });
+  });
+
+  it("keeps the folder when the dialog is closed", async () => {
+    pickFolderMock.mockResolvedValue(null);
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
+
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it("goes back to the default folder", async () => {
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Use default folder" }));
+
+    expect(updateSettings).toHaveBeenCalledWith({ downloadsDir: "" });
+  });
+
   it("turns the search for friends on", async () => {
     render(Settings);
 

@@ -2,7 +2,9 @@
   import { client } from "../api/client";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
+  import { history } from "../history.svelte";
   import { shortDeviceID } from "../format";
+  import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
   import {
     actions,
@@ -40,6 +42,7 @@
   ];
 
   let name = $state("");
+  let downloadsDir = $state("");
   let requireConfirmation = $state(false);
   let requireFileConfirmation = $state(false);
   let policy = $state<PolicyTable | null>(null);
@@ -119,6 +122,7 @@
       name = response.settings?.deviceName ?? "";
       requireConfirmation = response.settings?.requireConfirmation ?? false;
       requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
+      downloadsDir = response.settings?.downloadsDir ?? "";
       policy = policyFromSettings(response.settings);
       showTTL(ttlFromSettings(response.settings));
       loaded = true;
@@ -179,6 +183,36 @@
     } finally {
       busy = false;
     }
+  }
+
+  /** Stores the folder of the received files; an empty path means the default one. */
+  async function saveDownloadsDir(path: string): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings({ downloadsDir: path });
+      downloadsDir = response.settings?.downloadsDir ?? path;
+      history.downloadsDir = downloadsDir;
+      notice = { kind: "info", text: "Files that arrive from now on are saved there." };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, "The folder could not be saved.") };
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function chooseDownloadsDir(): Promise<void> {
+    let path: string | null;
+    try {
+      path = await pickFolder();
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, "The folder dialog could not be opened.") };
+      return;
+    }
+    if (!path) {
+      return;
+    }
+    await saveDownloadsDir(path);
   }
 
   async function setPause(choice: PauseChoice): Promise<void> {
@@ -421,6 +455,30 @@
     </section>
 
     <section class="panel">
+      <h3>Received files</h3>
+      <p class="muted">Files that other devices send are saved in this folder.</p>
+      <p class="mono path">{downloadsDir}</p>
+      <div class="toolbar">
+        <button
+          class="button"
+          type="button"
+          onclick={() => void chooseDownloadsDir()}
+          disabled={busy || !loaded}
+        >
+          Choose folder
+        </button>
+        <button
+          class="button"
+          type="button"
+          onclick={() => void saveDownloadsDir("")}
+          disabled={busy || !loaded}
+        >
+          Use default folder
+        </button>
+      </div>
+    </section>
+
+    <section class="panel">
       <h3>Friends</h3>
       <label class="toggle">
         <input
@@ -591,10 +649,6 @@
     </section>
 
     <RelaySection />
-
-    <p class="muted">
-      The downloads folder is not shown here yet.
-    </p>
   </div>
 {/if}
 
@@ -617,6 +671,10 @@
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 0.5rem;
+  }
+
+  .path {
+    overflow-wrap: anywhere;
   }
 
   .grow {
