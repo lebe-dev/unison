@@ -18,4 +18,16 @@ macOS and Android are supported. Windows and Linux are not available yet.
 - [Security](docs/security.md) - keys, transport, pairing, untrusted content, data at rest
 - [Troubleshooting](docs/troubleshooting.md) - the usual reasons a device does not connect
 
+## Architecture
+
+- [Overview](docs/architecture/overview.md) - the processes, the layers and the data directory
+- [Core](docs/architecture/core.md) - the domain packages and how the node composes them
+- [Protocol](docs/architecture/protocol.md) - transport, session, discovery, pairing and the domain messages
+- [Daemon and local API](docs/architecture/local-api.md) - the daemon, its endpoint and the CLI
+- [Relay](docs/architecture/relay.md) - the relay client, the server and its deployment
+- [Desktop app](docs/architecture/desktop.md) - the Tauri shell and the Svelte frontend
+- [macOS](docs/architecture/macos.md) - the darwin ports and the bundle
+- [Windows](docs/architecture/windows.md) - the windows ports and the installer
+- [Android](docs/architecture/android.md) - the mobile binding, the service and the app
+
 Building the code and running the tests is described in `DEV.md`.
