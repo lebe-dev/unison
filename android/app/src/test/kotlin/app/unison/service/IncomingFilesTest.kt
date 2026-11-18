@@ -115,6 +115,53 @@ class IncomingFilesTest {
         assertFalse(receipts.progressDue(ID, nowMs = 5_000))
     }
 
+    @Test
+    fun nextShowsProgressThenTheResultOnce() {
+        val receipts = IncomingFiles.Receipts(intervalMs = 1_000)
+        val running = transfer(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING, Local.TransferState.TRANSFER_STATE_TRANSFERRING)
+        val done = transfer(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING, Local.TransferState.TRANSFER_STATE_DONE)
+
+        assertEquals(IncomingFiles.Receipt.PROGRESS, receipts.next(running, nowMs = 0))
+        assertEquals(IncomingFiles.Receipt.NONE, receipts.next(running, nowMs = 10))
+        assertEquals(setOf(ID), receipts.running())
+        assertEquals(IncomingFiles.Receipt.RECEIVED, receipts.next(done, nowMs = 20))
+        assertEquals(IncomingFiles.Receipt.NONE, receipts.next(done, nowMs = 30))
+        assertEquals(IncomingFiles.Receipt.NONE, receipts.next(running, nowMs = 5_000))
+        assertTrue(receipts.running().isEmpty())
+    }
+
+    @Test
+    fun nextShowsAFailureOnce() {
+        val receipts = IncomingFiles.Receipts(intervalMs = 1_000)
+        val failed = transfer(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING, Local.TransferState.TRANSFER_STATE_FAILED)
+
+        assertEquals(IncomingFiles.Receipt.FAILED, receipts.next(failed, nowMs = 0))
+        assertEquals(IncomingFiles.Receipt.NONE, receipts.next(failed, nowMs = 0))
+    }
+
+    @Test
+    fun nextIgnoresOffersAndOutgoingTransfers() {
+        val receipts = IncomingFiles.Receipts(intervalMs = 1_000)
+        val offer = transfer(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING, Local.TransferState.TRANSFER_STATE_PENDING)
+        val outgoing = transfer(Local.TransferDirection.TRANSFER_DIRECTION_OUTGOING, Local.TransferState.TRANSFER_STATE_DONE)
+
+        assertEquals(IncomingFiles.Receipt.NONE, receipts.next(offer, nowMs = 0))
+        assertEquals(IncomingFiles.Receipt.NONE, receipts.next(outgoing, nowMs = 0))
+        assertTrue(receipts.running().isEmpty())
+    }
+
+    @Test
+    fun finishedTransfersAreForgottenPastTheLimit() {
+        val receipts = IncomingFiles.Receipts(intervalMs = 1_000, finishedLimit = 2)
+
+        assertTrue(receipts.finish("a"))
+        assertTrue(receipts.finish("b"))
+        assertTrue(receipts.finish("c"))
+
+        assertTrue(receipts.finish("a"))
+        assertFalse(receipts.finish("c"))
+    }
+
     private fun transfer(
         direction: Local.TransferDirection,
         state: Local.TransferState = Local.TransferState.TRANSFER_STATE_TRANSFERRING,

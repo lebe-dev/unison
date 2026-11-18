@@ -48,9 +48,27 @@ object IncomingFiles {
      * Keeps the receive notifications calm: the progress of a transfer is shown
      * at most once per interval, and its result once.
      */
-    class Receipts(private val intervalMs: Long) {
+    class Receipts(
+        private val intervalMs: Long,
+        private val finishedLimit: Int = FINISHED_LIMIT,
+    ) {
         private val shownAt = HashMap<String, Long>()
         private val finished = LinkedHashSet<String>()
+
+        /**
+         * Receive notification to show for the event at [nowMs], or [Receipt.NONE]
+         * when the event changes nothing the user should see now.
+         */
+        fun next(event: Local.Event, nowMs: Long): Receipt {
+            val receipt = receipt(event)
+            val id = event.transfer.id
+            val due = when (receipt) {
+                Receipt.NONE -> false
+                Receipt.PROGRESS -> progressDue(id, nowMs)
+                else -> finish(id)
+            }
+            return if (due) receipt else Receipt.NONE
+        }
 
         /** True when the progress of the transfer may be shown at [nowMs]. */
         fun progressDue(id: String, nowMs: Long): Boolean {
@@ -74,7 +92,7 @@ object IncomingFiles {
             if (!finished.add(id)) {
                 return false
             }
-            if (finished.size > FINISHED_LIMIT) {
+            if (finished.size > finishedLimit) {
                 finished.remove(finished.first())
             }
             return true

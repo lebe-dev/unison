@@ -320,18 +320,10 @@ class UnisonService : Service() {
     @SuppressLint("MissingPermission")
     private fun notifyReceipt(event: Local.Event) {
         val transfer = event.transfer
-        val notification = when (IncomingFiles.receipt(event)) {
+        val notification = when (receipts.next(event, System.currentTimeMillis())) {
             IncomingFiles.Receipt.NONE -> return
-            IncomingFiles.Receipt.PROGRESS -> {
-                if (!receipts.progressDue(transfer.id, System.currentTimeMillis())) {
-                    return
-                }
-                ReceiveNotifications.progress(this, transfer)
-            }
+            IncomingFiles.Receipt.PROGRESS -> ReceiveNotifications.progress(this, transfer)
             else -> {
-                if (!receipts.finish(transfer.id)) {
-                    return
-                }
                 Journal.info("incoming transfer ended", "state" to transfer.state.name)
                 ReceiveNotifications.result(this, transfer)
             }

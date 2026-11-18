@@ -100,6 +100,57 @@ class ReceiveNotificationsTest {
     }
 
     @Test
+    fun progressWithoutSizeIsIndeterminate() {
+        val notification = ReceiveNotifications.progress(
+            context,
+            transfer(Local.TransferState.TRANSFER_STATE_TRANSFERRING, files = listOf("a.jpg", "b.jpg")),
+        )
+
+        assertTrue(notification.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
+        assertEquals(
+            testQuantity(R.plurals.receive_files, 2, 2),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+    }
+
+    @Test
+    fun failedResultStaysOnTheQuietChannel() {
+        val notification = ReceiveNotifications.result(
+            context,
+            transfer(Local.TransferState.TRANSFER_STATE_FAILED, files = listOf("a.jpg")),
+        )
+
+        assertEquals(NotificationChannels.TRANSFERS, notification.channelId)
+        assertTrue(notification.flags and Notification.FLAG_AUTO_CANCEL != 0)
+    }
+
+    @Test
+    fun canceledResultSaysSo() {
+        val notification = ReceiveNotifications.result(
+            context,
+            transfer(Local.TransferState.TRANSFER_STATE_CANCELED, files = listOf("a.jpg")),
+        )
+
+        assertEquals(
+            testString(R.string.receive_canceled),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+    }
+
+    @Test
+    fun senderWithoutNameIsTheApp() {
+        val notification = ReceiveNotifications.result(
+            context,
+            transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("a.jpg")).toBuilder().setDeviceName("").build(),
+        )
+
+        assertEquals(
+            testString(R.string.app_name),
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+        )
+    }
+
+    @Test
     fun everyTransferHasItsOwnNotification() {
         assertNotEquals(ReceiveNotifications.idOf("a"), ReceiveNotifications.idOf("b"))
         assertEquals(ReceiveNotifications.idOf("a"), ReceiveNotifications.idOf("a"))
