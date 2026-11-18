@@ -20,7 +20,9 @@ const (
 	PairingALPN = "unison-pair/1"
 
 	// KeepAlivePeriod is the interval of keepalive packets on an idle connection.
-	KeepAlivePeriod = 15 * time.Second
+	// Every keepalive wakes an idle phone, so it is as long as the idle timeout
+	// allows with room for one lost packet.
+	KeepAlivePeriod = 25 * time.Second
 	// IdleTimeout closes a connection when the peer stays silent for this long.
 	IdleTimeout = 60 * time.Second
 	// HandshakeTimeout bounds the handshake, the peer verification and the

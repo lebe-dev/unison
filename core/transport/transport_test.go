@@ -398,8 +398,10 @@ func TestDefaults(t *testing.T) {
 		t.Fatalf("keepalive = %v, want %v", cfg.KeepAlive, KeepAlivePeriod)
 	}
 	quicCfg := cfg.quic()
-	if quicCfg.KeepAlivePeriod != 15*time.Second {
-		t.Fatalf("keepalive around = %v, want 15s", quicCfg.KeepAlivePeriod)
+	// Every keepalive wakes an idle phone; 25 s stays below half of the idle
+	// timeout, so one lost keepalive does not end the connection.
+	if quicCfg.KeepAlivePeriod != 25*time.Second {
+		t.Fatalf("keepalive around = %v, want 25s", quicCfg.KeepAlivePeriod)
 	}
 	if quicCfg.MaxIdleTimeout <= quicCfg.KeepAlivePeriod {
 		t.Fatalf("idle timeout %v does not exceed the keepalive %v", quicCfg.MaxIdleTimeout, quicCfg.KeepAlivePeriod)
