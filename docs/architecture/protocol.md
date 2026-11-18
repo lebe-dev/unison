@@ -149,11 +149,13 @@ Addresses come from four places, in this order of preference:
 3. the address cache of the peer;
 4. the relay.
 
-The address a peer connected from is cached last, because it is the ephemeral port of its dialer.
-The main listener port is persisted in `transport.main_port`, so the cached address of a device
-survives a restart. After a lost connection the node reconnects with a delay that doubles from one
-second up to thirty seconds. `NetworkChanged` announces the device again and retries every offline
-peer.
+The address a peer connected from is the ephemeral port of its dialer, which takes no connections,
+so it is cached last and only for a host the cache does not know yet. A dialed address replaces the
+other ports of its host, which belong to an earlier run. The main listener port is persisted in
+`transport.main_port`, so the cached address of a device survives a restart. A connection attempt
+stops as soon as the peer connects on its own. After a lost connection the node reconnects with a
+delay that doubles from one second up to thirty seconds. `NetworkChanged` announces the device again
+and retries every offline peer.
 
 ## Discovery
 
@@ -179,7 +181,9 @@ of the group key accepts the previous key for a transition period.
 
 The service instance name, host name and the query are ordinary DNS-SD; PTR and TXT records live
 4500 s, SRV and address records 120 s. Announcements are sent twice, one second apart, and the
-epoch and the interface set are re-checked every 30 s.
+epoch and the interface set are re-checked every 30 s. A browser repeats its query one second after
+the first one and doubles the pause up to one minute, as RFC 6762 asks, because every query wakes
+the phones of the network; a change of the network or of the epoch starts the schedule again.
 
 `LocalNetworkBlocked` reports a process that the system refuses to send on the local network while
 loopback still works, which is what macOS does without the local network permission.

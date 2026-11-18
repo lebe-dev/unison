@@ -71,7 +71,9 @@ The facade supplies all four ports, so the core does not know that it runs in an
   items reach the system clipboard through `Platform.WriteClipboard`.
 - **Discovery.** The platform callback publishes and browses mDNS through
   `NsdManager`. Only the `main` and `pairing` services exist on Android: a Friends device cannot
-  open a session with Android, so the `friends` service is refused.
+  open a session with Android, so the `friends` service is refused. The own announcement is not
+  reported back to the core, and a link-local IPv6 address is reported only for a device that has
+  no other one: Android refuses apps the interface list, and Go looks the zone up on every packet.
 - **Keystore.** The core stores its keys in `<data dir>/keys` as files, and each file is wrapped with
   an AES-256-GCM key that lives in the Android Keystore under the alias `unison.master`. The file
   format is a version byte, a 12 byte IV and the ciphertext with its tag, and the AAD is the version
