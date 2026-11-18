@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"time"
 
 	"github.com/lebe-dev/unison/core/blob/transfer"
@@ -53,6 +54,9 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 
 	decision := record.Decision(trust.ActionReceiveShare)
 	if decision == trust.Allow {
+		decision = s.networkDecision(ctx, peer, files)
+	}
+	if decision == trust.Allow {
 		if err := s.checkOffer(ctx, files); err != nil {
 			s.log.Warn("refused an offer", "peer", peer, "error", err)
 			return s.send(ctx, sess, decisionMessage(id, false))
@@ -65,6 +69,24 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 
 	s.log.Info("refused a share offer", "peer", peer, "decision", decision.String())
 	return s.send(ctx, sess, decisionMessage(id, false))
+}
+
+// networkDecision applies the network policy to an offer the trust store
+// accepts at once. A policy that cannot decide holds the offer for the user.
+func (s *Service) networkDecision(ctx context.Context, peer model.DeviceID, files []File) trust.Decision {
+	if s.policy == nil {
+		return trust.Allow
+	}
+	size := int64(min(totalBytes(files), math.MaxInt64))
+	decision, err := s.policy.DecideShare(ctx, peer, size)
+	if err != nil {
+		s.log.Warn("applying the network policy to an offer failed", "peer", peer, "error", err)
+		return trust.Confirm
+	}
+	if decision != trust.Allow {
+		s.log.Info("the network policy does not accept an offer at once", "peer", peer, "bytes", size, "decision", decision.String())
+	}
+	return decision
 }
 
 // repeatOffer answers an offer the receiver already knows, so a sender that

@@ -29,6 +29,14 @@ type Trust interface {
 
 var _ Trust = (*trust.Store)(nil)
 
+// Policy applies the network policy to an offer the trust store accepts at
+// once. Allow downloads the files at once, Confirm holds the offer for the user
+// and Deny refuses it.
+type Policy interface {
+	// DecideShare returns the decision for files of size bytes from peer.
+	DecideShare(ctx context.Context, peer model.DeviceID, size int64) (trust.Decision, error)
+}
+
 // Sink writes an incoming file. The service reads the payload from the blob
 // store and hands the reader over; the file name is already sanitized.
 type Sink interface {
@@ -52,6 +60,9 @@ type Options struct {
 	Trust Trust
 	// Fetcher downloads the offered payloads. It is required.
 	Fetcher *transfer.Fetcher
+	// Policy applies the network policy to the offers of a peer the trust
+	// store accepts at once. Such offers are accepted when nil.
+	Policy Policy
 	// Settings holds the downloads directory. The user downloads directory is
 	// used when nil.
 	Settings *store.Settings
@@ -77,6 +88,7 @@ type Service struct {
 	blobs     *blob.Store
 	trust     Trust
 	fetcher   *transfer.Fetcher
+	policy    Policy
 	settings  *store.Settings
 	downloads string
 	sink      Sink
@@ -148,6 +160,7 @@ func New(opts Options) (*Service, error) {
 		blobs:      opts.Blobs,
 		trust:      opts.Trust,
 		fetcher:    opts.Fetcher,
+		policy:     opts.Policy,
 		settings:   opts.Settings,
 		downloads:  opts.Downloads,
 		sink:       opts.Sink,

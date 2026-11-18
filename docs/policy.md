@@ -43,7 +43,10 @@ on mobile data does not download by itself.
 
 The `files` cell covers files that are part of a clipboard copy. A file offered with
 `unison send` is an explicit offer of the sender, so a Personal device receives it at once, within
-the size limit of the cell.
+the size limit of the cell; the limit counts every file of the offer together. A larger offer waits
+in `Requests` (`Inbox` on Android) until you accept it, and so does an offer over the relay while
+files travel over it only on request. A cell set to `reject`, or a network that forbids the relay,
+declines the offer.
 
 A Friends device can only offer files, and every offer waits for your decision. Its clipboard items
 are refused whatever the network.

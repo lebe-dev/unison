@@ -229,8 +229,10 @@ entries the peer misses, oldest first, up to 64 entries or 512 KiB per batch and
 `core/share` sends files the user picked. The sender stores the files in the blob store and offers
 them with `ShareOffer`; the receiver answers with `ShareDecision`. The trust matrix decides: a
 Personal peer without the files flag is accepted at once, a Personal peer with the flag and a
-Friends peer wait for the user, and a refused peer gets a rejection. Nothing of an undecided offer is
-written to the disk.
+Friends peer wait for the user, and a refused peer gets a rejection. An offer the matrix accepts at
+once then goes through the network policy with the total size of its files and the `share` source:
+an automatic apply downloads it, a reject declines it and anything else holds it for the user.
+Nothing of an undecided offer is written to the disk.
 
 A transfer pulls its files over the blob protocol with the `share.request` payload type and the
 transfer ID of the offer, so an interrupted transfer continues from the chunks that are already

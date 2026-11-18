@@ -193,3 +193,43 @@ func TestItemSize(t *testing.T) {
 		})
 	}
 }
+
+func TestDeciderDecideShare(t *testing.T) {
+	var from model.DeviceID
+	clipboardFlag := Peer{Role: model.RolePersonal, RequireConfirmation: true}
+
+	tests := []struct {
+		name string
+		src  fakeSources
+		size int64
+		want Action
+	}{
+		{name: "within the files limit", src: fakeSources{peer: personal, network: wifi, path: model.PathLAN}, size: DefaultLANMaxSize, want: ActionAutoApply},
+		{name: "above the files limit", src: fakeSources{peer: personal, network: wifi, path: model.PathLAN}, size: DefaultLANMaxSize + 1, want: ActionMetadataOnly},
+		{name: "above the metered limit", src: fakeSources{peer: personal, network: cellular, path: model.PathLAN}, size: DefaultRelayMaxSize + 1, want: ActionMetadataOnly},
+		{name: "over the relay", src: fakeSources{peer: personal, network: wifi, path: model.PathRelay}, size: smallSize, want: ActionMetadataOnly},
+		{name: "relay on roaming", src: fakeSources{peer: personal, network: roaming, path: model.PathRelay}, size: smallSize, want: ActionReject},
+		{name: "clipboard flag does not hold a share", src: fakeSources{peer: clipboardFlag, network: wifi, path: model.PathLAN}, size: smallSize, want: ActionAutoApply},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			src := test.src
+			got, err := newTestDecider(t, &src).DecideShare(context.Background(), from, test.size)
+			if err != nil {
+				t.Fatalf("decide: %v", err)
+			}
+			if got.Action != test.want {
+				t.Fatalf("action: got %s, want %s", got.Action, test.want)
+			}
+		})
+	}
+}
+
+func TestDeciderDecideSharePeerError(t *testing.T) {
+	var from model.DeviceID
+	src := fakeSources{peerErr: errors.New("no peer"), network: wifi, path: model.PathLAN}
+	if _, err := newTestDecider(t, &src).DecideShare(context.Background(), from, smallSize); err == nil {
+		t.Fatal("decide with a peer error: expected an error")
+	}
+}

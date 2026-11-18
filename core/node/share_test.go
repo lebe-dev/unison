@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/ports/fake"
 	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/transport/vnet"
@@ -62,6 +63,14 @@ func (n *testNode) pairAs(t *testing.T, other *testNode, role model.Role) {
 	if err != nil {
 		t.Fatalf("add peer: %v", err)
 	}
+}
+
+// allowLargeShares raises the files limit of the node, so a large offer of a
+// Personal device is downloaded at once.
+func allowLargeShares(n *testNode) {
+	config := n.Policy().Config()
+	config.Unmetered.Files.MaxSize = 1 << 30
+	n.Policy().SetConfig(config)
 }
 
 // shareFile writes a file of the given size and returns its path.
@@ -282,6 +291,75 @@ func TestSharePersonalFileConfirmation(t *testing.T) {
 	waitTransfer(t, a, ids[0], share.StateDone)
 }
 
+// TestShareAboveFilesLimitWaits checks that an offer of a Personal device above
+// the files limit of the policy waits for the user, and one within it does not.
+func TestShareAboveFilesLimitWaits(t *testing.T) {
+	a, b := shareNodes(t, 36000, model.RolePersonal)
+
+	config := b.Policy().Config()
+	config.Unmetered.Files.MaxSize = 1 << 20
+	b.Policy().SetConfig(config)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	path, _ := shareFile(t, "small.bin", 1<<20)
+	if _, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()}); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	waitIncoming(t, b, a.DeviceID(), share.StateDone)
+
+	path, data := shareFile(t, "large.bin", 1<<20+1)
+	ids, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	pending := waitIncoming(t, b, a.DeviceID(), share.StatePending)
+	if pending.Files[0].Name != "large.bin" {
+		t.Fatalf("the offer holds %q", pending.Files[0].Name)
+	}
+	for _, name := range downloads(t, b) {
+		if name == "large.bin" {
+			t.Fatal("an offer above the limit was saved before a decision")
+		}
+	}
+
+	if err := b.Share().Accept(ctx, pending.ID); err != nil {
+		t.Fatalf("accept: %v", err)
+	}
+	done := waitTransfer(t, b, pending.ID, share.StateDone)
+	if got := readSaved(t, b, filepath.Base(done.Paths[0])); !bytes.Equal(got, data) {
+		t.Fatalf("the saved file differs from the source (%d bytes)", len(got))
+	}
+	waitTransfer(t, a, ids[0], share.StateDone)
+}
+
+// TestSharePolicyRejects checks that an offer the policy refuses is declined
+// without waiting for the user.
+func TestSharePolicyRejects(t *testing.T) {
+	a, b := shareNodes(t, 38000, model.RolePersonal)
+
+	config := b.Policy().Config()
+	config.Unmetered.Files.Action = policy.ActionReject
+	b.Policy().SetConfig(config)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	path, _ := shareFile(t, "refused.bin", 1<<10)
+	ids, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	waitTransfer(t, a, ids[0], share.StateDeclined)
+	if names := downloads(t, b); len(names) != 0 {
+		t.Fatalf("a refused offer wrote %v", names)
+	}
+	if requests := b.Share().Requests(); len(requests) != 0 {
+		t.Fatalf("a refused offer waits for a decision: %+v", requests)
+	}
+}
+
 // TestShareFriendRejects checks that a rejected offer leaves nothing on the
 // disk and reaches its final state on both sides.
 func TestShareFriendRejects(t *testing.T) {
@@ -310,6 +388,7 @@ func TestShareFriendRejects(t *testing.T) {
 // transfer.
 func TestShareCancelStopsTransfer(t *testing.T) {
 	a, b := shareNodes(t, 58000, model.RolePersonal)
+	allowLargeShares(b)
 
 	path, _ := shareFile(t, "video.bin", 64<<20)
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
@@ -354,6 +433,7 @@ func runShareResume(t *testing.T, base int, size int64) {
 	t.Helper()
 
 	a, b := shareNodes(t, base, model.RolePersonal)
+	allowLargeShares(b)
 	timeout := 10 * testTimeout
 
 	path, data := shareFile(t, "archive.bin", size)

@@ -3,7 +3,9 @@
 # other one, with progress and a matching checksum.
 #
 # E2E_FILE_SIZE sets the payload size in bytes (32 MiB by default; the release
-# scenario uses 524288000).
+# scenario uses 524288000). A file above the files limit of the network policy
+# (10 MiB on an unmetered network) waits for a decision, so the scenario
+# accepts it and checks that nothing arrived before.
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 e2e_init s5
@@ -28,8 +30,29 @@ payload="$E2E_ROOT/payload.bin"
 head -c "$size" /dev/urandom >"$payload"
 want=$(e2e_sha256 "$payload")
 
+# The files limit of the network policy on an unmetered network.
+files_limit=10485760
+
 start=$(e2e_ms)
 e2e_cli "$A" send "$payload" --to "$B"
+if [ "$size" -gt "$files_limit" ]; then
+    deadline=$((SECONDS + 30)) id=""
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        id=$(e2e_cli "$B" requests | awk 'NR == 2 { print $1 }')
+        [ -n "$id" ] && break
+        sleep 0.1
+    done
+    if [ -z "$id" ]; then
+        echo "a file above the files limit did not wait for a decision on $B" >&2
+        exit 1
+    fi
+    if [ -n "$(ls -A "$E2E_ROOT/downloads" 2>/dev/null)" ]; then
+        echo "a file above the files limit arrived before the decision" >&2
+        exit 1
+    fi
+    e2e_cli "$B" requests accept "$id" >/dev/null
+    start=$(e2e_ms)
+fi
 deadline=$((SECONDS + 300)) row=""
 while [ "$SECONDS" -lt "$deadline" ]; do
     row=$(e2e_cli "$B" transfers 2>/dev/null | tail -1)

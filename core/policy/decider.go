@@ -90,6 +90,25 @@ func (d *Decider) DecideItem(ctx context.Context, from model.DeviceID, item mode
 	}), nil
 }
 
+// DecideShare returns the outcome for files of size bytes a peer offers. The
+// trust store already decided whether the files of the peer wait for the user,
+// so the clipboard confirmation flag of the peer does not apply here.
+func (d *Decider) DecideShare(ctx context.Context, from model.DeviceID, size int64) (Result, error) {
+	peer, err := d.peer(ctx, from)
+	if err != nil {
+		return Result{}, err
+	}
+	peer.RequireConfirmation = false
+	return Decide(d.Config(), Input{
+		Peer:    peer,
+		Network: d.network(ctx),
+		Path:    d.path(ctx, from),
+		Kind:    model.KindFiles,
+		Size:    size,
+		Source:  model.SourceShare,
+	}), nil
+}
+
 // Decide reports whether an announced item reaches the local clipboard. Items
 // that need confirmation or are kept as metadata are not applied.
 func (d *Decider) Decide(ctx context.Context, from model.DeviceID, item model.ClipItem) (clip.Decision, error) {

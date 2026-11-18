@@ -70,7 +70,8 @@ the group.
 
 The relay limit of the network policy also applies: an item above 1 MiB is not fetched eagerly over
 the relay, whatever the network condition. Files stay in the history either way; see
-[Network policies](policy.md).
+[Network policies](policy.md). The same rules hold a file offered with `unison send`: over the relay
+it waits in `Requests` until you accept it.
 
 ## When the relay is used
 

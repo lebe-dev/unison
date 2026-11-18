@@ -134,8 +134,9 @@ unison send <path> --to <id> --to <other id>
 unison send - --name report.txt --to <id>
 ```
 
-`send` offers the file to the named devices. A Personal device receives it at once; a Friends
-device answers with a request that waits for the user there, see `requests`. The command returns
+`send` offers the file to the named devices. A Personal device receives it at once within the files
+limit of its network policy, see [Network policies](policy.md); a larger offer, and every offer to a
+Friends device, waits for the user there as a request, see `requests`. The command returns
 after the offer, not after the transfer. `-` reads standard input, and `--name` sets the name of the
 payload.
 
