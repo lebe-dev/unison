@@ -75,6 +75,9 @@ appex_version=$(plist_value "$appex_plist" CFBundleShortVersionString)
 app_version=$(plist_value "$plist" CFBundleShortVersionString)
 [[ "$appex_version" == "$app_version" ]] && pass "share extension version $appex_version" ||
     fail "share extension version $appex_version differs from the app $app_version"
+document_type=$(plist_value "$plist" CFBundleDocumentTypes.0.LSItemContentTypes.0)
+[[ "$document_type" == "public.data" ]] && pass "app opens the shared files ($document_type)" ||
+    fail "app claims no document type, Launch Services refuses the shared files"
 if grep -q com.apple.security.app-sandbox <<<"$(codesign -d --entitlements :- "$appex" 2>/dev/null)"; then
     pass "share extension runs in the sandbox"
 else

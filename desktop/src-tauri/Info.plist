@@ -9,6 +9,24 @@
     <string>en</string>
     <string>ru</string>
   </array>
+  <!-- The share extension opens the shared files with the app, and Launch
+       Services refuses to open a file with an app that claims no type for it.
+       The rank None keeps Unison out of the default and Open With choices. -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>File</string>
+      <key>CFBundleTypeRole</key>
+      <string>Viewer</string>
+      <key>LSHandlerRank</key>
+      <string>None</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>public.data</string>
+      </array>
+    </dict>
+  </array>
   <!-- The daemon of the bundle discovers and serves the paired devices. -->
   <key>NSBonjourServices</key>
   <array>

@@ -156,6 +156,9 @@ with `swiftc`, for the host or both architectures like the app, and signs it bef
   the limit of one offer. Text and links are not taken.
 - An extension has to run in the sandbox, so it never reaches the daemon. It opens the shared file
   URLs with the app of its bundle and ends the request.
+- Launch Services opens a file only with an app that claims its type, so `Info.plist` of the app
+  declares `public.data` in `CFBundleDocumentTypes` with the rank `None`: Unison accepts any file
+  but never becomes its default app.
 - The app receives them as an open request (`RunEvent::Opened`), keeps the paths of the regular
   files and leaves out directories and other URLs. The paths wait in an inbox of the shell until the
   window takes them with `take_shared_files`, so a share that starts the app is not lost while the
