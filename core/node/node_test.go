@@ -46,6 +46,9 @@ func TestNodesSyncClipboard(t *testing.T) {
 	small, large := smaller(a, b)
 	waitSingleConnection(t, small, large)
 	checkCachedAddr(t, small, large)
+	// The device dials from its listener socket, so the side that accepted
+	// learned an address it can dial back.
+	checkCachedAddr(t, large, small)
 
 	a.clipboard.Emit(textSnapshot("hello from a"))
 	waitClipboard(t, b.clipboard, "hello from a")
@@ -120,8 +123,8 @@ func waitSingleConnection(t *testing.T, small, large *testNode) {
 func singleConnection(small, large *testNode) bool {
 	smallLocal, smallRemote := small.sessionAddrs(large.DeviceID())
 	largeLocal, largeRemote := large.sessionAddrs(small.DeviceID())
-	return smallLocal == small.dialerAddr() && smallRemote == large.listenAddr() &&
-		largeLocal == large.listenAddr() && largeRemote == small.dialerAddr()
+	return smallLocal == small.listenAddr() && smallRemote == large.listenAddr() &&
+		largeLocal == large.listenAddr() && largeRemote == small.listenAddr()
 }
 
 // TestUnknownDeviceRefused checks that a device that is not in the trust store

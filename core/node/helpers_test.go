@@ -188,11 +188,6 @@ func (n *testNode) listenAddr() string {
 	return n.sockets.bound(0)
 }
 
-// dialerAddr returns the address of the dialer socket.
-func (n *testNode) dialerAddr() string {
-	return n.sockets.bound(1)
-}
-
 // subscribe returns a subscriber that the test closes.
 func (n *testNode) subscribe(t *testing.T) *Subscriber {
 	t.Helper()

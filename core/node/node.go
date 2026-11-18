@@ -219,6 +219,9 @@ type Node struct {
 
 	gossip *gossip.Service
 
+	// main carries the listener and the dialer on one socket, so a peer that
+	// accepted a connection learns an address it can dial back.
+	main     *transport.Shared
 	listener *transport.Listener
 	dialer   *transport.Dialer
 
@@ -624,17 +627,9 @@ func (n *Node) open(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	listener, err := n.listenListener(ctx, port)
-	if err != nil {
+	if err := n.listenMain(ctx, port); err != nil {
 		return err
 	}
-	n.listener = listener
-
-	dialer, err := n.listenDialer(ctx)
-	if err != nil {
-		return err
-	}
-	n.dialer = dialer
 
 	if err := n.openBlobs(db); err != nil {
 		return err
@@ -713,32 +708,35 @@ func migrationSet() ([]store.Migration, error) {
 	return append(migrations, historyMigrations...), nil
 }
 
-// listenListener binds the packet connection of the main listener.
-func (n *Node) listenListener(ctx context.Context, port int) (*transport.Listener, error) {
+// listenMain binds the main socket and starts the listener and the dialer on
+// it. Outgoing connections leave from the listener port, so the peer can dial
+// the address it saw, and one socket serves every connection of the node.
+func (n *Node) listenMain(ctx context.Context, port int) error {
 	pc, err := n.cfg.ListenPacket(ctx, port)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	listener, err := transport.NewListener(pc, n.identity, peerVerifier{trust: n.trust, friendsOn: n.friendsOn}, n.cfg.Transport)
+	shared, err := transport.NewShared(pc)
 	if err != nil {
 		_ = pc.Close()
-		return nil, err
+		return err
 	}
-	return listener, nil
-}
-
-// listenDialer binds the packet connection of the dialer.
-func (n *Node) listenDialer(ctx context.Context) (*transport.Dialer, error) {
-	pc, err := n.cfg.ListenPacket(ctx, 0)
+	verifier := peerVerifier{trust: n.trust, friendsOn: n.friendsOn}
+	listener, err := shared.Listener(n.identity, verifier, n.cfg.Transport)
 	if err != nil {
-		return nil, err
+		_ = shared.Close()
+		return err
 	}
-	dialer, err := transport.NewDialer(pc, n.identity, peerVerifier{trust: n.trust, friendsOn: n.friendsOn}, n.cfg.Transport)
+	dialer, err := shared.Dialer(n.identity, verifier, n.cfg.Transport)
 	if err != nil {
-		_ = pc.Close()
-		return nil, err
+		_ = listener.Close()
+		_ = shared.Close()
+		return err
 	}
-	return dialer, nil
+	n.main = shared
+	n.listener = listener
+	n.dialer = dialer
+	return nil
 }
 
 // run starts the goroutines of the node.
@@ -959,6 +957,9 @@ func (n *Node) shutdown(ctx context.Context, cancel context.CancelFunc) error {
 	}
 	if n.dialer != nil {
 		_ = n.dialer.Close()
+	}
+	if n.main != nil {
+		_ = n.main.Close()
 	}
 	if err := n.wait(ctx); err != nil {
 		return err
