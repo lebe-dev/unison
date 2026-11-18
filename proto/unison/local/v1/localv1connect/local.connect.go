@@ -97,6 +97,9 @@ const (
 	// UnisonServiceDeleteHistoryItemProcedure is the fully-qualified name of the UnisonService's
 	// DeleteHistoryItem RPC.
 	UnisonServiceDeleteHistoryItemProcedure = "/unison.local.v1.UnisonService/DeleteHistoryItem"
+	// UnisonServiceClearHistoryProcedure is the fully-qualified name of the UnisonService's
+	// ClearHistory RPC.
+	UnisonServiceClearHistoryProcedure = "/unison.local.v1.UnisonService/ClearHistory"
 	// UnisonServiceFetchHistoryItemProcedure is the fully-qualified name of the UnisonService's
 	// FetchHistoryItem RPC.
 	UnisonServiceFetchHistoryItemProcedure = "/unison.local.v1.UnisonService/FetchHistoryItem"
@@ -191,6 +194,9 @@ type UnisonServiceClient interface {
 	// payload must be stored on this device.
 	GetHistoryThumbnail(context.Context, *connect.Request[v1.GetHistoryThumbnailRequest]) (*connect.Response[v1.GetHistoryThumbnailResponse], error)
 	DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error)
+	// Removes every live item of the history. The tombstones reach the other
+	// Personal devices, so the items disappear there too.
+	ClearHistory(context.Context, *connect.Request[v1.ClearHistoryRequest]) (*connect.Response[v1.ClearHistoryResponse], error)
 	// Download the payloads of an item. They are written to path when it is set.
 	FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error)
 	// Copy an item back to the local clipboard.
@@ -379,6 +385,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("DeleteHistoryItem")),
 			connect.WithClientOptions(opts...),
 		),
+		clearHistory: connect.NewClient[v1.ClearHistoryRequest, v1.ClearHistoryResponse](
+			httpClient,
+			baseURL+UnisonServiceClearHistoryProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ClearHistory")),
+			connect.WithClientOptions(opts...),
+		),
 		fetchHistoryItem: connect.NewClient[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse](
 			httpClient,
 			baseURL+UnisonServiceFetchHistoryItemProcedure,
@@ -521,6 +533,7 @@ type unisonServiceClient struct {
 	getHistoryItem        *connect.Client[v1.GetHistoryItemRequest, v1.GetHistoryItemResponse]
 	getHistoryThumbnail   *connect.Client[v1.GetHistoryThumbnailRequest, v1.GetHistoryThumbnailResponse]
 	deleteHistoryItem     *connect.Client[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse]
+	clearHistory          *connect.Client[v1.ClearHistoryRequest, v1.ClearHistoryResponse]
 	fetchHistoryItem      *connect.Client[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse]
 	copyHistoryItem       *connect.Client[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse]
 	applyHistoryItem      *connect.Client[v1.ApplyHistoryItemRequest, v1.ApplyHistoryItemResponse]
@@ -655,6 +668,11 @@ func (c *unisonServiceClient) GetHistoryThumbnail(ctx context.Context, req *conn
 // DeleteHistoryItem calls unison.local.v1.UnisonService.DeleteHistoryItem.
 func (c *unisonServiceClient) DeleteHistoryItem(ctx context.Context, req *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error) {
 	return c.deleteHistoryItem.CallUnary(ctx, req)
+}
+
+// ClearHistory calls unison.local.v1.UnisonService.ClearHistory.
+func (c *unisonServiceClient) ClearHistory(ctx context.Context, req *connect.Request[v1.ClearHistoryRequest]) (*connect.Response[v1.ClearHistoryResponse], error) {
+	return c.clearHistory.CallUnary(ctx, req)
 }
 
 // FetchHistoryItem calls unison.local.v1.UnisonService.FetchHistoryItem.
@@ -794,6 +812,9 @@ type UnisonServiceHandler interface {
 	// payload must be stored on this device.
 	GetHistoryThumbnail(context.Context, *connect.Request[v1.GetHistoryThumbnailRequest]) (*connect.Response[v1.GetHistoryThumbnailResponse], error)
 	DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error)
+	// Removes every live item of the history. The tombstones reach the other
+	// Personal devices, so the items disappear there too.
+	ClearHistory(context.Context, *connect.Request[v1.ClearHistoryRequest]) (*connect.Response[v1.ClearHistoryResponse], error)
 	// Download the payloads of an item. They are written to path when it is set.
 	FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error)
 	// Copy an item back to the local clipboard.
@@ -978,6 +999,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("DeleteHistoryItem")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceClearHistoryHandler := connect.NewUnaryHandler(
+		UnisonServiceClearHistoryProcedure,
+		svc.ClearHistory,
+		connect.WithSchema(unisonServiceMethods.ByName("ClearHistory")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceFetchHistoryItemHandler := connect.NewUnaryHandler(
 		UnisonServiceFetchHistoryItemProcedure,
 		svc.FetchHistoryItem,
@@ -1140,6 +1167,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceGetHistoryThumbnailHandler.ServeHTTP(w, r)
 		case UnisonServiceDeleteHistoryItemProcedure:
 			unisonServiceDeleteHistoryItemHandler.ServeHTTP(w, r)
+		case UnisonServiceClearHistoryProcedure:
+			unisonServiceClearHistoryHandler.ServeHTTP(w, r)
 		case UnisonServiceFetchHistoryItemProcedure:
 			unisonServiceFetchHistoryItemHandler.ServeHTTP(w, r)
 		case UnisonServiceCopyHistoryItemProcedure:
@@ -1277,6 +1306,10 @@ func (UnimplementedUnisonServiceHandler) GetHistoryThumbnail(context.Context, *c
 
 func (UnimplementedUnisonServiceHandler) DeleteHistoryItem(context.Context, *connect.Request[v1.DeleteHistoryItemRequest]) (*connect.Response[v1.DeleteHistoryItemResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.DeleteHistoryItem is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ClearHistory(context.Context, *connect.Request[v1.ClearHistoryRequest]) (*connect.Response[v1.ClearHistoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ClearHistory is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) FetchHistoryItem(context.Context, *connect.Request[v1.FetchHistoryItemRequest]) (*connect.Response[v1.FetchHistoryItemResponse], error) {

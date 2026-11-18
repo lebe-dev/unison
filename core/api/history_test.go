@@ -134,6 +134,38 @@ func TestGetAndDeleteHistoryItem(t *testing.T) {
 	requireCode(t, err, connect.CodeInvalidArgument)
 }
 
+func TestClearHistory(t *testing.T) {
+	client, n := historyClient(t)
+	ctx := callTimeout(t)
+
+	emitHistory(t, client, n, "first", 1)
+	emitHistory(t, client, n, "second", 2)
+
+	cleared, err := client.ClearHistory(ctx, connect.NewRequest(&localv1.ClearHistoryRequest{}))
+	if err != nil {
+		t.Fatalf("clear history: %v", err)
+	}
+	if got := cleared.Msg.GetRemoved(); got != 2 {
+		t.Fatalf("cleared %d items, want 2", got)
+	}
+
+	list, err := client.ListHistory(ctx, connect.NewRequest(&localv1.ListHistoryRequest{}))
+	if err != nil {
+		t.Fatalf("list history: %v", err)
+	}
+	if len(list.Msg.GetItems()) != 0 {
+		t.Fatalf("listed %d items after the clear, want none", len(list.Msg.GetItems()))
+	}
+
+	again, err := client.ClearHistory(ctx, connect.NewRequest(&localv1.ClearHistoryRequest{}))
+	if err != nil {
+		t.Fatalf("second clear: %v", err)
+	}
+	if got := again.Msg.GetRemoved(); got != 0 {
+		t.Fatalf("second clear removed %d items, want none", got)
+	}
+}
+
 func TestFetchAndCopyHistoryItem(t *testing.T) {
 	client, n := historyClient(t)
 	ctx := callTimeout(t)

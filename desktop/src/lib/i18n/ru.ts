@@ -239,6 +239,17 @@ export const ru: { [K in MessageKey]: Message } = {
   "history.downloadFailed": "Не удалось скачать элемент.",
   "history.deleted": "Элемент удален.",
   "history.deleteFailed": "Не удалось удалить элемент.",
+  "history.clear": "Очистить историю",
+  "history.clearAll": "Удалить все",
+  "history.clearBody":
+    "Все элементы будут удалены на этом и на других личных устройствах. Отменить это нельзя.",
+  "history.cleared": {
+    one: "Удален {count} элемент.",
+    few: "Удалено {count} элемента.",
+    many: "Удалено {count} элементов.",
+    other: "Удалено {count} элемента.",
+  },
+  "history.clearFailed": "Не удалось очистить историю.",
   "history.elapsedSeconds": "{seconds} с",
 
   // Names of the values of the local API.

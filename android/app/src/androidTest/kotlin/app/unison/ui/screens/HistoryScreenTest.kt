@@ -135,6 +135,39 @@ class HistoryScreenTest {
     }
 
     @Test
+    fun clearAsksBeforeRemovingEverything() {
+        var cleared = 0
+        setContent(
+            history = HistoryState(
+                loaded = true,
+                items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
+            ),
+            onClear = { cleared++ },
+        )
+
+        compose.onNodeWithText(testString(R.string.history_clear)).performClick()
+        compose.onNodeWithText(testString(R.string.history_clear_title)).assertIsDisplayed()
+        assertEquals(0, cleared)
+
+        compose.onNodeWithText(testString(R.string.history_clear_confirm)).performClick()
+        assertEquals(1, cleared)
+    }
+
+    @Test
+    fun clearIsCancelledWithoutRemovingAnything() {
+        var cleared = 0
+        setContent(
+            history = HistoryState(loaded = true),
+            onClear = { cleared++ },
+        )
+
+        compose.onNodeWithText(testString(R.string.history_clear)).performClick()
+        compose.onNodeWithText(testString(R.string.action_cancel)).performClick()
+
+        assertEquals(0, cleared)
+    }
+
+    @Test
     fun kindFilterIsReported() {
         var kind: Local.Kind? = null
         setContent(
@@ -197,6 +230,7 @@ class HistoryScreenTest {
         onApply: (Local.HistoryItem) -> Unit = {},
         onDownload: (Local.HistoryItem) -> Unit = {},
         onDelete: (Local.HistoryItem) -> Unit = {},
+        onClear: () -> Unit = {},
     ) {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
@@ -211,6 +245,7 @@ class HistoryScreenTest {
                     onApply = onApply,
                     onDownload = onDownload,
                     onDelete = onDelete,
+                    onClear = onClear,
                 )
             }
         }

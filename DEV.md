@@ -308,8 +308,8 @@ up to 64 entries or 512 KiB per batch and 4096 entries per exchange, so an excha
 short continues with the next one. A Friends peer takes no part in the exchange. Payloads are not
 part of it: `Fetch` downloads the missing blobs from the online peers through the blob transfer and
 writes them to a path, and `Copy` puts an item back on the local clipboard. The local API exposes
-the log as `ListHistory`, `GetHistoryItem`, `DeleteHistoryItem`, `FetchHistoryItem` and
-`CopyHistoryItem`; the CLI prints it with `unison history` and `unison clip get --from`.
+the log as `ListHistory`, `GetHistoryItem`, `DeleteHistoryItem`, `ClearHistory`, `FetchHistoryItem`
+and `CopyHistoryItem`; the CLI prints it with `unison history` and `unison clip get --from`.
 
 `core/share` sends files the user picked. The sender stores the files in the blob store and offers
 them with `ShareOffer{transfer_id, files}`, and the receiver answers with `ShareDecision`. The

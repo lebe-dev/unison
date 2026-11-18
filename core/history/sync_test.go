@@ -113,6 +113,40 @@ func TestSyncTombstone(t *testing.T) {
 	}
 }
 
+// TestSyncClear checks that a clear hides the entries on the other device.
+func TestSyncClear(t *testing.T) {
+	a := newFixture(t, testDevice(1))
+	b := newFixture(t, testDevice(2))
+	ctx := context.Background()
+
+	a.append(textItem(testID(1), a.origin, 1, "first", testTime, DefaultTextTTL))
+	a.append(textItem(testID(2), a.origin, 2, "second", testTime.Add(time.Minute), DefaultTextTTL))
+	b.append(textItem(testID(3), b.origin, 1, "own", testTime, DefaultTextTTL))
+	syncBoth(t, a, b)
+
+	removed, err := a.store.Clear(ctx)
+	if err != nil {
+		t.Fatalf("clear on a: %v", err)
+	}
+	if removed != 3 {
+		t.Fatalf("cleared %d items on a, want 3", removed)
+	}
+	syncBoth(t, a, b)
+
+	for _, f := range []*fixture{a, b} {
+		list, err := f.store.List(ctx, ListFilter{Limit: MaxListLimit})
+		if err != nil {
+			t.Fatalf("list: %v", err)
+		}
+		if len(list) != 0 {
+			t.Fatalf("device holds %d items after the clear, want none", len(list))
+		}
+	}
+	if got := b.count(itemsTable); got != 6 {
+		t.Fatalf("device b holds %d entries, want three items and three tombstones", got)
+	}
+}
+
 func TestSyncTombstoneBeforeItem(t *testing.T) {
 	a := newFixture(t, testDevice(1))
 	ctx := context.Background()

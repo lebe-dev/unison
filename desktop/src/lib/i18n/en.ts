@@ -247,6 +247,15 @@ export const en = {
   "history.downloadFailed": "The item could not be downloaded.",
   "history.deleted": "The item is deleted.",
   "history.deleteFailed": "The item could not be deleted.",
+  "history.clear": "Clear history",
+  "history.clearAll": "Delete everything",
+  "history.clearBody":
+    "Every item is removed on this device and on the other Personal devices. This cannot be undone.",
+  "history.cleared": {
+    one: "{count} item removed.",
+    other: "{count} items removed.",
+  },
+  "history.clearFailed": "The history could not be cleared.",
   "history.elapsedSeconds": "{seconds} s",
 
   // Names of the values of the local API.

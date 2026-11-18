@@ -61,6 +61,7 @@ class HistoryLiveTest {
                         onApply = { state.applyHistoryItem(it.item.id) },
                         onDownload = { state.downloadHistoryItem(it.item.id) },
                         onDelete = { state.deleteHistoryItem(it.item.id) },
+                        onClear = state::clearHistory,
                     )
                 }
             }
@@ -137,6 +138,7 @@ class HistoryLiveTest {
                         onApply = { state.applyHistoryItem(it.item.id) },
                         onDownload = { state.downloadHistoryItem(it.item.id) },
                         onDelete = { state.deleteHistoryItem(it.item.id) },
+                        onClear = state::clearHistory,
                     )
                 }
             }
@@ -181,6 +183,7 @@ class HistoryLiveTest {
                         onApply = { state.applyHistoryItem(it.item.id) },
                         onDownload = { state.downloadHistoryItem(it.item.id) },
                         onDelete = { state.deleteHistoryItem(it.item.id) },
+                        onClear = state::clearHistory,
                     )
                 }
             }

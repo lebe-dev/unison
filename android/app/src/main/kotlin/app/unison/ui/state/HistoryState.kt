@@ -15,6 +15,8 @@ data class HistoryState(
     val deviceId: String = "",
     /** Entries with a running action, keyed by item ID. */
     val busy: Set<String> = emptySet(),
+    /** True while the whole history is being cleared. */
+    val clearing: Boolean = false,
 ) {
     /** True when the list was loaded and holds no entries. */
     val isEmpty: Boolean

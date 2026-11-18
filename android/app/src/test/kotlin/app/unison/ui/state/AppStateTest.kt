@@ -39,6 +39,8 @@ class AppStateTest {
         val copied = mutableListOf<String>()
         val deleted = mutableListOf<String>()
         val applied = mutableListOf<String>()
+        var clearCalls = 0
+        var clearFailure: Exception? = null
         var settings: Local.Settings = Local.Settings.getDefaultInstance()
         val selfConfirmations = mutableListOf<Pair<Local.ConfirmationScope, Boolean>>()
         val confirmations = mutableListOf<DeviceConfirmation>()
@@ -85,6 +87,12 @@ class AppStateTest {
 
         override suspend fun deleteHistoryItem(id: String) {
             deleted += id
+        }
+
+        override suspend fun clearHistory(): Local.ClearHistoryResponse {
+            clearCalls++
+            clearFailure?.let { throw it }
+            return Local.ClearHistoryResponse.newBuilder().setRemoved(2L).build()
         }
 
         override suspend fun applyHistoryItem(id: String) {
@@ -600,6 +608,44 @@ class AppStateTest {
         advanceUntilIdle()
 
         assertEquals(listOf("item"), core.deleted)
+    }
+
+    @Test
+    fun clearCallsTheCoreAndReloadsTheHistory() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+        state.refreshHistory()
+        advanceUntilIdle()
+        val before = core.historyCalls.size
+
+        state.clearHistory()
+        advanceUntilIdle()
+
+        assertEquals(1, core.clearCalls)
+        assertTrue(core.historyCalls.size > before)
+        assertTrue(R.string.history_cleared in notices)
+        assertFalse(state.history.value.clearing)
+        collector.cancel()
+    }
+
+    @Test
+    fun failedClearEmitsNotice() = runTest {
+        val core = FakeCore()
+        core.clearFailure = IllegalStateException("core is busy")
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.clearHistory()
+        advanceUntilIdle()
+
+        assertEquals(R.string.history_clear_failed, notices.last())
+        assertFalse(state.history.value.clearing)
+        collector.cancel()
     }
 
     @Test

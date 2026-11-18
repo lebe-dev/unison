@@ -226,6 +226,58 @@ func TestDeleteLeavesTombstone(t *testing.T) {
 	}
 }
 
+func TestClearLeavesTombstones(t *testing.T) {
+	f := newFixture(t, testDevice(1))
+	other := testDevice(2)
+	ctx := context.Background()
+
+	f.append(textItem(testID(1), f.origin, 1, "first", testTime, time.Hour))
+	f.append(textItem(testID(2), other, 1, "second", testTime.Add(time.Minute), time.Hour))
+
+	removed, err := f.store.Clear(ctx)
+	if err != nil {
+		t.Fatalf("clear: %v", err)
+	}
+	if removed != 2 {
+		t.Fatalf("cleared %d items, want 2", removed)
+	}
+	if items, err := f.store.List(ctx, ListFilter{}); err != nil || len(items) != 0 {
+		t.Fatalf("listed %d items with error %v after the clear, want none", len(items), err)
+	}
+	if _, err := f.store.Get(ctx, testID(1)); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("get after the clear is %v, want %v", err, ErrNotFound)
+	}
+	if got := f.count(itemsTable); got != 4 {
+		t.Fatalf("%d rows after the clear, want two items and two tombstones", got)
+	}
+
+	versions, err := f.store.Vector(ctx)
+	if err != nil {
+		t.Fatalf("vector: %v", err)
+	}
+	if versions[f.origin] != 3 {
+		t.Fatalf("own version is %d, want 3", versions[f.origin])
+	}
+
+	if again, err := f.store.Clear(ctx); err != nil || again != 0 {
+		t.Fatalf("second clear removed %d items with error %v, want none", again, err)
+	}
+
+	// A new entry after the clear is visible again.
+	f.append(textItem(testID(3), f.origin, 4, "third", testTime.Add(time.Minute), time.Hour))
+	if items, err := f.store.List(ctx, ListFilter{}); err != nil || len(items) != 1 || items[0].ID != testID(3) {
+		t.Fatalf("listed %v with error %v after a new entry, want the new one", ids(items), err)
+	}
+
+	f.clock.Advance(2 * time.Hour)
+	if _, err := f.store.Cleanup(ctx); err != nil {
+		t.Fatalf("cleanup: %v", err)
+	}
+	if got := f.count(itemsTable); got != 0 {
+		t.Fatalf("%d rows after the expiry, want none", got)
+	}
+}
+
 func TestLastReturnsNewestLiveItem(t *testing.T) {
 	f := newFixture(t, testDevice(1))
 

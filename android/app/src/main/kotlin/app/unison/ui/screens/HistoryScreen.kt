@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.history.HistoryText
+import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
 import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
@@ -67,8 +68,24 @@ fun HistoryScreen(
     onApply: (Local.HistoryItem) -> Unit,
     onDownload: (Local.HistoryItem) -> Unit,
     onDelete: (Local.HistoryItem) -> Unit,
+    onClear: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var confirmClear by remember { mutableStateOf(false) }
+
+    if (confirmClear) {
+        ConfirmDialog(
+            title = stringResource(R.string.history_clear_title),
+            body = stringResource(R.string.history_clear_body),
+            onConfirm = {
+                confirmClear = false
+                onClear()
+            },
+            onDismiss = { confirmClear = false },
+            confirmLabel = R.string.history_clear_confirm,
+        )
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -87,6 +104,9 @@ fun HistoryScreen(
         }
 
         ScreenTitle(title = stringResource(R.string.nav_history)) {
+            TextButton(onClick = { confirmClear = true }, enabled = !history.clearing) {
+                Text(text = stringResource(R.string.history_clear))
+            }
             TextButton(onClick = onRefresh) {
                 Text(text = stringResource(R.string.action_refresh))
             }

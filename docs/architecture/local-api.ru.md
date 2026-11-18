@@ -110,7 +110,7 @@ pipe дает доступ только текущему пользовател�
 | Спаривание | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Спаривание по QR | `GetPairingQr`, `ScanPairingQr` |
 | Буфер обмена | `GetClip`, `SetClip` |
-| История | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
+| История | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `ClearHistory`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
 | Передачи | `SendFiles`, `ListTransfers`, `CancelTransfer`, `AcceptTransfer`, `RejectTransfer` |
 | Запросы | `SetFriendsDiscovery`, `ListRequests`, `DecideRequest` |
 | Пауза | `GetPause`, `SetPause` |

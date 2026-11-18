@@ -201,6 +201,23 @@ class HistoryStore {
     }
   }
 
+  /** clear removes every item of the history on every device. */
+  async clear(): Promise<void> {
+    this.notice = null;
+    try {
+      const response = await client.clearHistory({});
+      this.items = [];
+      this.held = [];
+      this.notice = {
+        kind: "info",
+        text: translate("history.cleared", { count: Number(response.removed) }),
+      };
+      void this.refreshRecent();
+    } catch (error) {
+      this.notice = { kind: "error", text: errorText(error, translate("history.clearFailed")) };
+    }
+  }
+
   /** refreshRecent reloads the entries of the tray menu. */
   async refreshRecent(): Promise<void> {
     try {

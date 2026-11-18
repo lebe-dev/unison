@@ -190,6 +190,22 @@ func TestHistoryCalls(t *testing.T) {
 		t.Fatalf("history after delete %v", list.GetItems())
 	}
 
+	sent = &localv1.SetClipResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{
+		Method:  "SetClip",
+		Payload: marshal(t, &localv1.SetClipRequest{Text: "second"}),
+	}), sent)
+	cleared := &localv1.ClearHistoryResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "ClearHistory"}), cleared)
+	if cleared.GetRemoved() != 1 {
+		t.Fatalf("cleared %d items, want 1", cleared.GetRemoved())
+	}
+	list = &localv1.ListHistoryResponse{}
+	decode(t, core.call(t.Context(), &mobilev1.CallRequest{Method: "ListHistory"}), list)
+	if len(list.GetItems()) != 0 {
+		t.Fatalf("history after clear %v", list.GetItems())
+	}
+
 	response := core.call(t.Context(), &mobilev1.CallRequest{
 		Method:  "GetHistoryItem",
 		Payload: marshal(t, &localv1.GetHistoryItemRequest{Id: id}),

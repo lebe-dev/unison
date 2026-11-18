@@ -38,6 +38,8 @@
   let scrollTop = $state(0);
   let feed: HTMLDivElement | null = $state(null);
   let deleting = $state<string | null>(null);
+  let clearing = $state(false);
+  let confirmingClear = $state(false);
   let preview = $state<{ title: string; id: string } | null>(null);
   let startedAt = $state<Record<string, number>>({});
   let now = $state(Date.now());
@@ -150,6 +152,14 @@
     const seconds = Math.max(0, Math.round((now - start) / 1000));
     return t("history.elapsedSeconds", { seconds });
   }
+
+  /** clear removes every item of the history on every device. */
+  async function clear(): Promise<void> {
+    clearing = true;
+    await history.clear();
+    clearing = false;
+    confirmingClear = false;
+  }
 </script>
 
 {#if !daemon.connected}
@@ -201,7 +211,39 @@
       >
         {t("common.refresh")}
       </button>
+      <button
+        class="button danger small"
+        type="button"
+        onclick={() => (confirmingClear = true)}
+        disabled={clearing || confirmingClear}
+      >
+        {t("history.clear")}
+      </button>
     </div>
+
+    {#if confirmingClear}
+      <div class="notice info clear-confirm">
+        <span>{t("history.clearBody")}</span>
+        <div class="actions">
+          <button
+            class="button danger small"
+            type="button"
+            onclick={() => void clear()}
+            disabled={clearing}
+          >
+            {t("history.clearAll")}
+          </button>
+          <button
+            class="button ghost small"
+            type="button"
+            onclick={() => (confirmingClear = false)}
+            disabled={clearing}
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      </div>
+    {/if}
 
     {#if history.notice}
       <p
@@ -379,6 +421,19 @@
 
   .count {
     margin-left: auto;
+  }
+
+  .clear-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .clear-confirm .actions {
+    display: flex;
+    gap: 0.35rem;
   }
 
   .feed {

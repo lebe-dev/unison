@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import {
   ApplyHistoryItemResponseSchema,
+  ClearHistoryResponseSchema,
   ClipItemSchema,
   CopyHistoryItemResponseSchema,
   DeleteHistoryItemResponseSchema,
@@ -24,6 +25,7 @@ vi.mock("./api/client", () => ({
     applyHistoryItem: vi.fn(),
     fetchHistoryItem: vi.fn(),
     deleteHistoryItem: vi.fn(),
+    clearHistory: vi.fn(),
   },
 }));
 
@@ -54,6 +56,7 @@ const copyHistoryItem = vi.mocked(client.copyHistoryItem);
 const applyHistoryItem = vi.mocked(client.applyHistoryItem);
 const fetchHistoryItem = vi.mocked(client.fetchHistoryItem);
 const deleteHistoryItem = vi.mocked(client.deleteHistoryItem);
+const clearHistory = vi.mocked(client.clearHistory);
 const updateTrayMock = vi.mocked(updateTray);
 
 beforeEach(() => {
@@ -162,6 +165,30 @@ describe("history actions", () => {
 
     expect(deleteHistoryItem).toHaveBeenCalledWith(expect.objectContaining({ id: "item-1" }));
     expect(history.items.map((item) => item.item?.id)).toEqual(["item-2"]);
+  });
+
+  it("clears the list and reports the removed items", async () => {
+    clearHistory.mockResolvedValue(create(ClearHistoryResponseSchema, { removed: 3n }));
+    listHistory.mockResolvedValue(create(ListHistoryResponseSchema, {}));
+    history.items = [textHistory("item-1", "first"), textHistory("item-2", "second")];
+    history.held = ["item-1"];
+
+    await history.clear();
+
+    expect(clearHistory).toHaveBeenCalled();
+    expect(history.items).toEqual([]);
+    expect(history.held).toEqual([]);
+    expect(history.notice).toEqual({ kind: "info", text: "3 items removed." });
+  });
+
+  it("keeps an error of a clear", async () => {
+    clearHistory.mockRejectedValue(new Error("core is busy"));
+    history.items = [textHistory("item-1", "first")];
+
+    await history.clear();
+
+    expect(history.items).toHaveLength(1);
+    expect(history.notice).toEqual({ kind: "error", text: "core is busy" });
   });
 
   it("keeps an error of a copy", async () => {

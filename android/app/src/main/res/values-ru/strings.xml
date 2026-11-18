@@ -319,6 +319,12 @@
     <string name="history_download_failed">Не удалось скачать элемент</string>
     <string name="history_deleted">Элемент удален</string>
     <string name="history_delete_failed">Не удалось удалить элемент</string>
+    <string name="history_clear">Очистить</string>
+    <string name="history_clear_title">Очистить историю?</string>
+    <string name="history_clear_body">Все элементы будут удалены на этом и на других личных устройствах. Отменить это нельзя.</string>
+    <string name="history_clear_confirm">Удалить все</string>
+    <string name="history_cleared">История очищена</string>
+    <string name="history_clear_failed">Не удалось очистить историю</string>
     <string name="history_notification_body">Получено: %1$s - скачайте, чтобы использовать</string>
     <string name="history_saved_notification">Сохранено в Downloads/Unison</string>
     <string name="history_failed_notification">Не удалось скачать</string>

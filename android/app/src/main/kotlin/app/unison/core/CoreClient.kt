@@ -391,6 +391,13 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         )
     }
 
+    /** Deletes every history entry on every device. */
+    override suspend fun clearHistory(): Local.ClearHistoryResponse = call(
+        method = "ClearHistory",
+        request = Local.ClearHistoryRequest.getDefaultInstance(),
+        parse = { Local.ClearHistoryResponse.parseFrom(it) },
+    )
+
     /** Downloads the payloads of one entry into [path]. */
     override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse {
         val request = Local.FetchHistoryItemRequest.newBuilder()

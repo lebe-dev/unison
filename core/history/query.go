@@ -111,11 +111,13 @@ func (s *Store) Delete(ctx context.Context, id model.ClipID) error {
 	return nil
 }
 
-// liveItems selects the entries that are neither expired nor hidden by a
+// itemColumns selects the columns of one item row.
+const itemColumns = `
+	SELECT origin, seq, id, created_at, expires_at, kind, source, deleted, payload`
+
+// liveCondition keeps the entries that are neither expired nor hidden by a
 // tombstone. The two expiry times of the condition are the same.
-const liveItems = `
-	SELECT origin, seq, id, created_at, expires_at, kind, source, deleted, payload
-	FROM history_items AS i
+const liveCondition = `
 	WHERE i.deleted = 0
 	  AND i.expires_at > ?
 	  AND NOT EXISTS (
@@ -124,6 +126,10 @@ const liveItems = `
 		  AND tombstone.deleted = 1
 		  AND tombstone.expires_at > ?
 	  )`
+
+// liveItems selects the live entries.
+const liveItems = itemColumns + `
+	FROM history_items AS i` + liveCondition
 
 // listQuery builds the query and arguments of List.
 func (s *Store) listQuery(filter ListFilter, limit int) (string, []any) {

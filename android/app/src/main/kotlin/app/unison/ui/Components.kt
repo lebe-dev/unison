@@ -1,6 +1,7 @@
 package app.unison.ui
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -292,6 +293,7 @@ fun ConfirmDialog(
     body: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    @StringRes confirmLabel: Int = R.string.action_remove,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -299,7 +301,7 @@ fun ConfirmDialog(
         text = { Text(text = body) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text(text = stringResource(R.string.action_remove), color = MaterialTheme.colorScheme.error)
+                Text(text = stringResource(confirmLabel), color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {

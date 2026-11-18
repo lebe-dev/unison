@@ -119,6 +119,19 @@ func (s *Service) DeleteHistoryItem(ctx context.Context, req *connect.Request[lo
 	return connect.NewResponse(&localv1.DeleteHistoryItemResponse{}), nil
 }
 
+// ClearHistory removes every live item of the history. The tombstones reach
+// the other Personal devices, so the items disappear there too.
+func (s *Service) ClearHistory(ctx context.Context, _ *connect.Request[localv1.ClearHistoryRequest]) (*connect.Response[localv1.ClearHistoryResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	removed, err := s.node.History().Clear(ctx)
+	if err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.ClearHistoryResponse{Removed: uint64(removed)}), nil
+}
+
 // FetchHistoryItem downloads the payloads of one item and writes them to the
 // requested path.
 func (s *Service) FetchHistoryItem(ctx context.Context, req *connect.Request[localv1.FetchHistoryItemRequest]) (*connect.Response[localv1.FetchHistoryItemResponse], error) {

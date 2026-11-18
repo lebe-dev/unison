@@ -99,6 +99,7 @@ fun UnisonRoot(
     onApplyHistoryItem: (Local.HistoryItem) -> Unit,
     onDownloadHistoryItem: (Local.HistoryItem) -> Unit,
     onDeleteHistoryItem: (Local.HistoryItem) -> Unit,
+    onClearHistory: () -> Unit,
     onRefreshRequests: () -> Unit,
     onAcceptRequest: (Local.ShareRequest) -> Unit,
     onDeclineRequest: (Local.ShareRequest) -> Unit,
@@ -209,6 +210,7 @@ fun UnisonRoot(
                 onApply = onApplyHistoryItem,
                 onDownload = onDownloadHistoryItem,
                 onDelete = onDeleteHistoryItem,
+                onClear = onClearHistory,
                 modifier = content,
             )
             Destination.SETTINGS -> SettingsScreen(

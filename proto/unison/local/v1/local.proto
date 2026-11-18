@@ -194,6 +194,9 @@ service UnisonService {
   // payload must be stored on this device.
   rpc GetHistoryThumbnail(GetHistoryThumbnailRequest) returns (GetHistoryThumbnailResponse);
   rpc DeleteHistoryItem(DeleteHistoryItemRequest) returns (DeleteHistoryItemResponse);
+  // Removes every live item of the history. The tombstones reach the other
+  // Personal devices, so the items disappear there too.
+  rpc ClearHistory(ClearHistoryRequest) returns (ClearHistoryResponse);
   // Download the payloads of an item. They are written to path when it is set.
   rpc FetchHistoryItem(FetchHistoryItemRequest) returns (FetchHistoryItemResponse);
   // Copy an item back to the local clipboard.
@@ -698,6 +701,13 @@ message DeleteHistoryItemRequest {
 }
 
 message DeleteHistoryItemResponse {}
+
+message ClearHistoryRequest {}
+
+message ClearHistoryResponse {
+  // Number of removed entries.
+  uint64 removed = 1;
+}
 
 message FetchHistoryItemRequest {
   // UUID of the item.

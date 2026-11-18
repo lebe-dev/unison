@@ -221,6 +221,29 @@ class AppState(
         refreshHistory()
     }
 
+    /** Deletes every entry on every device. */
+    fun clearHistory() {
+        if (mutableHistory.value.clearing) {
+            return
+        }
+        mutableHistory.update { it.copy(clearing = true) }
+        scope.launch {
+            try {
+                core.clearHistory()
+                held.ids.value.forEach(held::remove)
+                heldPrompts.update { emptyMap() }
+                mutableNotices.tryEmit(R.string.history_cleared)
+                refreshHistory()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.history_clear_failed)
+            } finally {
+                mutableHistory.update { it.copy(clearing = false) }
+            }
+        }
+    }
+
     /** Writes an entry that waited for a confirmation to the clipboard. */
     fun applyHistoryItem(itemId: String) = runHistoryAction(
         itemId = itemId,

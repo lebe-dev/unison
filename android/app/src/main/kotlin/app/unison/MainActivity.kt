@@ -176,6 +176,7 @@ class MainActivity : ComponentActivity() {
                         onApplyHistoryItem = { appState.applyHistoryItem(it.item.id) },
                         onDownloadHistoryItem = { appState.downloadHistoryItem(it.item.id) },
                         onDeleteHistoryItem = { appState.deleteHistoryItem(it.item.id) },
+                        onClearHistory = appState::clearHistory,
                         onRefreshRequests = appState::refreshRequests,
                         onAcceptRequest = { appState.decideRequest(it.id, accept = true) },
                         onDeclineRequest = { appState.decideRequest(it.id, accept = false) },

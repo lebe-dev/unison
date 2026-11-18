@@ -85,6 +85,9 @@ interface CoreApi {
     /** Deletes one history entry on every device. */
     suspend fun deleteHistoryItem(id: String)
 
+    /** Deletes every history entry of every device. */
+    suspend fun clearHistory(): Local.ClearHistoryResponse
+
     /** Downloads the payloads of one entry into [path]. */
     suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse
 
@@ -232,6 +235,11 @@ class RunningCore(
     override suspend fun deleteHistoryItem(id: String) {
         ensureRunning()
         client.deleteHistoryItem(id)
+    }
+
+    override suspend fun clearHistory(): Local.ClearHistoryResponse {
+        ensureRunning()
+        return client.clearHistory()
     }
 
     override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse {

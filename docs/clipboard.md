@@ -128,6 +128,8 @@ you ask for it, which needs the device that has it to be online.
 Ways to work with the history:
 
 - the History screen of the apps, with filters by type and by device, copy, download and delete;
+- clearing the whole history from the History screen of the macOS and Android apps, after a
+  confirmation; the items are removed on the other Personal devices as well;
 - `unison history`, `unison history fetch` and `unison clip get --from`, see
   [Command line](cli.md).
 

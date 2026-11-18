@@ -106,7 +106,7 @@ call is not implemented, and the daemon passes the clipboard pipeline of the nod
 | Pairing | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Pairing by QR | `GetPairingQr`, `ScanPairingQr` |
 | Clipboard | `GetClip`, `SetClip` |
-| History | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
+| History | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `ClearHistory`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
 | Transfers | `SendFiles`, `ListTransfers`, `CancelTransfer`, `AcceptTransfer`, `RejectTransfer` |
 | Requests | `SetFriendsDiscovery`, `ListRequests`, `DecideRequest` |
 | Pause | `GetPause`, `SetPause` |
