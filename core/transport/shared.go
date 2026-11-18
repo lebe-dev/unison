@@ -55,7 +55,7 @@ func (s *Shared) Dialer(id *identity.Identity, ver PeerVerifier, cfg Config) (*D
 		return nil, errors.New("transport: nil peer verifier")
 	}
 
-	return &Dialer{id: id, ver: ver, cfg: cfg.withDefaults(), transport: s.quic}, nil
+	return &Dialer{id: id, ver: ver, cfg: cfg.withDefaults(), transport: s.quic, shared: true}, nil
 }
 
 // Close closes the transport, its connections and the packet connection.

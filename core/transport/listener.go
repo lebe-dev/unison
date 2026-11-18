@@ -100,6 +100,8 @@ type Dialer struct {
 	pc net.PacketConn
 
 	transport *quic.Transport
+	// shared is set for a dialer of a Shared transport, which its owner closes.
+	shared bool
 
 	id  *identity.Identity
 	ver PeerVerifier
@@ -173,6 +175,9 @@ func (d *Dialer) DialPairing(ctx context.Context, addr net.Addr, pin identity.Ce
 // Close closes the packet connection and every connection of the dialer. A
 // dialer of a Shared transport leaves the transport running.
 func (d *Dialer) Close() error {
+	if d.shared {
+		return nil
+	}
 	err := d.transport.Close()
 	if d.pc != nil {
 		if cerr := d.pc.Close(); err == nil {

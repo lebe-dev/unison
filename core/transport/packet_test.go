@@ -197,10 +197,13 @@ func TestSharedTransportServesOneSocket(t *testing.T) {
 		t.Fatal("accept did not return the connection")
 	}
 
-	// Closing the listener leaves the transport running, so the live
-	// connection still carries data and the dialer still closes cleanly.
+	// Closing the listener and the dialer leaves the transport running, so the
+	// live connection still carries data.
 	if err := listener.Close(); err != nil {
 		t.Fatalf("close listener: %v", err)
+	}
+	if err := dialer.Close(); err != nil {
+		t.Fatalf("close dialer: %v", err)
 	}
 	stream, err := clientConn.OpenStream(ctx)
 	if err != nil {
@@ -219,9 +222,6 @@ func TestSharedTransportServesOneSocket(t *testing.T) {
 	buf := make([]byte, len("still connected"))
 	if _, err := io.ReadFull(incoming, buf); err != nil {
 		t.Fatalf("read after closing the listener: %v", err)
-	}
-	if err := dialer.Close(); err != nil {
-		t.Fatalf("close dialer: %v", err)
 	}
 	if err := shared.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
 		t.Fatalf("close shared: %v", err)
