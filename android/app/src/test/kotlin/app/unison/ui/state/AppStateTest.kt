@@ -998,16 +998,66 @@ class AppStateTest {
         core.requests = listOf(request("req1"))
         val state = appState(core)
 
-        events.emit(
-            Mobile.Event.newBuilder()
-                .setType(Mobile.EventType.EVENT_TYPE_UNSPECIFIED)
-                .setEvent(Local.Event.newBuilder().setKind(Local.EventKind.EVENT_KIND_TRANSFER).build())
-                .build(),
-        )
+        events.emit(transferEvent("req1", Local.TransferState.TRANSFER_STATE_PENDING))
         advanceUntilIdle()
 
         assertEquals(1, state.requests.value.pending)
     }
+
+    @Test
+    fun transferProgressLeavesTheRequests() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        core.requests = listOf(request("req1"))
+
+        events.emit(transferEvent("other", Local.TransferState.TRANSFER_STATE_TRANSFERRING))
+        advanceUntilIdle()
+
+        assertEquals(0, state.requests.value.pending)
+    }
+
+    @Test
+    fun hiddenStateIgnoresReloadingEvents() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        state.refresh()
+        state.refreshHistory()
+        advanceUntilIdle()
+        val statusBefore = core.statusCalls
+        val historyBefore = core.historyCalls.size
+        core.requests = listOf(request("req1"))
+
+        state.setVisible(false)
+        events.emit(Mobile.Event.newBuilder().setType(Mobile.EventType.EVENT_TYPE_PEER_ONLINE).build())
+        events.emit(historyEvent(Local.EventKind.EVENT_KIND_CLIPBOARD))
+        events.emit(transferEvent("req1", Local.TransferState.TRANSFER_STATE_PENDING))
+        advanceUntilIdle()
+
+        assertEquals(statusBefore, core.statusCalls)
+        assertEquals(historyBefore, core.historyCalls.size)
+        assertEquals(0, state.requests.value.pending)
+
+        state.setVisible(true)
+        events.emit(Mobile.Event.newBuilder().setType(Mobile.EventType.EVENT_TYPE_PEER_ONLINE).build())
+        advanceUntilIdle()
+
+        assertTrue(core.statusCalls > statusBefore)
+    }
+
+    private fun transferEvent(id: String, state: Local.TransferState): Mobile.Event =
+        Mobile.Event.newBuilder()
+            .setType(Mobile.EventType.EVENT_TYPE_UNSPECIFIED)
+            .setEvent(
+                Local.Event.newBuilder()
+                    .setKind(Local.EventKind.EVENT_KIND_TRANSFER)
+                    .setTransfer(
+                        Local.Transfer.newBuilder()
+                            .setId(id)
+                            .setDirection(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING)
+                            .setState(state),
+                    ),
+            )
+            .build()
 
     @Test
     fun heldItemIsApplied() = runTest {

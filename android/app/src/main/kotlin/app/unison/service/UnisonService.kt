@@ -297,8 +297,14 @@ class UnisonService : Service() {
                 if (IncomingFiles.arrives(event.event)) {
                     restoreStatus()
                 }
-                refreshTransfers()
-                refreshRequests()
+                // A large transfer reports its progress often; only the outgoing ones have a
+                // progress notification, and only offers change the request notifications.
+                if (IncomingFiles.leaves(event.event)) {
+                    refreshTransfers()
+                }
+                if (IncomingFiles.changesRequests(event.event, notifiedRequests)) {
+                    refreshRequests()
+                }
             }
         }
     }

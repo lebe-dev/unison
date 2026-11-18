@@ -202,6 +202,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        appState.setVisible(true)
         if (onboarded) {
             UnisonService.start(this)
             refresh()
@@ -214,6 +215,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         requestsPoll?.cancel()
         requestsPoll = null
+        appState.setVisible(false)
         // A rotation stops and recreates the activity; the core keeps running through it.
         if (operatingMode == OperatingMode.APP_OPEN && !isChangingConfigurations) {
             UnisonService.stop(this)

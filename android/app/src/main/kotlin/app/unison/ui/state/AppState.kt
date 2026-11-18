@@ -10,6 +10,7 @@ import app.unison.core.qrCodeAddresses
 import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
 import app.unison.pairing.PairingLink
+import app.unison.service.IncomingFiles
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,16 +93,21 @@ class AppState(
     private var closeWindow: Job? = null
     private var loadingCandidates = false
 
+    /** False while no screen shows the state; the owner reloads it when one does again. */
+    private var visible = true
+
     init {
         scope.launch {
             events.collect { event ->
-                if (event.changesDevices()) {
+                // A hidden screen reads the core again when it comes back, so reloading
+                // here would only spend the battery on content nobody sees.
+                if (visible && event.changesDevices()) {
                     refresh()
                 }
-                if (event.changesHistory()) {
+                if (visible && event.changesHistory()) {
                     refreshHistory()
                 }
-                if (event.isTransfer()) {
+                if (visible && event.changesRequests()) {
                     refreshRequests()
                 }
                 if (event.isHeld()) {
@@ -110,6 +116,14 @@ class AppState(
                 onPairingEvent(event)
             }
         }
+    }
+
+    /**
+     * Tells whether a screen shows the state. While hidden, events do not reload
+     * the devices, the history and the offers; the owner reloads them on show.
+     */
+    fun setVisible(visible: Boolean) {
+        this.visible = visible
     }
 
     /** Reloads the status and the settings of the core. */
@@ -969,8 +983,10 @@ class AppState(
     }
 
     /** Events of the file transfers, new offers arrive with them. */
-    private fun Mobile.Event.isTransfer(): Boolean =
-        hasEvent() && event.kind == Local.EventKind.EVENT_KIND_TRANSFER
+    /** A new offer or a change of a listed one; the progress of a transfer is not. */
+    private fun Mobile.Event.changesRequests(): Boolean =
+        hasEvent() &&
+            IncomingFiles.changesRequests(event, mutableRequests.value.requests.mapTo(HashSet()) { it.id })
 
     /** Events of an item that waits for the user to apply it. */
     private fun Mobile.Event.isHeld(): Boolean =
