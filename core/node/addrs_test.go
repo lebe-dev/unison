@@ -3,6 +3,7 @@ package node
 import (
 	"slices"
 	"testing"
+	"time"
 )
 
 func TestReplaceAddr(t *testing.T) {
@@ -92,5 +93,24 @@ func TestCacheAddr(t *testing.T) {
 				t.Fatalf("cacheAddr(%v, %q, %v) = %v, want %v", tc.addrs, tc.addr, tc.dialed, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestOfflineRetryMaxDelayDefaults(t *testing.T) {
+	limits := Limits{}.withDefaults()
+	if limits.OfflineRetryMaxDelay != DefaultReconnectMaxDelay {
+		t.Fatalf("offline retry cap = %v, want %v", limits.OfflineRetryMaxDelay, DefaultReconnectMaxDelay)
+	}
+
+	// A cap below the reconnect cap would retry an offline peer more often
+	// than a connected one that dropped.
+	limits = Limits{ReconnectMaxDelay: time.Minute, OfflineRetryMaxDelay: time.Second}.withDefaults()
+	if limits.OfflineRetryMaxDelay != time.Minute {
+		t.Fatalf("offline retry cap = %v, want %v", limits.OfflineRetryMaxDelay, time.Minute)
+	}
+
+	limits = Limits{OfflineRetryMaxDelay: 5 * time.Minute}.withDefaults()
+	if limits.OfflineRetryMaxDelay != 5*time.Minute {
+		t.Fatalf("offline retry cap = %v, want 5m", limits.OfflineRetryMaxDelay)
 	}
 }

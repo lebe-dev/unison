@@ -47,6 +47,11 @@ const (
 // defaultDeviceName is used when the host does not configure a name.
 const defaultDeviceName = "Android device"
 
+// offlineRetryMaxDelay caps the dial attempts to a peer that is away. Every
+// attempt sends packets and keeps the phone awake, while discovery, a network
+// change and the peer itself bring the peer back sooner.
+const offlineRetryMaxDelay = 5 * time.Minute
+
 // config describes the core of the host. The test hooks are zero outside tests.
 type config struct {
 	dataDir   string
@@ -83,6 +88,7 @@ func parseConfig(data []byte) (config, error) {
 		name:      name,
 		blobLimit: msg.GetBlobLimitBytes(),
 		debug:     msg.GetDebugLog(),
+		limits:    node.Limits{OfflineRetryMaxDelay: offlineRetryMaxDelay},
 	}, nil
 }
 

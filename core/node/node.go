@@ -86,6 +86,11 @@ type Limits struct {
 	// ReconnectMaxDelay caps the delay between connection attempts.
 	// DefaultReconnectMaxDelay is used when zero.
 	ReconnectMaxDelay time.Duration
+	// OfflineRetryMaxDelay caps the delay between connection attempts to a
+	// peer that is offline. Discovery, a network change and the peer itself
+	// bring it back sooner, so a phone can retry rarely. ReconnectMaxDelay is
+	// used when zero or shorter.
+	OfflineRetryMaxDelay time.Duration
 	// EventBuffer is the event queue of one subscriber. DefaultEventBuffer is
 	// used when zero.
 	EventBuffer int
@@ -110,6 +115,9 @@ func (l Limits) withDefaults() Limits {
 	}
 	if l.ReconnectMaxDelay < l.ReconnectDelay {
 		l.ReconnectMaxDelay = l.ReconnectDelay
+	}
+	if l.OfflineRetryMaxDelay < l.ReconnectMaxDelay {
+		l.OfflineRetryMaxDelay = l.ReconnectMaxDelay
 	}
 	if l.EventBuffer <= 0 {
 		l.EventBuffer = DefaultEventBuffer

@@ -708,7 +708,7 @@ func (n *Node) runLink(ctx context.Context, l *link) {
 		if n.relayDue(l) {
 			n.startRelay(ctx, l)
 		}
-		if !l.wait(ctx, l.nextDelay(n.limits.ReconnectDelay, n.limits.ReconnectMaxDelay)) {
+		if !l.wait(ctx, l.nextDelay(n.limits.ReconnectDelay, n.limits.OfflineRetryMaxDelay)) {
 			return
 		}
 	}
