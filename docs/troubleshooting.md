@@ -101,7 +101,9 @@ service.
 ## A file does not arrive
 
 - An offer of a Friends device, or of a Personal device you ask about, waits in `Requests`
-  (`Inbox` on Android, `unison requests`) and expires after ten minutes.
+  (`Inbox` on Android, `unison requests`) and expires after ten minutes. So does an offer of any
+  Personal device above the files limit of the current network (10 MiB on Wi-Fi, 1 MiB on mobile
+  data) or over the relay; see [Network policies](policy.md).
 - An item that is listed as not downloaded needs the device that has it to be online.
 - Files land in `~/Downloads/Unison` on macOS and in `Download/Unison` on Android, unless you chose
   another folder in Settings.

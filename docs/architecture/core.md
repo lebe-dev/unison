@@ -201,7 +201,9 @@ content and stored as one MiB chunks.
 
 `core/blob/transfer` serves the `blob.request` streams: a receiver asks for chunks by index, writes
 and verifies them, and keeps a chunk bitmap per blob so a connection that drops does not lose the
-work.
+work. A fetch carries the size the item or the offer announced as `MaxSize`; a source whose hash
+tree describes a larger blob is dropped with `ErrSize` before anything is stored, so a peer cannot
+pass the size limits of the policy by announcing a small item.
 
 ## History
 

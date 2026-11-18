@@ -315,8 +315,12 @@ the log as `ListHistory`, `GetHistoryItem`, `DeleteHistoryItem`, `FetchHistoryIt
 them with `ShareOffer{transfer_id, files}`, and the receiver answers with `ShareDecision`. The
 trust matrix decides what happens to an offer: a Personal peer is accepted at once, a Friends peer
 is kept as a pending request until the user accepts or rejects it, and a peer the matrix refuses
-gets a rejection. Nothing of an undecided offer is stored: the payloads are downloaded only after
-the decision.
+gets a rejection. An offer the matrix accepts at once then goes through the network policy, which
+the node passes as the `share.Policy` option: `policy.Decider.DecideShare` takes the total size of
+the files with the `files` cell, so an offer above the limit, or over the relay while files travel
+there only on request, is kept as a pending request too, and a `reject` cell or a network without
+the relay declines it. Nothing of an undecided offer is stored: the payloads are downloaded only
+after the decision.
 
 A transfer downloads its files by pulling them over the blob protocol with the payload type
 `share.request` and the transfer ID of the offer, so an interrupted transfer continues from the
@@ -330,7 +334,10 @@ platform that keeps files elsewhere passes a `Sink`, which is how Android hands 
 of the receiver back to the sender, and the service resumes a transfer when the session with its
 peer comes back. The limits are 32 files per transfer, the size limit of the blob store per file,
 16 offers that wait for a decision, ten minutes for an offer to wait and 64 transfers kept in
-memory.
+memory. The blob store limit applies to each file, not to the offer: the files are downloaded and
+saved one by one, so the store only stages them and may evict a file that is already saved. Every
+download carries the size of its file as `transfer.FetchRequest.MaxSize`, and a sender whose hash
+tree describes a larger blob is dropped before anything is stored.
 
 `core/api` serves the local API over a node: the `UnisonService` of `proto/unison/local/v1` with
 the status, device, pairing, clipboard, transfer, pause and settings calls. The service takes the

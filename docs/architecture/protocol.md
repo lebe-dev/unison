@@ -258,7 +258,11 @@ corrupt, out of order or unexpected frame. The same mechanism serves an accepted
 
 The sender offers files with `share-offer`. The trust matrix decides the answer: a Personal peer
 without the files flag is accepted at once, a Personal peer with the flag and a Friends peer wait
-for the user, and a peer the matrix refuses gets a rejection. `share-decision` carries the answer,
+for the user, and a peer the matrix refuses gets a rejection. The receiver then applies its network
+policy to an offer accepted at once, with the total size of the files: above the limit of the
+`files` cell, or over the relay while files travel there only on request, the offer waits for the
+user, and a `reject` cell declines it. The files are fetched with the sizes of the offer as the
+bound. `share-decision` carries the answer,
 `share-cancel` stops a transfer from either side and `share-result` reports the outcome back to the
 sender.
 
