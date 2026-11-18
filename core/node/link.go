@@ -732,6 +732,11 @@ func (n *Node) tryDial(ctx context.Context, l *link, purpose dialPurpose) {
 		if ctx.Err() != nil {
 			return
 		}
+		// The peer may have connected on its own while an earlier address timed
+		// out; another connection would only replace that one.
+		if online, _ := l.status(); online && purpose == dialConnect {
+			return
+		}
 		conn, err := n.dial(ctx, addr)
 		if err != nil {
 			n.log.Debug("connecting to the peer failed", "peer", l.id, "addr", addr, "error", err)
@@ -969,8 +974,7 @@ func (n *Node) sessionHooks() []SessionHook {
 }
 
 // recordAddr caches the address the peer was reached with. An address the peer
-// connected from is an ephemeral port, so it is kept after the addresses that
-// were dialed successfully.
+// connected from is an ephemeral port, so it is only a hint for a new host.
 func (n *Node) recordAddr(ctx context.Context, id model.DeviceID, addr string, incoming bool) {
 	if addr == "" {
 		return
@@ -980,9 +984,9 @@ func (n *Node) recordAddr(ctx context.Context, id model.DeviceID, addr string, i
 	}
 }
 
-// rememberAddr adds addr to the cached addresses of the peer, at the front when
-// front is set. The read and the write are serialized, so two connections of
-// the same peer do not drop each other's address.
+// rememberAddr adds addr to the cached addresses of the peer, as a dialed
+// address when front is set. The read and the write are serialized, so two
+// connections of the same peer do not drop each other's address.
 func (n *Node) rememberAddr(ctx context.Context, id model.DeviceID, addr string, front bool) error {
 	n.addrMu.Lock()
 	defer n.addrMu.Unlock()
@@ -991,10 +995,7 @@ func (n *Node) rememberAddr(ctx context.Context, id model.DeviceID, addr string,
 	if err != nil {
 		return err
 	}
-	addrs := appendAddr(peer.LastAddrs, addr)
-	if front {
-		addrs = prependAddr(peer.LastAddrs, addr)
-	}
+	addrs := cacheAddr(peer.LastAddrs, addr, front)
 	if slices.Equal(addrs, peer.LastAddrs) {
 		return nil
 	}
@@ -1028,6 +1029,48 @@ func prependAddr(addrs []string, addr string) []string {
 	kept = append(kept, addr)
 	for _, known := range addrs {
 		if known == addr {
+			continue
+		}
+		kept = append(kept, known)
+	}
+	return kept
+}
+
+// cacheAddr returns the cached addresses after a connection with addr. A dialed
+// address replaces the other ports of its host. The address of an incoming
+// connection is the dialer socket of the peer, which takes no connections, so
+// it is only kept as a hint for a host the cache does not know yet.
+func cacheAddr(addrs []string, addr string, dialed bool) []string {
+	if dialed {
+		return replaceAddr(addrs, addr)
+	}
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return appendAddr(addrs, addr)
+	}
+	for _, known := range addrs {
+		if knownHost, _, err := net.SplitHostPort(known); err == nil && knownHost == host {
+			return addrs
+		}
+	}
+	return appendAddr(addrs, addr)
+}
+
+// replaceAddr returns addrs with addr first and without the other ports of its
+// host. A device listens on one port per address, so another port of the same
+// host is left from an earlier run and would only hold up the next dial.
+func replaceAddr(addrs []string, addr string) []string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return prependAddr(addrs, addr)
+	}
+	kept := make([]string, 0, len(addrs)+1)
+	kept = append(kept, addr)
+	for _, known := range addrs {
+		if known == addr {
+			continue
+		}
+		if knownHost, _, err := net.SplitHostPort(known); err == nil && knownHost == host {
 			continue
 		}
 		kept = append(kept, known)
