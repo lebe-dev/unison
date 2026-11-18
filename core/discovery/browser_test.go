@@ -175,3 +175,35 @@ func TestAddress(t *testing.T) {
 		}
 	}
 }
+
+func TestNextQueryDelay(t *testing.T) {
+	// A continuous query starts one second apart and doubles up to the limit,
+	// so an idle network carries one query a minute instead of one every few
+	// seconds.
+	var got []time.Duration
+	delay := time.Duration(0)
+	for range 8 {
+		delay = nextQueryDelay(delay, DefaultQueryInterval)
+		got = append(got, delay)
+	}
+	want := []time.Duration{
+		time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second,
+		16 * time.Second, 32 * time.Second, time.Minute, time.Minute,
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("delays = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestNextQueryDelayShortLimit(t *testing.T) {
+	// A limit below the first delay keeps the queries at the limit.
+	limit := 200 * time.Millisecond
+	if got := nextQueryDelay(0, limit); got != limit {
+		t.Fatalf("first delay = %v, want %v", got, limit)
+	}
+	if got := nextQueryDelay(limit, limit); got != limit {
+		t.Fatalf("next delay = %v, want %v", got, limit)
+	}
+}

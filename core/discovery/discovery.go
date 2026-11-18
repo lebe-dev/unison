@@ -25,8 +25,13 @@ const (
 	// DefaultRefresh is how often the tag epoch and the interface set are
 	// checked.
 	DefaultRefresh = 30 * time.Second
-	// DefaultQueryInterval is how often a browser repeats its query.
-	DefaultQueryInterval = 5 * time.Second
+	// DefaultQueryInterval is the longest pause between two queries of a
+	// browser. Every query wakes the devices of the network, so a browser
+	// backs off to this pause; announcements bring new devices in between.
+	DefaultQueryInterval = time.Minute
+	// firstQueryDelay is the pause after the first query of a browser. It
+	// doubles after every query, as RFC 6762 asks of a continuous query.
+	firstQueryDelay = time.Second
 	// announceRepeat is the delay before the second announcement.
 	announceRepeat = time.Second
 	// keyCacheTTL is how long the group key is cached.
@@ -71,7 +76,7 @@ type Options struct {
 	// Refresh is how often the tag epoch and the interface set are checked.
 	// DefaultRefresh is used when zero.
 	Refresh time.Duration
-	// QueryInterval is how often a browser repeats its query.
+	// QueryInterval is the longest pause between two queries of a browser.
 	// DefaultQueryInterval is used when zero.
 	QueryInterval time.Duration
 }
@@ -611,21 +616,34 @@ func (d *Discovery) browse(ctx context.Context, id int, b *browser) {
 		b.close()
 	}()
 
-	ticker := time.NewTicker(d.opts.QueryInterval)
-	defer ticker.Stop()
-
 	d.query(b)
+	delay := nextQueryDelay(0, d.opts.QueryInterval)
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-d.ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
+			delay = nextQueryDelay(delay, d.opts.QueryInterval)
 		case <-b.poke:
+			// A new network or tag epoch starts the quick queries again.
+			delay = nextQueryDelay(0, d.opts.QueryInterval)
 		}
 		d.query(b)
+		timer.Reset(delay)
 	}
+}
+
+// nextQueryDelay returns the pause that follows a pause of prev, up to limit.
+// A zero prev starts the schedule again.
+func nextQueryDelay(prev, limit time.Duration) time.Duration {
+	if prev <= 0 {
+		return min(firstQueryDelay, limit)
+	}
+	return min(prev*2, limit)
 }
 
 // query sends the browse query and the address queries of unresolved hosts.
