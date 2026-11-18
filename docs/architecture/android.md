@@ -142,6 +142,12 @@ the end. A folder the user picked with the system picker is preferred; Unison ge
 folder and to nothing else, so the app asks for no storage permission. A size mismatch discards the
 entry.
 
+While a file arrives, `UnisonService` shows its progress on the `transfers` channel, at most once
+a second. When the transfer ends, the same notification turns into the result: a received file
+moves to the `received` channel, which makes a sound, and a tap opens the system list of downloads
+(the app when the user picked a folder). Both follow the `Transfers` switch of the notification
+settings; offers that wait for an answer keep their own request notification.
+
 A download from the history stages the file in the cache, then copies it into the same place and
 cancels its notification.
 

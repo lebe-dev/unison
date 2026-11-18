@@ -27,6 +27,7 @@ import app.unison.history.HistoryNotifications
 import app.unison.network.NetworkConditions
 import app.unison.network.NetworkMonitor
 import app.unison.requests.RequestNotifications
+import app.unison.share.ReceiveNotifications
 import app.unison.share.TransferNotifications
 import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
@@ -74,6 +75,7 @@ class UnisonService : Service() {
     private val watchedTransfers = mutableSetOf<String>()
     private val reportedTransfers = mutableSetOf<String>()
     private val notifiedRequests = mutableSetOf<String>()
+    private val receipts = IncomingFiles.Receipts(RECEIVE_PROGRESS_MS)
     private var transferNames = emptyList<String>()
     private var transfersCanceled = false
     private lateinit var discovery: NsdDiscovery
@@ -138,6 +140,10 @@ class UnisonService : Service() {
         scope.cancel()
         discovery.stop()
         NotificationManagerCompat.from(this).cancel(TransferNotifications.ID)
+        // The core stops with the service, so the transfers that still run end without a result.
+        for (id in receipts.running()) {
+            NotificationManagerCompat.from(this).cancel(ReceiveNotifications.idOf(id))
+        }
         for (requestId in notifiedRequests) {
             NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(requestId))
         }
@@ -296,6 +302,7 @@ class UnisonService : Service() {
             event.hasEvent() && event.event.kind == Local.EventKind.EVENT_KIND_TRANSFER -> {
                 if (IncomingFiles.arrives(event.event)) {
                     restoreStatus()
+                    notifyReceipt(event.event)
                 }
                 // A large transfer reports its progress often; only the outgoing ones have a
                 // progress notification, and only offers change the request notifications.
@@ -307,6 +314,33 @@ class UnisonService : Service() {
                 }
             }
         }
+    }
+
+    /** Shows the progress and the result of a file that a peer sends to this device. */
+    @SuppressLint("MissingPermission")
+    private fun notifyReceipt(event: Local.Event) {
+        val transfer = event.transfer
+        val notification = when (IncomingFiles.receipt(event)) {
+            IncomingFiles.Receipt.NONE -> return
+            IncomingFiles.Receipt.PROGRESS -> {
+                if (!receipts.progressDue(transfer.id, System.currentTimeMillis())) {
+                    return
+                }
+                ReceiveNotifications.progress(this, transfer)
+            }
+            else -> {
+                if (!receipts.finish(transfer.id)) {
+                    return
+                }
+                Journal.info("incoming transfer ended", "state" to transfer.state.name)
+                ReceiveNotifications.result(this, transfer)
+            }
+        }
+        if (!NotificationSettings.load(this).transfers) {
+            return
+        }
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(ReceiveNotifications.idOf(transfer.id), notification)
     }
 
     /** Keeps the transfers notification in step with the running transfers. */
@@ -765,6 +799,9 @@ class UnisonService : Service() {
 
         /** Time between two reads of the running transfers. */
         private const val TRANSFERS_POLL_MS = 500L
+
+        /** Least time between two progress updates of one incoming transfer. */
+        private const val RECEIVE_PROGRESS_MS = 1_000L
 
         /** Age of a finished transfer that is still reported after a single poll. */
         private const val RECENT_TRANSFER_MS = 30_000L

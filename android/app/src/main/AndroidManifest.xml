@@ -20,6 +20,13 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <!-- A received file notification opens the system list of downloads. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW_DOWNLOADS" />
+        </intent>
+    </queries>
+
     <application
         android:name=".UnisonApplication"
         android:allowBackup="false"

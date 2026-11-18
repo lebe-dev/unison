@@ -10,6 +10,10 @@ object NotificationChannels {
     /** Progress of outgoing and incoming transfers. */
     const val TRANSFERS = "transfers"
 
+    /** Files that arrived from a peer. The channel makes a sound, so a received
+     * file does not stay unnoticed. */
+    const val RECEIVED = "received"
+
     /** File offers that wait for a decision. */
     const val REQUESTS = "requests"
 
@@ -39,6 +43,14 @@ object NotificationChannels {
                 TRANSFERS,
                 context.getString(R.string.channel_transfers),
                 NotificationManager.IMPORTANCE_LOW,
+            ).apply { setShowBadge(false) },
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                RECEIVED,
+                context.getString(R.string.channel_received),
+                NotificationManager.IMPORTANCE_DEFAULT,
             ).apply { setShowBadge(false) },
         )
 

@@ -4,6 +4,7 @@
     <string name="core_version">Core version %1$s</string>
     <string name="channel_service">Service</string>
     <string name="channel_transfers">Transfers</string>
+    <string name="channel_received">Received files</string>
     <string name="channel_requests">Requests</string>
     <string name="channel_clipboard">Clipboard</string>
     <string name="channel_confirmations">Questions to answer</string>
@@ -132,7 +133,7 @@
     <string name="settings_diagnostics_failed">Cannot save the diagnostics setting</string>
     <string name="settings_section_notifications">Categories</string>
     <string name="settings_notification_transfers">Transfers</string>
-    <string name="settings_notification_transfers_hint">Progress and the result of the files you send.</string>
+    <string name="settings_notification_transfers_hint">Progress and the result of the files you send and receive.</string>
     <string name="settings_notification_requests">File offers</string>
     <string name="settings_notification_requests_hint">Offers from Friends devices that wait for an answer.</string>
     <string name="settings_notification_clipboard">Clipboard</string>
@@ -364,6 +365,20 @@
     <plurals name="transfer_more_devices">
         <item quantity="one">%1$s and %2$d more</item>
         <item quantity="other">%1$s and %2$d more</item>
+    </plurals>
+
+    <string name="receive_progress_title">Receiving from %1$s</string>
+    <string name="receive_progress_text">%1$s - %2$s</string>
+    <string name="receive_done">Received %1$s</string>
+    <string name="receive_canceled">Receiving canceled</string>
+    <string name="receive_failed">Receiving failed</string>
+    <plurals name="receive_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <plurals name="receive_done_files">
+        <item quantity="one">Received %d file</item>
+        <item quantity="other">Received %d files</item>
     </plurals>
 
     <string name="kind_text">Text</string>

@@ -4,6 +4,7 @@
     <string name="core_version">Версия ядра %1$s</string>
     <string name="channel_service">Служба</string>
     <string name="channel_transfers">Передачи</string>
+    <string name="channel_received">Полученные файлы</string>
     <string name="channel_requests">Запросы</string>
     <string name="channel_clipboard">Буфер обмена</string>
     <string name="channel_confirmations">Вопросы без ответа</string>
@@ -134,7 +135,7 @@
     <string name="settings_diagnostics_failed">Не удалось сохранить настройку диагностики</string>
     <string name="settings_section_notifications">Категории</string>
     <string name="settings_notification_transfers">Передачи</string>
-    <string name="settings_notification_transfers_hint">Ход и результат отправки файлов.</string>
+    <string name="settings_notification_transfers_hint">Ход и результат отправки и получения файлов.</string>
     <string name="settings_notification_requests">Запросы файлов</string>
     <string name="settings_notification_requests_hint">Входящие файлы от друзей, ожидающие ответа.</string>
     <string name="settings_notification_clipboard">Буфер обмена</string>
@@ -373,6 +374,24 @@
         <item quantity="few">%1$s и еще %2$d</item>
         <item quantity="many">%1$s и еще %2$d</item>
         <item quantity="other">%1$s и еще %2$d</item>
+    </plurals>
+
+    <string name="receive_progress_title">Получение с %1$s</string>
+    <string name="receive_progress_text">%1$s - %2$s</string>
+    <string name="receive_done">Получен файл %1$s</string>
+    <string name="receive_canceled">Получение отменено</string>
+    <string name="receive_failed">Не удалось получить файлы</string>
+    <plurals name="receive_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="few">%d файла</item>
+        <item quantity="many">%d файлов</item>
+        <item quantity="other">%d файла</item>
+    </plurals>
+    <plurals name="receive_done_files">
+        <item quantity="one">Получен %d файл</item>
+        <item quantity="few">Получено %d файла</item>
+        <item quantity="many">Получено %d файлов</item>
+        <item quantity="other">Получено %d файла</item>
     </plurals>
 
     <string name="kind_text">Текст</string>
