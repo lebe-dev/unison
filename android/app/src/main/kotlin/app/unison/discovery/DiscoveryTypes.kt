@@ -81,11 +81,23 @@ object Candidates {
         return if (zone == null) "[$literal]:$port" else "[$literal%$zone]:$port"
     }
 
-    /** Dialable addresses of a service, IPv4 first. */
-    fun addresses(hosts: Iterable<InetAddress?>): List<InetAddress> = hosts
-        .filterNotNull()
-        .filter { dialable(it) }
-        .sortedBy { if (it is Inet6Address) 1 else 0 }
+    /**
+     * Dialable addresses of a service, IPv4 first. A link local address is kept
+     * only when the service has no other one: the core resolves its zone on every
+     * packet, and Android refuses the interface list that needs.
+     */
+    fun addresses(hosts: Iterable<InetAddress?>): List<InetAddress> {
+        val dialable = hosts
+            .filterNotNull()
+            .filter { dialable(it) }
+            .sortedBy { if (it is Inet6Address) 1 else 0 }
+        val routable = dialable.filterNot { it.isLinkLocalAddress }
+        return routable.ifEmpty { dialable }
+    }
+
+    /** True when [instance] is one of the [own] announcements; DNS-SD names ignore case. */
+    fun isOwn(instance: String, own: Iterable<String>): Boolean =
+        own.any { it.equals(instance, ignoreCase = true) }
 
     private fun dialable(host: InetAddress): Boolean =
         !host.isAnyLocalAddress && !host.isLoopbackAddress && !host.isMulticastAddress

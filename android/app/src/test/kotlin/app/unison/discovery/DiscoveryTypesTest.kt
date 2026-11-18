@@ -3,6 +3,7 @@ package app.unison.discovery
 import java.net.Inet6Address
 import java.net.InetAddress
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -119,7 +120,7 @@ class CandidatesTest {
     fun everyDialableAddressIsReported() {
         val addresses = Candidates.addresses(
             listOf(
-                Inet6Address.getByAddress(null, ipv6("fe80::1"), 2),
+                Inet6Address.getByAddress(null, ipv6("2001:db8::7"), 0),
                 InetAddress.getByName("10.0.0.7"),
                 InetAddress.getByName("127.0.0.1"),
                 InetAddress.getByName("192.168.1.5"),
@@ -130,6 +131,34 @@ class CandidatesTest {
         assertEquals("10.0.0.7", addresses[0].hostAddress)
         assertEquals("192.168.1.5", addresses[1].hostAddress)
         assertTrue(addresses[2] is Inet6Address)
+    }
+
+    @Test
+    fun linkLocalAddressIsSkippedNextToARoutableOne() {
+        // The core resolves the zone of a link local address on every packet,
+        // which costs a refused system call on Android, so it is the last resort.
+        val addresses = Candidates.addresses(
+            listOf(
+                Inet6Address.getByAddress(null, ipv6("fe80::1"), 2),
+                InetAddress.getByName("10.0.0.7"),
+            ),
+        )
+
+        assertEquals("10.0.0.7", addresses.single().hostAddress)
+    }
+
+    @Test
+    fun linkLocalAddressIsKeptAlone() {
+        val addresses = Candidates.addresses(listOf(Inet6Address.getByAddress(null, ipv6("fe80::1"), 2)))
+
+        assertTrue(addresses.single().isLinkLocalAddress)
+    }
+
+    @Test
+    fun ownInstanceIsRecognized() {
+        assertTrue(Candidates.isOwn("4X7RUGTFV5IGE", listOf("4x7rugtfv5ige")))
+        assertFalse(Candidates.isOwn("other", listOf("4x7rugtfv5ige")))
+        assertFalse(Candidates.isOwn("4x7rugtfv5ige", emptyList()))
     }
 
     @Test

@@ -188,7 +188,11 @@ class NsdDiscovery(
         }
         val advertisement = Advertisement(service, info)
         val listener = object : NsdManager.RegistrationListener {
-            override fun onServiceRegistered(info: NsdServiceInfo) = onMain { registered(advertisement) }
+            override fun onServiceRegistered(info: NsdServiceInfo) = onMain {
+                // The system may rename the instance to resolve a conflict.
+                advertisement.registeredName = info.serviceName
+                registered(advertisement)
+            }
 
             override fun onRegistrationFailed(info: NsdServiceInfo, errorCode: Int) =
                 onMain { registrationFailed(advertisement, errorCode) }
@@ -356,6 +360,11 @@ class NsdDiscovery(
         if (info.serviceType.removeSuffix(".") != type.removeSuffix(".")) {
             return
         }
+        // The own announcement comes back from the network; dialing it would only
+        // run a full handshake with this device.
+        if (Candidates.isOwn(info.serviceName, ownNames(service))) {
+            return
+        }
         Log.i(TAG, "found a device of $service")
         requestResolve(service, info)
     }
@@ -371,6 +380,13 @@ class NsdDiscovery(
         }
         Log.i(TAG, "lost a device of $service")
     }
+
+    /** Instance names this device announces for the service. */
+    private fun ownNames(service: String): List<String> = listOfNotNull(
+        desired[service]?.serviceName,
+        announced[service]?.info?.serviceName,
+        announced[service]?.registeredName,
+    )
 
     /** Queues one service for resolution. Resolution runs one request at a time. */
     private fun requestResolve(service: String, info: NsdServiceInfo) {
@@ -674,6 +690,9 @@ class NsdDiscovery(
     private class Advertisement(val service: String, val info: NsdServiceInfo) {
         var state = State.REGISTERING
         lateinit var listener: NsdManager.RegistrationListener
+
+        /** Name the system registered, which differs from the asked one after a conflict. */
+        var registeredName: String? = null
     }
 
     private class Resolve(val service: String, val info: NsdServiceInfo, val attempt: Int = 1) {
