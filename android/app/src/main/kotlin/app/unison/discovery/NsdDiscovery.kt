@@ -532,7 +532,9 @@ class NsdDiscovery(
         // VPN or a virtual bridge adds addresses that do not reach it. Every
         // address becomes its own candidate, so a dead one does not keep the
         // device offline.
-        for (host in Candidates.addresses(hostsOf(info))) {
+        // The system cache may still hold the record of an earlier run of this app
+        // under another instance name; its address is this device.
+        for (host in Candidates.addresses(hostsOf(info), ownAddresses())) {
             val addr = Candidates.address(host, port) ?: continue
             try {
                 sink.offer(service, addr, txt)
@@ -548,6 +550,21 @@ class NsdDiscovery(
         }
         Log.i(TAG, "reported a device of $service")
         return true
+    }
+
+    /** Addresses of this device on its current networks. */
+    private fun ownAddresses(): Set<InetAddress> {
+        val connectivity = appContext.getSystemService(ConnectivityManager::class.java) ?: return emptySet()
+        return try {
+            @Suppress("DEPRECATION")
+            connectivity.allNetworks
+                .mapNotNull { connectivity.getLinkProperties(it) }
+                .flatMap { link -> link.linkAddresses.map { it.address } }
+                .toSet()
+        } catch (e: Exception) {
+            Log.w(TAG, "reading the own addresses failed: ${e.message}")
+            emptySet()
+        }
     }
 
     @Suppress("DEPRECATION")

@@ -82,14 +82,15 @@ object Candidates {
     }
 
     /**
-     * Dialable addresses of a service, IPv4 first. A link local address is kept
-     * only when the service has no other one: the core resolves its zone on every
-     * packet, and Android refuses the interface list that needs.
+     * Dialable addresses of a service, IPv4 first, without the [own] addresses of
+     * this device. A link local address is kept only when the service has no
+     * other one: the core resolves its zone on every packet, and Android refuses
+     * the interface list that needs.
      */
-    fun addresses(hosts: Iterable<InetAddress?>): List<InetAddress> {
+    fun addresses(hosts: Iterable<InetAddress?>, own: Set<InetAddress> = emptySet()): List<InetAddress> {
         val dialable = hosts
             .filterNotNull()
-            .filter { dialable(it) }
+            .filter { dialable(it) && it !in own }
             .sortedBy { if (it is Inet6Address) 1 else 0 }
         val routable = dialable.filterNot { it.isLinkLocalAddress }
         return routable.ifEmpty { dialable }

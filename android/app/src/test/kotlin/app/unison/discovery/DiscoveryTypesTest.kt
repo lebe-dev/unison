@@ -155,6 +155,18 @@ class CandidatesTest {
     }
 
     @Test
+    fun ownAddressIsSkipped() {
+        // The record of an earlier run of this app may still sit in the system
+        // cache under another instance name; its address is this device.
+        val addresses = Candidates.addresses(
+            listOf(InetAddress.getByName("192.168.1.5"), InetAddress.getByName("192.168.1.9")),
+            own = setOf(InetAddress.getByName("192.168.1.5")),
+        )
+
+        assertEquals("192.168.1.9", addresses.single().hostAddress)
+    }
+
+    @Test
     fun ownInstanceIsRecognized() {
         assertTrue(Candidates.isOwn("4X7RUGTFV5IGE", listOf("4x7rugtfv5ige")))
         assertFalse(Candidates.isOwn("other", listOf("4x7rugtfv5ige")))
