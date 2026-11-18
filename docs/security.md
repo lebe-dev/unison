@@ -53,7 +53,7 @@ another connection. The role in the frame has to equal the role the local trust 
 the device ID has to match the certificate. A failed proof closes the connection with code `0x01`.
 
 The handshake, the certificate check and the proof share a 10 second timeout. An idle connection is
-closed after 60 seconds, keepalives go out every 15 seconds, and one peer may hold 32 bidirectional
+closed after 60 seconds, keepalives go out every 25 seconds, and one peer may hold 32 bidirectional
 and 128 unidirectional streams.
 
 ## Authorization

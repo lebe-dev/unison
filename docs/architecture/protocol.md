@@ -24,7 +24,7 @@ ID derived from them.
 | Key exchange | X25519MLKEM768 only, no classical fallback |
 | ALPN, peers | `unison/1` |
 | ALPN, pairing | `unison-pair/1` |
-| Keepalive | 15 s |
+| Keepalive | 25 s |
 | Idle timeout | 60 s |
 | Handshake timeout | 10 s |
 | Incoming streams | 32 bidirectional, 128 unidirectional |
@@ -149,13 +149,16 @@ Addresses come from four places, in this order of preference:
 3. the address cache of the peer;
 4. the relay.
 
-The address a peer connected from is the ephemeral port of its dialer, which takes no connections,
-so it is cached last and only for a host the cache does not know yet. A dialed address replaces the
-other ports of its host, which belong to an earlier run. The main listener port is persisted in
-`transport.main_port`, so the cached address of a device survives a restart. A connection attempt
-stops as soon as the peer connects on its own. After a lost connection the node reconnects with a
-delay that doubles from one second up to thirty seconds. `NetworkChanged` announces the device again
-and retries every offline peer.
+A node dials from the socket of its main listener, so the address a peer connected from is one it
+can dial back. A device of an older version dials from an ephemeral port that takes no connections,
+so the address of an incoming connection is cached last and only for a host the cache does not know
+yet. A dialed address replaces the other ports of its host, which belong to an earlier run. The main
+listener port is persisted in `transport.main_port`, so the cached address of a device survives a
+restart. A connection attempt stops as soon as the peer connects on its own. After a lost connection
+the node reconnects with a delay that doubles from one second up to thirty seconds; for a peer that
+stays offline the Android app lets the delay grow to five minutes, because discovery, a network
+change and the peer itself bring it back sooner. `NetworkChanged` announces the device again and
+retries every offline peer.
 
 ## Discovery
 
