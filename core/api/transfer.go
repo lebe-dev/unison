@@ -54,7 +54,7 @@ func (s *Service) SendFiles(ctx context.Context, req *connect.Request[localv1.Se
 		if err != nil {
 			continue
 		}
-		transfers = append(transfers, transferToProto(record))
+		transfers = append(transfers, TransferToProto(record))
 	}
 	return connect.NewResponse(&localv1.SendFilesResponse{Transfers: transfers}), nil
 }
@@ -68,7 +68,7 @@ func (s *Service) ListTransfers(_ context.Context, _ *connect.Request[localv1.Li
 	records := s.node.Share().Transfers()
 	transfers := make([]*localv1.Transfer, 0, len(records))
 	for _, record := range records {
-		transfers = append(transfers, transferToProto(record))
+		transfers = append(transfers, TransferToProto(record))
 	}
 	return connect.NewResponse(&localv1.ListTransfersResponse{Transfers: transfers}), nil
 }
@@ -106,8 +106,8 @@ func (s *Service) RejectTransfer(ctx context.Context, req *connect.Request[local
 	return connect.NewResponse(&localv1.RejectTransferResponse{}), nil
 }
 
-// transferToProto converts one transfer.
-func transferToProto(record share.Transfer) *localv1.Transfer {
+// TransferToProto converts one transfer to its local API form.
+func TransferToProto(record share.Transfer) *localv1.Transfer {
 	out := &localv1.Transfer{
 		Id:              record.ID,
 		Direction:       transferDirectionToProto(record.Direction),

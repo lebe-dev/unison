@@ -16,6 +16,7 @@ import (
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/ports/fake"
+	"github.com/lebe-dev/unison/core/share"
 	"github.com/lebe-dev/unison/core/transport/vnet"
 	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
@@ -243,6 +244,30 @@ func TestClipEventsCarryTheItem(t *testing.T) {
 		if event.GetItem().GetId() != item.ID.String() {
 			t.Fatalf("%s event carries item %v", kind, event.GetItem())
 		}
+	}
+}
+
+// TestTransferEventsCarryTheTransfer checks that the host learns the direction
+// and the state of a transfer, which select the receive notification.
+func TestTransferEventsCarryTheTransfer(t *testing.T) {
+	transfer := share.Transfer{
+		ID:         "transfer-1",
+		Direction:  share.DirectionIncoming,
+		PeerName:   "Mac",
+		State:      share.StateDone,
+		Files:      []share.File{{Name: "report.pdf", Size: 10}},
+		TotalBytes: 10,
+	}
+
+	event := localEventToProto(node.Event{Kind: node.EventTransfer, Transfer: transfer})
+
+	got := event.GetTransfer()
+	if got.GetId() != transfer.ID ||
+		got.GetDirection() != localv1.TransferDirection_TRANSFER_DIRECTION_INCOMING ||
+		got.GetState() != localv1.TransferState_TRANSFER_STATE_DONE ||
+		got.GetDeviceName() != "Mac" ||
+		len(got.GetFiles()) != 1 {
+		t.Fatalf("transfer event carries %v", got)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/pairing"
@@ -196,6 +197,8 @@ func localEventToProto(event node.Event) *localv1.Event {
 	switch event.Kind {
 	case node.EventClipboard, node.EventClipDownload, node.EventClipApply:
 		out.Item = clipItemToProto(event.Item)
+	case node.EventTransfer:
+		out.Transfer = api.TransferToProto(event.Transfer)
 	}
 	if event.Err != nil {
 		out.Error = event.Err.Error()

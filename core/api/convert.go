@@ -260,7 +260,7 @@ func eventToProto(event node.Event) *localv1.Event {
 	case node.EventClipboard, node.EventClipDownload, node.EventClipApply:
 		out.Item = clipItemToProto(event.Item)
 	case node.EventTransfer:
-		out.Transfer = transferToProto(event.Transfer)
+		out.Transfer = TransferToProto(event.Transfer)
 	}
 	if event.Err != nil {
 		out.Error = event.Err.Error()
