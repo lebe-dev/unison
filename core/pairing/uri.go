@@ -305,7 +305,7 @@ func LocalAddresses(port int) ([]string, error) {
 	if port <= 0 || port > 65535 {
 		return nil, fmt.Errorf("pairing: port %d", port)
 	}
-	interfaces, err := net.InterfaceAddrs()
+	interfaces, err := interfaceAddrs()
 	if err != nil {
 		return nil, fmt.Errorf("pairing: list addresses: %w", err)
 	}
