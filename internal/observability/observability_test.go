@@ -100,3 +100,20 @@ func TestBeforeSendScrubsTheEvent(t *testing.T) {
 		t.Errorf("the component tag is %q", got.Tags["component"])
 	}
 }
+
+// TestClientOptionsStayIdle checks that the SDK starts no periodic work: the
+// telemetry buffer wakes the process ten times a second, and client reports
+// would send the counts of dropped events without consent.
+func TestClientOptionsStayIdle(t *testing.T) {
+	opts := clientOptions("https://key@example.com/1", "1.2.3")
+
+	if !opts.DisableTelemetryBuffer {
+		t.Error("the telemetry buffer is enabled")
+	}
+	if !opts.DisableClientReports {
+		t.Error("client reports are enabled")
+	}
+	if opts.Release != "unison@1.2.3" {
+		t.Errorf("release is %q, want unison@1.2.3", opts.Release)
+	}
+}

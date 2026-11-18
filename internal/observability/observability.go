@@ -55,24 +55,33 @@ func Init(opts Options) bool {
 	}
 
 	component = opts.Component
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              dsn,
-		Release:          "unison@" + opts.Version,
-		Environment:      buildEnvironment,
-		AttachStacktrace: true,
-		EnableTracing:    false,
-		DataCollection:   dataCollection(),
-		MaxBreadcrumbs:   -1,
-		BeforeSend:       beforeSend,
-		BeforeBreadcrumb: func(*sentry.Breadcrumb, *sentry.BreadcrumbHint) *sentry.Breadcrumb {
-			return nil
-		},
-	})
-	if err != nil {
+	if err := sentry.Init(clientOptions(dsn, opts.Version)); err != nil {
 		return false
 	}
 	initialized.Store(true)
 	return true
+}
+
+// clientOptions configures the SDK. The client runs for the whole life of the
+// process, also without consent, so it must not do periodic work: the
+// telemetry buffer polls ten times a second and keeps a phone from sleeping,
+// and client reports would send the counts of the dropped events.
+func clientOptions(dsn, version string) sentry.ClientOptions {
+	return sentry.ClientOptions{
+		Dsn:                    dsn,
+		Release:                "unison@" + version,
+		Environment:            buildEnvironment,
+		AttachStacktrace:       true,
+		EnableTracing:          false,
+		DataCollection:         dataCollection(),
+		MaxBreadcrumbs:         -1,
+		DisableTelemetryBuffer: true,
+		DisableClientReports:   true,
+		BeforeSend:             beforeSend,
+		BeforeBreadcrumb: func(*sentry.Breadcrumb, *sentry.BreadcrumbHint) *sentry.Breadcrumb {
+			return nil
+		},
+	}
 }
 
 // dataCollection keeps cookies, headers, query parameters and bodies out of the
