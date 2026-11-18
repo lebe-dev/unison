@@ -22,6 +22,7 @@
   import Icon, { type IconName } from "./lib/Icon.svelte";
   import { getLocale, t, type MessageKey } from "./lib/i18n";
   import SasPanel from "./lib/pairing/SasPanel.svelte";
+  import { onSharedFiles } from "./lib/share";
   import { onTrayAction, type TrayAction } from "./lib/tray";
   import { transfers } from "./lib/transfers.svelte";
 
@@ -42,6 +43,7 @@
   let active = $state<SectionID>("devices");
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
   let unlistenTray: UnlistenFn | null = null;
+  let unlistenShare: UnlistenFn | null = null;
   // The prompt window asks the questions that wait for the user, so a held
   // item or an offer does not stay unnoticed while this window is hidden.
   const promptHost = new PromptHost((answer) => void prompts.answer(answer.id, answer.action));
@@ -72,6 +74,9 @@
     void onTrayAction(handleTrayAction).then((unlisten) => {
       unlistenTray = unlisten;
     });
+    void onSharedFiles(handleSharedFiles).then((unlisten) => {
+      unlistenShare = unlisten;
+    });
   });
 
   onDestroy(() => {
@@ -85,7 +90,16 @@
     daemon.stop();
     void unlistenTray?.();
     unlistenTray = null;
+    void unlistenShare?.();
+    unlistenShare = null;
   });
+
+  /** handleSharedFiles opens the offer of the files another app shared, so the
+   * user picks the devices on the transfers screen. */
+  function handleSharedFiles(paths: string[]): void {
+    transfers.offer(paths);
+    active = "transfers";
+  }
 
   function handleTrayAction(action: TrayAction): void {
     switch (action.action) {

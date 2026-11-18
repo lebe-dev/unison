@@ -41,6 +41,10 @@ class TransferStore {
   error = $state<string | null>(null);
   /** Message of the last action. */
   notice = $state<TransferNotice | null>(null);
+  /** Files of the offer the user prepares. */
+  picked = $state<string[]>([]);
+  /** Devices of the offer the user prepares, device IDs. */
+  targets = $state<string[]>([]);
 
   #started = false;
   #unsubscribe: (() => void) | null = null;
@@ -84,10 +88,45 @@ class TransferStore {
     }
   }
 
-  /** send offers files to the given devices. */
-  async send(paths: string[], deviceIds: string[]): Promise<void> {
+  /**
+   * offer starts a new offer of the files to every online device. The files
+   * come from the file dialog or from another app that shares them.
+   */
+  offer(paths: string[]): void {
     if (paths.length === 0) {
       return;
+    }
+    this.picked = paths;
+    this.targets = daemon.devices
+      .filter((device) => device.online && !device.revoked)
+      .map((device) => device.deviceId);
+  }
+
+  /** toggleTarget adds a device to the offer or takes it out. */
+  toggleTarget(id: string): void {
+    this.targets = this.targets.includes(id)
+      ? this.targets.filter((candidate) => candidate !== id)
+      : [...this.targets, id];
+  }
+
+  /** clearDraft drops the offer the user prepares. */
+  clearDraft(): void {
+    this.picked = [];
+    this.targets = [];
+  }
+
+  /** sendDraft sends the prepared offer and drops it once the daemon took it. */
+  async sendDraft(): Promise<void> {
+    if (await this.send(this.picked, this.targets)) {
+      this.clearDraft();
+    }
+  }
+
+  /** send offers files to the given devices and reports whether the daemon
+   * took the offer. */
+  async send(paths: string[], deviceIds: string[]): Promise<boolean> {
+    if (paths.length === 0) {
+      return false;
     }
     this.notice = null;
     try {
@@ -99,11 +138,13 @@ class TransferStore {
         kind: "info",
         text: translate("transfers.offersSent", { count: response.transfers.length }),
       };
+      return true;
     } catch (error) {
       this.notice = {
         kind: "error",
         text: errorText(error, translate("transfers.sendFailed")),
       };
+      return false;
     }
   }
 

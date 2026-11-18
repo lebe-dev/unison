@@ -18,8 +18,6 @@
   import { t } from "../i18n";
   import { isActiveTransfer, transfers } from "../transfers.svelte";
 
-  let picked = $state<string[]>([]);
-  let targets = $state<string[]>([]);
   let busy = $state(false);
   let picking = $state(false);
 
@@ -36,8 +34,7 @@
   async function choose(): Promise<void> {
     picking = true;
     try {
-      picked = await pickFiles();
-      targets = online.map((device) => device.deviceId);
+      transfers.offer(await pickFiles());
     } catch (error) {
       transfers.notice = {
         kind: "error",
@@ -51,18 +48,10 @@
   async function send(): Promise<void> {
     busy = true;
     try {
-      await transfers.send(picked, targets);
-      picked = [];
-      targets = [];
+      await transfers.sendDraft();
     } finally {
       busy = false;
     }
-  }
-
-  function toggleTarget(id: string): void {
-    targets = targets.includes(id)
-      ? targets.filter((candidate) => candidate !== id)
-      : [...targets, id];
   }
 
   function cancellable(transfer: Transfer): boolean {
@@ -106,12 +95,12 @@
         </button>
       </div>
 
-      {#if picked.length === 0}
+      {#if transfers.picked.length === 0}
         <p class="muted">
           {online.length === 0 ? t("transfers.noDeviceOnline") : t("transfers.pickHint")}
         </p>
       {:else}
-        <p class="muted">{picked.join(", ")}</p>
+        <p class="muted">{transfers.picked.join(", ")}</p>
         {#if online.length === 0}
           <p class="notice error">{t("transfers.noDeviceOnline")}</p>
         {:else}
@@ -120,8 +109,8 @@
               <label class="check">
                 <input
                   type="checkbox"
-                  checked={targets.includes(device.deviceId)}
-                  onchange={() => toggleTarget(device.deviceId)}
+                  checked={transfers.targets.includes(device.deviceId)}
+                  onchange={() => transfers.toggleTarget(device.deviceId)}
                 />
                 <span>{device.name || t("common.unnamedDevice")}</span>
               </label>
@@ -132,14 +121,14 @@
               class="button primary small"
               type="button"
               onclick={() => void send()}
-              disabled={busy || targets.length === 0}
+              disabled={busy || transfers.targets.length === 0}
             >
               {t("transfers.send")}
             </button>
             <button
               class="button ghost small"
               type="button"
-              onclick={() => (picked = [])}
+              onclick={() => transfers.clearDraft()}
               disabled={busy}
             >
               {t("common.clear")}

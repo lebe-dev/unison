@@ -24,6 +24,8 @@ if [[ -z "${SENTRY_DSN:-}" && -f "$root/.env" ]]; then
     SENTRY_DSN=${SENTRY_DSN%\"}
 fi
 entitlements="$root/desktop/src-tauri/entitlements.plist"
+share_entitlements="$root/desktop/share-extension/entitlements.plist"
+share_appex="Contents/PlugIns/UnisonShare.appex"
 agent_plist="Library/LaunchAgents/app.unison.unisond.plist"
 
 universal=0
@@ -60,7 +62,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
     exit 1
 fi
 
-for tool in go yarn lipo codesign plutil hdiutil; do
+for tool in go yarn lipo codesign plutil hdiutil xcrun; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "package-macos: $tool is missing" >&2
         exit 1
@@ -138,6 +140,14 @@ fi
 cp "$daemon" "$app/Contents/MacOS/unisond"
 chmod 0755 "$app/Contents/MacOS/unisond"
 
+# The share extension puts Unison into the Share menu of other apps.
+share_args=()
+if [[ $universal -eq 1 ]]; then
+    share_args+=(--universal)
+fi
+mkdir -p "$app/Contents/PlugIns"
+"$root/desktop/share-extension/build.sh" "$app/Contents/PlugIns" "$version" ${share_args[@]+"${share_args[@]}"}
+
 if [[ ! -f "$app/Contents/$agent_plist" ]]; then
     echo "package-macos: the bundle has no $agent_plist" >&2
     echo "package-macos: check macOS.files in desktop/src-tauri/tauri.conf.json" >&2
@@ -168,16 +178,21 @@ else
     fi
 fi
 
-sign_args=(--force --options runtime --entitlements "$entitlements" --sign "$identity")
+base_sign_args=(--force --options runtime --sign "$identity")
 if [[ $adhoc -eq 0 ]]; then
-    sign_args+=(--timestamp)
+    base_sign_args+=(--timestamp)
 fi
+sign_args=("${base_sign_args[@]}" --entitlements "$entitlements")
 
 sign() {
     echo "package-macos: signing ${!#}"
     codesign "${sign_args[@]}" "$@"
 }
 
+# The extension is signed before the app, which seals it, and with its own
+# sandbox entitlements.
+echo "package-macos: signing $app/$share_appex"
+codesign "${base_sign_args[@]}" --entitlements "$share_entitlements" "$app/$share_appex"
 sign --identifier app.unison.unisond "$app/Contents/MacOS/unisond"
 sign "$app/Contents/MacOS/$main_executable"
 sign "$app"

@@ -11,6 +11,7 @@ Unison.app
   Contents/MacOS/Unison                 Tauri shell, the window
   Contents/MacOS/unisond                the daemon, universal binary
   Contents/Library/LaunchAgents/        the login item of the daemon
+  Contents/PlugIns/UnisonShare.appex    the Share menu extension
   Contents/Resources/                   the frontend
 ```
 
@@ -144,6 +145,30 @@ rebuild changes it on every build. Keep the identifier and the certificate stabl
 entitlements, the hardened runtime and the signature, and prints the checks that need a second
 machine: the local network prompt, the daemon after a re-login, and the clipboard between two
 devices.
+
+## Share menu
+
+`Contents/PlugIns/UnisonShare.appex` puts Unison into the Share menu of every app for files. The
+extension is written in Swift and lives in `desktop/share-extension`; `just package-macos` builds it
+with `swiftc`, for the host or both architectures like the app, and signs it before the app.
+
+- The extension point is `com.apple.share-services` and the activation rule takes up to 32 files,
+  the limit of one offer. Text and links are not taken.
+- An extension has to run in the sandbox, so it never reaches the daemon. It opens the shared file
+  URLs with the app of its bundle and ends the request.
+- The app receives them as an open request (`RunEvent::Opened`), keeps the paths of the regular
+  files and leaves out directories and other URLs. The paths wait in an inbox of the shell until the
+  window takes them with `take_shared_files`, so a share that starts the app is not lost while the
+  page loads.
+- The window opens the transfers screen with the files picked and every online device checked, and
+  the user sends the offer from there.
+
+The extension needs a real signature: macOS may hide an ad-hoc one. A new extension can be off in
+the Share menu until the user turns it on in its "Edit Extensions" list or in the extension
+settings. `pluginkit -m -v -i app.unison.share` shows whether the system knows it, and
+`pluginkit -a <path>/UnisonShare.appex` registers a build that is not in Applications.
+
+`yarn tauri dev` and `just desktop-build` build the app without the extension.
 
 ## Name of the device
 

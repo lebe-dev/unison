@@ -7,6 +7,7 @@ pub mod observability;
 mod prompt;
 mod proxy;
 mod redact;
+mod share;
 mod streams;
 #[cfg(all(test, unix))]
 mod testutil;
@@ -197,6 +198,9 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
+        // The inbox exists before the first event, since a share request can
+        // start the app.
+        .manage(share::Inbox::default())
         .setup(|app| {
             if let Some(Err(err)) = agent::register_at_launch() {
                 eprintln!("unison: the login item could not be registered: {err}");
@@ -243,6 +247,7 @@ pub fn run() {
             login_item_status,
             set_login_item,
             set_sentry_enabled,
+            share::take_shared_files,
             tray::set_tray_state,
             tray::pick_files,
             tray::pick_folder,
@@ -266,8 +271,16 @@ pub fn run() {
                 let _ = window.hide();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Unison");
+        .build(tauri::generate_context!())
+        .expect("error while building Unison")
+        .run(|app, event| {
+            // The share extension opens the shared files with the app.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = &event {
+                share::receive(app, urls);
+            }
+            let _ = (app, event);
+        });
 }
 
 #[cfg(test)]

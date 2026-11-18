@@ -39,7 +39,14 @@ vi.mock("./api/client", () => ({
 }));
 
 vi.mock("./daemon.svelte", () => ({
-  daemon: { onEvent: harness.onEvent },
+  daemon: {
+    onEvent: harness.onEvent,
+    devices: [
+      { deviceId: "phone", online: true, revoked: false },
+      { deviceId: "laptop", online: false, revoked: false },
+      { deviceId: "old", online: true, revoked: true },
+    ],
+  },
 }));
 
 const listTransfers = vi.mocked(client.listTransfers);
@@ -54,7 +61,55 @@ beforeEach(() => {
   transfers.transfers = [];
   transfers.error = null;
   transfers.notice = null;
+  transfers.clearDraft();
   harness.handlers.length = 0;
+});
+
+describe("draft offer", () => {
+  it("picks the online devices for new files", () => {
+    transfers.offer(["/tmp/a.bin", "/tmp/b.bin"]);
+
+    expect(transfers.picked).toEqual(["/tmp/a.bin", "/tmp/b.bin"]);
+    expect(transfers.targets).toEqual(["phone"]);
+  });
+
+  it("ignores an empty list", () => {
+    transfers.offer(["/tmp/a.bin"]);
+    transfers.offer([]);
+
+    expect(transfers.picked).toEqual(["/tmp/a.bin"]);
+  });
+
+  it("toggles a target", () => {
+    transfers.offer(["/tmp/a.bin"]);
+    transfers.toggleTarget("phone");
+    expect(transfers.targets).toEqual([]);
+    transfers.toggleTarget("phone");
+    expect(transfers.targets).toEqual(["phone"]);
+  });
+
+  it("sends the draft and clears it", async () => {
+    sendFiles.mockResolvedValue(create(SendFilesResponseSchema, { transfers: [] }));
+    transfers.offer(["/tmp/a.bin"]);
+
+    await transfers.sendDraft();
+
+    expect(sendFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ paths: ["/tmp/a.bin"], deviceIds: ["phone"] }),
+    );
+    expect(transfers.picked).toEqual([]);
+    expect(transfers.targets).toEqual([]);
+  });
+
+  it("keeps the draft when the send fails", async () => {
+    sendFiles.mockRejectedValue(new Error("offline"));
+    transfers.offer(["/tmp/a.bin"]);
+
+    await transfers.sendDraft();
+
+    expect(transfers.picked).toEqual(["/tmp/a.bin"]);
+    expect(transfers.notice?.kind).toBe("error");
+  });
 });
 
 describe("transfer list", () => {

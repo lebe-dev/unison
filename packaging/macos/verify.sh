@@ -57,6 +57,30 @@ run_at_load=$(plist_value "$agent" RunAtLoad)
 [[ "$run_at_load" == "true" ]] && pass "login item runs at load" ||
     fail "login item does not run at load"
 
+# Share extension.
+appex="$app/Contents/PlugIns/UnisonShare.appex"
+appex_plist="$appex/Contents/Info.plist"
+if [[ -x "$appex/Contents/MacOS/UnisonShare" ]]; then
+    pass "share extension Contents/PlugIns/UnisonShare.appex"
+else
+    fail "share extension Contents/PlugIns/UnisonShare.appex"
+fi
+point=$(plist_value "$appex_plist" NSExtension.NSExtensionPointIdentifier)
+[[ "$point" == "com.apple.share-services" ]] && pass "share extension point $point" ||
+    fail "share extension point is $point"
+appex_id=$(plist_value "$appex_plist" CFBundleIdentifier)
+[[ "$appex_id" == app.unison.* ]] && pass "share extension identifier $appex_id" ||
+    fail "share extension identifier is $appex_id"
+appex_version=$(plist_value "$appex_plist" CFBundleShortVersionString)
+app_version=$(plist_value "$plist" CFBundleShortVersionString)
+[[ "$appex_version" == "$app_version" ]] && pass "share extension version $appex_version" ||
+    fail "share extension version $appex_version differs from the app $app_version"
+if grep -q com.apple.security.app-sandbox <<<"$(codesign -d --entitlements :- "$appex" 2>/dev/null)"; then
+    pass "share extension runs in the sandbox"
+else
+    fail "share extension has no sandbox entitlement"
+fi
+
 # Info.plist keys of the Local Network permission and the version.
 identifier=$(plist_value "$plist" CFBundleIdentifier)
 [[ "$identifier" == "app.unison" ]] && pass "bundle identifier $identifier" ||
@@ -145,4 +169,5 @@ verify-macos: the bundle is ready to install, check these by hand on the target 
   2. allow the local network request once and check that the paired devices appear
   3. log out and in again: the daemon runs without the app and the paired devices stay online
   4. copy text on one device and paste it on the other one
+  5. share a file from Finder: Unison is in the Share menu and opens the offer of the file
 EOF
