@@ -351,3 +351,44 @@ func randomBytes(t *testing.T, n int) []byte {
 	}
 	return data
 }
+
+// TestFetchRefusesBlobAboveMaxSize checks that a blob larger than the size the
+// peer announced is not downloaded, and that one within it is.
+func TestFetchRefusesBlobAboveMaxSize(t *testing.T) {
+	h := newTestNetwork(t)
+	src := h.newNode(1)
+	fl := h.newNode(2)
+
+	data := randomBytes(t, 2*blob.ChunkSize+1)
+	info := put(t, src.blobs, data)
+	h.connect(fl, src)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	_, err := fl.fetch.Fetch(ctx, FetchRequest{
+		Hash:    info.Hash,
+		Peers:   []Peer{fl.sessionTo(src)},
+		MaxSize: int64(len(data)) - 1,
+	})
+	if !errors.Is(err, ErrSize) {
+		t.Fatalf("fetch error is %v, want %v", err, ErrSize)
+	}
+	if has, err := fl.blobs.Has(ctx, info.Hash); err != nil || has {
+		t.Fatalf("the refused blob is stored (%v)", err)
+	}
+	if stat, err := fl.blobs.Stat(ctx, info.Hash); err == nil {
+		t.Fatalf("the refused blob left a partial of %d bytes", stat.Size)
+	}
+
+	res, err := fl.fetch.Fetch(ctx, FetchRequest{
+		Hash:    info.Hash,
+		Peers:   []Peer{fl.sessionTo(src)},
+		MaxSize: int64(len(data)),
+	})
+	if err != nil {
+		t.Fatalf("fetch within the size: %v", err)
+	}
+	if res.Info.Size != int64(len(data)) {
+		t.Fatalf("fetched %d bytes, want %d", res.Info.Size, len(data))
+	}
+}

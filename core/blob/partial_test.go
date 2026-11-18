@@ -164,3 +164,27 @@ func TestCompleteBlobRejectsPartialStart(t *testing.T) {
 		t.Fatalf("create partial for a complete blob: %v, want ErrComplete", err)
 	}
 }
+
+func TestCreatePartialRejectsContentAboveLimit(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t, DefaultLimitDesktop)
+	data := randomBytes(t, ChunkSize+5)
+	info := mustPut(t, s, data)
+	tree, err := s.Tree(ctx, info.Hash)
+	if err != nil {
+		t.Fatalf("read tree: %v", err)
+	}
+
+	small := newTestStore(t, info.Size-1)
+	if _, err := small.CreatePartial(ctx, info.Hash, info.Size, tree); !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("partial above the limit: %v, want ErrTooLarge", err)
+	}
+	if _, err := small.Stat(ctx, info.Hash); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("a refused partial left a record: %v", err)
+	}
+
+	exact := newTestStore(t, info.Size)
+	if _, err := exact.CreatePartial(ctx, info.Hash, info.Size, tree); err != nil {
+		t.Fatalf("partial at the limit: %v", err)
+	}
+}

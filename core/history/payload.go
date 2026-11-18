@@ -82,7 +82,7 @@ func (s *Store) download(ctx context.Context, item model.ClipItem) error {
 		if s.fetch == nil {
 			return fmt.Errorf("%w: cannot download a payload", ErrUnavailable)
 		}
-		if err := s.fetch(ctx, rep.Hash); err != nil {
+		if err := s.fetch(ctx, rep.Hash, rep.Size); err != nil {
 			return err
 		}
 		if err := s.MarkPresent(ctx, rep.Hash, true); err != nil {

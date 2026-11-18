@@ -367,12 +367,14 @@ func TestCopyWritesClipboard(t *testing.T) {
 
 func TestFetchRestoresPayload(t *testing.T) {
 	var downloaded [][32]byte
+	var sizes []uint64
 	blobs := newMemoryPayloads()
 
 	f := newFixture(t, testDevice(1), func(opts *Options) {
 		opts.Payloads = blobs
-		opts.Fetch = func(_ context.Context, hash [32]byte) error {
+		opts.Fetch = func(_ context.Context, hash [32]byte, size uint64) error {
 			downloaded = append(downloaded, hash)
+			sizes = append(sizes, size)
 			return blobs.putIfMissing(hash, []byte("image payload"))
 		}
 	})
@@ -396,6 +398,9 @@ func TestFetchRestoresPayload(t *testing.T) {
 	}
 	if len(downloaded) != 1 || downloaded[0] != image.Representations[0].Hash {
 		t.Fatalf("downloaded %v, want the image payload", downloaded)
+	}
+	if want := image.Representations[0].Size; sizes[0] != want {
+		t.Fatalf("download bounded to %d bytes, want the announced %d", sizes[0], want)
 	}
 	if !item.Complete {
 		t.Fatal("item is not complete after the download")

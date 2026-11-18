@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/blob/transfer"
@@ -111,13 +112,20 @@ func (n *Node) historyRun(ctx context.Context) {
 	}
 }
 
-// fetchPayload downloads one history payload from the online peers.
-func (n *Node) fetchPayload(ctx context.Context, hash [32]byte) error {
+// fetchPayload downloads one history payload from the online peers. The
+// payload may not be larger than the size the peer announced; an announced
+// empty payload still gets a bound.
+func (n *Node) fetchPayload(ctx context.Context, hash [32]byte, size uint64) error {
 	peers := n.BlobPeers()
 	if len(peers) == 0 {
 		return history.ErrNoSource
 	}
-	if _, err := n.fetcher.Fetch(ctx, transfer.FetchRequest{Hash: hash, Peers: peers}); err != nil {
+	request := transfer.FetchRequest{
+		Hash:    hash,
+		Peers:   peers,
+		MaxSize: max(int64(min(size, math.MaxInt64)), 1),
+	}
+	if _, err := n.fetcher.Fetch(ctx, request); err != nil {
 		if errors.Is(err, transfer.ErrNoSource) {
 			return history.ErrNoSource
 		}

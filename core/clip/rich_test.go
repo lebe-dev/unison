@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -429,9 +430,12 @@ func TestIncomingItemIsFetchedEagerly(t *testing.T) {
 	f := newFixtureWith(t, func(opts *Options) {
 		opts.Payloads = local
 		opts.Planner = fixedPlanner{outcome: Outcome{Action: ActionApply, Eager: true}}
-		opts.Fetch = FetchFunc(func(ctx context.Context, want [32]byte) error {
+		opts.Fetch = FetchFunc(func(ctx context.Context, want [32]byte, size uint64) error {
 			if want != hash {
 				return errors.New("unexpected payload")
+			}
+			if size != uint64(len(value)) {
+				return fmt.Errorf("fetch bounded to %d bytes, want the announced %d", size, len(value))
 			}
 			data, ok := remote.get(hash)
 			if !ok {
@@ -465,7 +469,7 @@ func TestIncomingBlobItemWithoutEagerIsReported(t *testing.T) {
 		opts.Payloads = newMemoryPayloads()
 		opts.Events = events
 		opts.Planner = fixedPlanner{outcome: Outcome{Action: ActionApply}}
-		opts.Fetch = FetchFunc(func(context.Context, [32]byte) error {
+		opts.Fetch = FetchFunc(func(context.Context, [32]byte, uint64) error {
 			t.Fatal("the payload was fetched without the eager flag")
 			return nil
 		})

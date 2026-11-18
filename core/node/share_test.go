@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lebe-dev/unison/core/blob"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/ports/fake"
@@ -357,6 +358,56 @@ func TestSharePolicyRejects(t *testing.T) {
 	}
 	if requests := b.Share().Requests(); len(requests) != 0 {
 		t.Fatalf("a refused offer waits for a decision: %+v", requests)
+	}
+}
+
+// TestShareAboveStoreLimitInParts checks that an offer whose files together do
+// not fit the blob store of the receiver still arrives when each file fits on
+// its own: the files are downloaded and saved one by one, so the store only
+// stages them.
+func TestShareAboveStoreLimitInParts(t *testing.T) {
+	a, b := shareNodes(t, 39500, model.RolePersonal)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := b.Store().Settings().SetInt(ctx, blob.SettingMaxSize, 3<<20); err != nil {
+		t.Fatalf("set the blob limit: %v", err)
+	}
+
+	first, firstData := shareFile(t, "first.bin", 2<<20)
+	second, secondData := shareFile(t, "second.bin", 2<<20)
+	ids, err := a.Share().SendPaths(ctx, []string{first, second}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	waitTransfer(t, a, ids[0], share.StateDone)
+	if got := readSaved(t, b, "first.bin"); !bytes.Equal(got, firstData) {
+		t.Fatalf("the first saved file differs from the source (%d bytes)", len(got))
+	}
+	if got := readSaved(t, b, "second.bin"); !bytes.Equal(got, secondData) {
+		t.Fatalf("the second saved file differs from the source (%d bytes)", len(got))
+	}
+}
+
+// TestShareAboveStoreLimitDeclined checks that an offer with a file larger than
+// the blob store of the receiver is declined before anything is downloaded.
+func TestShareAboveStoreLimitDeclined(t *testing.T) {
+	a, b := shareNodes(t, 39700, model.RolePersonal)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := b.Store().Settings().SetInt(ctx, blob.SettingMaxSize, 1<<20); err != nil {
+		t.Fatalf("set the blob limit: %v", err)
+	}
+
+	path, _ := shareFile(t, "huge.bin", 1<<20+1)
+	ids, err := a.Share().SendPaths(ctx, []string{path}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	waitTransfer(t, a, ids[0], share.StateDeclined)
+	if names := downloads(t, b); len(names) != 0 {
+		t.Fatalf("a declined offer wrote %v", names)
 	}
 }
 

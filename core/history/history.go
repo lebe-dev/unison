@@ -156,7 +156,7 @@ type Options struct {
 	Clipboard ports.Clipboard
 	// Fetch downloads one payload from the peers. Without it Fetch cannot
 	// restore a missing payload.
-	Fetch func(ctx context.Context, hash [32]byte) error
+	Fetch func(ctx context.Context, hash [32]byte, size uint64) error
 	// Clock is the time source. The system clock is used when nil.
 	Clock ports.Clock
 	// Logger receives history events. Nothing is logged when nil.
@@ -175,7 +175,7 @@ type Store struct {
 	origin   model.DeviceID
 	payloads Payloads
 	clip     ports.Clipboard
-	fetch    func(ctx context.Context, hash [32]byte) error
+	fetch    func(ctx context.Context, hash [32]byte, size uint64) error
 	clock    ports.Clock
 	log      *slog.Logger
 	interval time.Duration

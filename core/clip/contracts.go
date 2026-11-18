@@ -139,16 +139,17 @@ type PayloadStore interface {
 
 // Fetcher downloads one payload from the peers.
 type Fetcher interface {
-	// Fetch stores the payload of hash locally.
-	Fetch(ctx context.Context, hash [32]byte) error
+	// Fetch stores the payload of hash locally. Size is the size the peer
+	// announced, and a larger payload is refused.
+	Fetch(ctx context.Context, hash [32]byte, size uint64) error
 }
 
 // FetchFunc adapts a function to the Fetcher interface.
-type FetchFunc func(ctx context.Context, hash [32]byte) error
+type FetchFunc func(ctx context.Context, hash [32]byte, size uint64) error
 
 // Fetch stores the payload of hash locally.
-func (f FetchFunc) Fetch(ctx context.Context, hash [32]byte) error {
-	return f(ctx, hash)
+func (f FetchFunc) Fetch(ctx context.Context, hash [32]byte, size uint64) error {
+	return f(ctx, hash, size)
 }
 
 // EventKind is what the pipeline reports about a recorded incoming item.

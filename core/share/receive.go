@@ -342,11 +342,13 @@ func closed(sess *session.Session) bool {
 	}
 }
 
-// fetch downloads one file of a transfer from its sender.
+// fetch downloads one file of a transfer from its sender. The file may not be
+// larger than the size of the offer.
 func (s *Service) fetch(ctx context.Context, id string, sess *session.Session, file File) error {
 	_, err := s.fetcher.Fetch(ctx, transfer.FetchRequest{
 		Hash:        file.Hash,
 		Peers:       []transfer.Peer{sess},
+		MaxSize:     max(file.Size, 1),
 		TransferID:  id,
 		PayloadType: PayloadRequest,
 		Trusted:     true,

@@ -383,3 +383,35 @@ func TestConditionString(t *testing.T) {
 		}
 	}
 }
+
+func TestDecideRelayTakesTheSmallerLimit(t *testing.T) {
+	cfg := Default()
+	cfg.Unmetered.Image.MaxSize = 512 << 10
+	cfg.RelayMaxSize = 4 << 20
+
+	tests := []struct {
+		name string
+		path model.Path
+		size int64
+		want Action
+	}{
+		{name: "relay at the cell limit", path: model.PathRelay, size: 512 << 10, want: ActionAutoApply},
+		{name: "relay above the cell limit", path: model.PathRelay, size: 512<<10 + 1, want: ActionMetadataOnly},
+		{name: "lan above the cell limit", path: model.PathLAN, size: 512<<10 + 1, want: ActionMetadataOnly},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := Decide(cfg, Input{
+				Peer:    personal,
+				Network: wifi,
+				Path:    test.path,
+				Kind:    model.KindImage,
+				Size:    test.size,
+				Source:  model.SourceClipboard,
+			})
+			if got.Action != test.want {
+				t.Fatalf("action: got %s, want %s", got.Action, test.want)
+			}
+		})
+	}
+}

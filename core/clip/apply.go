@@ -147,30 +147,31 @@ func (p *Pipeline) writeItem(ctx context.Context, from model.DeviceID, item mode
 }
 
 // missingPayloads returns the payloads of the item that are not stored locally.
-func (p *Pipeline) missingPayloads(ctx context.Context, item model.ClipItem) ([][32]byte, error) {
-	var missing [][32]byte
+func (p *Pipeline) missingPayloads(ctx context.Context, item model.ClipItem) ([]model.Representation, error) {
+	var missing []model.Representation
 	for _, rep := range item.Representations {
 		present, err := p.hasPayload(ctx, rep)
 		if err != nil {
 			return nil, fmt.Errorf("clip: read payload state: %w", err)
 		}
 		if !present && !containsHash(missing, rep.Hash) {
-			missing = append(missing, rep.Hash)
+			missing = append(missing, rep)
 		}
 	}
 	return missing, nil
 }
 
-// fetchPayloads downloads the payloads from the peers.
-func (p *Pipeline) fetchPayloads(ctx context.Context, hashes [][32]byte) error {
+// fetchPayloads downloads the payloads from the peers, each bounded by the
+// size its representation announced.
+func (p *Pipeline) fetchPayloads(ctx context.Context, reps []model.Representation) error {
 	if p.fetch == nil {
 		return fmt.Errorf("%w: no fetcher", ErrPayloadMissing)
 	}
-	for _, hash := range hashes {
-		if err := p.fetch.Fetch(ctx, hash); err != nil {
+	for _, rep := range reps {
+		if err := p.fetch.Fetch(ctx, rep.Hash, rep.Size); err != nil {
 			return err
 		}
-		p.markPresent(ctx, hash)
+		p.markPresent(ctx, rep.Hash)
 	}
 	return nil
 }
@@ -362,10 +363,10 @@ func primaryImage(item model.ClipItem) (model.Representation, bool) {
 	return fallback, found
 }
 
-// containsHash reports whether hashes hold hash.
-func containsHash(hashes [][32]byte, hash [32]byte) bool {
-	for _, known := range hashes {
-		if known == hash {
+// containsHash reports whether reps hold a representation of hash.
+func containsHash(reps []model.Representation, hash [32]byte) bool {
+	for _, known := range reps {
+		if known.Hash == hash {
 			return true
 		}
 	}

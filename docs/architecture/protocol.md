@@ -245,7 +245,8 @@ several exchanges. Payloads are not part of the exchange: they are fetched as bl
 payload itself is pulled with `blob.request` streams on the request payload type:
 
 1. the receiver asks for a range of at most 64 chunks, optionally for the tree alone;
-2. the answer starts with the Bao tree of the blob, at most 2 MiB;
+2. the answer starts with the Bao tree of the blob, at most 2 MiB; a tree of a blob larger than the
+   size the item or the offer announced drops the source before anything is stored;
 3. the chunks follow in ascending index order;
 4. every chunk is verified against the tree before it is written.
 

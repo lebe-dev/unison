@@ -110,6 +110,10 @@ type FetchRequest struct {
 	// PayloadType selects the request stream handler that serves the blob.
 	// PayloadRequest is used when empty.
 	PayloadType string
+	// MaxSize is the largest blob in bytes the caller expects, from the size
+	// the peer announced. A source whose tree describes a larger blob is
+	// dropped before anything is stored. Zero leaves the size unbounded.
+	MaxSize int64
 	// Trusted skips the availability query: every peer is taken as a source.
 	// It is set for a blob a peer has just offered.
 	Trusted bool
@@ -420,6 +424,10 @@ func (fl *fetchState) start(ctx context.Context) error {
 		size, raw, err := checkTree(tree, fl.request.Hash)
 		if err != nil {
 			last = fl.drop(src, err)
+			continue
+		}
+		if limit := fl.request.MaxSize; limit > 0 && size > limit {
+			last = fl.drop(src, fmt.Errorf("%w: blob of %d bytes, announced at most %d", ErrSize, size, limit))
 			continue
 		}
 

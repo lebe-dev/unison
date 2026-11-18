@@ -44,6 +44,8 @@ var (
 	ErrTree = errors.New("transfer: hash tree does not match the blob")
 	// ErrReply reports a frame a blob stream does not allow at that point.
 	ErrReply = errors.New("transfer: unexpected blob reply")
+	// ErrSize reports a blob larger than the size its peer announced.
+	ErrSize = errors.New("transfer: blob is larger than announced")
 	// ErrChunk reports a chunk that does not match its own hash or the tree.
 	ErrChunk = errors.New("transfer: corrupted blob chunk")
 )
