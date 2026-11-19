@@ -18,9 +18,12 @@ const HEIGHT: f64 = 150.0;
 /// MARGIN keeps the window off the edges of the screen, in logical pixels.
 const MARGIN: f64 = 16.0;
 
-/// show_prompt brings the prompt window up, creating it on first use.
+/// show_prompt brings the prompt window up, creating it on first use. The
+/// command is async on purpose: a synchronous command runs on the main thread,
+/// and creating a webview there deadlocks on Windows, which freezes every later
+/// call of the app.
 #[tauri::command]
-pub fn show_prompt(app: AppHandle) -> Result<(), String> {
+pub async fn show_prompt(app: AppHandle) -> Result<(), String> {
     let window = match app.get_webview_window(PROMPT_LABEL) {
         Some(window) => window,
         None => create(&app).map_err(|err| format!("cannot open the prompt window: {err}"))?,
@@ -35,8 +38,9 @@ pub fn show_prompt(app: AppHandle) -> Result<(), String> {
 }
 
 /// hide_prompt puts the prompt window away. The questions stay with the app.
+/// It is async for the same reason as show_prompt.
 #[tauri::command]
-pub fn hide_prompt(app: AppHandle) -> Result<(), String> {
+pub async fn hide_prompt(app: AppHandle) -> Result<(), String> {
     let Some(window) = app.get_webview_window(PROMPT_LABEL) else {
         return Ok(());
     };
