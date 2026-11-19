@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import {
   ConfirmationScope,
   ConfirmationSide,
@@ -199,6 +200,43 @@ describe("devices screen", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(revokeDevice).not.toHaveBeenCalled();
+  });
+
+  it("keeps the name typed while the status refreshes", async () => {
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    const input = screen.getByLabelText("New device name");
+    await fireEvent.input(input, { target: { value: "Office MacBook" } });
+
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1"), friends("device-2")],
+    });
+    await tick();
+
+    expect((input as HTMLInputElement).value).toBe("Office MacBook");
+  });
+
+  it("keeps the name typed through a lost connection", async () => {
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    await fireEvent.input(screen.getByLabelText("New device name"), {
+      target: { value: "Office MacBook" },
+    });
+
+    daemon.status = null;
+    await tick();
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1"), friends("device-2")],
+    });
+    await tick();
+
+    expect(screen.getByLabelText<HTMLInputElement>("New device name").value).toBe("Office MacBook");
   });
 });
 

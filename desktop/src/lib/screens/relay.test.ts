@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import {
   GetRelayResponseSchema,
   GetStatusResponseSchema,
@@ -14,6 +15,7 @@ import {
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
+import { relayDraft } from "../relayDraft.svelte";
 import RelaySection from "./RelaySection.svelte";
 
 vi.mock("../api/client", () => ({
@@ -30,8 +32,17 @@ const setRelay = vi.mocked(client.setRelay);
 const relayOff = vi.mocked(client.relayOff);
 const testRelay = vi.mocked(client.testRelay);
 
+/** forgetDraft drops the values an earlier test typed into the form. */
+function forgetDraft(): void {
+  relayDraft.url = "";
+  relayDraft.token = "";
+  relayDraft.filesOnRequest = true;
+  relayDraft.ready = false;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  forgetDraft();
   getRelay.mockResolvedValue(
     create(GetRelayResponseSchema, {
       relay: create(RelaySchema, {
@@ -169,3 +180,127 @@ describe("relay settings", () => {
     expect(screen.getAllByText(/does not accept the access token/)).toHaveLength(2);
   });
 });
+
+describe("relay draft", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps the address typed while the status refreshes", async () => {
+    vi.useFakeTimers();
+    const view = await renderLoaded();
+
+    await fireEvent.input(view.getByLabelText(/Relay address/), {
+      target: { value: "relay.mine.example:443" },
+    });
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    expect(getRelay).toHaveBeenCalledTimes(2);
+    expect((view.getByLabelText(/Relay address/) as HTMLInputElement).value).toBe(
+      "relay.mine.example:443",
+    );
+  });
+
+  it("keeps the token typed while the status refreshes", async () => {
+    vi.useFakeTimers();
+    const view = await renderLoaded();
+
+    await fireEvent.input(view.getByLabelText(/Access token/), {
+      target: { value: "fresh-token" },
+    });
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    expect((view.getByLabelText(/Access token/) as HTMLInputElement).value).toBe("fresh-token");
+  });
+
+  it("keeps the files flag while the status refreshes", async () => {
+    vi.useFakeTimers();
+    const view = await renderLoaded();
+
+    const toggle = view.getByRole("checkbox", { name: /Files over the relay only when I ask/ });
+    await fireEvent.click(toggle);
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("keeps the typed values when the section is mounted again", async () => {
+    vi.useFakeTimers();
+    const view = await renderLoaded();
+
+    await fireEvent.input(view.getByLabelText(/Relay address/), {
+      target: { value: "relay.mine.example:443" },
+    });
+    await fireEvent.input(view.getByLabelText(/Access token/), {
+      target: { value: "fresh-token" },
+    });
+    view.unmount();
+
+    const again = render(RelaySection);
+    await tick();
+    await vi.advanceTimersByTimeAsync(0);
+    await tick();
+
+    expect((again.getByLabelText(/Relay address/) as HTMLInputElement).value).toBe(
+      "relay.mine.example:443",
+    );
+    expect((again.getByLabelText(/Access token/) as HTMLInputElement).value).toBe("fresh-token");
+  });
+
+  it("shows the transport reported by a later poll", async () => {
+    vi.useFakeTimers();
+    const view = await renderLoaded();
+    getRelay.mockResolvedValue(
+      create(GetRelayResponseSchema, {
+        relay: create(RelaySchema, {
+          url: "relay.example.com:443",
+          tokenSet: true,
+          connected: true,
+          transport: RelayTransport.WSS,
+          filesOnRequest: true,
+        }),
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    expect(view.getByText("Connected to the relay over WebSocket.")).toBeTruthy();
+  });
+
+  it("takes the stored values after a save", async () => {
+    setRelay.mockResolvedValue(
+      create(SetRelayResponseSchema, {
+        relay: create(RelaySchema, {
+          url: "relay.saved.example:443",
+          tokenSet: true,
+          filesOnRequest: false,
+        }),
+      }),
+    );
+    render(RelaySection);
+
+    const address = await screen.findByLabelText(/Relay address/);
+    await fireEvent.input(address, { target: { value: "relay.saved.example:443" } });
+    await fireEvent.input(screen.getByLabelText(/Access token/), {
+      target: { value: "fresh-token" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect((address as HTMLInputElement).value).toBe("relay.saved.example:443");
+    expect(screen.getByLabelText<HTMLInputElement>(/Access token/).value).toBe("");
+    expect(
+      screen.getByRole<HTMLInputElement>("checkbox", {
+        name: /Files over the relay only when I ask/,
+      }).checked,
+    ).toBe(false);
+  });
+});
+
+/** renderLoaded renders the section and waits for the first read of the relay. */
+async function renderLoaded() {
+  const view = render(RelaySection);
+  await tick();
+  await vi.advanceTimersByTimeAsync(0);
+  await tick();
+  return view;
+}
