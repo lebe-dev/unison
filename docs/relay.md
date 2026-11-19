@@ -34,7 +34,9 @@ unison relay off
 
 `unison relay` also reports the transport of a registered connection: QUIC or WebSocket. The
 desktop app and the Android app have the same settings in their relay section. Turning the relay off
-clears the address and the token for the group.
+clears the address and the token for the group. The relay section refreshes the state of the
+connection in the background; the address, the token and the files rule stay as typed until they
+are saved or the relay is turned off.
 
 ### Check the connection
 
