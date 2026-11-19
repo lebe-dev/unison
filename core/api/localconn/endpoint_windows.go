@@ -4,7 +4,8 @@ package localconn
 
 import (
 	"context"
-
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"strings"
@@ -26,6 +27,16 @@ func platformPath() (string, error) {
 		return "", err
 	}
 	return pipePrefix + "unison-" + sid, nil
+}
+
+// EndpointIn returns the endpoint of a server that keeps data in dir. Named
+// pipes share one namespace, so the name is random instead of the directory.
+func EndpointIn(_ string, _ string) (string, error) {
+	var buf [8]byte
+	if _, err := rand.Read(buf[:]); err != nil {
+		return "", fmt.Errorf("localconn: generate the endpoint name: %w", err)
+	}
+	return pipePrefix + "unison-" + hex.EncodeToString(buf[:]), nil
 }
 
 // Listen binds the named pipe of the endpoint. The pipe descriptor grants

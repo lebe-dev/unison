@@ -27,7 +27,8 @@ these commands in the folder of the kit:
     .\setup\Unison-@VERSION@-setup.exe
 
 Allow the elevation of the installer: it asks once and installs for all users
-into C:\Program Files\Unison. SmartScreen may show "Windows protected your PC":
+into C:\Program Files\Unison by default; the installer asks for the directory and
+allows another one. SmartScreen may show "Windows protected your PC":
 click "More info" and then "Run anyway". The installer adds the Windows Firewall
 rule of the daemon and the startup entry of the current user.
 
@@ -79,6 +80,17 @@ never go into the archive. -Since keeps the last minutes only:
 
 Copy Unison-tests-<computer>-<date>.zip and Unison-collect-<computer>-<date>.zip
 back to the Mac.
+
+7. Check the access of a second user (optional)
+
+The daemon serves the local API on a pipe of its own user. A second user of the
+machine must not be able to connect to it. Log in as that user, open the kit and
+run:
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-pipe.ps1
+
+The script prints "ok" for a pipe that refuses the user and "FAIL" for a pipe
+that accepts the connection. Add the output to the report.
 
 Manual runs, if a test needs a closer look:
 

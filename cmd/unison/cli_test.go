@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/lebe-dev/unison/core/api"
+	"github.com/lebe-dev/unison/core/api/localconn"
 	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/trust"
@@ -78,7 +79,10 @@ func TestStatusStopped(t *testing.T) {
 
 // TestStatusUnreachable checks the exit code of a daemon that is not there.
 func TestStatusUnreachable(t *testing.T) {
-	endpoint := shortDir(t) + "/missing.sock"
+	endpoint, err := localconn.EndpointIn(shortDir(t), "missing.sock")
+	if err != nil {
+		t.Fatalf("endpoint: %v", err)
+	}
 
 	code, stdout, stderr := runCommand(t, "", "--endpoint", endpoint, "status")
 	if code != exitUnreachable {

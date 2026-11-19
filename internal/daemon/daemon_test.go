@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -177,12 +178,14 @@ func TestRunServesStatus(t *testing.T) {
 		t.Error("device ID is empty")
 	}
 
-	info, err := os.Stat(inst.endpoint)
-	if err != nil {
-		t.Fatalf("stat endpoint: %v", err)
-	}
-	if mode := info.Mode().Perm(); mode != 0o600 {
-		t.Errorf("endpoint mode is %v, want 0600", mode)
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(inst.endpoint)
+		if err != nil {
+			t.Fatalf("stat endpoint: %v", err)
+		}
+		if mode := info.Mode().Perm(); mode != 0o600 {
+			t.Errorf("endpoint mode is %v, want 0600", mode)
+		}
 	}
 
 	inst.stop(t)
@@ -331,6 +334,11 @@ func TestSetClip(t *testing.T) {
 // TestRunReplacesStaleEndpoint checks that a socket left behind by a daemon
 // that crashed does not keep the next daemon from serving.
 func TestRunReplacesStaleEndpoint(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// A named pipe disappears with its last handle: no stale endpoint is left.
+		t.Skip("Windows keeps no stale endpoint to replace")
+	}
+
 	dataDir := shortDir(t)
 	endpoint, err := daemon.SocketPath(dataDir)
 	if err != nil {
@@ -362,6 +370,11 @@ func TestRunReplacesStaleEndpoint(t *testing.T) {
 // TestRunRemovesEndpointOnStop checks that a daemon that stops cleanly takes
 // its endpoint away, so clients see it stopped instead of a dead socket.
 func TestRunRemovesEndpointOnStop(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// A named pipe disappears with its last handle.
+		t.Skip("Windows keeps no endpoint to remove")
+	}
+
 	dataDir := shortDir(t)
 	inst := start(t, dataDir, "stopping", newAdapters())
 	inst.stop(t)

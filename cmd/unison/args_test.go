@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/lebe-dev/unison/core/api/localconn"
 )
 
 // missingEndpoint returns the endpoint of a daemon that is not there. A command
@@ -13,7 +15,11 @@ import (
 func missingEndpoint(t *testing.T) string {
 	t.Helper()
 
-	return filepath.Join(shortDir(t), "missing.sock")
+	endpoint, err := localconn.EndpointIn(shortDir(t), "missing.sock")
+	if err != nil {
+		t.Fatalf("endpoint: %v", err)
+	}
+	return endpoint
 }
 
 // TestCommandFlagsInAnyPosition checks that the flags of a command are accepted

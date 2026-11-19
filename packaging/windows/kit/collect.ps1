@@ -202,6 +202,30 @@ Invoke-Capture (Join-Path $work 'run.txt') {
     reg query 'HKCU\Software\Microsoft\Windows\CurrentVersion\Run' /v Unison
 }
 
+Invoke-Capture (Join-Path $work 'install.txt') {
+    "ProgramFiles: $env:ProgramFiles"
+    foreach ($key in @(
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall')) {
+        $entries = @(Get-ChildItem -Path $key -ErrorAction SilentlyContinue)
+        foreach ($entry in $entries) {
+            $item = Get-ItemProperty -Path $entry.PSPath -ErrorAction SilentlyContinue
+            if (-not $item -or $item.PSObject.Properties.Name -notcontains 'DisplayName') {
+                continue
+            }
+            if ($item.DisplayName -notlike 'Unison*') {
+                continue
+            }
+            $location = 'unknown'
+            if ($item.PSObject.Properties.Name -contains 'InstallLocation') {
+                $location = [string] $item.InstallLocation
+            }
+            "$($item.DisplayName) in $location ($key)"
+        }
+    }
+}
+
 Invoke-Capture (Join-Path $work 'firewall.txt') {
     netsh advfirewall firewall show rule name="Unison daemon" verbose
 }

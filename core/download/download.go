@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -37,7 +38,10 @@ var reservedNames = map[string]struct{}{
 // could disguise the extension, no characters Windows refuses, no reserved
 // names and no trailing dots or spaces.
 func SafeName(name string) string {
-	cleaned := filepath.Base(strings.ReplaceAll(name, `\`, "/"))
+	cleaned := path.Base(strings.ReplaceAll(name, `\`, "/"))
+	if isDriveRoot(cleaned) {
+		return fallbackName
+	}
 	cleaned = strings.Map(func(r rune) rune {
 		switch {
 		case unicode.Is(unicode.Cf, r):
@@ -112,4 +116,13 @@ func isReservedName(name string) bool {
 	}
 	_, reserved := reservedNames[strings.ToLower(strings.TrimSpace(base))]
 	return reserved
+}
+
+// isDriveRoot reports a Windows drive with no file after it: C:.
+func isDriveRoot(name string) bool {
+	if len(name) != 2 || name[1] != ':' {
+		return false
+	}
+	letter := name[0]
+	return 'a' <= letter && letter <= 'z' || 'A' <= letter && letter <= 'Z'
 }

@@ -186,7 +186,10 @@ func newClient(t *testing.T, n *node.Node, opts api.Options) localv1connect.Unis
 	}
 	_, handler := service.Handler()
 
-	path := filepath.Join(shortDir(t), "unison.sock")
+	path, err := localconn.EndpointIn(shortDir(t), "unison.sock")
+	if err != nil {
+		t.Fatalf("endpoint: %v", err)
+	}
 	listener, err := localconn.Listen(path)
 	if err != nil {
 		t.Fatalf("listen: %v", err)

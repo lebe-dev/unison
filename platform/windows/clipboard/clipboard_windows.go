@@ -203,6 +203,11 @@ func (c *Clipboard) write(ctx context.Context, content ports.Content, excluded b
 		return fmt.Errorf("clipboard: write: %w", err)
 	}
 	defer closeClipboard()
+	return c.publish(prepared, excluded)
+}
+
+// publish places the prepared content on the open clipboard.
+func (c *Clipboard) publish(prepared clipboardPayload, excluded bool) error {
 	if err := emptyClipboard(); err != nil {
 		return fmt.Errorf("clipboard: write: %w", err)
 	}
@@ -238,6 +243,9 @@ func (c *Clipboard) write(ctx context.Context, content ports.Content, excluded b
 			if err := putClipboardData(format, zero); err != nil {
 				return fmt.Errorf("clipboard: write history marker: %w", err)
 			}
+		}
+		if err := putClipboardData(ids.exclude, []byte{0}); err != nil {
+			return fmt.Errorf("clipboard: write exclusion marker: %w", err)
 		}
 	}
 	if err := putClipboardData(ids.origin, []byte(originPayload)); err != nil {
