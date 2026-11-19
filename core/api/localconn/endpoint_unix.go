@@ -32,6 +32,12 @@ func platformPath() (string, error) {
 	return filepath.Join(home, ".local", "share", "unison", "unisond.sock"), nil
 }
 
+// EndpointIn returns the endpoint of a server that keeps data in dir. The name
+// is the file name of the socket.
+func EndpointIn(dir, name string) (string, error) {
+	return filepath.Join(dir, name), nil
+}
+
 // Listen binds the socket of the endpoint. The directory is created private to
 // the user and the socket is bound with owner only access. An endpoint that is
 // already bound is an error, so the caller removes a stale socket.

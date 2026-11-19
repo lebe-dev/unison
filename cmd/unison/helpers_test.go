@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -147,7 +146,10 @@ func newDeviceIn(t *testing.T, network *vnet.Network, bus *fake.Bus, base int, d
 	}
 	_, handler := service.Handler()
 
-	endpoint := filepath.Join(shortDir(t), "unisond.sock")
+	endpoint, err := localconn.EndpointIn(shortDir(t), "unisond.sock")
+	if err != nil {
+		t.Fatalf("endpoint: %v", err)
+	}
 	listener, err := localconn.Listen(endpoint)
 	if err != nil {
 		t.Fatalf("listen: %v", err)
