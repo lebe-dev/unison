@@ -107,9 +107,37 @@ pub async fn connect(endpoint: &str) -> io::Result<EndpointStream> {
     }
     #[cfg(windows)]
     {
-        tokio::net::windows::named_pipe::ClientOptions::new()
-            .open(endpoint)
-            .map(EndpointStream::Pipe)
+        open_pipe(endpoint).await.map(EndpointStream::Pipe)
+    }
+}
+
+/// How long a client waits for a free instance of the named pipe.
+#[cfg(windows)]
+const PIPE_BUSY_LIMIT: Duration = Duration::from_secs(5);
+
+/// How often a client asks again for a free instance of the named pipe.
+#[cfg(windows)]
+const PIPE_BUSY_INTERVAL: Duration = Duration::from_millis(20);
+
+/// open_pipe opens the named pipe of the daemon. The daemon keeps one free
+/// instance of the pipe and creates the next one after a client takes it, so
+/// clients that arrive at the same moment find every instance busy for a short
+/// while. They ask again until an instance is free.
+#[cfg(windows)]
+async fn open_pipe(endpoint: &str) -> io::Result<tokio::net::windows::named_pipe::NamedPipeClient> {
+    const ERROR_PIPE_BUSY: i32 = 231;
+
+    let deadline = tokio::time::Instant::now() + PIPE_BUSY_LIMIT;
+    loop {
+        match tokio::net::windows::named_pipe::ClientOptions::new().open(endpoint) {
+            Err(err)
+                if err.raw_os_error() == Some(ERROR_PIPE_BUSY)
+                    && tokio::time::Instant::now() < deadline =>
+            {
+                tokio::time::sleep(PIPE_BUSY_INTERVAL).await;
+            }
+            result => return result,
+        }
     }
 }
 
