@@ -84,6 +84,10 @@
     <string name="devices_confirm_peer_files">%1$s asks before accepting files from this device</string>
     <string name="devices_confirmation_saved">Confirmation setting saved</string>
     <string name="devices_confirmation_failed">Cannot change the confirmation setting</string>
+    <string name="devices_allow_remote">Allow %1$s to change these settings</string>
+    <string name="devices_allow_remote_hint">%1$s can change the confirmation flags of this device. The switch in Settings covers every device.</string>
+    <string name="devices_remote_settings_saved">Remote settings permission saved</string>
+    <string name="devices_remote_settings_failed">Cannot change the remote settings permission</string>
     <string name="devices_remove_title">Remove %1$s?</string>
     <string name="devices_remove_body">The device loses access to this one for good and cannot pair again until you add it. The other devices learn about the removal when they meet.</string>
     <string name="devices_removed">Device removed</string>
@@ -123,6 +127,11 @@
     <string name="settings_file_confirmation_hint">Nothing is downloaded until you accept the files.</string>
     <string name="settings_confirmation_saved">Confirmation setting saved</string>
     <string name="settings_confirmation_failed">Cannot change the confirmation setting</string>
+    <string name="settings_section_remote">Remote settings</string>
+    <string name="settings_allow_remote">Allow paired devices to change these settings</string>
+    <string name="settings_allow_remote_hint">Each device can also be allowed or refused on its card on the Devices screen.</string>
+    <string name="settings_remote_settings_saved">Remote settings permission saved</string>
+    <string name="settings_remote_settings_failed">Cannot change the remote settings permission</string>
     <string name="settings_section_links">Links</string>
     <string name="settings_strip_tracking">Remove tracking parameters</string>
     <string name="settings_strip_tracking_hint">UTM, fbclid, gclid and similar parameters are removed from the links in the clipboard.</string>

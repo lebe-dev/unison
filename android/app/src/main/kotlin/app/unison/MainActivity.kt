@@ -155,6 +155,7 @@ class MainActivity : ComponentActivity() {
                         onRefreshRelay = appState::refreshRelay,
                         onRelayCheck = appState::testRelay,
                         onSelfConfirmationChange = appState::setSelfConfirmation,
+                        onAllowRemoteSettingsChange = appState::setAllowRemoteSettings,
                         onLeaveGroup = appState::leaveGroup,
                         diagnosticsEnabled = diagnosticsEnabled,
                         onDiagnosticsChange = ::saveDiagnostics,
@@ -166,6 +167,9 @@ class MainActivity : ComponentActivity() {
                         onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->
                             appState.setDeviceConfirmation(device.deviceId, scope, side, require)
+                        },
+                        onSetDeviceRemoteSettings = { device, allow ->
+                            appState.setDeviceRemoteSettings(device.deviceId, allow)
                         },
                         onRenameDevice = { device, name -> appState.renameDevice(device.deviceId, name) },
                         onRevokeDevice = { device -> appState.revokeDevice(device.deviceId) },

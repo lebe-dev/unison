@@ -335,6 +335,40 @@ class AppState(
         }
     }
 
+    /** Allows a paired device to change the confirmation flags of this device remotely. */
+    fun setDeviceRemoteSettings(deviceId: String, allow: Boolean) {
+        if (deviceId.isEmpty()) {
+            return
+        }
+        scope.launch {
+            try {
+                core.setDeviceRemoteSettings(deviceId, allow)
+                mutableNotices.tryEmit(R.string.devices_remote_settings_saved)
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.devices_remote_settings_failed)
+            }
+        }
+    }
+
+    /** Allows every paired device to change the confirmation flags of this device remotely. */
+    fun setAllowRemoteSettings(allow: Boolean) {
+        scope.launch {
+            try {
+                val settings = core.setAllowRemoteSettings(allow)
+                mutableState.update { it.copy(settings = settings) }
+                mutableNotices.tryEmit(R.string.settings_remote_settings_saved)
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_remote_settings_failed)
+            }
+        }
+    }
+
     /** Lets a held clipboard item go without applying it; it stays in the history. */
     fun skipHeldItem(itemId: String) {
         held.remove(itemId)

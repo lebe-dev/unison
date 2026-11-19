@@ -57,6 +57,11 @@ func (s *Service) UpdateSettings(ctx context.Context, req *connect.Request[local
 			return nil, errorOf(err)
 		}
 	}
+	if value := req.Msg.AllowRemoteSettings; value != nil {
+		if err := s.node.SetAllowRemoteSettings(ctx, *value); err != nil {
+			return nil, errorOf(err)
+		}
+	}
 	if value := req.Msg.BlobMaxSizeBytes; value != nil {
 		if *value <= 0 {
 			return nil, invalidSizeError()
@@ -122,6 +127,10 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 	if err != nil {
 		return nil, err
 	}
+	allowRemote, err := s.node.Trust().AllowRemoteSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
 	limit, err := s.node.Blobs().Limit(ctx)
 	if err != nil {
 		return nil, err
@@ -150,6 +159,7 @@ func (s *Service) settings(ctx context.Context) (*localv1.Settings, error) {
 		SentryEnabled:           sentry,
 		StripTracking:           stripTracking,
 		JournalEnabled:          s.journal.Enabled(),
+		AllowRemoteSettings:     allowRemote,
 	}
 	fillPolicy(settings, s.node.Policy().Config())
 	fillHistoryTTLs(settings, s.node.TTLs())

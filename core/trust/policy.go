@@ -31,6 +31,10 @@ var ErrForeignPolicy = errors.New("trust: policy for another device")
 // ErrPolicyReplay reports a policy that is not newer than the applied one.
 var ErrPolicyReplay = errors.New("trust: peer policy is not newer")
 
+// ErrRemoteSettingsDenied reports a policy from a device that may not change
+// the settings of this device remotely.
+var ErrRemoteSettingsDenied = errors.New("trust: remote settings changes are not allowed")
+
 // SetPeerPolicy is a signed request of a Personal device that the target device
 // asks its user before it takes what the issuer sends in the scope. The issuer
 // is the device that signed the request.
@@ -181,6 +185,14 @@ func (s *Store) ApplySetPeerPolicy(ctx context.Context, local, from model.Device
 		if issuer.Role != model.RolePersonal {
 			return fmt.Errorf("%w: issuer %s is not personal", ErrInvalidPeer, from)
 		}
+		settings := store.NewSettings(tx, s.db.Sealer())
+		allowed, err := settings.GetBool(ctx, allowRemoteSettingsKey, true)
+		if err != nil {
+			return err
+		}
+		if !allowed || issuer.RemoteSettingsDenied {
+			return fmt.Errorf("%w: issuer %s", ErrRemoteSettingsDenied, from)
+		}
 		if err := checkNotAhead(policy.SignedAt); err != nil {
 			return err
 		}
@@ -188,7 +200,6 @@ func (s *Store) ApplySetPeerPolicy(ctx context.Context, local, from model.Device
 			return err
 		}
 
-		settings := store.NewSettings(tx, s.db.Sealer())
 		tsKey := policyTsKeyPrefix + from.String()
 		applied, err := settings.GetInt(ctx, tsKey, 0)
 		if err != nil {

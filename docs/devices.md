@@ -181,6 +181,18 @@ so a flag of the other device travels there as a signed request, and that device
 it has to be online for that. After every change, and whenever a session opens, a device reports its
 flags for the other one, so both cards show the same state.
 
+A device decides who may change its own flags. Its card in the list of the other device has a switch
+that allows that particular device to change them, and the settings have a switch that covers every
+paired device. Both are on by default. A request from a device whose switch is off, or while the
+switch for every device is off, changes nothing, and the sender sees the flags that still apply.
+
+From the command line:
+
+```sh
+unison devices remote <id> on|off   # allow <id> to change the flags of this device
+unison settings remote on|off       # the same for every paired device
+```
+
 Settings also have two default flags: ask before applying the clipboard of new devices, and ask
 before accepting files from new devices. A Personal device you pair starts with these values on its
 card, and from then on its own flags decide: changing a default later does not touch the devices

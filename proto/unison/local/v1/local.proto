@@ -161,6 +161,9 @@ service UnisonService {
   rpc RenameDevice(RenameDeviceRequest) returns (RenameDeviceResponse);
   rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
   rpc SetDeviceConfirmation(SetDeviceConfirmationRequest) returns (SetDeviceConfirmationResponse);
+  // Permission of a paired device to change the confirmation flags of this
+  // device remotely.
+  rpc SetDeviceRemoteSettings(SetDeviceRemoteSettingsRequest) returns (SetDeviceRemoteSettingsResponse);
   // Address of a paired device, entered by the user. It is tried before the
   // discovered and cached ones, for networks where discovery does not work.
   rpc SetPeerAddress(SetPeerAddressRequest) returns (SetPeerAddressResponse);
@@ -289,6 +292,10 @@ message Device {
   // Addresses of the last attempt and why each one failed, one per line. It
   // is meant for the technical details of the UI.
   string unreachable_detail = 18;
+  // The user allows the device to change the confirmation flags of this device
+  // remotely. The switch in the settings of this device can turn the permission
+  // off for every device.
+  bool allow_remote_settings = 19;
 }
 
 // State of the clipboard pause.
@@ -478,6 +485,9 @@ message Settings {
   // The user turned on the application log. It records at debug level until the
   // user turns it off again.
   bool journal_enabled = 16;
+  // The user allows every paired device to change the confirmation flags of
+  // this device remotely.
+  bool allow_remote_settings = 17;
 }
 
 message GetStatusRequest {}
@@ -548,6 +558,15 @@ message SetDeviceConfirmationRequest {
 }
 
 message SetDeviceConfirmationResponse {}
+
+message SetDeviceRemoteSettingsRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  // The device may change the confirmation flags of this device remotely.
+  bool allow = 2;
+}
+
+message SetDeviceRemoteSettingsResponse {}
 
 message SetPeerAddressRequest {
   // Device ID in lowercase hex.
@@ -895,6 +914,9 @@ message UpdateSettingsRequest {
   optional bool strip_tracking = 17;
   // The user turns the application log on or off.
   optional bool journal_enabled = 18;
+  // The user allows every paired device to change the confirmation flags of
+  // this device remotely.
+  optional bool allow_remote_settings = 19;
 }
 
 message UpdateSettingsResponse {

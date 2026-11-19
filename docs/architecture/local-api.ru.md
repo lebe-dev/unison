@@ -106,7 +106,7 @@ pipe дает доступ только текущему пользовател�
 | Группа | Методы |
 |-------|---------|
 | Статус | `GetStatus`, `WatchEvents` |
-| Устройства | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetPeerAddress` |
+| Устройства | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetDeviceRemoteSettings`, `SetPeerAddress`, `RetryDevice` |
 | Спаривание | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Спаривание по QR | `GetPairingQr`, `ScanPairingQr` |
 | Буфер обмена | `GetClip`, `SetClip` |

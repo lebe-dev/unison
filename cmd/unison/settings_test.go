@@ -86,6 +86,39 @@ func TestSettingsTTL(t *testing.T) {
 	}
 }
 
+// TestSettingsRemote checks the switch that covers every paired device.
+func TestSettingsRemote(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 190, api.Options{})
+	device.start(t)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "settings", "remote", "off")
+	if code != exitOK {
+		t.Fatalf("settings remote exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "off") {
+		t.Errorf("the command does not report the permission:\n%s", stdout)
+	}
+	allowed, err := device.Trust().AllowRemoteSettings(t.Context())
+	if err != nil {
+		t.Fatalf("read the permission: %v", err)
+	}
+	if allowed {
+		t.Fatal("the permission is still granted")
+	}
+
+	if code, _, stderr := runCommand(t, "", "--endpoint", device.endpoint, "settings", "remote", "on"); code != exitOK {
+		t.Fatalf("settings remote on exited with %d, stderr %q", code, stderr)
+	}
+	allowed, err = device.Trust().AllowRemoteSettings(t.Context())
+	if err != nil {
+		t.Fatalf("read the permission: %v", err)
+	}
+	if !allowed {
+		t.Fatal("the permission is still denied")
+	}
+}
+
 // TestSettingsTTLJSON checks the machine readable lifetimes.
 func TestSettingsTTLJSON(t *testing.T) {
 	network, bus := newNetwork(t)

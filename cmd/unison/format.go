@@ -172,6 +172,18 @@ func onOff(on bool) string {
 	return "off"
 }
 
+// onOffValue parses on or off.
+func onOffValue(text string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(text)) {
+	case "on":
+		return true, nil
+	case "off":
+		return false, nil
+	default:
+		return false, fmt.Errorf("the value is on or off, not %q", text)
+	}
+}
+
 // yesNo renders a flag of a peer in the device table.
 func yesNo(on bool) string {
 	if on {

@@ -118,6 +118,26 @@ func (s *Service) SetDeviceConfirmation(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(&localv1.SetDeviceConfirmationResponse{}), nil
 }
 
+// SetDeviceRemoteSettings stores whether a paired device may change the
+// confirmation flags of this device remotely. The switch in the settings turns
+// the permission off for every device.
+func (s *Service) SetDeviceRemoteSettings(ctx context.Context, req *connect.Request[localv1.SetDeviceRemoteSettingsRequest]) (*connect.Response[localv1.SetDeviceRemoteSettingsResponse], error) {
+	if err := s.requireRunning(); err != nil {
+		return nil, errorOf(err)
+	}
+	id, err := model.ParseDeviceID(req.Msg.GetDeviceId())
+	if err != nil {
+		return nil, errorOf(fmt.Errorf("%w: device id", trust.ErrInvalidPeer))
+	}
+	if id == s.node.DeviceID() {
+		return nil, errorOf(fmt.Errorf("%w: this device is not a paired device", trust.ErrInvalidPeer))
+	}
+	if err := s.node.SetPeerAllowRemoteSettings(ctx, id, req.Msg.GetAllow()); err != nil {
+		return nil, errorOf(err)
+	}
+	return connect.NewResponse(&localv1.SetDeviceRemoteSettingsResponse{}), nil
+}
+
 // confirmationScope converts the scope of a request.
 func confirmationScope(scope localv1.ConfirmationScope) (trust.Scope, error) {
 	switch scope {

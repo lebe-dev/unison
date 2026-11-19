@@ -286,6 +286,48 @@ func TestDevicesConfirmPeer(t *testing.T) {
 	waitFlags(t, device, other.DeviceID(), func(peer trust.Peer) bool { return peer.ConfirmRemote.Clipboard })
 }
 
+// TestDevicesRemote checks the permission of a paired device to change the
+// settings of this device.
+func TestDevicesRemote(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 360, api.Options{})
+	other := newDevice(t, network, bus, 370, api.Options{})
+	device.start(t)
+	other.start(t)
+	device.pair(t, other)
+	other.pair(t, device)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "remote", other.name, "off")
+	if code != exitOK {
+		t.Fatalf("devices remote exited with %d, stderr %q", code, stderr)
+	}
+	if !strings.Contains(stdout, "remote settings") {
+		t.Errorf("the command does not report the permission:\n%s", stdout)
+	}
+	peer, err := device.Trust().Get(t.Context(), other.DeviceID())
+	if err != nil {
+		t.Fatalf("read the device: %v", err)
+	}
+	if !peer.RemoteSettingsDenied {
+		t.Fatal("the permission is still granted")
+	}
+
+	if code, _, stderr := runCommand(t, "", "--endpoint", device.endpoint, "devices", "remote", other.name, "on"); code != exitOK {
+		t.Fatalf("devices remote on exited with %d, stderr %q", code, stderr)
+	}
+	peer, err = device.Trust().Get(t.Context(), other.DeviceID())
+	if err != nil {
+		t.Fatalf("read the device: %v", err)
+	}
+	if peer.RemoteSettingsDenied {
+		t.Fatal("the permission is still denied")
+	}
+
+	if code, _, _ := runCommand(t, "", "--endpoint", device.endpoint, "devices", "remote", other.name, "maybe"); code != exitFailure {
+		t.Errorf("devices remote with an unknown state exited with %d, want %d", code, exitFailure)
+	}
+}
+
 // waitFlags waits until the record of a peer on the device satisfies ok.
 func waitFlags(t *testing.T, d *testDevice, peer model.DeviceID, ok func(trust.Peer) bool) {
 	t.Helper()

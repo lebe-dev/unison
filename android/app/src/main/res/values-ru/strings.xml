@@ -86,6 +86,10 @@
     <string name="devices_confirm_peer_files">%1$s спрашивает перед приемом файлов с этого устройства</string>
     <string name="devices_confirmation_saved">Настройка подтверждения сохранена</string>
     <string name="devices_confirmation_failed">Не удалось изменить настройку подтверждения</string>
+    <string name="devices_allow_remote">Разрешить %1$s менять эти настройки</string>
+    <string name="devices_allow_remote_hint">%1$s сможет менять флаги подтверждения этого устройства. Переключатель в настройках действует на все устройства.</string>
+    <string name="devices_remote_settings_saved">Разрешение менять настройки сохранено</string>
+    <string name="devices_remote_settings_failed">Не удалось изменить разрешение менять настройки</string>
     <string name="devices_remove_title">Удалить %1$s?</string>
     <string name="devices_remove_body">Устройство навсегда потеряет доступ к этому и не сможет снова сопрячься, пока вы его не добавите. Другие устройства узнают об удалении при следующем соединении.</string>
     <string name="devices_removed">Устройство удалено</string>
@@ -125,6 +129,11 @@
     <string name="settings_file_confirmation_hint">Файлы не скачиваются, пока вы их не примете.</string>
     <string name="settings_confirmation_saved">Настройка подтверждения сохранена</string>
     <string name="settings_confirmation_failed">Не удалось изменить настройку подтверждения</string>
+    <string name="settings_section_remote">Удаленные настройки</string>
+    <string name="settings_allow_remote">Разрешить сопряженным устройствам менять эти настройки</string>
+    <string name="settings_allow_remote_hint">Разрешение для отдельного устройства можно изменить на его карточке на экране Устройства.</string>
+    <string name="settings_remote_settings_saved">Разрешение менять настройки сохранено</string>
+    <string name="settings_remote_settings_failed">Не удалось изменить разрешение менять настройки</string>
     <string name="settings_section_links">Ссылки</string>
     <string name="settings_strip_tracking">Удалять рекламные параметры</string>
     <string name="settings_strip_tracking_hint">Из ссылок в буфере обмена удаляются параметры UTM, fbclid, gclid и подобные.</string>

@@ -37,6 +37,10 @@ data class CoreState(
     val requiresFileConfirmation: Boolean
         get() = settings?.requireFileConfirmation == true
 
+    /** Paired devices may change the confirmation flags of this device. */
+    val allowsRemoteSettings: Boolean
+        get() = settings?.allowRemoteSettings ?: true
+
     /** This device reports errors to the developer. */
     val reportsErrors: Boolean
         get() = settings?.sentryEnabled == true

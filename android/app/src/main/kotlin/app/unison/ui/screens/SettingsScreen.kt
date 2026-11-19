@@ -45,6 +45,7 @@ import app.unison.ui.GroupItem
 import app.unison.ui.IconTile
 import app.unison.ui.ItemGroup
 import app.unison.ui.ScreenTitle
+import app.unison.ui.SectionTitle
 import app.unison.ui.SettingsCard
 import app.unison.ui.pauseLabel
 import app.unison.ui.screenColor
@@ -99,6 +100,7 @@ fun SettingsScreen(
     onRefreshRelay: () -> Unit,
     onRelayCheck: (url: String, token: String?) -> Unit,
     onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
+    onAllowRemoteSettingsChange: (Boolean) -> Unit,
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
     onDiagnosticsChange: (Boolean) -> Unit,
@@ -148,6 +150,12 @@ fun SettingsScreen(
                         ClipboardConfirmation(
                             required = state.requiresConfirmation,
                             onChange = onSelfConfirmationChange,
+                        )
+                    }
+                    SettingsCard {
+                        RemoteSettingsPermission(
+                            allowed = state.allowsRemoteSettings,
+                            onChange = onAllowRemoteSettingsChange,
                         )
                     }
                     SettingsCard {
@@ -386,3 +394,19 @@ private fun SettingsPageFrame(
 
 /** Tag of the row of the index that opens [page]. */
 internal fun settingsPageTag(page: SettingsPage): String = "settings.page.${page.name.lowercase()}"
+
+/** Confirmation flags of this device that the paired devices may change from their side. */
+@Composable
+private fun RemoteSettingsPermission(allowed: Boolean, onChange: (Boolean) -> Unit) {
+    SectionTitle(text = stringResource(R.string.settings_section_remote))
+    SettingsSwitch(
+        title = stringResource(R.string.settings_allow_remote),
+        hint = stringResource(R.string.settings_allow_remote_hint),
+        checked = allowed,
+        tag = ALLOW_REMOTE_TAG,
+        onChange = onChange,
+    )
+}
+
+/** Tag of the switch that lets the paired devices change the confirmation flags. */
+internal const val ALLOW_REMOTE_TAG = "settings.allow_remote"

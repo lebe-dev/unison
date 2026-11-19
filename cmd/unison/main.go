@@ -273,6 +273,8 @@ commands:
                               --files the file transfers) of a device or, for
                               self, the default of new devices; with --peer the paired device asks
                               before taking those of this device
+  devices remote <id> on|off  allow the device to change the confirmation
+                              flags of this device remotely
   devices revoke <id|self> [--yes]
                               revoke a device or leave the group; the device is
                               cut off and never trusted again
@@ -305,6 +307,8 @@ commands:
                               change one lifetime; the kind is text, image or
                               files and the lifetime looks like 24h or 7d
   settings ttl reset          back to the default lifetimes
+  settings remote on|off      allow paired devices to change the confirmation
+                              flags of this device remotely
   relay [status]              show the relay of the group and its connection
   relay set <url> --token <t> [--files-on-request]
                               store the relay address and token; the other

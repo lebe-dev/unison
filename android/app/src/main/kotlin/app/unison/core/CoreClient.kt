@@ -297,6 +297,32 @@ class CoreClient(private val transport: CoreTransport = MobileTransport) : CoreA
         )
     }
 
+    /** Allows a paired device to change the confirmation flags of this device. */
+    override suspend fun setDeviceRemoteSettings(deviceId: String, allow: Boolean) {
+        val request = Local.SetDeviceRemoteSettingsRequest.newBuilder()
+            .setDeviceId(deviceId)
+            .setAllow(allow)
+            .build()
+        call(
+            method = "SetDeviceRemoteSettings",
+            request = request,
+            parse = { Local.SetDeviceRemoteSettingsResponse.parseFrom(it) },
+        )
+    }
+
+    /** Allows every paired device to change the confirmation flags of this device. */
+    override suspend fun setAllowRemoteSettings(allow: Boolean): Local.Settings {
+        val request = Local.UpdateSettingsRequest.newBuilder()
+            .setAllowRemoteSettings(allow)
+            .build()
+        val response = call(
+            method = "UpdateSettings",
+            request = request,
+            parse = { Local.UpdateSettingsResponse.parseFrom(it) },
+        )
+        return response.settings
+    }
+
     /** Removes a device from the group; the ID of this device leaves the group. */
     override suspend fun revokeDevice(deviceId: String) {
         val request = Local.RevokeDeviceRequest.newBuilder()

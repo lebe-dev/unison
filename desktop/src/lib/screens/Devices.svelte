@@ -147,6 +147,20 @@
     notice = { kind: "error", text: failure };
   }
 
+  /** remoteLabel names the permission switch for a screen reader. */
+  function remoteLabel(device: Device): string {
+    return t("devices.allowRemote", { name: device.name || t("common.theDevice") });
+  }
+
+  async function setRemoteAllowed(device: Device, allow: boolean): Promise<void> {
+    notice = null;
+    const failure = await confirmation.setRemoteAllowed(device.deviceId, allow);
+    if (!failure) {
+      return;
+    }
+    notice = { kind: "error", text: failure };
+  }
+
   /** reconnect asks the daemon to dial an offline device again. */
   async function reconnect(device: Device): Promise<void> {
     busy = true;
@@ -390,6 +404,20 @@
                   {/each}
                 </div>
               {/each}
+              <div class="form-row">
+                <span class="label">
+                  {remoteLabel(device)}
+                  <small>{t("devices.allowRemoteHint")}</small>
+                </span>
+                <input
+                  class="switch"
+                  type="checkbox"
+                  aria-label={remoteLabel(device)}
+                  checked={confirmation.remoteAllowed(device)}
+                  disabled={confirmation.isRemoteBusy(device.deviceId)}
+                  onchange={(event) => void setRemoteAllowed(device, event.currentTarget.checked)}
+                />
+              </div>
             </div>
             <p class="section-footer">{t("devices.promptFooter")}</p>
           </div>

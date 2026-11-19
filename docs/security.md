@@ -70,11 +70,14 @@ arrives, not only when the session opens:
 | offer files | yes, or after confirmation | yes, always asks |
 | introduce other devices | yes | no |
 | revoke devices | yes | no |
-| change the peer policy | yes | no |
+| change the peer policy | yes, if allowed | no |
 
 A Personal device can be moved to the "asks first" column for the clipboard and for files with its
 confirmation flags, set per pair and per direction. The flag belongs to the device that asks, and a
 change travels there as a signed request. See [Devices and pairing](devices.md#confirmation-flags).
+A device accepts such a request only while the permission for the sending device, and the one that
+covers every device, is on. The permission of a device that is revoked is not used: a revoked device
+is refused before its request is read.
 
 An action that the role forbids is a protocol violation. The message is dropped, the violation is
 counted, and the third violation ends the session with code `0x11`. Share decisions and results carry

@@ -24,13 +24,19 @@ function key(deviceId: string, scope: Scope, side: Side): string {
  * ConfirmationStore keeps the confirmation flags the user changed in this
  * window until the daemon reports them in the status. Every paired device has
  * four flags: this device and the paired one each ask, or not, before they
- * take the clipboard items and the files of the other.
+ * take the clipboard items and the files of the other. A paired device also
+ * has the permission to change these flags remotely.
  */
 class ConfirmationStore {
   /** Switches whose state is being changed. */
   busy = $state<string[]>([]);
 
+  /** Permission switches whose state is being changed. */
+  remoteBusy = $state<string[]>([]);
+
   #changed = $state<Record<string, boolean>>({});
+
+  #remoteChanged = $state<Record<string, boolean>>({});
 
   /** require reports the flag the user set last, or the one of the device. */
   require(device: Device, scope: Scope, side: Side): boolean {
@@ -49,6 +55,50 @@ class ConfirmationStore {
   /** isBusy reports a switch with a change in flight. */
   isBusy(deviceId: string, scope: Scope, side: Side): boolean {
     return this.busy.includes(key(deviceId, scope, side));
+  }
+
+  /** remoteAllowed reports the permission the user set last, or the one of the device. */
+  remoteAllowed(device: Device): boolean {
+    const changed = this.#remoteChanged[device.deviceId];
+    if (changed !== undefined) {
+      return changed;
+    }
+    return device.allowRemoteSettings;
+  }
+
+  /** isRemoteBusy reports a permission switch with a change in flight. */
+  isRemoteBusy(deviceId: string): boolean {
+    return this.remoteBusy.includes(deviceId);
+  }
+
+  /**
+   * setRemoteAllowed lets a paired device change the confirmation flags of this
+   * device, or stops it, and returns the reason of a failure. The permission is
+   * a property of this device, so the change does not need the device online.
+   */
+  async setRemoteAllowed(deviceId: string, allow: boolean): Promise<string | null> {
+    if (this.remoteBusy.includes(deviceId)) {
+      return null;
+    }
+    this.remoteBusy = [...this.remoteBusy, deviceId];
+    try {
+      await client.setDeviceRemoteSettings({ deviceId, allow });
+    } catch (error) {
+      return failureText(error);
+    } finally {
+      this.remoteBusy = this.remoteBusy.filter((current) => current !== deviceId);
+    }
+    // The new permission shows while the status reloads; then the status is the
+    // source again, so a later change made elsewhere shows too.
+    this.#remoteChanged = { ...this.#remoteChanged, [deviceId]: allow };
+    try {
+      await daemon.refresh();
+    } finally {
+      const rest = { ...this.#remoteChanged };
+      delete rest[deviceId];
+      this.#remoteChanged = rest;
+    }
+    return null;
   }
 
   /**

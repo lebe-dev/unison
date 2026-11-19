@@ -3144,6 +3144,18 @@ public final class Local {
      */
     com.google.protobuf.ByteString
         getUnreachableDetailBytes();
+
+    /**
+     * <pre>
+     * The user allows the device to change the confirmation flags of this device
+     * remotely. The switch in the settings of this device can turn the permission
+     * off for every device.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @return The allowRemoteSettings.
+     */
+    boolean getAllowRemoteSettings();
   }
   /**
    * <pre>
@@ -3916,6 +3928,50 @@ public final class Local {
       checkByteStringIsUtf8(value);
       unreachableDetail_ = value.toStringUtf8();
 
+    }
+
+    public static final int ALLOW_REMOTE_SETTINGS_FIELD_NUMBER = 19;
+    private boolean allowRemoteSettings_;
+    /**
+     * <pre>
+     * The user allows the device to change the confirmation flags of this device
+     * remotely. The switch in the settings of this device can turn the permission
+     * off for every device.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @return The allowRemoteSettings.
+     */
+    @java.lang.Override
+    public boolean getAllowRemoteSettings() {
+      return allowRemoteSettings_;
+    }
+    /**
+     * <pre>
+     * The user allows the device to change the confirmation flags of this device
+     * remotely. The switch in the settings of this device can turn the permission
+     * off for every device.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @param value The allowRemoteSettings to set.
+     */
+    private void setAllowRemoteSettings(boolean value) {
+      
+      allowRemoteSettings_ = value;
+    }
+    /**
+     * <pre>
+     * The user allows the device to change the confirmation flags of this device
+     * remotely. The switch in the settings of this device can turn the permission
+     * off for every device.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     */
+    private void clearAllowRemoteSettings() {
+
+      allowRemoteSettings_ = false;
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -4814,6 +4870,52 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user allows the device to change the confirmation flags of this device
+       * remotely. The switch in the settings of this device can turn the permission
+       * off for every device.
+       * </pre>
+       *
+       * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @return The allowRemoteSettings.
+       */
+      @java.lang.Override
+      public boolean getAllowRemoteSettings() {
+        return instance.getAllowRemoteSettings();
+      }
+      /**
+       * <pre>
+       * The user allows the device to change the confirmation flags of this device
+       * remotely. The switch in the settings of this device can turn the permission
+       * off for every device.
+       * </pre>
+       *
+       * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @param value The allowRemoteSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAllowRemoteSettings(boolean value) {
+        copyOnWrite();
+        instance.setAllowRemoteSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user allows the device to change the confirmation flags of this device
+       * remotely. The switch in the settings of this device can turn the permission
+       * off for every device.
+       * </pre>
+       *
+       * <code>bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAllowRemoteSettings() {
+        copyOnWrite();
+        instance.clearAllowRemoteSettings();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -4847,11 +4949,13 @@ public final class Local {
               "unreachable_",
               "unreachableSinceUnixMs_",
               "unreachableDetail_",
+              "allowRemoteSettings_",
             };
             java.lang.String info =
-                "\u0000\u0011\u0000\u0000\u0001\u0012\u0011\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0000\u0012\u0000\u0000\u0001\u0013\u0012\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
                 "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
-                "\r\u0208\u000e\u0007\u000f\u0007\u0010\u0007\u0011\u0002\u0012\u0208";
+                "\r\u0208\u000e\u0007\u000f\u0007\u0010\u0007\u0011\u0002\u0012\u0208\u0013\u0007" +
+                "";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -13814,6 +13918,17 @@ java.lang.String defaultValue) {
      * @return The journalEnabled.
      */
     boolean getJournalEnabled();
+
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+     * @return The allowRemoteSettings.
+     */
+    boolean getAllowRemoteSettings();
   }
   /**
    * <pre>
@@ -14618,6 +14733,47 @@ java.lang.String defaultValue) {
     private void clearJournalEnabled() {
 
       journalEnabled_ = false;
+    }
+
+    public static final int ALLOW_REMOTE_SETTINGS_FIELD_NUMBER = 17;
+    private boolean allowRemoteSettings_;
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+     * @return The allowRemoteSettings.
+     */
+    @java.lang.Override
+    public boolean getAllowRemoteSettings() {
+      return allowRemoteSettings_;
+    }
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+     * @param value The allowRemoteSettings to set.
+     */
+    private void setAllowRemoteSettings(boolean value) {
+      
+      allowRemoteSettings_ = value;
+    }
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+     */
+    private void clearAllowRemoteSettings() {
+
+      allowRemoteSettings_ = false;
     }
 
     public static unison.local.v1.Local.Settings parseFrom(
@@ -15549,6 +15705,49 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+       * @return The allowRemoteSettings.
+       */
+      @java.lang.Override
+      public boolean getAllowRemoteSettings() {
+        return instance.getAllowRemoteSettings();
+      }
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+       * @param value The allowRemoteSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAllowRemoteSettings(boolean value) {
+        copyOnWrite();
+        instance.setAllowRemoteSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>bool allow_remote_settings = 17 [json_name = "allowRemoteSettings"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAllowRemoteSettings() {
+        copyOnWrite();
+        instance.clearAllowRemoteSettings();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Settings)
     }
     @java.lang.Override
@@ -15582,12 +15781,13 @@ java.lang.String defaultValue) {
               "sentryEnabled_",
               "stripTracking_",
               "journalEnabled_",
+              "allowRemoteSettings_",
             };
             java.lang.String info =
-                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "\u0000\u0011\u0000\u0001\u0001\u0011\u0011\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
                 "\u0003\u0002\u0004\u0208\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b" +
                 "\u1009\u0003\t\u0002\n\u0002\u000b\u0002\f\u0002\r\u0007\u000e\u0007\u000f\u0007" +
-                "\u0010\u0007";
+                "\u0010\u0007\u0011\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -20920,6 +21120,621 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<SetDeviceConfirmationResponse> PARSER;
 
     public static com.google.protobuf.Parser<SetDeviceConfirmationResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetDeviceRemoteSettingsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetDeviceRemoteSettingsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    java.lang.String getDeviceId();
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdBytes();
+
+    /**
+     * <pre>
+     * The device may change the confirmation flags of this device remotely.
+     * </pre>
+     *
+     * <code>bool allow = 2 [json_name = "allow"];</code>
+     * @return The allow.
+     */
+    boolean getAllow();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetDeviceRemoteSettingsRequest}
+   */
+  public  static final class SetDeviceRemoteSettingsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetDeviceRemoteSettingsRequest, SetDeviceRemoteSettingsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetDeviceRemoteSettingsRequest)
+      SetDeviceRemoteSettingsRequestOrBuilder {
+    private SetDeviceRemoteSettingsRequest() {
+      deviceId_ = "";
+    }
+    public static final int DEVICE_ID_FIELD_NUMBER = 1;
+    private java.lang.String deviceId_;
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceId() {
+      return deviceId_;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceId_);
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The deviceId to set.
+     */
+    private void setDeviceId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceId_ = value;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     */
+    private void clearDeviceId() {
+
+      deviceId_ = getDefaultInstance().getDeviceId();
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The bytes for deviceId to set.
+     */
+    private void setDeviceIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceId_ = value.toStringUtf8();
+
+    }
+
+    public static final int ALLOW_FIELD_NUMBER = 2;
+    private boolean allow_;
+    /**
+     * <pre>
+     * The device may change the confirmation flags of this device remotely.
+     * </pre>
+     *
+     * <code>bool allow = 2 [json_name = "allow"];</code>
+     * @return The allow.
+     */
+    @java.lang.Override
+    public boolean getAllow() {
+      return allow_;
+    }
+    /**
+     * <pre>
+     * The device may change the confirmation flags of this device remotely.
+     * </pre>
+     *
+     * <code>bool allow = 2 [json_name = "allow"];</code>
+     * @param value The allow to set.
+     */
+    private void setAllow(boolean value) {
+      
+      allow_ = value;
+    }
+    /**
+     * <pre>
+     * The device may change the confirmation flags of this device remotely.
+     * </pre>
+     *
+     * <code>bool allow = 2 [json_name = "allow"];</code>
+     */
+    private void clearAllow() {
+
+      allow_ = false;
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetDeviceRemoteSettingsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetDeviceRemoteSettingsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetDeviceRemoteSettingsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetDeviceRemoteSettingsRequest)
+        unison.local.v1.Local.SetDeviceRemoteSettingsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.SetDeviceRemoteSettingsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The deviceId.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceId() {
+        return instance.getDeviceId();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The bytes for deviceId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdBytes() {
+        return instance.getDeviceIdBytes();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceId() {
+        copyOnWrite();
+        instance.clearDeviceId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The bytes for deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The device may change the confirmation flags of this device remotely.
+       * </pre>
+       *
+       * <code>bool allow = 2 [json_name = "allow"];</code>
+       * @return The allow.
+       */
+      @java.lang.Override
+      public boolean getAllow() {
+        return instance.getAllow();
+      }
+      /**
+       * <pre>
+       * The device may change the confirmation flags of this device remotely.
+       * </pre>
+       *
+       * <code>bool allow = 2 [json_name = "allow"];</code>
+       * @param value The allow to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAllow(boolean value) {
+        copyOnWrite();
+        instance.setAllow(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device may change the confirmation flags of this device remotely.
+       * </pre>
+       *
+       * <code>bool allow = 2 [json_name = "allow"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAllow() {
+        copyOnWrite();
+        instance.clearAllow();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetDeviceRemoteSettingsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetDeviceRemoteSettingsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "deviceId_",
+              "allow_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetDeviceRemoteSettingsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetDeviceRemoteSettingsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetDeviceRemoteSettingsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetDeviceRemoteSettingsRequest)
+    private static final unison.local.v1.Local.SetDeviceRemoteSettingsRequest DEFAULT_INSTANCE;
+    static {
+      SetDeviceRemoteSettingsRequest defaultInstance = new SetDeviceRemoteSettingsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetDeviceRemoteSettingsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetDeviceRemoteSettingsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<SetDeviceRemoteSettingsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface SetDeviceRemoteSettingsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.SetDeviceRemoteSettingsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.SetDeviceRemoteSettingsResponse}
+   */
+  public  static final class SetDeviceRemoteSettingsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          SetDeviceRemoteSettingsResponse, SetDeviceRemoteSettingsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.SetDeviceRemoteSettingsResponse)
+      SetDeviceRemoteSettingsResponseOrBuilder {
+    private SetDeviceRemoteSettingsResponse() {
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.SetDeviceRemoteSettingsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.SetDeviceRemoteSettingsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.SetDeviceRemoteSettingsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.SetDeviceRemoteSettingsResponse)
+        unison.local.v1.Local.SetDeviceRemoteSettingsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.SetDeviceRemoteSettingsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.SetDeviceRemoteSettingsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.SetDeviceRemoteSettingsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.SetDeviceRemoteSettingsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.SetDeviceRemoteSettingsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.SetDeviceRemoteSettingsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.SetDeviceRemoteSettingsResponse)
+    private static final unison.local.v1.Local.SetDeviceRemoteSettingsResponse DEFAULT_INSTANCE;
+    static {
+      SetDeviceRemoteSettingsResponse defaultInstance = new SetDeviceRemoteSettingsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        SetDeviceRemoteSettingsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.SetDeviceRemoteSettingsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<SetDeviceRemoteSettingsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<SetDeviceRemoteSettingsResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }
@@ -44623,6 +45438,27 @@ java.lang.String defaultValue) {
      * @return The journalEnabled.
      */
     boolean getJournalEnabled();
+
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @return Whether the allowRemoteSettings field is set.
+     */
+    boolean hasAllowRemoteSettings();
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @return The allowRemoteSettings.
+     */
+    boolean getAllowRemoteSettings();
   }
   /**
    * Protobuf type {@code unison.local.v1.UpdateSettingsRequest}
@@ -45476,6 +46312,60 @@ java.lang.String defaultValue) {
     private void clearJournalEnabled() {
       bitField0_ = (bitField0_ & ~0x00008000);
       journalEnabled_ = false;
+    }
+
+    public static final int ALLOW_REMOTE_SETTINGS_FIELD_NUMBER = 19;
+    private boolean allowRemoteSettings_;
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @return Whether the allowRemoteSettings field is set.
+     */
+    @java.lang.Override
+    public boolean hasAllowRemoteSettings() {
+      return ((bitField0_ & 0x00010000) != 0);
+    }
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @return The allowRemoteSettings.
+     */
+    @java.lang.Override
+    public boolean getAllowRemoteSettings() {
+      return allowRemoteSettings_;
+    }
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     * @param value The allowRemoteSettings to set.
+     */
+    private void setAllowRemoteSettings(boolean value) {
+      bitField0_ |= 0x00010000;
+      allowRemoteSettings_ = value;
+    }
+    /**
+     * <pre>
+     * The user allows every paired device to change the confirmation flags of
+     * this device remotely.
+     * </pre>
+     *
+     * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+     */
+    private void clearAllowRemoteSettings() {
+      bitField0_ = (bitField0_ & ~0x00010000);
+      allowRemoteSettings_ = false;
     }
 
     public static unison.local.v1.Local.UpdateSettingsRequest parseFrom(
@@ -46449,6 +47339,62 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @return Whether the allowRemoteSettings field is set.
+       */
+      @java.lang.Override
+      public boolean hasAllowRemoteSettings() {
+        return instance.hasAllowRemoteSettings();
+      }
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @return The allowRemoteSettings.
+       */
+      @java.lang.Override
+      public boolean getAllowRemoteSettings() {
+        return instance.getAllowRemoteSettings();
+      }
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @param value The allowRemoteSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAllowRemoteSettings(boolean value) {
+        copyOnWrite();
+        instance.setAllowRemoteSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user allows every paired device to change the confirmation flags of
+       * this device remotely.
+       * </pre>
+       *
+       * <code>optional bool allow_remote_settings = 19 [json_name = "allowRemoteSettings"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAllowRemoteSettings() {
+        copyOnWrite();
+        instance.clearAllowRemoteSettings();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.UpdateSettingsRequest)
     }
     @java.lang.Override
@@ -46484,13 +47430,14 @@ java.lang.String defaultValue) {
               "sentryEnabled_",
               "stripTracking_",
               "journalEnabled_",
+              "allowRemoteSettings_",
             };
             java.lang.String info =
-                "\u0000\u0012\u0000\u0001\u0001\u0012\u0012\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
+                "\u0000\u0013\u0000\u0001\u0001\u0013\u0013\u0000\u0000\u0000\u0001\u1208\u0000\u0002" +
                 "\u1007\u0001\u0003\u1002\u0002\u0004\u1208\u0003\u0005\u1009\u0004\u0006\u1009\u0005" +
                 "\u0007\u1009\u0006\b\u1009\u0007\t\u1002\b\n\u0007\u000b\u1002\t\f\u1002\n\r\u1002" +
                 "\u000b\u000e\u0007\u000f\u1007\f\u0010\u1007\r\u0011\u1007\u000e\u0012\u1007\u000f" +
-                "";
+                "\u0013\u1007\u0010";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

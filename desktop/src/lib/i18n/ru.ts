@@ -130,6 +130,9 @@ export const ru: { [K in MessageKey]: Message } = {
   "devices.flagLocalFiles": "Это устройство спрашивает перед приемом файлов от {name}",
   "devices.flagPeerClipboard": "{name} спрашивает перед применением буфера обмена этого устройства",
   "devices.flagPeerFiles": "{name} спрашивает перед приемом файлов от этого устройства",
+  "devices.allowRemote": "Разрешить {name} менять эти настройки",
+  "devices.allowRemoteHint":
+    "Устройство сможет менять флаги подтверждения этого устройства через сессию. Переключатель в настройках действует на все устройства.",
 
   // Add device screen and pairing.
   "add.roleLegend": "Роль добавляемого устройства",
@@ -411,6 +414,9 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.askFiles": "Спрашивать перед приемом файлов от новых устройств",
   "settings.askFilesHint":
     "Ничего не скачивается, пока вы не примете файлы в запросе или на экране Запросы.",
+  "settings.allowRemote": "Разрешить сопряженным устройствам менять эти настройки",
+  "settings.allowRemoteHint":
+    "Разрешение для отдельного устройства можно изменить на его карточке на экране Устройства.",
   "settings.nameFooter":
     "Сопряженные устройства видят это имя. Они узнают его при следующем подключении.",
   "settings.receivedFiles": "Полученные файлы",

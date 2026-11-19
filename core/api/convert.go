@@ -138,6 +138,7 @@ func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 		RequireFileConfirmation:     peer.Confirm.Files,
 		PeerRequireConfirmation:     peer.ConfirmRemote.Clipboard,
 		PeerRequireFileConfirmation: peer.ConfirmRemote.Files,
+		AllowRemoteSettings:         !peer.RemoteSettingsDenied,
 		Revoked:                     peer.Revoked,
 		AddedAtUnixMs:               unixMilli(peer.AddedAt),
 		LastSeenAtUnixMs:            unixMilli(peer.LastSeenAt),

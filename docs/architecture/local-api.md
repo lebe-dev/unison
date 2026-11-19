@@ -102,7 +102,7 @@ call is not implemented, and the daemon passes the clipboard pipeline of the nod
 | Group | Methods |
 |-------|---------|
 | Status | `GetStatus`, `WatchEvents` |
-| Devices | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetPeerAddress` |
+| Devices | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetDeviceRemoteSettings`, `SetPeerAddress`, `RetryDevice` |
 | Pairing | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Pairing by QR | `GetPairingQr`, `ScanPairingQr` |
 | Clipboard | `GetClip`, `SetClip` |

@@ -50,6 +50,7 @@
   let downloadsDir = $state("");
   let requireConfirmation = $state(false);
   let requireFileConfirmation = $state(false);
+  let allowRemoteSettings = $state(true);
   let sentryEnabled = $state(false);
   let stripTracking = $state(true);
   let policy = $state<PolicyTable | null>(null);
@@ -130,6 +131,7 @@
       name = response.settings?.deviceName ?? "";
       requireConfirmation = response.settings?.requireConfirmation ?? false;
       requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
+      allowRemoteSettings = response.settings?.allowRemoteSettings ?? true;
       downloadsDir = response.settings?.downloadsDir ?? "";
       sentryEnabled = response.settings?.sentryEnabled ?? false;
       stripTracking = response.settings?.stripTracking ?? true;
@@ -188,6 +190,29 @@
     } catch (error) {
       requireConfirmation = previous.clipboard;
       requireFileConfirmation = previous.files;
+      notice = {
+        kind: "error",
+        text: errorText(error, t("settings.confirmationFailed")),
+      };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /**
+   * setRemoteSettings lets the paired devices change the confirmation flags of
+   * this device. Refusing it here blocks them for every device.
+   */
+  async function setRemoteSettings(value: boolean): Promise<void> {
+    const previous = allowRemoteSettings;
+    allowRemoteSettings = value;
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.updateSettings({ allowRemoteSettings: value });
+      allowRemoteSettings = response.settings?.allowRemoteSettings ?? value;
+    } catch (error) {
+      allowRemoteSettings = previous;
       notice = {
         kind: "error",
         text: errorText(error, t("settings.confirmationFailed")),
@@ -563,6 +588,19 @@
           <span>
             {t("settings.askFiles")}
             <small>{t("settings.askFilesHint")}</small>
+          </span>
+        </label>
+        <label class="toggle form-row">
+          <input
+            type="checkbox"
+            aria-label={t("settings.allowRemote")}
+            checked={allowRemoteSettings}
+            disabled={busy || !loaded}
+            onchange={(event) => void setRemoteSettings(event.currentTarget.checked)}
+          />
+          <span>
+            {t("settings.allowRemote")}
+            <small>{t("settings.allowRemoteHint")}</small>
           </span>
         </label>
       </div>

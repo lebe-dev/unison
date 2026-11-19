@@ -144,6 +144,9 @@ export const en = {
   "devices.flagLocalFiles": "This device asks before accepting files from {name}",
   "devices.flagPeerClipboard": "{name} asks before applying the clipboard of this device",
   "devices.flagPeerFiles": "{name} asks before accepting files from this device",
+  "devices.allowRemote": "Allow {name} to change these settings",
+  "devices.allowRemoteHint":
+    "The device can change the confirmation flags of this device over the session. The switch in Settings covers every device.",
 
   // Add device screen and pairing.
   "add.roleLegend": "Role of the device you add",
@@ -408,6 +411,9 @@ export const en = {
   "settings.askFiles": "Ask before accepting files from new devices",
   "settings.askFilesHint":
     "Nothing is downloaded until you accept the files in the prompt or on the Requests screen.",
+  "settings.allowRemote": "Allow paired devices to change these settings",
+  "settings.allowRemoteHint":
+    "Each device can also be allowed or refused on its card on the Devices screen.",
   "settings.nameFooter": "Peers see this name. They learn it the next time they connect.",
   "settings.receivedFiles": "Received Files",
   "settings.saveTo": "Save to",

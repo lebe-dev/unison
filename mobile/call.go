@@ -75,6 +75,16 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "SetDeviceRemoteSettings":
+		call, err := requestOf[localv1.SetDeviceRemoteSettingsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.SetDeviceRemoteSettings(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "OpenPairingWindow":
 		call, err := requestOf[localv1.OpenPairingWindowRequest](payload)
 		if err != nil {

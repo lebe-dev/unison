@@ -466,10 +466,11 @@ func scanPeer(scanner rowScanner, sealer *store.Sealer) (Peer, error) {
 			Clipboard: profile.RequireConfirmationRemote,
 			Files:     profile.RequireFileConfirmationRemote,
 		},
-		AddedAt:    timeFromMilli(addedAt),
-		LastSeenAt: timeFromMilli(lastSeenAt),
-		LastAddrs:  addrs,
-		Revoked:    revoked,
+		RemoteSettingsDenied: profile.RemoteSettingsDenied,
+		AddedAt:              timeFromMilli(addedAt),
+		LastSeenAt:           timeFromMilli(lastSeenAt),
+		LastAddrs:            addrs,
+		Revoked:              revoked,
 	}
 	if profile.IntroducedBy != "" {
 		peer.IntroducedBy, err = model.ParseDeviceID(profile.IntroducedBy)
@@ -543,8 +544,11 @@ type peerProfile struct {
 	RequireConfirmationRemote bool   `json:"require_confirmation_remote,omitempty"`
 	RequireFileConfirmation   bool   `json:"require_file_confirmation,omitempty"`
 	// RequireFileConfirmationRemote is the files flag the peer reported.
-	RequireFileConfirmationRemote bool   `json:"require_file_confirmation_remote,omitempty"`
-	IntroducedBy                  string `json:"introduced_by,omitempty"`
+	RequireFileConfirmationRemote bool `json:"require_file_confirmation_remote,omitempty"`
+	// RemoteSettingsDenied reports a refused permission to change the
+	// confirmation flags of this device remotely.
+	RemoteSettingsDenied bool   `json:"remote_settings_denied,omitempty"`
+	IntroducedBy         string `json:"introduced_by,omitempty"`
 }
 
 // sealPeerProfile encodes and seals the profile of the peer.
@@ -558,6 +562,7 @@ func sealPeerProfile(sealer *store.Sealer, peer Peer) ([]byte, error) {
 		RequireConfirmationRemote:     peer.ConfirmRemote.Clipboard,
 		RequireFileConfirmation:       peer.Confirm.Files,
 		RequireFileConfirmationRemote: peer.ConfirmRemote.Files,
+		RemoteSettingsDenied:          peer.RemoteSettingsDenied,
 	}
 	if !peer.IntroducedBy.IsZero() {
 		profile.IntroducedBy = peer.IntroducedBy.String()

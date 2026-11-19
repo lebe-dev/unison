@@ -29,6 +29,8 @@ func (a *app) settings(ctx context.Context, args []string) error {
 		return a.showSettings(ctx)
 	case "ttl":
 		return a.settingsTTL(ctx, rest)
+	case "remote":
+		return a.settingsRemote(ctx, rest)
 	default:
 		return a.usageError("unknown settings command %q", command)
 	}
@@ -53,7 +55,40 @@ func (a *app) showSettings(ctx context.Context) error {
 	a.field("blob limit", sizeText(uint64(settings.GetBlobMaxSizeBytes())))
 	a.field("downloads", settings.GetDownloadsDir())
 	a.field("ad params", onOff(settings.GetStripTracking()))
+	a.field("remote changes", onOff(settings.GetAllowRemoteSettings()))
 	return a.writeTTLs(settings)
+}
+
+// settingsRemote turns the permission of every paired device to change the
+// confirmation flags of this device remotely on or off.
+func (a *app) settingsRemote(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("settings remote")
+	positional, err := parseCommand(flags, args)
+	if err != nil {
+		return err
+	}
+	if len(positional) != 1 {
+		return a.usageError("settings remote needs on or off")
+	}
+	allow, err := onOffValue(positional[0])
+	if err != nil {
+		return a.usageError("%v", err)
+	}
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	response, err := client.UpdateSettings(ctx, connect.NewRequest(&localv1.UpdateSettingsRequest{
+		AllowRemoteSettings: &allow,
+	}))
+	if err != nil {
+		return fmt.Errorf("change the remote settings permission: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(response.Msg)
+	}
+	a.info("remote settings for every device are %s", onOff(allow))
+	return nil
 }
 
 // settingsTTL prints or changes the lifetimes of the history.

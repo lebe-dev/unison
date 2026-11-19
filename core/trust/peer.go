@@ -49,6 +49,10 @@ type Peer struct {
 	// ConfirmRemote are the flags of the peer for this device, as the peer
 	// reported them last. The peer owns them; this device only records them.
 	ConfirmRemote Confirmations
+	// RemoteSettingsDenied reports that the user refused to let the peer change
+	// the confirmation flags of this device remotely. The permission is granted
+	// until it is refused.
+	RemoteSettingsDenied bool
 	// IntroducedBy is the Personal device that introduced this peer, or the zero
 	// device ID when the peer was paired directly.
 	IntroducedBy model.DeviceID

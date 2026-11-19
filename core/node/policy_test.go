@@ -93,6 +93,54 @@ func TestNodesRequestPeerConfirmation(t *testing.T) {
 	waitPeerFlags(t, a, b.DeviceID(), true, trust.Confirmations{})
 }
 
+// TestNodesRequestPeerConfirmationDenied checks that a device may refuse the
+// remote changes of a peer and that the peer sees its flag unchanged.
+func TestNodesRequestPeerConfirmationDenied(t *testing.T) {
+	a, b := clipNodes(t, 59500)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := b.SetPeerAllowRemoteSettings(ctx, a.DeviceID(), false); err != nil {
+		t.Fatalf("deny the peer: %v", err)
+	}
+	if err := a.RequestPeerConfirmation(ctx, b.DeviceID(), trust.ScopeClipboard, true); err != nil {
+		t.Fatalf("request the confirmation flag: %v", err)
+	}
+
+	waitPeerFlags(t, a, b.DeviceID(), true, trust.Confirmations{})
+	record, err := b.Trust().Get(ctx, a.DeviceID())
+	if err != nil {
+		t.Fatalf("read the peer: %v", err)
+	}
+	if record.Confirm.Any() {
+		t.Fatalf("the denied peer changed the flag: %+v", record.Confirm)
+	}
+}
+
+// TestNodesRequestPeerConfirmationDeniedEverywhere checks the switch that covers
+// every paired device.
+func TestNodesRequestPeerConfirmationDeniedEverywhere(t *testing.T) {
+	a, b := clipNodes(t, 59600)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	if err := b.SetAllowRemoteSettings(ctx, false); err != nil {
+		t.Fatalf("deny every device: %v", err)
+	}
+	if err := a.RequestPeerConfirmation(ctx, b.DeviceID(), trust.ScopeFiles, true); err != nil {
+		t.Fatalf("request the confirmation flag: %v", err)
+	}
+
+	waitPeerFlags(t, a, b.DeviceID(), true, trust.Confirmations{})
+	record, err := b.Trust().Get(ctx, a.DeviceID())
+	if err != nil {
+		t.Fatalf("read the peer: %v", err)
+	}
+	if record.Confirm.Any() {
+		t.Fatalf("the peer changed the flag: %+v", record.Confirm)
+	}
+}
+
 // TestNodesSetConfirmationReachesPeer checks that a flag set on the device that
 // receives is reported to the other device.
 func TestNodesSetConfirmationReachesPeer(t *testing.T) {

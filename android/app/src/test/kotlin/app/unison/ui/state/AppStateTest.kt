@@ -44,6 +44,9 @@ class AppStateTest {
         var settings: Local.Settings = Local.Settings.getDefaultInstance()
         val selfConfirmations = mutableListOf<Pair<Local.ConfirmationScope, Boolean>>()
         val confirmations = mutableListOf<DeviceConfirmation>()
+        val deviceRemoteSettings = mutableListOf<Pair<String, Boolean>>()
+        val allowRemoteSettings = mutableListOf<Boolean>()
+        var remoteSettingsFailure: Exception? = null
         val sentrySettings = mutableListOf<Boolean>()
         val journalSettings = mutableListOf<Boolean>()
         val stripTrackingSettings = mutableListOf<Boolean>()
@@ -174,6 +177,18 @@ class AppStateTest {
         ) {
             confirmationFailure?.let { throw it }
             confirmations += DeviceConfirmation(deviceId, scope, side, require)
+        }
+
+        override suspend fun setDeviceRemoteSettings(deviceId: String, allow: Boolean) {
+            remoteSettingsFailure?.let { throw it }
+            deviceRemoteSettings += deviceId to allow
+        }
+
+        override suspend fun setAllowRemoteSettings(allow: Boolean): Local.Settings {
+            remoteSettingsFailure?.let { throw it }
+            allowRemoteSettings += allow
+            settings = settings.toBuilder().setAllowRemoteSettings(allow).build()
+            return settings
         }
 
         override suspend fun revokeDevice(deviceId: String) {
@@ -810,6 +825,100 @@ class AppStateTest {
 
         assertEquals(listOf(R.string.devices_confirmation_offline), notices)
         collector.cancel()
+    }
+
+    @Test
+    fun deviceRemoteSettingsAreSent() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.setDeviceRemoteSettings("abcd", false)
+        advanceUntilIdle()
+
+        assertEquals(listOf("abcd" to false), core.deviceRemoteSettings)
+        assertTrue(R.string.devices_remote_settings_saved in notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun deviceRemoteSettingsFailureIsReported() = runTest {
+        val core = FakeCore()
+        core.remoteSettingsFailure = CoreException(CoreException.CODE_INVALID_ARGUMENT, "unknown device")
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.setDeviceRemoteSettings("abcd", true)
+        advanceUntilIdle()
+
+        assertEquals(listOf(R.string.devices_remote_settings_failed), notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun emptyDeviceIdSkipsTheRemoteSettingsCall() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        state.setDeviceRemoteSettings("", true)
+        advanceUntilIdle()
+
+        assertTrue(core.deviceRemoteSettings.isEmpty())
+    }
+
+    @Test
+    fun allowRemoteSettingsIsSaved() = runTest {
+        val core = FakeCore()
+        core.settings = Local.Settings.newBuilder().setAllowRemoteSettings(true).build()
+        val state = appState(core)
+        state.refresh()
+        advanceUntilIdle()
+        assertTrue(state.state.value.allowsRemoteSettings)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.setAllowRemoteSettings(false)
+        advanceUntilIdle()
+
+        assertEquals(listOf(false), core.allowRemoteSettings)
+        assertFalse(state.state.value.allowsRemoteSettings)
+        assertTrue(R.string.settings_remote_settings_saved in notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun allowRemoteSettingsFailureIsReported() = runTest {
+        val core = FakeCore()
+        core.remoteSettingsFailure = CoreException(CoreException.CODE_INTERNAL, "cannot store")
+        val state = appState(core)
+        val notices = mutableListOf<Int>()
+        val collector = launch { state.notices.collect { notices += it } }
+        runCurrent()
+
+        state.setAllowRemoteSettings(true)
+        advanceUntilIdle()
+
+        assertEquals(listOf(R.string.settings_remote_settings_failed), notices)
+        collector.cancel()
+    }
+
+    @Test
+    fun remoteSettingsAreAllowedUntilTheSettingsLoad() = runTest {
+        val core = FakeCore()
+        val state = appState(core)
+
+        assertTrue(state.state.value.allowsRemoteSettings)
+
+        core.settings = Local.Settings.newBuilder().setAllowRemoteSettings(false).build()
+        state.refresh()
+        advanceUntilIdle()
+
+        assertFalse(state.state.value.allowsRemoteSettings)
     }
 
     @Test

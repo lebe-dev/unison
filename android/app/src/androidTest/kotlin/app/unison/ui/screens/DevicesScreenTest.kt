@@ -77,6 +77,7 @@ class DevicesScreenTest {
                     onSendClipboard = {},
                     onDismissClipboard = {},
                     onSetConfirmation = { _, _, _, _ -> },
+                    onSetRemoteSettings = { _, _ -> },
                     onRename = { _, _ -> },
                     onRevoke = {},
                 )
@@ -102,6 +103,7 @@ class DevicesScreenTest {
                     onSendClipboard = { sent = it },
                     onDismissClipboard = {},
                     onSetConfirmation = { _, _, _, _ -> },
+                    onSetRemoteSettings = { _, _ -> },
                     onRename = { _, _ -> },
                     onRevoke = {},
                 )
@@ -134,6 +136,7 @@ class DevicesScreenTest {
                     onSendClipboard = {},
                     onDismissClipboard = {},
                     onSetConfirmation = { _, scope, side, require -> changed = Triple(scope, side, require) },
+                    onSetRemoteSettings = { _, _ -> },
                     onRename = { _, _ -> },
                     onRevoke = {},
                 )
@@ -142,7 +145,7 @@ class DevicesScreenTest {
 
         compose.onAllNodes(isToggleable()).assertCountEquals(0)
         compose.onNodeWithText("Mac").performClick()
-        compose.onAllNodes(isToggleable()).assertCountEquals(4)
+        compose.onAllNodes(isToggleable()).assertCountEquals(5)
         compose.onNodeWithContentDescription(testString(R.string.devices_confirm_peer_files, "Mac")).performClick()
 
         assertEquals(
@@ -180,6 +183,46 @@ class DevicesScreenTest {
     }
 
     @Test
+    fun remoteSettingsSwitchIsShownEvenWhileTheDeviceIsOffline() {
+        val state = CoreState(
+            loading = false,
+            status = Local.GetStatusResponse.newBuilder()
+                .setDeviceName("Pixel")
+                .addDevices(
+                    device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = false).toBuilder()
+                        .setAllowRemoteSettings(true)
+                        .build(),
+                )
+                .build(),
+        )
+        var changed: Pair<String, Boolean>? = null
+        compose.setContent {
+            UnisonTheme(dynamicColor = false) {
+                DevicesScreen(
+                    state = state,
+                    clipboardOffer = null,
+                    onRefresh = {},
+                    onSendClipboard = {},
+                    onDismissClipboard = {},
+                    onSetConfirmation = { _, _, _, _ -> },
+                    onSetRemoteSettings = { device, allow -> changed = device.name to allow },
+                    onRename = { _, _ -> },
+                    onRevoke = {},
+                )
+            }
+        }
+        compose.onNodeWithText("Mac").performClick()
+
+        compose.onNodeWithContentDescription(testString(R.string.devices_allow_remote_hint, "Mac"))
+            .performScrollTo()
+            .assertIsOn()
+            .assertIsEnabled()
+            .performClick()
+
+        assertEquals("Mac" to false, changed)
+    }
+
+    @Test
     fun removalAsksForConfirmation() {
         val state = CoreState(
             loading = false,
@@ -198,6 +241,7 @@ class DevicesScreenTest {
                     onSendClipboard = {},
                     onDismissClipboard = {},
                     onSetConfirmation = { _, _, _, _ -> },
+                    onSetRemoteSettings = { _, _ -> },
                     onRename = { _, _ -> },
                     onRevoke = { removed = it },
                 )
@@ -224,6 +268,7 @@ class DevicesScreenTest {
                     onSendClipboard = {},
                     onDismissClipboard = {},
                     onSetConfirmation = { _, _, _, _ -> },
+                    onSetRemoteSettings = { _, _ -> },
                     onRename = { _, _ -> },
                     onRevoke = {},
                 )

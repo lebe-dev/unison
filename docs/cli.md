@@ -52,6 +52,7 @@ unison devices address <id> <host:port> --wait 10s
 unison devices retry [<id>] --wait 10s
 unison devices rename <id|self> <name>
 unison devices confirm [--files] [--peer] <id|self> on|off
+unison devices remote <id> on|off
 unison devices revoke <id|self> [--yes]
 ```
 
@@ -77,8 +78,10 @@ announces; see [Devices and pairing](devices.md#renaming). `devices confirm self
 device ask before it applies the clipboard of devices it pairs from now on, and
 `devices confirm <id> on` before it applies the clipboard of one device. `--files` changes the flag
 of the files instead, and `--peer` changes the flag of the device for this one, which needs the
-device online; see [Devices and pairing](devices.md#confirmation-flags). `devices revoke` asks for a
-confirmation unless `--yes` is given, and `devices revoke self` leaves the group.
+device online; see [Devices and pairing](devices.md#confirmation-flags). `devices remote <id> off`
+stops the device from changing the flags of this one; `settings remote on|off` does the same for
+every paired device. `devices revoke` asks for a confirmation unless `--yes` is given, and
+`devices revoke self` leaves the group.
 
 ## pair
 
@@ -210,6 +213,7 @@ unison settings ttl                # the lifetimes only
 unison settings ttl text 30d       # keep text for 30 days
 unison settings ttl files 48h
 unison settings ttl reset          # the three lifetimes back to the defaults
+unison settings remote on|off      # allow paired devices to change the flags of this one
 ```
 
 ```

@@ -60,6 +60,19 @@ interface CoreApi {
         require: Boolean,
     )
 
+    /**
+     * Allows a paired device to change the confirmation flags of this device
+     * remotely. The permission works only while the global one is on, and it
+     * is stored here, so the device does not have to be online.
+     */
+    suspend fun setDeviceRemoteSettings(deviceId: String, allow: Boolean)
+
+    /**
+     * Allows every paired device to change the confirmation flags of this
+     * device remotely. Each device also has its own permission.
+     */
+    suspend fun setAllowRemoteSettings(allow: Boolean): Local.Settings
+
     /** Removes a device from the group; the ID of this device leaves the group. */
     suspend fun revokeDevice(deviceId: String)
 
@@ -200,6 +213,16 @@ class RunningCore(
     ) {
         ensureRunning()
         client.setDeviceConfirmation(deviceId, scope, side, require)
+    }
+
+    override suspend fun setDeviceRemoteSettings(deviceId: String, allow: Boolean) {
+        ensureRunning()
+        client.setDeviceRemoteSettings(deviceId, allow)
+    }
+
+    override suspend fun setAllowRemoteSettings(allow: Boolean): Local.Settings {
+        ensureRunning()
+        return client.setAllowRemoteSettings(allow)
     }
 
     override suspend fun revokeDevice(deviceId: String) {

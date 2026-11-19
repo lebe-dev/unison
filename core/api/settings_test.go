@@ -45,6 +45,9 @@ func TestGetSettings(t *testing.T) {
 	if !settings.GetStripTracking() {
 		t.Error("the advertising parameters of the URLs are kept by default")
 	}
+	if !settings.GetAllowRemoteSettings() {
+		t.Error("the paired devices may not change the settings by default")
+	}
 }
 
 // TestUpdateSettings checks that the stored settings are reported back.
@@ -60,6 +63,7 @@ func TestUpdateSettings(t *testing.T) {
 		RequireFileConfirmation: ptr(true),
 		BlobMaxSizeBytes:        ptr(int64(1 << 20)),
 		StripTracking:           ptr(false),
+		AllowRemoteSettings:     ptr(false),
 	}))
 	if err != nil {
 		t.Fatalf("update settings: %v", err)
@@ -80,6 +84,9 @@ func TestUpdateSettings(t *testing.T) {
 	}
 	if settings.GetStripTracking() {
 		t.Error("the advertising parameters are still stripped")
+	}
+	if settings.GetAllowRemoteSettings() {
+		t.Error("the paired devices may still change the settings")
 	}
 
 	stored, err := client.GetSettings(ctx, connect.NewRequest(&localv1.GetSettingsRequest{}))

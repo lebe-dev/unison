@@ -13,6 +13,7 @@ import {
   RevokeDeviceResponseSchema,
   Role,
   SetDeviceConfirmationResponseSchema,
+  SetDeviceRemoteSettingsResponseSchema,
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
@@ -23,12 +24,14 @@ vi.mock("../api/client", () => ({
     getStatus: vi.fn(),
     retryDevice: vi.fn(),
     setDeviceConfirmation: vi.fn(),
+    setDeviceRemoteSettings: vi.fn(),
     revokeDevice: vi.fn(),
   },
 }));
 
 const getStatus = vi.mocked(client.getStatus);
 const setDeviceConfirmation = vi.mocked(client.setDeviceConfirmation);
+const setDeviceRemoteSettings = vi.mocked(client.setDeviceRemoteSettings);
 const revokeDevice = vi.mocked(client.revokeDevice);
 const retryDevice = vi.mocked(client.retryDevice);
 
@@ -56,6 +59,7 @@ beforeEach(() => {
     }),
   );
   setDeviceConfirmation.mockResolvedValue(create(SetDeviceConfirmationResponseSchema, {}));
+  setDeviceRemoteSettings.mockResolvedValue(create(SetDeviceRemoteSettingsResponseSchema, {}));
   revokeDevice.mockResolvedValue(create(RevokeDeviceResponseSchema, {}));
   retryDevice.mockResolvedValue(create(RetryDeviceResponseSchema, {}));
   daemon.status = create(GetStatusResponseSchema, {
@@ -68,10 +72,10 @@ beforeEach(() => {
 });
 
 describe("devices screen", () => {
-  it("offers the four confirmation flags to Personal devices only", () => {
+  it("offers the four confirmation flags and the remote permission to Personal devices only", () => {
     render(Devices);
 
-    expect(screen.getAllByRole("checkbox")).toHaveLength(4);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(5);
     expect(
       screen.getByRole("checkbox", {
         name: "This device asks before applying the clipboard of MacBook",
@@ -90,6 +94,11 @@ describe("devices screen", () => {
     expect(
       screen.getByRole("checkbox", {
         name: "MacBook asks before accepting files from this device",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Allow MacBook to change these settings",
       }),
     ).toBeTruthy();
   });
@@ -216,6 +225,69 @@ describe("devices screen", () => {
     expect((local as HTMLInputElement).disabled).toBe(false);
   });
 
+  it("shows the remote permission the device reported", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { allowRemoteSettings: false })],
+    });
+
+    render(Devices);
+
+    const toggle = screen.getByRole("checkbox", {
+      name: "Allow MacBook to change these settings",
+    });
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("lets the device change these settings", async () => {
+    render(Devices);
+    const toggle = screen.getByRole("checkbox", {
+      name: "Allow MacBook to change these settings",
+    });
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+
+    await fireEvent.click(toggle);
+
+    expect(setDeviceRemoteSettings).toHaveBeenCalledWith({ deviceId: "device-1", allow: false });
+  });
+
+  it("turns the remote permission back on", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { allowRemoteSettings: false })],
+    });
+
+    render(Devices);
+
+    await fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Allow MacBook to change these settings",
+      }),
+    );
+
+    expect(setDeviceRemoteSettings).toHaveBeenCalledWith({ deviceId: "device-1", allow: true });
+  });
+
+  it("keeps the remote permission of an offline device available", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { online: false })],
+    });
+
+    render(Devices);
+
+    const toggle = screen.getByRole("checkbox", {
+      name: "Allow MacBook to change these settings",
+    });
+    expect((toggle as HTMLInputElement).disabled).toBe(false);
+  });
+
   it("retries a device that is offline", async () => {
     daemon.status = create(GetStatusResponseSchema, {
       running: true,
@@ -294,6 +366,7 @@ function personal(
   fields: {
     peerRequireConfirmation?: boolean;
     peerRequireFileConfirmation?: boolean;
+    allowRemoteSettings?: boolean;
     online?: boolean;
   } = {},
 ) {
@@ -303,6 +376,8 @@ function personal(
     role: Role.PERSONAL,
     platform: Platform.MACOS,
     online: true,
+    // The daemon allows the change of these settings until the user denies it.
+    allowRemoteSettings: true,
     ...fields,
   });
 }

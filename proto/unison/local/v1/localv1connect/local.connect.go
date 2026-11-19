@@ -50,6 +50,9 @@ const (
 	// UnisonServiceSetDeviceConfirmationProcedure is the fully-qualified name of the UnisonService's
 	// SetDeviceConfirmation RPC.
 	UnisonServiceSetDeviceConfirmationProcedure = "/unison.local.v1.UnisonService/SetDeviceConfirmation"
+	// UnisonServiceSetDeviceRemoteSettingsProcedure is the fully-qualified name of the UnisonService's
+	// SetDeviceRemoteSettings RPC.
+	UnisonServiceSetDeviceRemoteSettingsProcedure = "/unison.local.v1.UnisonService/SetDeviceRemoteSettings"
 	// UnisonServiceSetPeerAddressProcedure is the fully-qualified name of the UnisonService's
 	// SetPeerAddress RPC.
 	UnisonServiceSetPeerAddressProcedure = "/unison.local.v1.UnisonService/SetPeerAddress"
@@ -164,6 +167,9 @@ type UnisonServiceClient interface {
 	RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error)
 	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
 	SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error)
+	// Permission of a paired device to change the confirmation flags of this
+	// device remotely.
+	SetDeviceRemoteSettings(context.Context, *connect.Request[v1.SetDeviceRemoteSettingsRequest]) (*connect.Response[v1.SetDeviceRemoteSettingsResponse], error)
 	// Address of a paired device, entered by the user. It is tried before the
 	// discovered and cached ones, for networks where discovery does not work.
 	SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error)
@@ -281,6 +287,12 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+UnisonServiceSetDeviceConfirmationProcedure,
 			connect.WithSchema(unisonServiceMethods.ByName("SetDeviceConfirmation")),
+			connect.WithClientOptions(opts...),
+		),
+		setDeviceRemoteSettings: connect.NewClient[v1.SetDeviceRemoteSettingsRequest, v1.SetDeviceRemoteSettingsResponse](
+			httpClient,
+			baseURL+UnisonServiceSetDeviceRemoteSettingsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("SetDeviceRemoteSettings")),
 			connect.WithClientOptions(opts...),
 		),
 		setPeerAddress: connect.NewClient[v1.SetPeerAddressRequest, v1.SetPeerAddressResponse](
@@ -510,49 +522,50 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // unisonServiceClient implements UnisonServiceClient.
 type unisonServiceClient struct {
-	getStatus             *connect.Client[v1.GetStatusRequest, v1.GetStatusResponse]
-	watchEvents           *connect.Client[v1.WatchEventsRequest, v1.WatchEventsResponse]
-	listDevices           *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
-	renameDevice          *connect.Client[v1.RenameDeviceRequest, v1.RenameDeviceResponse]
-	revokeDevice          *connect.Client[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse]
-	setDeviceConfirmation *connect.Client[v1.SetDeviceConfirmationRequest, v1.SetDeviceConfirmationResponse]
-	setPeerAddress        *connect.Client[v1.SetPeerAddressRequest, v1.SetPeerAddressResponse]
-	retryDevice           *connect.Client[v1.RetryDeviceRequest, v1.RetryDeviceResponse]
-	openPairingWindow     *connect.Client[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse]
-	extendPairingWindow   *connect.Client[v1.ExtendPairingWindowRequest, v1.ExtendPairingWindowResponse]
-	closePairingWindow    *connect.Client[v1.ClosePairingWindowRequest, v1.ClosePairingWindowResponse]
-	listPairingCandidates *connect.Client[v1.ListPairingCandidatesRequest, v1.ListPairingCandidatesResponse]
-	startSas              *connect.Client[v1.StartSasRequest, v1.StartSasResponse]
-	confirmSas            *connect.Client[v1.ConfirmSasRequest, v1.ConfirmSasResponse]
-	rejectSas             *connect.Client[v1.RejectSasRequest, v1.RejectSasResponse]
-	getPairingQr          *connect.Client[v1.GetPairingQrRequest, v1.GetPairingQrResponse]
-	scanPairingQr         *connect.Client[v1.ScanPairingQrRequest, v1.ScanPairingQrResponse]
-	getClip               *connect.Client[v1.GetClipRequest, v1.GetClipResponse]
-	setClip               *connect.Client[v1.SetClipRequest, v1.SetClipResponse]
-	listHistory           *connect.Client[v1.ListHistoryRequest, v1.ListHistoryResponse]
-	getHistoryItem        *connect.Client[v1.GetHistoryItemRequest, v1.GetHistoryItemResponse]
-	getHistoryThumbnail   *connect.Client[v1.GetHistoryThumbnailRequest, v1.GetHistoryThumbnailResponse]
-	deleteHistoryItem     *connect.Client[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse]
-	clearHistory          *connect.Client[v1.ClearHistoryRequest, v1.ClearHistoryResponse]
-	fetchHistoryItem      *connect.Client[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse]
-	copyHistoryItem       *connect.Client[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse]
-	applyHistoryItem      *connect.Client[v1.ApplyHistoryItemRequest, v1.ApplyHistoryItemResponse]
-	sendFiles             *connect.Client[v1.SendFilesRequest, v1.SendFilesResponse]
-	listTransfers         *connect.Client[v1.ListTransfersRequest, v1.ListTransfersResponse]
-	cancelTransfer        *connect.Client[v1.CancelTransferRequest, v1.CancelTransferResponse]
-	acceptTransfer        *connect.Client[v1.AcceptTransferRequest, v1.AcceptTransferResponse]
-	rejectTransfer        *connect.Client[v1.RejectTransferRequest, v1.RejectTransferResponse]
-	setFriendsDiscovery   *connect.Client[v1.SetFriendsDiscoveryRequest, v1.SetFriendsDiscoveryResponse]
-	listRequests          *connect.Client[v1.ListRequestsRequest, v1.ListRequestsResponse]
-	decideRequest         *connect.Client[v1.DecideRequestRequest, v1.DecideRequestResponse]
-	getPause              *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
-	setPause              *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
-	getSettings           *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
-	updateSettings        *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
-	getRelay              *connect.Client[v1.GetRelayRequest, v1.GetRelayResponse]
-	setRelay              *connect.Client[v1.SetRelayRequest, v1.SetRelayResponse]
-	relayOff              *connect.Client[v1.RelayOffRequest, v1.RelayOffResponse]
-	testRelay             *connect.Client[v1.TestRelayRequest, v1.TestRelayResponse]
+	getStatus               *connect.Client[v1.GetStatusRequest, v1.GetStatusResponse]
+	watchEvents             *connect.Client[v1.WatchEventsRequest, v1.WatchEventsResponse]
+	listDevices             *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
+	renameDevice            *connect.Client[v1.RenameDeviceRequest, v1.RenameDeviceResponse]
+	revokeDevice            *connect.Client[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse]
+	setDeviceConfirmation   *connect.Client[v1.SetDeviceConfirmationRequest, v1.SetDeviceConfirmationResponse]
+	setDeviceRemoteSettings *connect.Client[v1.SetDeviceRemoteSettingsRequest, v1.SetDeviceRemoteSettingsResponse]
+	setPeerAddress          *connect.Client[v1.SetPeerAddressRequest, v1.SetPeerAddressResponse]
+	retryDevice             *connect.Client[v1.RetryDeviceRequest, v1.RetryDeviceResponse]
+	openPairingWindow       *connect.Client[v1.OpenPairingWindowRequest, v1.OpenPairingWindowResponse]
+	extendPairingWindow     *connect.Client[v1.ExtendPairingWindowRequest, v1.ExtendPairingWindowResponse]
+	closePairingWindow      *connect.Client[v1.ClosePairingWindowRequest, v1.ClosePairingWindowResponse]
+	listPairingCandidates   *connect.Client[v1.ListPairingCandidatesRequest, v1.ListPairingCandidatesResponse]
+	startSas                *connect.Client[v1.StartSasRequest, v1.StartSasResponse]
+	confirmSas              *connect.Client[v1.ConfirmSasRequest, v1.ConfirmSasResponse]
+	rejectSas               *connect.Client[v1.RejectSasRequest, v1.RejectSasResponse]
+	getPairingQr            *connect.Client[v1.GetPairingQrRequest, v1.GetPairingQrResponse]
+	scanPairingQr           *connect.Client[v1.ScanPairingQrRequest, v1.ScanPairingQrResponse]
+	getClip                 *connect.Client[v1.GetClipRequest, v1.GetClipResponse]
+	setClip                 *connect.Client[v1.SetClipRequest, v1.SetClipResponse]
+	listHistory             *connect.Client[v1.ListHistoryRequest, v1.ListHistoryResponse]
+	getHistoryItem          *connect.Client[v1.GetHistoryItemRequest, v1.GetHistoryItemResponse]
+	getHistoryThumbnail     *connect.Client[v1.GetHistoryThumbnailRequest, v1.GetHistoryThumbnailResponse]
+	deleteHistoryItem       *connect.Client[v1.DeleteHistoryItemRequest, v1.DeleteHistoryItemResponse]
+	clearHistory            *connect.Client[v1.ClearHistoryRequest, v1.ClearHistoryResponse]
+	fetchHistoryItem        *connect.Client[v1.FetchHistoryItemRequest, v1.FetchHistoryItemResponse]
+	copyHistoryItem         *connect.Client[v1.CopyHistoryItemRequest, v1.CopyHistoryItemResponse]
+	applyHistoryItem        *connect.Client[v1.ApplyHistoryItemRequest, v1.ApplyHistoryItemResponse]
+	sendFiles               *connect.Client[v1.SendFilesRequest, v1.SendFilesResponse]
+	listTransfers           *connect.Client[v1.ListTransfersRequest, v1.ListTransfersResponse]
+	cancelTransfer          *connect.Client[v1.CancelTransferRequest, v1.CancelTransferResponse]
+	acceptTransfer          *connect.Client[v1.AcceptTransferRequest, v1.AcceptTransferResponse]
+	rejectTransfer          *connect.Client[v1.RejectTransferRequest, v1.RejectTransferResponse]
+	setFriendsDiscovery     *connect.Client[v1.SetFriendsDiscoveryRequest, v1.SetFriendsDiscoveryResponse]
+	listRequests            *connect.Client[v1.ListRequestsRequest, v1.ListRequestsResponse]
+	decideRequest           *connect.Client[v1.DecideRequestRequest, v1.DecideRequestResponse]
+	getPause                *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
+	setPause                *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
+	getSettings             *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
+	updateSettings          *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
+	getRelay                *connect.Client[v1.GetRelayRequest, v1.GetRelayResponse]
+	setRelay                *connect.Client[v1.SetRelayRequest, v1.SetRelayResponse]
+	relayOff                *connect.Client[v1.RelayOffRequest, v1.RelayOffResponse]
+	testRelay               *connect.Client[v1.TestRelayRequest, v1.TestRelayResponse]
 }
 
 // GetStatus calls unison.local.v1.UnisonService.GetStatus.
@@ -583,6 +596,11 @@ func (c *unisonServiceClient) RevokeDevice(ctx context.Context, req *connect.Req
 // SetDeviceConfirmation calls unison.local.v1.UnisonService.SetDeviceConfirmation.
 func (c *unisonServiceClient) SetDeviceConfirmation(ctx context.Context, req *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error) {
 	return c.setDeviceConfirmation.CallUnary(ctx, req)
+}
+
+// SetDeviceRemoteSettings calls unison.local.v1.UnisonService.SetDeviceRemoteSettings.
+func (c *unisonServiceClient) SetDeviceRemoteSettings(ctx context.Context, req *connect.Request[v1.SetDeviceRemoteSettingsRequest]) (*connect.Response[v1.SetDeviceRemoteSettingsResponse], error) {
+	return c.setDeviceRemoteSettings.CallUnary(ctx, req)
 }
 
 // SetPeerAddress calls unison.local.v1.UnisonService.SetPeerAddress.
@@ -782,6 +800,9 @@ type UnisonServiceHandler interface {
 	RenameDevice(context.Context, *connect.Request[v1.RenameDeviceRequest]) (*connect.Response[v1.RenameDeviceResponse], error)
 	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
 	SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error)
+	// Permission of a paired device to change the confirmation flags of this
+	// device remotely.
+	SetDeviceRemoteSettings(context.Context, *connect.Request[v1.SetDeviceRemoteSettingsRequest]) (*connect.Response[v1.SetDeviceRemoteSettingsResponse], error)
 	// Address of a paired device, entered by the user. It is tried before the
 	// discovered and cached ones, for networks where discovery does not work.
 	SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error)
@@ -895,6 +916,12 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		UnisonServiceSetDeviceConfirmationProcedure,
 		svc.SetDeviceConfirmation,
 		connect.WithSchema(unisonServiceMethods.ByName("SetDeviceConfirmation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceSetDeviceRemoteSettingsHandler := connect.NewUnaryHandler(
+		UnisonServiceSetDeviceRemoteSettingsProcedure,
+		svc.SetDeviceRemoteSettings,
+		connect.WithSchema(unisonServiceMethods.ByName("SetDeviceRemoteSettings")),
 		connect.WithHandlerOptions(opts...),
 	)
 	unisonServiceSetPeerAddressHandler := connect.NewUnaryHandler(
@@ -1133,6 +1160,8 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceRevokeDeviceHandler.ServeHTTP(w, r)
 		case UnisonServiceSetDeviceConfirmationProcedure:
 			unisonServiceSetDeviceConfirmationHandler.ServeHTTP(w, r)
+		case UnisonServiceSetDeviceRemoteSettingsProcedure:
+			unisonServiceSetDeviceRemoteSettingsHandler.ServeHTTP(w, r)
 		case UnisonServiceSetPeerAddressProcedure:
 			unisonServiceSetPeerAddressHandler.ServeHTTP(w, r)
 		case UnisonServiceRetryDeviceProcedure:
@@ -1238,6 +1267,10 @@ func (UnimplementedUnisonServiceHandler) RevokeDevice(context.Context, *connect.
 
 func (UnimplementedUnisonServiceHandler) SetDeviceConfirmation(context.Context, *connect.Request[v1.SetDeviceConfirmationRequest]) (*connect.Response[v1.SetDeviceConfirmationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetDeviceConfirmation is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) SetDeviceRemoteSettings(context.Context, *connect.Request[v1.SetDeviceRemoteSettingsRequest]) (*connect.Response[v1.SetDeviceRemoteSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetDeviceRemoteSettings is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) SetPeerAddress(context.Context, *connect.Request[v1.SetPeerAddressRequest]) (*connect.Response[v1.SetPeerAddressResponse], error) {

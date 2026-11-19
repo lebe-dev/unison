@@ -108,6 +108,7 @@ function settings(): SettingsMessage {
     downloadsDir: "/Users/me/Downloads/Unison",
     sentryEnabled: false,
     stripTracking: true,
+    allowRemoteSettings: true,
   });
 }
 
@@ -392,6 +393,46 @@ describe("settings screen", () => {
 
     expect(updateSettings).toHaveBeenCalledWith({ requireFileConfirmation: true });
     expect((files as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("allows the paired devices to change these settings by default", async () => {
+    updateSettings.mockResolvedValue(
+      create(UpdateSettingsResponseSchema, {
+        settings: { ...settings(), allowRemoteSettings: false },
+      }),
+    );
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", {
+      name: "Allow paired devices to change these settings",
+    });
+    await screen.findByDisplayValue("This Mac");
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+
+    await fireEvent.click(toggle);
+
+    expect(updateSettings).toHaveBeenCalledWith({ allowRemoteSettings: false });
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("reflects a refused remote settings switch", async () => {
+    getSettings.mockResolvedValue(
+      create(GetSettingsResponseSchema, {
+        settings: { ...settings(), allowRemoteSettings: false },
+      }),
+    );
+    render(Settings);
+
+    const toggle = await screen.findByRole("checkbox", {
+      name: "Allow paired devices to change these settings",
+    });
+    await screen.findByDisplayValue("This Mac");
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+
+    await fireEvent.click(toggle);
+
+    expect(updateSettings).toHaveBeenCalledWith({ allowRemoteSettings: true });
+    expect((toggle as HTMLInputElement).checked).toBe(true);
   });
 
   it("keeps error reporting off by default", async () => {

@@ -44,6 +44,41 @@ func (n *Node) SetConfirmation(ctx context.Context, id model.DeviceID, scope tru
 	return nil
 }
 
+// SetAllowRemoteSettings stores whether every paired device may change the
+// confirmation flags of this device remotely.
+func (n *Node) SetAllowRemoteSettings(ctx context.Context, allow bool) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if err := n.trust.SetAllowRemoteSettings(ctx, allow); err != nil {
+		return err
+	}
+	n.log.Info("remote settings permission for every device changed", "allow_remote_settings", allow)
+	return nil
+}
+
+// SetPeerAllowRemoteSettings stores whether one Personal device may change the
+// confirmation flags of this device remotely.
+func (n *Node) SetPeerAllowRemoteSettings(ctx context.Context, id model.DeviceID, allow bool) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	peer, err := n.personalPeer(ctx, id)
+	if err != nil {
+		return err
+	}
+	changed, err := n.trust.SetPeerAllowRemoteSettings(ctx, id, allow)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return nil
+	}
+	n.log.Info("remote settings permission changed", "peer", id, "allow_remote_settings", allow)
+	n.publishDeviceUpdated(peer)
+	return nil
+}
+
 // RequestPeerConfirmation asks a Personal device to change its confirmation
 // flag for this device. The request is signed, so only the device itself
 // changes its flag; it has to be online and answers with its new flags.

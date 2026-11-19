@@ -91,6 +91,7 @@ fun DevicesScreen(
     onSendClipboard: (ClipboardDraft) -> Unit,
     onDismissClipboard: () -> Unit,
     onSetConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
+    onSetRemoteSettings: (Local.Device, Boolean) -> Unit,
     onRename: (Local.Device, String) -> Unit,
     onRevoke: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
@@ -113,6 +114,7 @@ fun DevicesScreen(
             device = open,
             onBack = { openKey = null },
             onSetConfirmation = onSetConfirmation,
+            onSetRemoteSettings = onSetRemoteSettings,
             onRename = startRename,
             onRemove = { revokeTarget = it },
             modifier = modifier,
@@ -462,6 +464,7 @@ private fun DeviceDetail(
     device: Local.Device,
     onBack: () -> Unit,
     onSetConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
+    onSetRemoteSettings: (Local.Device, Boolean) -> Unit,
     onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
@@ -528,7 +531,11 @@ private fun DeviceDetail(
 
         if (device.role == Local.Role.ROLE_PERSONAL) {
             Spacer(modifier = Modifier.height(8.dp))
-            ConfirmationFlags(device = device, onSet = onSetConfirmation)
+            ConfirmationFlags(
+                device = device,
+                onSet = onSetConfirmation,
+                onSetRemoteSettings = onSetRemoteSettings,
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -595,12 +602,14 @@ private fun DetailChip(text: String, dot: Color? = null, highlighted: Boolean = 
 /**
  * The four confirmation flags of a Personal device: this device and the device
  * each ask, or not, before they take the clipboard and the files of the other.
- * The flags of the device change only while it is online.
+ * The flags of the device change only while it is online. A separate switch
+ * below them lets the device change these flags from its side.
  */
 @Composable
 private fun ConfirmationFlags(
     device: Local.Device,
     onSet: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
+    onSetRemoteSettings: (Local.Device, Boolean) -> Unit,
 ) {
     val name = device.name.ifBlank { stringResource(R.string.prompt_unknown_device) }
     val local = { scope: Local.ConfirmationScope, require: Boolean ->
@@ -654,6 +663,18 @@ private fun ConfirmationFlags(
             modifier = Modifier.padding(start = 4.dp, top = 8.dp),
         )
     }
+    Spacer(modifier = Modifier.height(8.dp))
+    ItemGroup {
+        FlagRow(
+            index = 0,
+            count = 1,
+            label = stringResource(R.string.devices_allow_remote, name),
+            checked = device.allowRemoteSettings,
+            description = stringResource(R.string.devices_allow_remote_hint, name),
+            enabled = true,
+            onChange = { onSetRemoteSettings(device, it) },
+        )
+    }
 }
 
 /** Heading of one side of the confirmation flags, inside the group. */
@@ -680,8 +701,9 @@ private fun FlagRow(
     description: String,
     enabled: Boolean,
     onChange: (Boolean) -> Unit,
+    count: Int = FLAG_ROWS,
 ) {
-    GroupItem(index = index, count = FLAG_ROWS) {
+    GroupItem(index = index, count = count) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,

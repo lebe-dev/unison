@@ -2,6 +2,7 @@ package app.unison.core
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -166,6 +167,38 @@ class CoreClientTest {
         assertTrue(request.hasRequireFileConfirmation())
         assertTrue(request.requireFileConfirmation)
         assertTrue(!request.hasRequireConfirmation())
+    }
+
+    @Test
+    fun deviceRemoteSettingsAreSent() = runBlocking {
+        val transport = FakeTransport { null }
+
+        CoreClient(transport).setDeviceRemoteSettings("abcd", allow = false)
+
+        assertEquals("SetDeviceRemoteSettings", transport.lastRequest?.method)
+        val request = Local.SetDeviceRemoteSettingsRequest.parseFrom(transport.lastRequest?.payload)
+        assertEquals("abcd", request.deviceId)
+        assertFalse(request.allow)
+    }
+
+    @Test
+    fun globalRemoteSettingsUpdateTheSettings() = runBlocking {
+        val settings = Local.Settings.newBuilder().setAllowRemoteSettings(false).build()
+        val transport = FakeTransport {
+            Mobile.CallResponse.newBuilder()
+                .setPayload(
+                    Local.UpdateSettingsResponse.newBuilder().setSettings(settings).build().toByteString(),
+                )
+                .build()
+        }
+
+        val response = CoreClient(transport).setAllowRemoteSettings(false)
+
+        assertEquals("UpdateSettings", transport.lastRequest?.method)
+        val request = Local.UpdateSettingsRequest.parseFrom(transport.lastRequest?.payload)
+        assertTrue(request.hasAllowRemoteSettings())
+        assertFalse(request.allowRemoteSettings)
+        assertFalse(response.allowRemoteSettings)
     }
 
     @Test

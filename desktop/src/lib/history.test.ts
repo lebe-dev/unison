@@ -279,6 +279,7 @@ describe("tray entries", () => {
         sentryEnabled: false,
         stripTracking: true,
         journalEnabled: false,
+        allowRemoteSettings: true,
       },
     });
 

@@ -3,6 +3,8 @@ package app.unison.ui.screens
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -151,6 +153,29 @@ class SettingsScreenTest {
         open(SettingsPage.FILES)
         compose.onNodeWithTag(FILE_CONFIRMATION_TAG).performScrollTo().performClick()
         assertEquals(Local.ConfirmationScope.CONFIRMATION_SCOPE_FILES to true, changed)
+    }
+
+    @Test
+    fun remoteSettingsPermissionIsOffered() {
+        var allowed: Boolean? = null
+        setContent(
+            settings = Local.Settings.newBuilder().setAllowRemoteSettings(true).build(),
+            onAllowRemoteSettingsChange = { allowed = it },
+        )
+
+        open(SettingsPage.CLIPBOARD)
+        compose.onNodeWithTag(ALLOW_REMOTE_TAG).performScrollTo().assertIsOn().performClick()
+
+        assertEquals(false, allowed)
+    }
+
+    @Test
+    fun remoteSettingsPermissionIsOffWhenTheCoreSaysSo() {
+        setContent(settings = Local.Settings.newBuilder().setAllowRemoteSettings(false).build())
+
+        open(SettingsPage.CLIPBOARD)
+
+        compose.onNodeWithTag(ALLOW_REMOTE_TAG).performScrollTo().assertIsOff()
     }
 
     @Test
@@ -312,6 +337,7 @@ class SettingsScreenTest {
         downloadsFolder: String? = null,
         onDownloadsFolderReset: () -> Unit = {},
         onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit = { _, _ -> },
+        onAllowRemoteSettingsChange: (Boolean) -> Unit = {},
         onLeaveGroup: () -> Unit = {},
         diagnosticsEnabled: Boolean = false,
         onDiagnosticsChange: (Boolean) -> Unit = {},
@@ -345,6 +371,7 @@ class SettingsScreenTest {
                     onRefreshRelay = onRefreshRelay,
                     onRelayCheck = { _, _ -> },
                     onSelfConfirmationChange = onSelfConfirmationChange,
+                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
                     onLeaveGroup = onLeaveGroup,
                     diagnosticsEnabled = diagnosticsEnabled,
                     onDiagnosticsChange = onDiagnosticsChange,

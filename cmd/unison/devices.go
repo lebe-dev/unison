@@ -27,6 +27,8 @@ func (a *app) devices(ctx context.Context, args []string) error {
 		return a.devicesRename(ctx, rest)
 	case "confirm":
 		return a.devicesConfirm(ctx, rest)
+	case "remote":
+		return a.devicesRemote(ctx, rest)
 	case "address":
 		return a.devicesAddress(ctx, rest)
 	case "retry":
@@ -201,6 +203,48 @@ func (a *app) devicesConfirm(ctx context.Context, args []string) error {
 		return a.writeJSON(&localv1.SetDeviceConfirmationResponse{})
 	}
 	a.info("%s confirmation for %s is %s", scopeText, label, state)
+	return nil
+}
+
+// devicesRemote sets whether a paired device may change the confirmation flags
+// of this device remotely. The setting in Settings covers every device.
+func (a *app) devicesRemote(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("devices remote")
+	positional, err := parseCommand(flags, args)
+	if err != nil {
+		return err
+	}
+	if len(positional) != 2 {
+		return a.usageError("devices remote needs a device and on or off")
+	}
+	allow, err := onOffValue(positional[1])
+	if err != nil {
+		return a.usageError("%v", err)
+	}
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	devices, err := a.devicesOf(ctx, client)
+	if err != nil {
+		return err
+	}
+	device, err := resolveDevice(devices, positional[0])
+	if err != nil {
+		return err
+	}
+	request := &localv1.SetDeviceRemoteSettingsRequest{
+		DeviceId: device.GetDeviceId(),
+		Allow:    allow,
+	}
+	if _, err := client.SetDeviceRemoteSettings(ctx, connect.NewRequest(request)); err != nil {
+		return fmt.Errorf("set the remote settings permission: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(&localv1.SetDeviceRemoteSettingsResponse{})
+	}
+	a.info("remote settings for %s are %s", fingerprintOf(device.GetDeviceId()), onOff(allow))
 	return nil
 }
 
