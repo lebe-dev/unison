@@ -380,22 +380,52 @@ func TestWriteExcludedKeepsContentFromHistory(t *testing.T) {
 		t.Fatalf("WriteExcluded: %v", err)
 	}
 
-	ids := registeredFormats()
-	for name, format := range map[string]uint32{"history": ids.history, "cloud": ids.cloud} {
-		payload, ok := readFormat(format)
-		if !ok {
-			t.Fatalf("%s marker is missing", name)
-		}
-		if value := binary.LittleEndian.Uint32(payload); value != 0 {
-			t.Fatalf("%s marker = %d, want 0", name, value)
-		}
-	}
-
+	// Windows may consume the metadata formats as soon as the content is
+	// published, so the exclusion is checked through the snapshot of our own
+	// read path, which is what the pipeline acts on.
 	snapshot := next(t, snapshots)
 	if !snapshot.Sensitive {
 		t.Fatal("Sensitive = false for excluded content, want true")
 	}
 	if !snapshot.OwnedByUs {
 		t.Fatal("OwnedByUs = false, want true")
+	}
+	if len(snapshot.Content.Representations) != 0 {
+		t.Fatalf("got %d representations for excluded content, want none", len(snapshot.Content.Representations))
+	}
+}
+
+// TestWriteExcludedSetsTheMarkers checks that the excluded content carries the
+// markers Windows reads to keep it out of the history and the cloud. The
+// clipboard stays open, so no other process changes the formats first.
+func TestWriteExcludedSetsTheMarkers(t *testing.T) {
+	c := newClipboard(t)
+
+	prepared, err := prepare(ports.Content{
+		Representations: []ports.Representation{{MIME: MIMETextPlain, Data: []byte("private")}},
+	})
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	if err := openClipboard(testOpenTimeout); err != nil {
+		t.Fatalf("open clipboard: %v", err)
+	}
+	defer closeClipboard()
+	if err := c.publish(prepared, true); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+
+	ids := registeredFormats()
+	for name, format := range map[string]uint32{"history": ids.history, "cloud": ids.cloud} {
+		payload, ok := clipboardData(format)
+		if !ok {
+			t.Fatalf("%s marker is missing", name)
+		}
+		if value := binary.LittleEndian.Uint32(payload); value != 0 {
+			t.Fatalf("%s marker = %d, want 0", name, value)
+		}
 	}
 }
