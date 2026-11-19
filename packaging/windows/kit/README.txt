@@ -15,7 +15,7 @@ are in tests\ and the scripts are in scripts\.
 Windows marks files that come from another computer. Unblock the archive before
 you extract it:
 
-    Unblock-File .\Unison-@VERSION@-windows-kit.zip
+    Unblock-File .\Unison-*-windows-kit-*.zip
 
 Then open the archive with "Extract All" and unblock the extracted files. Run
 these commands in the folder of the kit:

@@ -578,7 +578,8 @@ installer to `packaging/windows/build/Unison-<version>-setup.exe`. It uses the s
 warns that the artifacts are unsigned. Tauri calls the cross compilation experimental, so a build
 that produces an installer is the proof that the bundle works.
 
-`windows-kit` writes `packaging/windows/build/Unison-<version>-windows-kit.zip`:
+`windows-kit` writes `packaging/windows/build/Unison-<version>-windows-kit-<date>-<time>.zip`, so
+the kits of different runs do not overwrite each other:
 
 - `setup/Unison-<version>-setup.exe` is the installer above;
 - `bin/unisond.exe` is the daemon with the console subsystem, so it prints to the terminal, and

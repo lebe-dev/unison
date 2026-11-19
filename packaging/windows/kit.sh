@@ -10,7 +10,8 @@ version="$(tr -d '[:space:]' < "$root/VERSION")"
 target="x86_64-pc-windows-msvc"
 build="$root/packaging/windows/build"
 setup="$build/Unison-$version-setup.exe"
-archive="$build/Unison-$version-windows-kit.zip"
+# The stamp keeps the kits of different runs apart.
+archive="$build/Unison-$version-windows-kit-$(date +%Y%m%d-%H%M).zip"
 stage="$build/windows-kit"
 sentry_dsn="${SENTRY_DSN:-}"
 
