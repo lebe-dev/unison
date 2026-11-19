@@ -6,9 +6,21 @@
 ; of the user that runs the installer; the Startup toggle of the settings keeps
 ; it afterwards.
 
+!include WinVer.nsh
+
 !define UNISON_FIREWALL_RULE "Unison daemon"
 !define UNISON_RUN_KEY "Software\Microsoft\Windows\CurrentVersion\Run"
 !define UNISON_RUN_VALUE "Unison"
+
+!macro NSIS_HOOK_PREINSTALL
+  ; The app and the daemon are built for Windows 10 and newer, so an older
+  ; system gets no files at all.
+  ${IfNot} ${AtLeastWin10}
+    MessageBox MB_ICONSTOP "Unison requires Windows 10 or later."
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
+!macroend
 
 !macro NSIS_HOOK_POSTINSTALL
   WriteRegStr HKCU "${UNISON_RUN_KEY}" "${UNISON_RUN_VALUE}" '"$INSTDIR\unisond.exe"'
