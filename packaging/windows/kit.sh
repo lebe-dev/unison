@@ -34,6 +34,7 @@ cp "$setup" "$stage/setup/"
 
 cp "$root/packaging/windows/kit/run-tests.ps1" "$stage/scripts/"
 cp "$root/packaging/windows/kit/collect.ps1" "$stage/scripts/"
+cp "$root/packaging/windows/kit/check-pipe.ps1" "$stage/scripts/"
 cp "$root/packaging/windows/verify.ps1" "$stage/scripts/"
 
 echo "windows-kit: building the command line binaries for windows/amd64"
