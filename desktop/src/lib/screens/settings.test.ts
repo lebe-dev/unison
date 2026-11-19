@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import {
   DeviceSchema,
   FriendsDiscoverySchema,
@@ -20,6 +21,7 @@ import {
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
 import { pickFolder } from "../files";
+import { relayDraft } from "../relayDraft.svelte";
 import { setSentryEnabled } from "../sentry";
 import Settings from "./Settings.svelte";
 
@@ -99,6 +101,10 @@ function settings(): SettingsMessage {
 beforeEach(() => {
   vi.clearAllMocks();
   setSentryEnabledMock.mockResolvedValue();
+  relayDraft.url = "";
+  relayDraft.token = "";
+  relayDraft.filesOnRequest = true;
+  relayDraft.ready = false;
   getStatus.mockResolvedValue(
     create(GetStatusResponseSchema, {
       running: true,
@@ -463,4 +469,71 @@ describe("settings screen", () => {
     expect(screen.getByText(/cannot be empty/)).toBeTruthy();
     expect(renameDevice).not.toHaveBeenCalled();
   });
+
+  it("keeps the device name typed while the status refreshes", async () => {
+    render(Settings);
+    const input = await screen.findByLabelText(/Device name/);
+    await screen.findByDisplayValue("This Mac");
+    await fireEvent.input(input, { target: { value: "Kitchen Mac" } });
+
+    daemon.status = connectedStatus();
+    await tick();
+
+    expect((input as HTMLInputElement).value).toBe("Kitchen Mac");
+  });
+
+  it("keeps the device name typed through a lost connection", async () => {
+    render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await fireEvent.input(screen.getByLabelText(/Device name/), {
+      target: { value: "Kitchen Mac" },
+    });
+
+    daemon.status = null;
+    await tick();
+    daemon.status = connectedStatus();
+    await tick();
+
+    expect(screen.getByLabelText<HTMLInputElement>(/Device name/).value).toBe("Kitchen Mac");
+  });
+
+  it("keeps the relay address typed through a lost connection", async () => {
+    getRelay.mockResolvedValue(
+      create(GetRelayResponseSchema, {
+        relay: create(RelaySchema, { url: "relay.example.com:443", tokenSet: true }),
+      }),
+    );
+    render(Settings);
+    await fireEvent.input(await screen.findByLabelText(/Relay address/), {
+      target: { value: "relay.mine.example:443" },
+    });
+
+    daemon.status = null;
+    await tick();
+    daemon.status = connectedStatus();
+    await tick();
+
+    expect(await screen.findByDisplayValue("relay.mine.example:443")).toBeTruthy();
+  });
+
+  it("keeps the lifetime typed while the status refreshes", async () => {
+    render(Settings);
+    const input = await screen.findByLabelText("Text lifetime");
+    await fireEvent.input(input, { target: { value: "30d" } });
+
+    daemon.status = connectedStatus();
+    await tick();
+
+    expect((input as HTMLInputElement).value).toBe("30d");
+  });
 });
+
+/** connectedStatus returns the status of a running daemon. */
+function connectedStatus() {
+  return create(GetStatusResponseSchema, {
+    running: true,
+    deviceId: "self",
+    deviceName: "This Mac",
+    friendsDiscovery: create(FriendsDiscoverySchema, {}),
+  });
+}

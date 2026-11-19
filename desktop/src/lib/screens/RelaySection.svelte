@@ -6,13 +6,11 @@
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { t } from "../i18n";
+  import { relayDraft } from "../relayDraft.svelte";
 
   const REFRESH_MS = 5000;
 
   let relay = $state<Relay | null>(null);
-  let url = $state("");
-  let token = $state("");
-  let filesOnRequest = $state(true);
   let loaded = $state(false);
   let busy = $state(false);
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
@@ -21,7 +19,8 @@
 
   const stateText = $derived(relayStateText(relay));
   const canSave = $derived(
-    url.trim().length > 0 && (token.trim().length > 0 || relay?.tokenSet === true),
+    relayDraft.url.trim().length > 0 &&
+      (relayDraft.token.trim().length > 0 || relay?.tokenSet === true),
   );
   const checkRows = $derived(
     check
@@ -73,7 +72,8 @@
     }
     try {
       const response = await client.getRelay({});
-      apply(response.relay);
+      applyStatus(response.relay);
+      relayDraft.fill(response.relay);
       loaded = true;
     } catch (error) {
       if (!quiet) {
@@ -89,15 +89,13 @@
     }
   }
 
-  function apply(value: Relay | undefined): void {
+  /** applyStatus takes the state of the relay without touching the form. */
+  function applyStatus(value: Relay | undefined): void {
     relay = value ?? null;
-    url = value?.url ?? "";
-    filesOnRequest = value?.filesOnRequest ?? true;
-    token = "";
   }
 
   async function save(): Promise<void> {
-    const address = url.trim();
+    const address = relayDraft.url.trim();
     if (!address) {
       notice = { kind: "error", text: t("relay.empty") };
       return;
@@ -107,10 +105,11 @@
     try {
       const response = await client.setRelay({
         url: address,
-        token: token.trim() || undefined,
-        filesOnRequest,
+        token: relayDraft.token.trim() || undefined,
+        filesOnRequest: relayDraft.filesOnRequest,
       });
-      apply(response.relay);
+      applyStatus(response.relay);
+      relayDraft.fill(response.relay, true);
       notice = {
         kind: "info",
         text: t("relay.saved"),
@@ -128,8 +127,8 @@
     notice = null;
     try {
       check = await client.testRelay({
-        url: url.trim(),
-        token: token.trim() || undefined,
+        url: relayDraft.url.trim(),
+        token: relayDraft.token.trim() || undefined,
       });
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("relay.checkFailed")) };
@@ -178,7 +177,8 @@
     notice = null;
     try {
       const response = await client.relayOff({});
-      apply(response.relay);
+      applyStatus(response.relay);
+      relayDraft.fill(response.relay, true);
       notice = { kind: "info", text: t("relay.off") };
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("relay.offFailed")) };
@@ -207,7 +207,7 @@
       <input
         class="wide"
         type="text"
-        bind:value={url}
+        bind:value={relayDraft.url}
         placeholder="relay.example.com:443"
         maxlength="2048"
         disabled={busy || !loaded}
@@ -221,7 +221,7 @@
       <input
         class="wide"
         type="password"
-        bind:value={token}
+        bind:value={relayDraft.token}
         autocomplete="off"
         maxlength="512"
         placeholder={relay?.tokenSet ? t("relay.tokenStoredPlaceholder") : ""}
@@ -229,7 +229,7 @@
       />
     </label>
     <label class="toggle form-row">
-      <input type="checkbox" bind:checked={filesOnRequest} disabled={busy || !loaded} />
+      <input type="checkbox" bind:checked={relayDraft.filesOnRequest} disabled={busy || !loaded} />
       <span>
         {t("relay.filesOnRequest")}
         <small>{t("relay.filesOnRequestHint")}</small>
