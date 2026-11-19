@@ -4,7 +4,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { GetStatusResponseSchema } from "./api/gen/unison/local/v1/local_pb";
 import { client } from "./api/client";
 import { daemon } from "./daemon.svelte";
-import { daemonStatus } from "./daemonStatus";
+import { daemonStatus, installDaemon } from "./daemonStatus";
 
 vi.mock("./api/client", () => ({
   client: {
@@ -15,6 +15,7 @@ vi.mock("./api/client", () => ({
 
 vi.mock("./daemonStatus", () => ({
   daemonStatus: vi.fn(),
+  installDaemon: vi.fn(),
 }));
 
 vi.mock("./tray", () => ({
@@ -23,6 +24,7 @@ vi.mock("./tray", () => ({
 
 const getStatus = vi.mocked(client.getStatus);
 const readStatus = vi.mocked(daemonStatus);
+const install = vi.mocked(installDaemon);
 
 const REASON = "the daemon stopped during startup (exit status: 1)";
 
@@ -35,7 +37,9 @@ describe("daemon store", () => {
     vi.clearAllMocks();
     daemon.status = null;
     daemon.error = null;
-    daemon.startup = { state: "offline", reason: null };
+    daemon.startup = { state: "offline", reason: null, install: "off" };
+    daemon.installing = false;
+    daemon.installError = null;
   });
 
   it("reports the local network blocked only while the daemon says so", async () => {
@@ -50,14 +54,14 @@ describe("daemon store", () => {
     expect(daemon.localNetworkBlocked).toBe(true);
 
     offline();
-    readStatus.mockResolvedValue({ state: "offline", reason: null });
+    readStatus.mockResolvedValue({ state: "offline", reason: null, install: "off" });
     await daemon.refresh();
     expect(daemon.localNetworkBlocked).toBe(false);
   });
 
   it("keeps the reason of a failed start while the daemon is offline", async () => {
     offline();
-    readStatus.mockResolvedValue({ state: "failed", reason: REASON });
+    readStatus.mockResolvedValue({ state: "failed", reason: REASON, install: "available" });
 
     await daemon.refresh();
 
@@ -66,11 +70,11 @@ describe("daemon store", () => {
 
   it("takes the reason of a later attempt", async () => {
     offline();
-    readStatus.mockResolvedValueOnce({ state: "offline", reason: null });
+    readStatus.mockResolvedValueOnce({ state: "offline", reason: null, install: "off" });
     await daemon.refresh();
     expect(daemon.offlineReason).toBeNull();
 
-    readStatus.mockResolvedValueOnce({ state: "failed", reason: REASON });
+    readStatus.mockResolvedValueOnce({ state: "failed", reason: REASON, install: "available" });
     await daemon.refresh();
 
     expect(daemon.offlineReason).toBe(REASON);
@@ -83,5 +87,53 @@ describe("daemon store", () => {
 
     expect(daemon.offlineReason).toBeNull();
     expect(readStatus).not.toHaveBeenCalled();
+  });
+
+  it("offers the installation of a missing daemon", async () => {
+    offline();
+    readStatus.mockResolvedValue({ state: "failed", reason: REASON, install: "available" });
+
+    await daemon.refresh();
+
+    expect(daemon.installable).toBe(true);
+    expect(daemon.installMissing).toBe(false);
+  });
+
+  it("offers no installation of a daemon the app has no copy of", async () => {
+    offline();
+    readStatus.mockResolvedValue({ state: "failed", reason: REASON, install: "missing" });
+
+    await daemon.refresh();
+
+    expect(daemon.installable).toBe(false);
+    expect(daemon.installMissing).toBe(true);
+  });
+
+  it("installs the daemon and connects to it", async () => {
+    offline();
+    readStatus.mockResolvedValue({ state: "failed", reason: REASON, install: "available" });
+    await daemon.refresh();
+    install.mockResolvedValue(undefined);
+    getStatus.mockResolvedValueOnce(create(GetStatusResponseSchema, { running: true }));
+
+    await daemon.install();
+
+    expect(install).toHaveBeenCalledOnce();
+    expect(daemon.connected).toBe(true);
+    expect(daemon.installable).toBe(false);
+    expect(daemon.installError).toBeNull();
+  });
+
+  it("keeps the reason of an installation that did not happen", async () => {
+    offline();
+    readStatus.mockResolvedValue({ state: "failed", reason: REASON, install: "available" });
+    await daemon.refresh();
+    install.mockRejectedValue("the installation was cancelled");
+
+    await daemon.install();
+
+    expect(daemon.installable).toBe(true);
+    expect(daemon.installError).toBe("the installation was cancelled");
+    expect(daemon.installing).toBe(false);
   });
 });

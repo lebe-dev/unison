@@ -98,6 +98,37 @@ The hooks in `desktop/src-tauri/installer-hooks.nsh` do three things:
 
 The uninstaller leaves the data directory alone unless its Delete app data option is used.
 
+### Installing the daemon from the app
+
+The app installs the daemon on its own when the installation is missing, so a repair needs no
+terminal. The window shows "Install the daemon" under the daemon state as soon as the daemon does
+not answer and the installation is not in place; the button is absent when the app is installed and
+running, and on the other platforms.
+
+The app runs `Unison.exe --install-daemon` once with the elevation prompt. The hidden mode leaves
+before the window starts, copies the daemon, writes the startup entry and adds the firewall rule,
+and the app then starts the daemon as the user.
+
+- **Source.** `unisond.exe` next to the app, or `UNISON_DAEMON_BIN` for a development build. Without
+  a source the app changes nothing and says why; the hidden mode also accepts
+  `--daemon-source=<path>` for the path the app resolved.
+- **Directory.** `%ProgramFiles%\Unison`, the directory of the installer. An app that already runs
+  from there installs into its own directory; the app never installs into a user directory.
+- **Elevation.** One prompt covers the copy, the entry and the rule. A prompt the user cancels
+  changes nothing, and the window shows the reason in place.
+- **Daemon.** The daemon runs as the logged-in user, never as the elevated process, since it needs
+  the clipboard and the DPAPI secrets of that user. The hidden mode writes the files, the app starts
+  the daemon, and a repeat of the installation leaves a running daemon alone.
+- **Report.** The hidden mode writes its steps to a file the app passes, and the app records them in
+  its log. An elevated process has no console, so the file is the only channel of the reason.
+
+The startup entry belongs to the account the elevated process runs as. An administrator who
+confirms the prompt with other credentials writes the entry for that account, and the current user
+gets none; the installer remains the way to install for everybody.
+
+The installer stays the regular way to install and update Unison. The names it uses are the same,
+and a test compares them with the constants of the app.
+
 ### Signing
 
 The thumbprint of an Authenticode certificate comes from the environment and is never stored:

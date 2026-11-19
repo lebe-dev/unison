@@ -557,6 +557,9 @@ export const en = {
   "daemon.pauseActive": "Clipboard active",
   "daemon.pausePaused": "Clipboard paused",
   "daemon.pauseUntil": "Clipboard paused until {time}",
+  "daemon.install": "Install the daemon",
+  "daemon.installing": "Installing the daemon...",
+  "daemon.installMissing": "The daemon file is missing next to the app; reinstall Unison.",
 } as const satisfies Record<string, Message>;
 
 /** Keys of the messages of the app. */

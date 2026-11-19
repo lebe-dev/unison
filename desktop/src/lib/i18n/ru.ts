@@ -571,4 +571,7 @@ export const ru: { [K in MessageKey]: Message } = {
   "daemon.pauseActive": "Буфер обмена активен",
   "daemon.pausePaused": "Буфер обмена на паузе",
   "daemon.pauseUntil": "Буфер обмена на паузе до {time}",
+  "daemon.install": "Установить службу",
+  "daemon.installing": "Установка службы...",
+  "daemon.installMissing": "Файл службы отсутствует рядом с приложением, переустановите Unison.",
 };

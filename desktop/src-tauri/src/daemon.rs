@@ -14,7 +14,7 @@ use crate::proxy;
 /// the daemon do.
 const ENDPOINT_ENV: &str = "UNISON_LOCAL_API";
 /// BINARY_ENV points at the daemon binary of a development build.
-const BINARY_ENV: &str = "UNISON_DAEMON_BIN";
+pub(crate) const BINARY_ENV: &str = "UNISON_DAEMON_BIN";
 
 /// Limits of the check and the startup of the daemon.
 const PROBE_TIMEOUT: Duration = Duration::from_millis(500);
@@ -271,8 +271,9 @@ async fn probe(endpoint: &str) -> bool {
 }
 
 /// binary returns the daemon to start. A packaged app runs the daemon from the
-/// autostart entry of the system, and from next to the app binary when that
-/// entry is turned off. Development builds start the daemon from `bin/`.
+/// autostart entry of the system, from the installation directory when the app
+/// itself lives elsewhere, and from next to the app binary otherwise.
+/// Development builds start the daemon from `bin/`.
 pub fn binary() -> Option<PathBuf> {
     binary_from(std::env::var_os(BINARY_ENV), || {
         if cfg!(debug_assertions) {
@@ -281,6 +282,17 @@ pub fn binary() -> Option<PathBuf> {
                     .join("../../bin")
                     .join(BINARY_NAME),
             );
+        }
+        #[cfg(windows)]
+        {
+            // An installation made by the app or by the installer keeps the
+            // daemon in the program files, where the startup entry points too.
+            if let Some(dir) = crate::install::installed_dir(std::env::var_os("ProgramFiles")) {
+                let installed = dir.join(BINARY_NAME);
+                if installed.is_file() {
+                    return Some(installed);
+                }
+            }
         }
         let exe = std::env::current_exe().ok()?;
         Some(exe.parent()?.join(BINARY_NAME))

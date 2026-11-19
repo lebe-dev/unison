@@ -3,6 +3,10 @@
   import { t } from "./i18n";
 
   const reason = $derived(daemon.offlineReason);
+
+  async function install(): Promise<void> {
+    await daemon.install();
+  }
 </script>
 
 <div class="connection">
@@ -24,8 +28,23 @@
       })}
     </span>
   {/if}
-  {#if reason}
+  {#if daemon.installMissing}
+    <span class="reason">{t("daemon.installMissing")}</span>
+  {:else if reason}
     <span class="reason">{reason}</span>
+  {/if}
+  {#if daemon.installable}
+    <button
+      class="button small action"
+      type="button"
+      disabled={daemon.installing}
+      onclick={install}
+    >
+      {daemon.installing ? t("daemon.installing") : t("daemon.install")}
+    </button>
+  {/if}
+  {#if daemon.installError}
+    <span class="reason">{daemon.installError}</span>
   {/if}
 </div>
 
@@ -34,5 +53,11 @@
     grid-column: 2;
     font-size: 11px;
     color: var(--muted);
+  }
+
+  .action {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 2px;
   }
 </style>
