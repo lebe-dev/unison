@@ -117,8 +117,13 @@ func openDatabase(ctx context.Context, path string, write bool) (*sql.DB, error)
 		query.Set("_query_only", "1")
 	}
 
-	dsn := url.URL{Scheme: "file", Path: path, RawQuery: query.Encode()}
-	db, err := sql.Open("sqlite", dsn.String())
+	// The driver hands a file URI to SQLite as is, so a Windows drive letter
+	// and a UNC path need the form of a URI.
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("resolve the database path: %w", err)
+	}
+	db, err := sql.Open("sqlite", fileDSN(abs, query))
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
