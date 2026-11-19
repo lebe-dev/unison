@@ -67,9 +67,9 @@ export async function copyText(text: string): Promise<void> {
 }
 
 /**
- * shareLog opens the share sheet of macOS with the export file. When the sheet
- * cannot be shown, the user saves the file with the save dialog and Finder
- * reveals it.
+ * shareLog opens the share sheet of the system with the export file. When the
+ * sheet cannot be shown, the user saves the file with the save dialog and the
+ * file manager reveals it.
  */
 export async function shareLog(log: SavedLog): Promise<void> {
   try {

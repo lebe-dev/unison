@@ -6,6 +6,7 @@
   import { eventKindLabel } from "./lib/events";
   import { history } from "./lib/history.svelte";
   import { openLocalNetworkSettings } from "./lib/localNetwork";
+  import { isMac } from "./lib/platform";
   import { notifications } from "./lib/notifications.svelte";
   import { notify } from "./lib/notify";
   import { pairing } from "./lib/pairing.svelte";
@@ -130,8 +131,8 @@
     return new Date(Number(value)).toLocaleTimeString(getLocale());
   }
 
-  /** handleShortcut follows the keyboard shortcuts of a Mac app: Command-comma
-   * opens the settings and Command with a digit opens a section of the sidebar. */
+  /** handleShortcut follows the shortcuts of the app: the meta key with a comma
+   * opens the settings, and with a digit it opens a section of the sidebar. */
   function handleShortcut(event: KeyboardEvent): void {
     if (!event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) {
       return;
@@ -191,9 +192,12 @@
       {#if daemon.localNetworkBlocked}
         <div class="banner" role="alert">
           <p>{t("app.localNetworkBanner")}</p>
-          <button class="button" type="button" onclick={openSettings}
-            >{t("app.openSettings")}</button
-          >
+          {#if isMac()}
+            <p>{t("app.localNetworkHint")}</p>
+            <button class="button" type="button" onclick={openSettings}
+              >{t("app.openSettings")}</button
+            >
+          {/if}
         </div>
       {/if}
 

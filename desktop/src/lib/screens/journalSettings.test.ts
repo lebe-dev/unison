@@ -112,6 +112,7 @@ beforeEach(() => {
 
 afterEach(() => {
   daemon.status = null;
+  setUserAgent(originalUserAgent);
 });
 
 describe("application log page", () => {
@@ -237,4 +238,27 @@ describe("application log page", () => {
 
     expect(onback).toHaveBeenCalled();
   });
+
+  it("names the system of the platform when the shell does not answer", async () => {
+    shellInfoMock.mockRejectedValue(new Error("the shell is unavailable"));
+    copyTextMock.mockResolvedValue();
+    setUserAgent(WINDOWS_UA);
+
+    render(JournalSettings, { props: { onback: vi.fn() } });
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Copy to clipboard" }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalled());
+    const text = copyTextMock.mock.calls[0][0];
+    expect(text).toContain("os: Windows");
+    expect(text).not.toContain("macOS");
+  });
 });
+
+const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const originalUserAgent = navigator.userAgent;
+
+/** setUserAgent makes the platform helpers read the given user agent. */
+function setUserAgent(userAgent: string): void {
+  Object.defineProperty(navigator, "userAgent", { value: userAgent, configurable: true });
+}
