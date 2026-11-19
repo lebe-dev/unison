@@ -244,6 +244,9 @@ func (c *Clipboard) publish(prepared clipboardPayload, excluded bool) error {
 				return fmt.Errorf("clipboard: write history marker: %w", err)
 			}
 		}
+		if err := putClipboardData(ids.exclude, []byte{0}); err != nil {
+			return fmt.Errorf("clipboard: write exclusion marker: %w", err)
+		}
 	}
 	if err := putClipboardData(ids.origin, []byte(originPayload)); err != nil {
 		return fmt.Errorf("clipboard: write marker: %w", err)

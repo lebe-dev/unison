@@ -424,8 +424,14 @@ func TestWriteExcludedSetsTheMarkers(t *testing.T) {
 		if !ok {
 			t.Fatalf("%s marker is missing", name)
 		}
+		if len(payload) < 4 {
+			t.Fatalf("%s marker is %d bytes, want 4", name, len(payload))
+		}
 		if value := binary.LittleEndian.Uint32(payload); value != 0 {
 			t.Fatalf("%s marker = %d, want 0", name, value)
 		}
+	}
+	if _, ok := clipboardData(ids.exclude); !ok {
+		t.Fatal("exclusion marker is missing")
 	}
 }
