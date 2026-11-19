@@ -217,6 +217,14 @@ else {
 # Installed state.
 $app = Join-Path $InstallDir "$productName.exe"
 $daemon = Join-Path $InstallDir 'unisond.exe'
+if (-not (Test-Path $daemon)) {
+    # The app installs the daemon into the directory of all users, which is not
+    # the directory of the app when the user picked another one.
+    $shared = Join-Path $env:ProgramFiles "$productName\unisond.exe"
+    if (Test-Path $shared) {
+        $daemon = $shared
+    }
+}
 if (-not (Test-Path $app)) {
     $entry = Get-RegistryValue $runKey $productName
     if ($entry) {
