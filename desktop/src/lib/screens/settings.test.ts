@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { tick } from "svelte";
@@ -68,6 +68,19 @@ const updateSettings = vi.mocked(client.updateSettings);
 const renameDevice = vi.mocked(client.renameDevice);
 const setFriendsDiscovery = vi.mocked(client.setFriendsDiscovery);
 const getRelay = vi.mocked(client.getRelay);
+
+const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
+const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const originalUserAgent = navigator.userAgent;
+
+/** setUserAgent makes the platform helpers read the given user agent. */
+function setUserAgent(userAgent: string): void {
+  Object.defineProperty(navigator, "userAgent", { value: userAgent, configurable: true });
+}
+
+afterEach(() => {
+  setUserAgent(originalUserAgent);
+});
 
 const megabyte = 1n << 20n;
 
@@ -143,6 +156,23 @@ describe("settings screen", () => {
     render(Settings);
 
     expect(await screen.findByText("/Users/me/Downloads/Unison")).toBeTruthy();
+  });
+
+  it("names this device after the platform", async () => {
+    setUserAgent(WINDOWS_UA);
+
+    render(Settings);
+
+    expect(await screen.findByText("This PC")).toBeTruthy();
+    expect(screen.queryByText("This Mac")).toBeNull();
+  });
+
+  it("keeps the Mac name on macOS", async () => {
+    setUserAgent(MAC_UA);
+
+    render(Settings);
+
+    expect(await screen.findByText("This Mac")).toBeTruthy();
   });
 
   it("saves the folder the user picked", async () => {

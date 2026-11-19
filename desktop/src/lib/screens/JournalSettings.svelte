@@ -12,6 +12,7 @@
   import { errorText } from "../errors";
   import { t } from "../i18n";
   import { composeExport, recordsFrom, visibleRecords, type DisplayLevel } from "../journal";
+  import { systemName } from "../platform";
   import {
     copyText,
     journalEnabled,
@@ -32,7 +33,7 @@
   let settings = $state<Settings | undefined>(undefined);
   let relay = $state<Relay>(create(RelaySchema, { filesOnRequest: true }));
   let markerEnabled = $state(false);
-  let info = $state<ShellInfo>({ appVersion: "", os: "macOS" });
+  let info = $state<ShellInfo>({ appVersion: "", os: systemName() });
   let level = $state<DisplayLevel>("info");
   let lines = $state<string[]>([]);
   let loaded = $state(false);
@@ -72,7 +73,7 @@
     try {
       info = await shellInfo();
     } catch {
-      info = { appVersion: "", os: "macOS" };
+      info = { appVersion: "", os: systemName() };
     }
   }
 
@@ -155,7 +156,7 @@
         generated: new Date(),
         appVersion: info.appVersion || "unknown",
         daemonVersion: daemon.connected ? (daemon.status?.version ?? null) : null,
-        os: info.os || "macOS",
+        os: info.os || systemName(),
         deviceName: daemon.status?.deviceName || current.deviceName || "Unison",
         deviceId: daemon.status?.deviceId ?? "",
         network: daemon.status?.network,

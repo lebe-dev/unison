@@ -1,12 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { isMac, markPlatform } from "./platform";
+import { translateIn } from "./i18n";
+import { deviceNameKey, isMac, isWindows, markPlatform, systemName } from "./platform";
+
+const MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
+const WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const LINUX = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36";
 
 describe("platform", () => {
   it("recognizes the user agent of macOS", () => {
-    expect(
-      isMac("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)"),
-    ).toBe(true);
-    expect(isMac("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")).toBe(false);
+    expect(isMac(MAC)).toBe(true);
+    expect(isMac(WINDOWS)).toBe(false);
+  });
+
+  it("recognizes the user agent of Windows", () => {
+    expect(isWindows(WINDOWS)).toBe(true);
+    expect(isWindows(MAC)).toBe(false);
+    expect(isWindows(LINUX)).toBe(false);
+  });
+
+  it("names this device after the platform", () => {
+    expect(translateIn("en", deviceNameKey(MAC))).toBe("This Mac");
+    expect(translateIn("ru", deviceNameKey(MAC))).toBe("Этот Mac");
+    expect(translateIn("en", deviceNameKey(WINDOWS))).toBe("This PC");
+    expect(translateIn("ru", deviceNameKey(WINDOWS))).toBe("Этот компьютер");
+    expect(translateIn("en", deviceNameKey(LINUX))).toBe("This device");
+    expect(translateIn("ru", deviceNameKey(LINUX))).toBe("Это устройство");
+  });
+
+  it("names the system for the log header", () => {
+    expect(systemName(MAC)).toBe("macOS");
+    expect(systemName(WINDOWS)).toBe("Windows");
+    expect(systemName(LINUX)).toBe("Unknown");
   });
 
   it("tags the document with the platform", () => {

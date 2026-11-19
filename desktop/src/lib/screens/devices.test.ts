@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen } from "@testing-library/svelte";
@@ -31,6 +31,19 @@ const getStatus = vi.mocked(client.getStatus);
 const setDeviceConfirmation = vi.mocked(client.setDeviceConfirmation);
 const revokeDevice = vi.mocked(client.revokeDevice);
 const retryDevice = vi.mocked(client.retryDevice);
+
+const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
+const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const originalUserAgent = navigator.userAgent;
+
+/** setUserAgent makes the platform helpers read the given user agent. */
+function setUserAgent(userAgent: string): void {
+  Object.defineProperty(navigator, "userAgent", { value: userAgent, configurable: true });
+}
+
+afterEach(() => {
+  setUserAgent(originalUserAgent);
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -79,6 +92,42 @@ describe("devices screen", () => {
         name: "MacBook asks before accepting files from this device",
       }),
     ).toBeTruthy();
+  });
+
+  it("names this device after the platform", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "Studio",
+      devices: [personal("device-1")],
+    });
+    setUserAgent(WINDOWS_UA);
+
+    render(Devices);
+
+    expect(screen.getByText("This PC")).toBeTruthy();
+    expect(screen.queryByText("This Mac")).toBeNull();
+  });
+
+  it("keeps the Mac name on macOS", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "Studio",
+      devices: [personal("device-1")],
+    });
+    setUserAgent(MAC_UA);
+
+    render(Devices);
+
+    expect(screen.getByText("This Mac")).toBeTruthy();
+  });
+
+  it("names this device in the confirmation lines", () => {
+    render(Devices);
+
+    expect(screen.getByText("On this device, from MacBook")).toBeTruthy();
+    expect(screen.getByText("On MacBook, from this device")).toBeTruthy();
   });
 
   it("changes the files flag of this device", async () => {

@@ -91,17 +91,42 @@ describe("catalog parity", () => {
 
 /** placeholders collects the {name} placeholders of every form of a message. */
 function placeholders(message: Message): string[] {
-  const forms: string[] =
-    typeof message === "string"
-      ? [message]
-      : [message.zero, message.one, message.two, message.few, message.many, message.other].filter(
-          (form): form is string => typeof form === "string",
-        );
   const found = new Set<string>();
-  for (const form of forms) {
+  for (const form of forms(message)) {
     for (const match of form.matchAll(/\{(\w+)\}/g)) {
       found.add(match[1]);
     }
   }
   return [...found].sort();
 }
+
+/** forms returns the strings of a message. */
+function forms(message: Message): string[] {
+  if (typeof message === "string") {
+    return [message];
+  }
+  return [message.zero, message.one, message.two, message.few, message.many, message.other].filter(
+    (form): form is string => typeof form === "string",
+  );
+}
+
+/** platformMessages name a platform on purpose: the name of this device and
+ * the hints that exist only on macOS. */
+const platformMessages = new Set<MessageKey>([
+  "common.thisMac",
+  "app.localNetworkHint",
+  "settings.loginHint.requiresApproval",
+]);
+
+describe("platform names", () => {
+  it("keeps the name of another system out of the messages", () => {
+    for (const key of Object.keys(en) as MessageKey[]) {
+      if (platformMessages.has(key)) {
+        continue;
+      }
+      for (const form of [...forms(en[key]), ...forms(ru[key])]) {
+        expect(form, key).not.toMatch(/Mac|macOS|System Settings|Login Items|Finder/);
+      }
+    }
+  });
+});
