@@ -18,6 +18,7 @@ macOS and Android are supported. Windows and Linux are not available yet.
 - [Keyboard bridge](docs/keyboard-bridge.md) - the Android interface for a keyboard
 - [Command line](docs/cli.md) - the `unison` client of the daemon
 - [Security](docs/security.md) - keys, transport, pairing, untrusted content, data at rest
+- [FAQ](docs/faq.md) - the questions asked most often, mostly about security
 - [Troubleshooting](docs/troubleshooting.md) - the usual reasons a device does not connect
 
 ## Architecture
