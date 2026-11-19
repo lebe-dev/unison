@@ -2,6 +2,7 @@ pub mod agent;
 mod daemon;
 mod files;
 mod i18n;
+pub mod install;
 mod journal;
 pub mod observability;
 mod prompt;
@@ -117,11 +118,42 @@ fn open_local_network_settings() -> Result<(), String> {
     }
 }
 
-/// daemon_status reports the state of the daemon and the reason of the last
-/// failed start.
+/// DaemonStatus is what the window reads about the daemon: the state of the
+/// last start and whether the app can install the daemon here.
+#[derive(Serialize)]
+struct DaemonStatus {
+    #[serde(flatten)]
+    status: daemon::Status,
+    /// Where the installation of the daemon stands.
+    install: install::Offer,
+}
+
+/// daemon_status reports the state of the daemon, the reason of the last
+/// failed start and the installation the app can offer.
 #[tauri::command]
-fn daemon_status() -> daemon::Status {
-    daemon::status()
+fn daemon_status() -> DaemonStatus {
+    DaemonStatus {
+        status: daemon::status(),
+        install: install::offer(),
+    }
+}
+
+/// install_daemon puts the daemon in place with one elevation and starts it as
+/// the user.
+#[tauri::command]
+async fn install_daemon(state: State<'_, AppState>) -> Result<(), String> {
+    let endpoint = state.endpoint.as_ref().map_err(|err| err.clone())?;
+    journal::record("INFO", "the installation of the daemon started");
+    let installed = tauri::async_runtime::spawn_blocking(install::install)
+        .await
+        .map_err(|err| format!("the installation failed: {err}"))?;
+    if let Err(err) = installed {
+        journal::error(&format!("the daemon was not installed: {err}"));
+        observability::capture_error("the daemon could not be installed");
+        return Err(err);
+    }
+    journal::record("INFO", "the daemon is installed");
+    daemon::ensure_running(endpoint).await
 }
 
 /// set_sentry_enabled grants or withdraws the consent of the shell to report
@@ -245,6 +277,7 @@ pub fn run() {
             journal::journal_shell_info,
             journal::journal_write,
             login_item_status,
+            install_daemon,
             set_login_item,
             set_sentry_enabled,
             share::take_shared_files,
@@ -309,6 +342,21 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&chunk).unwrap(),
             r#"{"chunk":"AAAAAAFl"}"#
+        );
+    }
+
+    #[test]
+    fn daemon_status_serializes_the_installation() {
+        let status = DaemonStatus {
+            status: daemon::Status {
+                state: daemon::State::Failed,
+                reason: Some("boom".to_string()),
+            },
+            install: install::Offer::Available,
+        };
+        assert_eq!(
+            serde_json::to_string(&status).unwrap(),
+            r#"{"state":"failed","reason":"boom","install":"available"}"#
         );
     }
 }

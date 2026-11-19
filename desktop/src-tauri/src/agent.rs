@@ -10,11 +10,6 @@ use serde::Serialize;
 #[cfg(target_os = "macos")]
 pub const PLIST_NAME: &str = "app.unison.unisond.plist";
 
-/// VALUE_NAME names the autostart entry in the `Run` key of the current user.
-/// The name is the product name, which the uninstaller uses to remove it.
-#[cfg(windows)]
-const VALUE_NAME: &str = "Unison";
-
 /// ACTION_ARG selects the login item action on the command line, so a packaged
 /// app can report and change the login item without opening a window.
 const ACTION_ARG: &str = "--login-item=";
@@ -91,6 +86,13 @@ pub fn set(enabled: bool) -> Result<LoginItemStatus, String> {
         let _ = enabled;
         Ok(LoginItemStatus::Unsupported)
     }
+}
+
+/// register_binary writes the autostart entry that starts the daemon from the
+/// given binary.
+#[cfg(windows)]
+pub fn register_binary(binary: &std::path::Path) -> Result<(), String> {
+    platform::write_entry(binary)
 }
 
 /// register_at_launch registers the login item on the first launch of the
@@ -387,10 +389,9 @@ mod platform {
         RegDeleteValueW, RegOpenKeyExW, RegQueryValueExW, RegSetValueExW,
     };
 
-    use super::{LoginItemStatus, VALUE_NAME};
+    use crate::install::{RUN_KEY, RUN_VALUE};
 
-    /// RUN_KEY holds the programs the system starts at the login of the user.
-    const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+    use super::LoginItemStatus;
 
     /// Key closes its handle when it leaves the scope.
     struct Key(HKEY);
@@ -423,6 +424,12 @@ mod platform {
         }
         let binary = crate::daemon::binary()
             .ok_or_else(|| "the daemon is not installed next to the app".to_string())?;
+        write_entry(&binary)
+    }
+
+    /// write_entry stores the `Run` entry that starts the daemon from the given
+    /// binary.
+    pub fn write_entry(binary: &Path) -> Result<(), String> {
         // The command is the quoted path of the daemon, without arguments.
         let command: Vec<u16> = std::iter::once(u16::from(b'"'))
             .chain(binary.as_os_str().encode_wide())
@@ -436,7 +443,7 @@ mod platform {
     /// not exist.
     fn read() -> Option<String> {
         let key = open(KEY_QUERY_VALUE)?;
-        let name = wide(VALUE_NAME);
+        let name = wide(RUN_VALUE);
         let mut size = 0u32;
         // SAFETY: the call only asks for the size of the value.
         let code = unsafe {
@@ -474,7 +481,7 @@ mod platform {
     fn write(command: &[u16]) -> Result<(), String> {
         let key =
             open(KEY_SET_VALUE).ok_or_else(|| "the autostart key cannot be opened".to_string())?;
-        let name = wide(VALUE_NAME);
+        let name = wide(RUN_VALUE);
         let bytes: Vec<u8> = command.iter().flat_map(|unit| unit.to_le_bytes()).collect();
         // SAFETY: the name and the data are null terminated strings of the
         // reported lengths.
@@ -501,7 +508,7 @@ mod platform {
         let Some(key) = open(KEY_SET_VALUE) else {
             return Ok(());
         };
-        let name = wide(VALUE_NAME);
+        let name = wide(RUN_VALUE);
         // SAFETY: the name is a null terminated string.
         let code = unsafe { RegDeleteValueW(key.0, name.as_ptr()) };
         if code == ERROR_SUCCESS || code == ERROR_FILE_NOT_FOUND {

@@ -5,6 +5,10 @@
 ; public profile stays closed. The startup entry starts the daemon at the login
 ; of the user that runs the installer; the Startup toggle of the settings keeps
 ; it afterwards.
+;
+; The app repeats these steps when the daemon of the installation is missing.
+; The names of the rule, the startup entry, the profiles and the protocol are
+; shared with it, and a test fails when they drift apart.
 
 !include WinVer.nsh
 
