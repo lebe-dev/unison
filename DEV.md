@@ -109,6 +109,8 @@ just package-macos        # macOS bundle with the daemon, signed and notarized
 just verify-macos         # check the layout and the signature of the macOS bundle
 just package-windows      # Windows installer with the daemon, run on Windows
 just verify-windows       # check the installer and the installed Windows app
+just package-windows-cross # Windows installer built on macOS
+just windows-kit          # Windows installer and the test kit for a Windows host
 just clean                # remove bin/
 ```
 
@@ -545,6 +547,61 @@ database and the logs, and the endpoint is the named pipe `\\.\pipe\unison-<user
 installation directory and the data of a user are independent of each other. The uninstaller
 leaves that directory alone; its Delete app data option removes it together with the data of the
 app.
+
+## Building for Windows on macOS
+
+The installer and the test kit can be built on macOS, so the Windows host needs no toolchain:
+
+```sh
+brew install nsis llvm powershell
+cargo install --locked cargo-xwin
+rustup target add x86_64-pc-windows-msvc
+cd desktop && yarn install
+```
+
+`llvm` is keg-only: the build scripts put `$(brew --prefix llvm)/bin` in the `PATH`, because
+`tauri-build` runs `llvm-rc` and the linker is `lld-link`. The first cross build downloads the MSVC
+runtime and the Windows SDK into `~/.cache/cargo-xwin`, which takes a while and needs network
+access. `nsis` provides `makensis` and `powershell` provides `pwsh`, which is only used to check the
+syntax of the scripts of the kit here; the host runs Windows PowerShell 5.1.
+
+```sh
+just package-windows-cross
+just windows-kit
+just windows-kit    # idempotent, rebuilds the installer and the archive
+```
+
+`package-windows-cross` builds the daemon for `x86_64-pc-windows-msvc`, cross builds the app with
+`tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --bundles nsis` and copies the
+installer to `packaging/windows/build/Unison-<version>-setup.exe`. It uses the same
+`tauri.windows.conf.json` and `installer-hooks.nsh` as `just package-windows`, prints the sha256 and
+warns that the artifacts are unsigned. Tauri calls the cross compilation experimental, so a build
+that produces an installer is the proof that the bundle works.
+
+`windows-kit` writes `packaging/windows/build/Unison-<version>-windows-kit.zip`:
+
+- `setup/Unison-<version>-setup.exe` is the installer above;
+- `bin/unisond.exe` is the daemon with the console subsystem, so it prints to the terminal, and
+  `bin/unison.exe` is the command line client;
+- `tests/<package>/<name>.test.exe` is the test binary of every Go package that has tests for
+  Windows, with the `testdata` directory of the package next to it, because the binary reads the
+  fuzz corpus relative to its working directory. The clipboard package is built with the
+  `clipboardtest` tag; no other test tags are enabled;
+- `scripts/verify.ps1` is the same file as `packaging/windows/verify.ps1`, which works in the
+  repository and in the kit;
+- `scripts/run-tests.ps1` runs the binaries one at a time and writes `report\<package>.txt`, the
+  state of the system and a summary into `Unison-tests-<computer>-<date>.zip` next to the kit. The
+  clipboard tests change the clipboard, so the script asks before it runs them and `-SkipClipboard`
+  skips them;
+- `scripts/collect.ps1` writes `Unison-collect-<computer>-<date>.zip` with the logs of the daemon,
+  the output of `verify.ps1`, the startup entry, the firewall rule, the running processes and the
+  status of the client; the keys, the database and the blobs never go into the archive;
+- `README.txt` has the steps for the person at the Windows machine.
+
+The installer refuses systems below Windows 10 with "Unison requires Windows 10 or later." and
+installs nothing. The check is in `installer-hooks.nsh` and uses `WinVer.nsh`, because the NSIS
+template of Tauri has no version check of its own. The kit runs on Windows 10 22H2 and Windows 11,
+x64 only.
 
 `just aar` binds the `mobile` package with gomobile for API 29 and the `arm64-v8a`,
 `armeabi-v7a` and `x86_64` ABIs. The library is written to `android/core/core.aar`, which the

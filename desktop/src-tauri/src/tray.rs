@@ -285,10 +285,15 @@ fn tray_icon(_app: &AppHandle) -> Option<Image<'static>> {
     }
 }
 
-/// tray_icon returns the image of the menu bar entry.
+/// tray_icon returns the image of the tray entry.
 #[cfg(not(target_os = "macos"))]
 fn tray_icon(app: &AppHandle) -> Option<Image<'static>> {
-    app.default_window_icon().cloned()
+    let icon = app.default_window_icon()?;
+    Some(Image::new_owned(
+        icon.rgba().to_vec(),
+        icon.width(),
+        icon.height(),
+    ))
 }
 
 /// set_tray_state updates the texts and the dynamic lists of the menu.

@@ -66,6 +66,8 @@ if (-not $SkipDaemon) {
     # The GUI subsystem keeps the console window away when the startup entry
     # runs the daemon at login.
     $ldflags = "-s -w -H windowsgui -X main.version=$version"
+    $ldflags = "$ldflags -X github.com/lebe-dev/unison/internal/observability.buildDSN=$env:SENTRY_DSN"
+    $ldflags = "$ldflags -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
     $env:CGO_ENABLED = '0'
     Push-Location $root
     try {

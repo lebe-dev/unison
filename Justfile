@@ -319,6 +319,14 @@ verify-macos *args:
 package-windows *args:
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/package.ps1 {{args}}
 
+# Build the Windows installer from macOS with cargo-xwin and NSIS.
+package-windows-cross:
+    packaging/windows/package-cross.sh
+
+# Build the Windows installer and the test kit that runs on a Windows host.
+windows-kit: package-windows-cross
+    packaging/windows/kit.sh
+
 # Check the Windows installer and the installed application.
 verify-windows *args:
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/verify.ps1 {{args}}

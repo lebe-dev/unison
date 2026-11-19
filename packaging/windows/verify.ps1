@@ -3,30 +3,49 @@
 Checks the Windows installer and the installed application.
 
 .DESCRIPTION
-Checks the artifacts of package-windows. When Unison is installed, it also
-checks the installed files, the startup entry, the firewall rule and the running
-daemon, and prints the checks that need the user.
+Checks the installer of the build, the subsystem of the daemon and, when Unison
+is installed, the installed files, the startup entry, the firewall rule and the
+running daemon. The script works in the repository and in the test kit: the
+version comes from the VERSION file next to the script and the installer from
+the setup directory of the kit or from the build directory of the repository.
+
+The line "ok" is a passed check, "FAIL" a failed one and "note" a check that
+needs the user.
 
 .PARAMETER Installer
-Path to the installer, the artifact of package-windows by default.
+Path to the installer, the artifact of the build by default.
 
 .PARAMETER InstallDir
 Installation directory, %ProgramFiles%\Unison by default.
 
+.PARAMETER Version
+Version of the build, the VERSION file next to the script by default.
+
 .EXAMPLE
-just verify-windows
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify.ps1
 #>
 [CmdletBinding()]
 param(
     [string] $Installer,
-    [string] $InstallDir
+    [string] $InstallDir,
+    [string] $Version
 )
 
 $ErrorActionPreference = 'Continue'
 Set-StrictMode -Version Latest
 
-$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$version = (Get-Content -Raw (Join-Path $root 'VERSION')).Trim()
+# The script lives in packaging\windows of the repository or in scripts\ of the
+# kit, so the VERSION file is one or two directories above it.
+$root = $PSScriptRoot
+for ($i = 0; $i -lt 3; $i++) {
+    if (Test-Path (Join-Path $root 'VERSION')) {
+        break
+    }
+    $root = Split-Path -Parent $root
+}
+if (-not $Version) {
+    $Version = (Get-Content -Raw (Join-Path $root 'VERSION')).Trim()
+}
 
 # Names the installer and the app share; the NSIS hooks use the same ones.
 $productName = 'Unison'
@@ -34,7 +53,16 @@ $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $firewallRule = 'Unison daemon'
 
 if (-not $Installer) {
-    $Installer = Join-Path $root "packaging/windows/build/$productName-$version-setup.exe"
+    $setup = Join-Path $root 'setup'
+    if (Test-Path $setup) {
+        $found = @(Get-ChildItem -Path $setup -Filter '*-setup.exe' | Sort-Object LastWriteTime)
+        if ($found.Count -gt 0) {
+            $Installer = $found[$found.Count - 1].FullName
+        }
+    }
+}
+if (-not $Installer) {
+    $Installer = Join-Path $root "packaging/windows/build/$productName-$Version-setup.exe"
 }
 if (-not $InstallDir) {
     $InstallDir = Join-Path $env:ProgramFiles $productName
@@ -49,6 +77,14 @@ function Fail([string] $message) {
 }
 function Note([string] $message) { Write-Host "note  $message" }
 
+function Get-RegistryValue([string] $path, [string] $name) {
+    $item = Get-ItemProperty -Path $path -Name $name -ErrorAction SilentlyContinue
+    if (-not $item) {
+        return $null
+    }
+    return [string] $item.$name
+}
+
 function Get-PeSubsystem([string] $path) {
     # The optional header holds the subsystem 68 bytes after its start; 2 is the
     # GUI subsystem, which opens no console window.
@@ -59,6 +95,42 @@ function Get-PeSubsystem([string] $path) {
         return 0
     }
     return [BitConverter]::ToUInt16($bytes, $pe + 24 + 68)
+}
+
+# Operating system.
+$versionKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+$displayVersion = Get-RegistryValue $versionKey 'DisplayVersion'
+$buildText = Get-RegistryValue $versionKey 'CurrentBuild'
+$build = 0
+if ($buildText) {
+    $build = [int] $buildText
+}
+if ([Environment]::OSVersion.Version.Major -ge 10 -and $build -ge 10240) {
+    Pass "Windows $displayVersion, build $build"
+}
+else {
+    Fail "Windows $displayVersion, build $build, Unison needs Windows 10 or later"
+}
+
+$profiles = @()
+try {
+    $profiles = @(Get-NetConnectionProfile -ErrorAction Stop)
+}
+catch {
+    Note 'the network profiles cannot be read here'
+}
+if ($profiles.Count -eq 0) {
+    Note 'no network profile, connect to a network'
+}
+else {
+    $private = @($profiles | Where-Object { $_.NetworkCategory -eq 'Private' })
+    if ($private.Count -gt 0) {
+        Pass "private network profile $($private[0].InterfaceAlias)"
+    }
+    else {
+        $categories = @($profiles | ForEach-Object { "$($_.InterfaceAlias)=$($_.NetworkCategory)" })
+        Note "no private network profile ($($categories -join ', ')), the firewall rule of the daemon does not apply"
+    }
 }
 
 # Artifacts.
@@ -77,27 +149,33 @@ else {
     Fail "installer $Installer"
 }
 
-$hostTriple = $null
-if (Get-Command rustc -ErrorAction SilentlyContinue) {
-    $hostTriple = (& rustc -vV | Select-String -Pattern '^host: ').ToString().Split(' ')[1].Trim()
-}
-if ($hostTriple) {
-    $sidecar = Join-Path $root "desktop/src-tauri/binaries/unisond-$hostTriple.exe"
-    if (Test-Path $sidecar) {
-        $subsystem = Get-PeSubsystem $sidecar
-        if ($subsystem -eq 2) {
-            Pass 'daemon uses the GUI subsystem'
+$sidecars = Join-Path $root 'desktop/src-tauri/binaries'
+if (Test-Path $sidecars) {
+    $hostTriple = $null
+    if (Get-Command rustc -ErrorAction SilentlyContinue) {
+        $hostTriple = (& rustc -vV | Select-String -Pattern '^host: ').ToString().Split(' ')[1].Trim()
+    }
+    if ($hostTriple) {
+        $sidecar = Join-Path $sidecars "unisond-$hostTriple.exe"
+        if (Test-Path $sidecar) {
+            $subsystem = Get-PeSubsystem $sidecar
+            if ($subsystem -eq 2) {
+                Pass 'daemon uses the GUI subsystem'
+            }
+            else {
+                Fail "daemon subsystem is $subsystem, expected 2"
+            }
         }
         else {
-            Fail "daemon subsystem is $subsystem, expected 2"
+            Fail "daemon sidecar $sidecar"
         }
     }
     else {
-        Fail "daemon sidecar $sidecar"
+        Note 'rustc is missing, the check of the daemon sidecar is skipped'
     }
 }
 else {
-    Note 'rustc is missing, the check of the daemon sidecar is skipped'
+    Note 'the daemon sidecar is not built here, the check is skipped'
 }
 
 # Installed state.
@@ -115,11 +193,7 @@ else {
         Fail 'daemon unisond.exe in the installation directory'
     }
 
-    $entry = $null
-    $values = Get-ItemProperty -Path $runKey -ErrorAction SilentlyContinue
-    if ($values -and $values.PSObject.Properties.Name -contains $productName) {
-        $entry = $values.$productName
-    }
+    $entry = Get-RegistryValue $runKey $productName
     $expected = "`"$daemon`""
     if ($entry -eq $expected) {
         Pass "startup entry $entry"
@@ -142,37 +216,62 @@ else {
             else {
                 Fail "firewall rule points at $($programs -join ', '), expected $daemon"
             }
-            $profiles = ($rules | ForEach-Object { $_.Profile }) -join ','
-            if ($profiles -match 'Public') {
-                Note "firewall rule also covers the public profile: $profiles"
+            $ruleProfiles = ($rules | ForEach-Object { $_.Profile }) -join ','
+            if ($ruleProfiles -match 'Public') {
+                Note "firewall rule also covers the public profile: $ruleProfiles"
             }
             else {
-                Pass "firewall rule covers $profiles"
+                Pass "firewall rule covers $ruleProfiles"
             }
         }
     }
     catch {
         Note "the firewall rules cannot be read here, check netsh advfirewall firewall show rule name=`"$firewallRule`""
     }
+}
 
-    $pipes = @(Get-ChildItem '\\.\pipe\' -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like 'unison-*' })
-    if ($pipes.Count -gt 0) {
-        Pass "daemon answers on $($pipes[0].Name)"
+$pipes = @(Get-ChildItem '\\.\pipe\' -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -like 'unison-*' })
+if ($pipes.Count -gt 0) {
+    Pass "daemon answers on $($pipes[0].Name)"
+}
+else {
+    Note 'the daemon does not answer, start it or log in again'
+}
+
+# The daemon belongs to the session of the user that runs it.
+$processes = @(Get-CimInstance Win32_Process -Filter "Name = 'unisond.exe'" -ErrorAction SilentlyContinue)
+if ($processes.Count -eq 0) {
+    Note 'unisond.exe does not run'
+}
+else {
+    $current = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $owners = @()
+    foreach ($process in $processes) {
+        $owner = Invoke-CimMethod -InputObject $process -MethodName GetOwner -ErrorAction SilentlyContinue
+        if ($owner -and $owner.User) {
+            $owners += "$($owner.Domain)\$($owner.User)"
+        }
+    }
+    if ($owners.Count -eq 0) {
+        Note 'the owner of unisond.exe cannot be read here'
+    }
+    elseif ($owners -contains $current) {
+        Pass "unisond.exe runs for $current"
     }
     else {
-        Note 'the daemon does not answer, start it or log in again'
+        Fail "unisond.exe runs for $($owners -join ', '), not for $current"
     }
 }
 
 Write-Host
 if ($failures -gt 0) {
-    Write-Host "verify-windows: $failures checks failed"
+    Write-Host "verify: $failures checks failed"
     exit 1
 }
 
 @'
-verify-windows: check these by hand on the target machine:
+verify: check these by hand on the target machine:
   1. install the setup file and allow the elevation of the installer
   2. log out and in again: unisond.exe runs without the app, no console window
      appears and the paired devices are online
