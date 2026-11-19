@@ -53,7 +53,10 @@ type link struct {
 	gen      uint64
 	dialing  bool
 	attempts int
-	blocked  bool
+	// migrations counts the attempts to move a relay connection to the local
+	// network since the relay session opened or the network changed.
+	migrations int
+	blocked    bool
 	// offline is when the link lost its connection, zero while it has one.
 	offline time.Time
 	// unreachable is when the peer stopped answering on its known addresses,
@@ -363,6 +366,7 @@ func (l *link) block() {
 func (l *link) retry() {
 	l.mu.Lock()
 	l.attempts = 0
+	l.migrations = 0
 	l.blocked = false
 	l.mu.Unlock()
 	l.wake()
@@ -397,19 +401,34 @@ func (l *link) wait(ctx context.Context, delay time.Duration) bool {
 func (l *link) nextDelay(first, limit time.Duration) time.Duration {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	delay := backoff(l.attempts, first, limit)
+	l.attempts++
+	return delay
+}
 
+// nextMigrateDelay returns the delay before the next search for the peer in the
+// local network while it is online over the relay, and counts the search. A
+// network change resets it, and discovery dials a peer that appears at once, so
+// the search only has to catch what both miss.
+func (l *link) nextMigrateDelay(first, limit time.Duration) time.Duration {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delay := backoff(l.migrations, first, limit)
+	l.migrations++
+	return delay
+}
+
+// backoff returns the delay after the given number of attempts: first doubled
+// for every attempt, capped at limit.
+func backoff(attempts int, first, limit time.Duration) time.Duration {
 	delay := first
-	for range l.attempts {
+	for range attempts {
 		if delay >= limit {
 			break
 		}
 		delay *= backoffFactor
 	}
-	if delay > limit {
-		delay = limit
-	}
-	l.attempts++
-	return delay
+	return min(delay, limit)
 }
 
 // takesOver reports whether a new connection replaces the current one of the
@@ -526,7 +545,9 @@ func consumeCandidates[T any](ctx context.Context, candidates <-chan T, fn func(
 	}
 }
 
-// rememberCandidate caches a discovered address for the next reconnect.
+// rememberCandidate caches a discovered address for the next reconnect. A new
+// announcement clears the device that answered there before: the address may
+// belong to another device now.
 func (n *Node) rememberCandidate(addr string) {
 	if addr == "" || len(addr) > maxAddrLength {
 		return
@@ -559,26 +580,58 @@ func (n *Node) evictCandidateLocked() {
 // probeCandidates dials every cached candidate. The handshake tells which
 // device answers.
 func (n *Node) probeCandidates(ctx context.Context) {
-	for _, addr := range n.candidateAddrs() {
+	for _, addr := range n.candidateAddrs(model.DeviceID{}) {
 		n.probe(ctx, addr)
 	}
 }
 
-// candidateAddrs returns the cached addresses that did not expire.
-func (n *Node) candidateAddrs() []string {
+// candidateAddrs returns the cached addresses that did not expire, without the
+// ones of a device other than peer that is online in the local network: a dial
+// there would only find that device again. A zero peer skips the addresses of
+// every such device.
+func (n *Node) candidateAddrs(peer model.DeviceID) []string {
 	now := n.clock.Now()
 
 	n.mu.Lock()
-	defer n.mu.Unlock()
 	addrs := make([]string, 0, len(n.candidates))
+	owners := make([]model.DeviceID, 0, len(n.candidates))
 	for addr, candidate := range n.candidates {
 		if now.Sub(candidate.seen) > candidateTTL {
 			delete(n.candidates, addr)
 			continue
 		}
 		addrs = append(addrs, addr)
+		owners = append(owners, candidate.owner)
 	}
-	return addrs
+	n.mu.Unlock()
+
+	kept := addrs[:0]
+	for i, addr := range addrs {
+		if owner := owners[i]; owner != peer && n.onlineInLAN(owner) {
+			continue
+		}
+		kept = append(kept, addr)
+	}
+	return kept
+}
+
+// onlineInLAN reports whether the device has a session in the local network.
+func (n *Node) onlineInLAN(id model.DeviceID) bool {
+	if id.IsZero() {
+		return false
+	}
+	l := n.lookup(id)
+	return l != nil && l.pathIs(model.PathLAN)
+}
+
+// noteCandidateOwner records the device that answered on a cached candidate.
+func (n *Node) noteCandidateOwner(addr string, id model.DeviceID) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if candidate, ok := n.candidates[addr]; ok {
+		candidate.owner = id
+		n.candidates[addr] = candidate
+	}
 }
 
 // probe dials one discovered address when a peer is missing. A device that is
@@ -596,6 +649,13 @@ func (n *Node) probeQuiet(ctx context.Context, addr string) {
 // counted, other failures are logged with the address when logAddr is set.
 func (n *Node) probeAddr(ctx context.Context, addr string, logAddr bool) {
 	if ctx.Err() != nil || !n.needsPeers() {
+		return
+	}
+
+	n.mu.Lock()
+	owner := n.candidates[addr].owner
+	n.mu.Unlock()
+	if n.onlineInLAN(owner) {
 		return
 	}
 
@@ -625,6 +685,7 @@ func (n *Node) probeAddr(ctx context.Context, addr string, logAddr bool) {
 			}
 			return
 		}
+		n.noteCandidateOwner(addr, conn.Peer().DeviceID())
 		if _, err := n.attach(ctx, conn, false); err != nil && !errors.Is(err, errSuperseded) {
 			if logAddr {
 				n.log.Debug("discovered device refused", "addr", addr, "error", err)
@@ -665,7 +726,7 @@ func (n *Node) runLink(ctx context.Context, l *link) {
 				// Keep looking for the local network while the peer is
 				// reachable over the relay.
 				n.tryDial(ctx, l, dialMigrate)
-				if !l.wait(ctx, n.limits.ReconnectDelay) {
+				if !l.wait(ctx, l.nextMigrateDelay(n.limits.ReconnectDelay, n.limits.ReconnectMaxDelay)) {
 					return
 				}
 				continue
@@ -746,6 +807,7 @@ func (n *Node) tryDial(ctx context.Context, l *link, purpose dialPurpose) {
 			}
 			continue
 		}
+		n.noteCandidateOwner(addr, conn.Peer().DeviceID())
 		answered := conn.Peer().DeviceID() == l.id
 		if _, err := n.attach(ctx, conn, false); err != nil {
 			if !errors.Is(err, errSuperseded) {
@@ -795,8 +857,9 @@ func (n *Node) noteReachability(l *link, silent bool, failures []error) {
 // the discovered candidates.
 func (n *Node) dialAddrs(ctx context.Context, id model.DeviceID) []string {
 	cached := n.peerAddrs(ctx, id)
-	addrs := make([]string, 0, len(cached)+len(n.candidateAddrs()))
-	for _, addr := range append(cached, n.candidateAddrs()...) {
+	candidates := n.candidateAddrs(id)
+	addrs := make([]string, 0, len(cached)+len(candidates))
+	for _, addr := range append(cached, candidates...) {
 		if slices.Contains(addrs, addr) {
 			continue
 		}
@@ -868,6 +931,7 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 	l.online = true
 	l.path = path
 	l.attempts = 0
+	l.migrations = 0
 	l.blocked = false
 	l.offline = time.Time{}
 	l.unreachable = time.Time{}

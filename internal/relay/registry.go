@@ -12,6 +12,9 @@ const maxMailboxMembers = 4
 // errRegistryFull reports that the server holds as many mailboxes as allowed.
 var errRegistryFull = errors.New("relay: mailbox registry full")
 
+// errPeerGone reports a connection that already left its mailboxes.
+var errPeerGone = errors.New("relay: connection left its mailboxes")
+
 // mailboxID identifies a mailbox. The relay treats it as opaque.
 type mailboxID [mailboxIDLen]byte
 
@@ -48,6 +51,39 @@ func (r *registry) join(p *peer, ids []mailboxID) error {
 	if err := r.reserve(ids); err != nil {
 		return err
 	}
+	r.joinLocked(p, ids)
+	return nil
+}
+
+// replace makes the mailboxes the whole set of a registered connection. On a
+// failure the connection keeps its previous set.
+func (r *registry) replace(p *peer, ids []mailboxID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	own, ok := r.byPeer[p]
+	if !ok {
+		return errPeerGone
+	}
+	if err := r.reserve(ids); err != nil {
+		return err
+	}
+	want := make(map[mailboxID]struct{}, len(ids))
+	for _, id := range ids {
+		want[id] = struct{}{}
+	}
+	for id := range own {
+		if _, keep := want[id]; !keep {
+			r.remove(p, id)
+		}
+	}
+	r.joinLocked(p, ids)
+	return nil
+}
+
+// joinLocked adds a connection to the mailboxes. The caller must hold r.mu and
+// have reserved the mailboxes.
+func (r *registry) joinLocked(p *peer, ids []mailboxID) {
 	own := r.byPeer[p]
 	if own == nil {
 		own = make(map[mailboxID]struct{}, len(ids))
@@ -73,7 +109,6 @@ func (r *registry) join(p *peer, ids []mailboxID) error {
 			r.metrics.mailboxes.Add(1)
 		}
 	}
-	return nil
 }
 
 // reserve checks that the mailboxes fit into the limit.

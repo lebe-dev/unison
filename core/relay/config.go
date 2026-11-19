@@ -55,6 +55,10 @@ var (
 	// ErrDatagramTooLarge reports a payload that does not fit into one relay
 	// datagram.
 	ErrDatagramTooLarge = errors.New("relay: datagram too large")
+	// ErrMailboxLimit reports a pair that found no room on the relay
+	// connection: the relay limits the mailboxes of one connection, and the
+	// pairs opened earlier hold them.
+	ErrMailboxLimit = errors.New("relay: no mailbox left on the relay connection")
 )
 
 // Config describes a relay client.
@@ -89,7 +93,8 @@ type Config struct {
 	// DefaultQueue is used when zero.
 	Queue int
 	// Rollover is how long before UTC midnight the client registers the
-	// mailbox of the next day. DefaultRollover is used when zero.
+	// mailbox of the next day, and how long after it the client keeps the
+	// mailbox of the previous day. DefaultRollover is used when zero.
 	Rollover time.Duration
 }
 

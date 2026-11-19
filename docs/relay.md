@@ -108,8 +108,10 @@ IDs, so the device IDs alone do not reveal the mailboxes of a pair.
 
 The id changes every day and reveals nothing about the pair, so the relay cannot follow a device
 across days. In the last 30 minutes before midnight UTC a device registers the mailbox of the next
-day as well, so a pair stays reachable across the boundary. At midnight the client replaces the
-connection and registers the new set.
+day as well, and it keeps the mailbox of the previous day for 30 minutes after midnight, so a pair
+stays reachable across the boundary even when the clocks of the two devices differ a little. A
+relay of this version changes the mailboxes of a live connection; an older relay gets a new
+connection with the new set.
 
 ## What the relay can see
 
@@ -243,7 +245,7 @@ addresses.
 | `-max-datagram-bytes` | `UNISON_RELAY_MAX_DATAGRAM_BYTES` | 1400 |
 | `-rate`, `-rate-burst` | `UNISON_RELAY_RATE`, `UNISON_RELAY_RATE_BURST` | 200 per second, burst 400 |
 | `-quota-bytes`, `-quota-window` | `UNISON_RELAY_QUOTA_BYTES`, `UNISON_RELAY_QUOTA_WINDOW` | 1 GiB, 24h |
-| `-max-mailboxes` | `UNISON_RELAY_MAX_MAILBOXES` | 8 per connection |
+| `-max-mailboxes` | `UNISON_RELAY_MAX_MAILBOXES` | 32 per connection |
 | `-max-mailboxes-total` | `UNISON_RELAY_MAX_MAILBOXES_TOTAL` | 100000 |
 | `-max-connections` | `UNISON_RELAY_MAX_CONNECTIONS` | 4096 |
 | `-ping-interval` | `UNISON_RELAY_PING_INTERVAL` | 30s |
@@ -251,7 +253,8 @@ addresses.
 
 One connection carries the mailboxes of every pair that uses the relay, up to two per pair around
 midnight. Raise `-max-mailboxes` when many devices of a group are away from the local network at
-the same time; the largest value is 256.
+the same time; the largest value is 256. When a device needs more mailboxes than the relay allows,
+the pairs it opened first keep theirs, and the device logs that the others wait for a free one.
 
 The environment supplies the defaults, and the flags override them. The flags are listed by:
 
@@ -262,8 +265,11 @@ docker run --rm unison-relay:<version> -h
 ## Reconnects
 
 The client reconnects with exponential backoff after a failure: 1 second, doubling to 30 seconds,
-and registers its mailboxes again. A change of the mailbox set reconnects at once. A relay
-connection is also replaced at UTC midnight, when the mailboxes of the day change.
+and registers its mailboxes again. When a peer starts or stops using the relay, or the mailboxes of
+the day change at UTC midnight, the client changes the mailboxes of its live connection, so the
+sessions with the other peers on the relay are not interrupted. A relay of an older version cannot
+do that: the client then replaces the connection, at once for a change of the mailbox set and at
+UTC midnight for the new day.
 
 A session between two devices survives a short relay outage for 15 seconds: the packets are
 retransmitted once the relay connection is back. When the relay stays away longer, the session ends

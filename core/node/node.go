@@ -194,6 +194,9 @@ const (
 // candidate is one discovered address of the local network.
 type candidate struct {
 	seen time.Time
+	// owner is the device that answered on the address, zero until a
+	// handshake there succeeds.
+	owner model.DeviceID
 }
 
 // Node is a running device. Create it with New, start it with Start and release
@@ -232,8 +235,9 @@ type Node struct {
 	relayCancel context.CancelFunc
 	// relayOn reports stored relay settings of the group.
 	relayOn atomic.Bool
-	// relayKick wakes the links that wait for the relay.
-	relayKick chan struct{}
+	// relayWake is closed and replaced to wake every link that waits for the
+	// relay. relayMu guards it.
+	relayWake chan struct{}
 
 	events *eventBus
 
@@ -316,7 +320,7 @@ func New(cfg Config) (*Node, error) {
 		links:      make(map[model.DeviceID]*link),
 		probing:    make(map[string]struct{}),
 		candidates: make(map[string]candidate),
-		relayKick:  make(chan struct{}, 1),
+		relayWake:  make(chan struct{}),
 		friendsSig: make(chan struct{}, 1),
 		// A device that has not reported its network is treated as online:
 		// the desktop daemon has no network monitor of its own.
@@ -568,6 +572,7 @@ func (n *Node) NetworkChanged(state model.NetworkState) {
 		n.announceFriends(ctx)
 	}
 	n.relayNetworkChanged()
+	n.wakeRelay()
 	for _, l := range n.linkList() {
 		l.retry()
 	}

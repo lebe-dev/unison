@@ -221,12 +221,19 @@ func (n *Node) relayNetworkChanged() {
 	}
 }
 
-// wakeRelay asks the links that wait for the relay to try it again.
+// wakeRelay asks every link that waits for the relay to try it again.
 func (n *Node) wakeRelay() {
-	select {
-	case n.relayKick <- struct{}{}:
-	default:
-	}
+	n.relayMu.Lock()
+	close(n.relayWake)
+	n.relayWake = make(chan struct{})
+	n.relayMu.Unlock()
+}
+
+// relayWakeup returns a channel that is closed by the next wakeRelay.
+func (n *Node) relayWakeup() <-chan struct{} {
+	n.relayMu.Lock()
+	defer n.relayMu.Unlock()
+	return n.relayWake
 }
 
 // startRelay opens the relay path of the peer unless it already runs.
@@ -261,6 +268,7 @@ func (n *Node) relayLoop(ctx context.Context, l *link) {
 
 	delay := n.limits.ReconnectDelay
 	warned := false
+	full := false
 	for {
 		if ctx.Err() != nil || !l.relayWanted() {
 			return
@@ -284,6 +292,11 @@ func (n *Node) relayLoop(ctx context.Context, l *link) {
 			// local addresses.
 			l.retry()
 			return
+		case errors.Is(err, relay.ErrMailboxLimit):
+			if !full {
+				n.log.Warn("the relay allows no more mailboxes for this device, the peer waits for a free one", "peer", l.id)
+				full = true
+			}
 		case errors.Is(err, relay.ErrDatagramTooSmall):
 			if !warned {
 				n.log.Warn("relay datagrams cannot carry QUIC, the relay path stays off", "error", err)
@@ -346,12 +359,13 @@ func (n *Node) serveRelayPath(ctx context.Context, l *link, path *relayPath) {
 
 // pauseRelay waits before the next relay attempt of the link.
 func (n *Node) pauseRelay(ctx context.Context, delay time.Duration) bool {
+	wake := n.relayWakeup()
 	timer := time.NewTimer(delay)
 	defer timer.Stop()
 	select {
 	case <-ctx.Done():
 		return false
-	case <-n.relayKick:
+	case <-wake:
 		return true
 	case <-timer.C:
 		return true

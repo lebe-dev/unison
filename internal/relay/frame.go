@@ -105,6 +105,19 @@ func registerResultFrame(status relayv1.RelayStatus, limits *relayv1.Limits) []b
 	return data
 }
 
+// updateResultFrame encodes the answer to a mailbox update.
+func updateResultFrame(seq uint64, status relayv1.RelayStatus) []byte {
+	data, err := marshalFrame(&relayv1.Frame{
+		Body: &relayv1.Frame_UpdateResult{
+			UpdateResult: &relayv1.UpdateResult{Seq: seq, Status: status},
+		},
+	})
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
 // mailboxIDOf converts the wire form of a mailbox id.
 func mailboxIDOf(raw []byte) (mailboxID, bool) {
 	if len(raw) != mailboxIDLen {

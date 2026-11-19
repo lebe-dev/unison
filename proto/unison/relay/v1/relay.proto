@@ -37,6 +37,10 @@ message Limits {
   uint64 quota_bytes = 5;
   // Length of the quota window.
   uint64 quota_window_seconds = 6;
+  // The relay accepts Update frames on a registered connection. A relay
+  // without them leaves the field unset, and the client registers a changed
+  // mailbox set on a new connection instead.
+  bool mailbox_updates = 7;
 }
 
 // Registration of a connection. It is the first frame of a connection.
@@ -52,6 +56,24 @@ message RegisterResult {
   RelayStatus status = 1;
   // Limits the relay applies, sent on success.
   Limits limits = 2;
+}
+
+// Replacement of the mailbox set of a registered connection. It travels like a
+// datagram, so the client sends it again until the answer with its sequence
+// number arrives. The relay applies only a sequence number above the last one
+// it applied and answers a repeated one again.
+message Update {
+  // Number of the update, increasing on the connection.
+  uint64 seq = 1;
+  // Mailbox ids the connection is a member of afterwards, 16 bytes each.
+  repeated bytes mailbox_ids = 2;
+}
+
+// Answer to an update. On a failure the connection keeps its previous set.
+message UpdateResult {
+  // Number of the answered update.
+  uint64 seq = 1;
+  RelayStatus status = 2;
 }
 
 // One datagram between two members of a mailbox.
@@ -75,5 +97,7 @@ message Frame {
     RegisterResult register_result = 2;
     Datagram datagram = 3;
     Close close = 4;
+    Update update = 5;
+    UpdateResult update_result = 6;
   }
 }

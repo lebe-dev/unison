@@ -108,8 +108,12 @@ type Limits struct {
 	QuotaBytes uint64 `protobuf:"varint,5,opt,name=quota_bytes,json=quotaBytes,proto3" json:"quota_bytes,omitempty"`
 	// Length of the quota window.
 	QuotaWindowSeconds uint64 `protobuf:"varint,6,opt,name=quota_window_seconds,json=quotaWindowSeconds,proto3" json:"quota_window_seconds,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// The relay accepts Update frames on a registered connection. A relay
+	// without them leaves the field unset, and the client registers a changed
+	// mailbox set on a new connection instead.
+	MailboxUpdates bool `protobuf:"varint,7,opt,name=mailbox_updates,json=mailboxUpdates,proto3" json:"mailbox_updates,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Limits) Reset() {
@@ -182,6 +186,13 @@ func (x *Limits) GetQuotaWindowSeconds() uint64 {
 		return x.QuotaWindowSeconds
 	}
 	return 0
+}
+
+func (x *Limits) GetMailboxUpdates() bool {
+	if x != nil {
+		return x.MailboxUpdates
+	}
+	return false
 }
 
 // Registration of a connection. It is the first frame of a connection.
@@ -293,6 +304,118 @@ func (x *RegisterResult) GetLimits() *Limits {
 	return nil
 }
 
+// Replacement of the mailbox set of a registered connection. It travels like a
+// datagram, so the client sends it again until the answer with its sequence
+// number arrives. The relay applies only a sequence number above the last one
+// it applied and answers a repeated one again.
+type Update struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Number of the update, increasing on the connection.
+	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	// Mailbox ids the connection is a member of afterwards, 16 bytes each.
+	MailboxIds    [][]byte `protobuf:"bytes,2,rep,name=mailbox_ids,json=mailboxIds,proto3" json:"mailbox_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update) Reset() {
+	*x = Update{}
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update) ProtoMessage() {}
+
+func (x *Update) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update.ProtoReflect.Descriptor instead.
+func (*Update) Descriptor() ([]byte, []int) {
+	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Update) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *Update) GetMailboxIds() [][]byte {
+	if x != nil {
+		return x.MailboxIds
+	}
+	return nil
+}
+
+// Answer to an update. On a failure the connection keeps its previous set.
+type UpdateResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Number of the answered update.
+	Seq           uint64      `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Status        RelayStatus `protobuf:"varint,2,opt,name=status,proto3,enum=unison.relay.v1.RelayStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateResult) Reset() {
+	*x = UpdateResult{}
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateResult) ProtoMessage() {}
+
+func (x *UpdateResult) ProtoReflect() protoreflect.Message {
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateResult.ProtoReflect.Descriptor instead.
+func (*UpdateResult) Descriptor() ([]byte, []int) {
+	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *UpdateResult) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *UpdateResult) GetStatus() RelayStatus {
+	if x != nil {
+		return x.Status
+	}
+	return RelayStatus_RELAY_STATUS_UNSPECIFIED
+}
+
 // One datagram between two members of a mailbox.
 type Datagram struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -306,7 +429,7 @@ type Datagram struct {
 
 func (x *Datagram) Reset() {
 	*x = Datagram{}
-	mi := &file_unison_relay_v1_relay_proto_msgTypes[3]
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -318,7 +441,7 @@ func (x *Datagram) String() string {
 func (*Datagram) ProtoMessage() {}
 
 func (x *Datagram) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_relay_v1_relay_proto_msgTypes[3]
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +454,7 @@ func (x *Datagram) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Datagram.ProtoReflect.Descriptor instead.
 func (*Datagram) Descriptor() ([]byte, []int) {
-	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{3}
+	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Datagram) GetMailboxId() []byte {
@@ -358,7 +481,7 @@ type Close struct {
 
 func (x *Close) Reset() {
 	*x = Close{}
-	mi := &file_unison_relay_v1_relay_proto_msgTypes[4]
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -370,7 +493,7 @@ func (x *Close) String() string {
 func (*Close) ProtoMessage() {}
 
 func (x *Close) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_relay_v1_relay_proto_msgTypes[4]
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -383,7 +506,7 @@ func (x *Close) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Close.ProtoReflect.Descriptor instead.
 func (*Close) Descriptor() ([]byte, []int) {
-	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{4}
+	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Close) GetStatus() RelayStatus {
@@ -403,6 +526,8 @@ type Frame struct {
 	//	*Frame_RegisterResult
 	//	*Frame_Datagram
 	//	*Frame_Close
+	//	*Frame_Update
+	//	*Frame_UpdateResult
 	Body          isFrame_Body `protobuf_oneof:"body"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -410,7 +535,7 @@ type Frame struct {
 
 func (x *Frame) Reset() {
 	*x = Frame{}
-	mi := &file_unison_relay_v1_relay_proto_msgTypes[5]
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -422,7 +547,7 @@ func (x *Frame) String() string {
 func (*Frame) ProtoMessage() {}
 
 func (x *Frame) ProtoReflect() protoreflect.Message {
-	mi := &file_unison_relay_v1_relay_proto_msgTypes[5]
+	mi := &file_unison_relay_v1_relay_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -435,7 +560,7 @@ func (x *Frame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Frame.ProtoReflect.Descriptor instead.
 func (*Frame) Descriptor() ([]byte, []int) {
-	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{5}
+	return file_unison_relay_v1_relay_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Frame) GetBody() isFrame_Body {
@@ -481,6 +606,24 @@ func (x *Frame) GetClose() *Close {
 	return nil
 }
 
+func (x *Frame) GetUpdate() *Update {
+	if x != nil {
+		if x, ok := x.Body.(*Frame_Update); ok {
+			return x.Update
+		}
+	}
+	return nil
+}
+
+func (x *Frame) GetUpdateResult() *UpdateResult {
+	if x != nil {
+		if x, ok := x.Body.(*Frame_UpdateResult); ok {
+			return x.UpdateResult
+		}
+	}
+	return nil
+}
+
 type isFrame_Body interface {
 	isFrame_Body()
 }
@@ -501,6 +644,14 @@ type Frame_Close struct {
 	Close *Close `protobuf:"bytes,4,opt,name=close,proto3,oneof"`
 }
 
+type Frame_Update struct {
+	Update *Update `protobuf:"bytes,5,opt,name=update,proto3,oneof"`
+}
+
+type Frame_UpdateResult struct {
+	UpdateResult *UpdateResult `protobuf:"bytes,6,opt,name=update_result,json=updateResult,proto3,oneof"`
+}
+
 func (*Frame_Register) isFrame_Body() {}
 
 func (*Frame_RegisterResult) isFrame_Body() {}
@@ -509,11 +660,15 @@ func (*Frame_Datagram) isFrame_Body() {}
 
 func (*Frame_Close) isFrame_Body() {}
 
+func (*Frame_Update) isFrame_Body() {}
+
+func (*Frame_UpdateResult) isFrame_Body() {}
+
 var File_unison_relay_v1_relay_proto protoreflect.FileDescriptor
 
 const file_unison_relay_v1_relay_proto_rawDesc = "" +
 	"\n" +
-	"\x1bunison/relay/v1/relay.proto\x12\x0funison.relay.v1\"\xf5\x01\n" +
+	"\x1bunison/relay/v1/relay.proto\x12\x0funison.relay.v1\"\x9e\x02\n" +
 	"\x06Limits\x12#\n" +
 	"\rmax_mailboxes\x18\x01 \x01(\rR\fmaxMailboxes\x12,\n" +
 	"\x12max_datagram_bytes\x18\x02 \x01(\rR\x10maxDatagramBytes\x12&\n" +
@@ -522,25 +677,35 @@ const file_unison_relay_v1_relay_proto_rawDesc = "" +
 	"rate_burst\x18\x04 \x01(\rR\trateBurst\x12\x1f\n" +
 	"\vquota_bytes\x18\x05 \x01(\x04R\n" +
 	"quotaBytes\x120\n" +
-	"\x14quota_window_seconds\x18\x06 \x01(\x04R\x12quotaWindowSeconds\"A\n" +
+	"\x14quota_window_seconds\x18\x06 \x01(\x04R\x12quotaWindowSeconds\x12'\n" +
+	"\x0fmailbox_updates\x18\a \x01(\bR\x0emailboxUpdates\"A\n" +
 	"\bRegister\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\fR\x05token\x12\x1f\n" +
 	"\vmailbox_ids\x18\x02 \x03(\fR\n" +
 	"mailboxIds\"w\n" +
 	"\x0eRegisterResult\x124\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1c.unison.relay.v1.RelayStatusR\x06status\x12/\n" +
-	"\x06limits\x18\x02 \x01(\v2\x17.unison.relay.v1.LimitsR\x06limits\"C\n" +
+	"\x06limits\x18\x02 \x01(\v2\x17.unison.relay.v1.LimitsR\x06limits\";\n" +
+	"\x06Update\x12\x10\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x1f\n" +
+	"\vmailbox_ids\x18\x02 \x03(\fR\n" +
+	"mailboxIds\"V\n" +
+	"\fUpdateResult\x12\x10\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\x124\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x1c.unison.relay.v1.RelayStatusR\x06status\"C\n" +
 	"\bDatagram\x12\x1d\n" +
 	"\n" +
 	"mailbox_id\x18\x01 \x01(\fR\tmailboxId\x12\x18\n" +
 	"\apayload\x18\x02 \x01(\fR\apayload\"=\n" +
 	"\x05Close\x124\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x1c.unison.relay.v1.RelayStatusR\x06status\"\xfd\x01\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x1c.unison.relay.v1.RelayStatusR\x06status\"\xf6\x02\n" +
 	"\x05Frame\x127\n" +
 	"\bregister\x18\x01 \x01(\v2\x19.unison.relay.v1.RegisterH\x00R\bregister\x12J\n" +
 	"\x0fregister_result\x18\x02 \x01(\v2\x1f.unison.relay.v1.RegisterResultH\x00R\x0eregisterResult\x127\n" +
 	"\bdatagram\x18\x03 \x01(\v2\x19.unison.relay.v1.DatagramH\x00R\bdatagram\x12.\n" +
-	"\x05close\x18\x04 \x01(\v2\x16.unison.relay.v1.CloseH\x00R\x05closeB\x06\n" +
+	"\x05close\x18\x04 \x01(\v2\x16.unison.relay.v1.CloseH\x00R\x05close\x121\n" +
+	"\x06update\x18\x05 \x01(\v2\x17.unison.relay.v1.UpdateH\x00R\x06update\x12D\n" +
+	"\rupdate_result\x18\x06 \x01(\v2\x1d.unison.relay.v1.UpdateResultH\x00R\fupdateResultB\x06\n" +
 	"\x04body*\x86\x02\n" +
 	"\vRelayStatus\x12\x1c\n" +
 	"\x18RELAY_STATUS_UNSPECIFIED\x10\x00\x12\x13\n" +
@@ -565,29 +730,34 @@ func file_unison_relay_v1_relay_proto_rawDescGZIP() []byte {
 }
 
 var file_unison_relay_v1_relay_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_unison_relay_v1_relay_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_unison_relay_v1_relay_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_unison_relay_v1_relay_proto_goTypes = []any{
 	(RelayStatus)(0),       // 0: unison.relay.v1.RelayStatus
 	(*Limits)(nil),         // 1: unison.relay.v1.Limits
 	(*Register)(nil),       // 2: unison.relay.v1.Register
 	(*RegisterResult)(nil), // 3: unison.relay.v1.RegisterResult
-	(*Datagram)(nil),       // 4: unison.relay.v1.Datagram
-	(*Close)(nil),          // 5: unison.relay.v1.Close
-	(*Frame)(nil),          // 6: unison.relay.v1.Frame
+	(*Update)(nil),         // 4: unison.relay.v1.Update
+	(*UpdateResult)(nil),   // 5: unison.relay.v1.UpdateResult
+	(*Datagram)(nil),       // 6: unison.relay.v1.Datagram
+	(*Close)(nil),          // 7: unison.relay.v1.Close
+	(*Frame)(nil),          // 8: unison.relay.v1.Frame
 }
 var file_unison_relay_v1_relay_proto_depIdxs = []int32{
-	0, // 0: unison.relay.v1.RegisterResult.status:type_name -> unison.relay.v1.RelayStatus
-	1, // 1: unison.relay.v1.RegisterResult.limits:type_name -> unison.relay.v1.Limits
-	0, // 2: unison.relay.v1.Close.status:type_name -> unison.relay.v1.RelayStatus
-	2, // 3: unison.relay.v1.Frame.register:type_name -> unison.relay.v1.Register
-	3, // 4: unison.relay.v1.Frame.register_result:type_name -> unison.relay.v1.RegisterResult
-	4, // 5: unison.relay.v1.Frame.datagram:type_name -> unison.relay.v1.Datagram
-	5, // 6: unison.relay.v1.Frame.close:type_name -> unison.relay.v1.Close
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	0,  // 0: unison.relay.v1.RegisterResult.status:type_name -> unison.relay.v1.RelayStatus
+	1,  // 1: unison.relay.v1.RegisterResult.limits:type_name -> unison.relay.v1.Limits
+	0,  // 2: unison.relay.v1.UpdateResult.status:type_name -> unison.relay.v1.RelayStatus
+	0,  // 3: unison.relay.v1.Close.status:type_name -> unison.relay.v1.RelayStatus
+	2,  // 4: unison.relay.v1.Frame.register:type_name -> unison.relay.v1.Register
+	3,  // 5: unison.relay.v1.Frame.register_result:type_name -> unison.relay.v1.RegisterResult
+	6,  // 6: unison.relay.v1.Frame.datagram:type_name -> unison.relay.v1.Datagram
+	7,  // 7: unison.relay.v1.Frame.close:type_name -> unison.relay.v1.Close
+	4,  // 8: unison.relay.v1.Frame.update:type_name -> unison.relay.v1.Update
+	5,  // 9: unison.relay.v1.Frame.update_result:type_name -> unison.relay.v1.UpdateResult
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_unison_relay_v1_relay_proto_init() }
@@ -595,11 +765,13 @@ func file_unison_relay_v1_relay_proto_init() {
 	if File_unison_relay_v1_relay_proto != nil {
 		return
 	}
-	file_unison_relay_v1_relay_proto_msgTypes[5].OneofWrappers = []any{
+	file_unison_relay_v1_relay_proto_msgTypes[7].OneofWrappers = []any{
 		(*Frame_Register)(nil),
 		(*Frame_RegisterResult)(nil),
 		(*Frame_Datagram)(nil),
 		(*Frame_Close)(nil),
+		(*Frame_Update)(nil),
+		(*Frame_UpdateResult)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -607,7 +779,7 @@ func file_unison_relay_v1_relay_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_unison_relay_v1_relay_proto_rawDesc), len(file_unison_relay_v1_relay_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

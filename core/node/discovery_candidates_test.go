@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"slices"
 	"testing"
 	"time"
 
@@ -99,7 +98,10 @@ func (d *feedDiscovery) BrowseCandidates(_ context.Context, service ports.Servic
 
 // cachesCandidate reports whether the node keeps addr for the next reconnect.
 func (n *testNode) cachesCandidate(addr string) bool {
-	return slices.Contains(n.candidateAddrs(), addr)
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	_, ok := n.candidates[addr]
+	return ok
 }
 
 // TestIgnoresUntaggedCandidateWhilePeersOnline checks that a device without the

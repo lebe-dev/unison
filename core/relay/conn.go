@@ -26,6 +26,9 @@ type Conn struct {
 	key    []byte
 	addr   Addr
 	queue  int
+	// order is the position of the pair among the pairs of the dialer. The
+	// earlier pairs keep their mailboxes when the relay limit is reached.
+	order int
 
 	// pendingRev is the mailbox set revision that has to be registered before
 	// the connection is usable.

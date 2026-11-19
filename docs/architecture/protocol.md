@@ -160,6 +160,15 @@ stays offline the Android app lets the delay grow to five minutes, because disco
 change and the peer itself bring it back sooner. `NetworkChanged` announces the device again and
 retries every offline peer.
 
+The path is chosen per device, so a node runs local network and relay connections side by side: a
+phone can keep a laptop in the same network on the local path and reach a desktop elsewhere through
+the relay. While a device is online over the relay, the node keeps looking for it in the local
+network with a delay that doubles from one second up to thirty seconds; a network change resets the
+delay, and discovery dials a device that appears at once. A discovered address remembers the device
+that answered there, and it is not dialed for another device while that one is online in the local
+network, since the handshake would only find the same device again. A new announcement of the
+address clears that record.
+
 ## Discovery
 
 `core/discovery` speaks DNS-SD on the local network, without a library, over its own mDNS sockets.

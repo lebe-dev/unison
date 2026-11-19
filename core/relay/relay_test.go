@@ -35,13 +35,20 @@ const testTimeout = 5 * time.Second
 type testRelay struct {
 	// url is the address of the relay, which serves both transports on one
 	// port.
-	url string
-	tls *tls.Config
+	url    string
+	tls    *tls.Config
+	server *relayserver.Server
 }
 
 // startTestRelay runs a relay server that serves QUIC and WebSocket on the same
 // port.
 func startTestRelay(t *testing.T) *testRelay {
+	t.Helper()
+	return startTestRelayWith(t, nil)
+}
+
+// startTestRelayWith runs a relay server whose configuration tune changes.
+func startTestRelayWith(t *testing.T, tune func(*relayserver.Config)) *testRelay {
 	t.Helper()
 
 	certFile, keyFile := testCertificate(t)
@@ -57,6 +64,9 @@ func startTestRelay(t *testing.T) *testRelay {
 	cfg.Tokens = []string{testToken}
 	cfg.MaxDatagramBytes = 1400
 	cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	if tune != nil {
+		tune(&cfg)
+	}
 
 	server, err := relayserver.New(cfg)
 	if err != nil {
@@ -72,8 +82,9 @@ func startTestRelay(t *testing.T) *testRelay {
 	})
 
 	return &testRelay{
-		url: address,
-		tls: &tls.Config{InsecureSkipVerify: true},
+		url:    address,
+		tls:    &tls.Config{InsecureSkipVerify: true},
+		server: server,
 	}
 }
 
@@ -256,6 +267,28 @@ func TestMailboxesAddsTheNextDayAtMidnight(t *testing.T) {
 	}
 	if late[1] != MailboxID(key, midnight) {
 		t.Fatal("the second mailbox is not the next day")
+	}
+}
+
+func TestMailboxesKeepThePreviousDayAfterMidnight(t *testing.T) {
+	key := []byte("rendezvous key of a pair")
+	midnight := time.Date(2026, time.November, 17, 0, 0, 0, 0, time.UTC)
+
+	// A peer whose clock is behind still sends to the mailbox of the previous
+	// day for a while.
+	early := Mailboxes(key, midnight.Add(10*time.Minute), DefaultRollover)
+	if len(early) != 2 {
+		t.Fatalf("got %d mailboxes ten minutes after midnight", len(early))
+	}
+	if early[0] != MailboxID(key, midnight) {
+		t.Fatal("the first mailbox is not the current day")
+	}
+	if early[1] != MailboxID(key, midnight.Add(-time.Hour)) {
+		t.Fatal("the second mailbox is not the previous day")
+	}
+
+	if late := Mailboxes(key, midnight.Add(2*time.Hour), DefaultRollover); len(late) != 1 {
+		t.Fatalf("got %d mailboxes two hours after midnight", len(late))
 	}
 }
 

@@ -1,10 +1,12 @@
 package relay
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net"
 	"os"
 	"slices"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/internal/observability"
+	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
 
 // maxKeyBytes bounds the rendezvous key of a pair.
@@ -26,6 +29,26 @@ var errDropped = errors.New("relay: datagram dropped")
 
 // errRollover reports a connection that ended at a day boundary.
 var errRollover = errors.New("relay: day rollover")
+
+// errNoMailboxes reports a connection whose last mailbox closed.
+var errNoMailboxes = errors.New("relay: no mailboxes left")
+
+// errUpdateTimeout reports a mailbox update the relay did not answer.
+var errUpdateTimeout = errors.New("relay: mailbox update not answered")
+
+// Timing of a mailbox update. It travels like a datagram and is sent again
+// until the answer arrives.
+const (
+	// updateRetry is the delay before an update is sent again.
+	updateRetry = 250 * time.Millisecond
+	// updateTimeout is how long the client waits for the answer before it
+	// registers the mailboxes on a new connection.
+	updateTimeout = 5 * time.Second
+)
+
+// defaultMailboxLimit is the mailbox limit of a relay until its registration
+// reports the real one. It is the default of the relay server.
+const defaultMailboxLimit = 8
 
 // carrier is one connection to the relay: the QUIC datagram transport or the
 // WebSocket fallback.
@@ -59,6 +82,18 @@ type Dialer struct {
 	rev      uint64
 	// registered is the revision of the mailbox set the connection carries.
 	registered uint64
+	// registeredIDs is the mailbox set the relay holds for the connection.
+	registeredIDs map[ID]struct{}
+	// limit is the mailbox limit the relay reported, zero before the first
+	// registration.
+	limit int
+	// updates reports a live connection that takes mailbox updates.
+	updates bool
+	// updateSeq numbers the mailbox updates of the dialer.
+	updateSeq uint64
+	// answers carries the answers to the mailbox updates of the live
+	// connection.
+	answers chan *relayv1.UpdateResult
 	// lastErr is the failure of the last connection attempt.
 	lastErr    error
 	restart    bool
@@ -71,6 +106,8 @@ type Dialer struct {
 	wait chan struct{}
 	// kick requests a connection attempt.
 	kick chan struct{}
+	// sync asks the live connection to bring its mailbox set up to date.
+	sync chan struct{}
 }
 
 // NewDialer validates the configuration and returns a client that is not
@@ -101,6 +138,7 @@ func NewDialer(cfg Config) (*Dialer, error) {
 		conns: make(map[string]*Conn),
 		wait:  make(chan struct{}),
 		kick:  make(chan struct{}, 1),
+		sync:  make(chan struct{}, 1),
 	}, nil
 }
 
@@ -179,7 +217,7 @@ func (d *Dialer) Open(ctx context.Context, key []byte) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	limits, err := d.waitReady(ctx, rev)
+	limits, err := d.waitReady(ctx, conn, rev)
 	if err != nil {
 		_ = conn.Close()
 		return nil, err
@@ -271,19 +309,33 @@ func (d *Dialer) add(key []byte) (*Conn, uint64, error) {
 	}
 	d.nextName++
 	conn := newConn(d, slices.Clone(key), Addr{name: fmt.Sprintf("relay:%d", d.nextName)}, d.cfg.Queue)
+	conn.order = d.nextName
 	d.conns[string(key)] = conn
 	d.rev++
 	rev := d.rev
 	conn.pendingRev = rev
-	live := d.sender != nil
+	live, updates := d.sender != nil, d.updates
 	d.mu.Unlock()
 
-	if live {
+	d.mailboxesChanged(live, updates)
+	return conn, rev, nil
+}
+
+// mailboxesChanged brings the relay up to the changed mailbox set: a live
+// connection that takes updates changes its set in place, another live
+// connection is replaced, and without a connection the client connects.
+func (d *Dialer) mailboxesChanged(live, updates bool) {
+	switch {
+	case live && updates:
+		select {
+		case d.sync <- struct{}{}:
+		default:
+		}
+	case live:
 		d.requestReconnect()
-	} else {
+	default:
 		d.wake()
 	}
-	return conn, rev, nil
 }
 
 // remove releases the mailbox of a pair.
@@ -297,19 +349,17 @@ func (d *Dialer) remove(c *Conn) {
 		d.mu.Unlock()
 		return
 	}
-	live := d.sender != nil
+	live, updates := d.sender != nil, d.updates
 	d.notifyLocked()
 	d.mu.Unlock()
 
-	if live {
-		d.requestReconnect()
-	} else {
-		d.wake()
-	}
+	d.mailboxesChanged(live, updates)
 }
 
-// waitReady waits until the relay carries the mailboxes of revision rev.
-func (d *Dialer) waitReady(ctx context.Context, rev uint64) (Limits, error) {
+// waitReady waits until the relay carries the mailbox of the pair, which was
+// added in revision rev. It fails with ErrMailboxLimit when the relay holds as
+// many mailboxes of the connection as it allows and the pair is not among them.
+func (d *Dialer) waitReady(ctx context.Context, conn *Conn, rev uint64) (Limits, error) {
 	for {
 		d.mu.Lock()
 		if d.closed {
@@ -318,8 +368,26 @@ func (d *Dialer) waitReady(ctx context.Context, rev uint64) (Limits, error) {
 		}
 		if d.status.Connected && d.registered >= rev {
 			limits := d.status.Limits
+			_, carried := d.registeredIDs[MailboxID(conn.key, d.clock.Now())]
+			full := len(d.registeredIDs) >= limits.MaxMailboxes
 			d.mu.Unlock()
-			return limits, nil
+			switch {
+			case carried:
+				return limits, nil
+			case full:
+				return Limits{}, ErrMailboxLimit
+			}
+			// The set is about to change, for example after the first
+			// registration reported a higher limit.
+			d.mu.Lock()
+			wait := d.wait
+			d.mu.Unlock()
+			select {
+			case <-ctx.Done():
+				return Limits{}, ctx.Err()
+			case <-wait:
+			}
+			continue
 		}
 		if errors.Is(d.lastErr, ErrRejected) {
 			err := d.lastErr
@@ -365,6 +433,9 @@ func (d *Dialer) requestReconnect() {
 }
 
 // mailboxSet returns the mailboxes to register and the revision of the set.
+// The relay limits the mailboxes of one connection, so the set is cut at the
+// limit: the mailbox of the current day of every pair comes before the extra
+// mailboxes around midnight, and an earlier pair before a later one.
 func (d *Dialer) mailboxSet() ([]ID, uint64, map[ID]*Conn) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -373,21 +444,41 @@ func (d *Dialer) mailboxSet() ([]ID, uint64, map[ID]*Conn) {
 		id   ID
 		conn *Conn
 	}
-	entries := make([]entry, 0, 2*len(d.conns))
-	seen := make(map[ID]struct{}, 2*len(d.conns))
+	conns := slices.SortedFunc(maps.Values(d.conns), func(a, b *Conn) int {
+		return cmp.Compare(a.order, b.order)
+	})
 	now := d.clock.Now()
-	for _, c := range d.conns {
-		for _, id := range c.mailboxes(now, d.cfg.Rollover) {
-			if _, ok := seen[id]; ok {
-				continue
-			}
-			seen[id] = struct{}{}
-			entries = append(entries, entry{id: id, conn: c})
+	sets := make([][]ID, len(conns))
+	for i, c := range conns {
+		sets[i] = c.mailboxes(now, d.cfg.Rollover)
+	}
+
+	entries := make([]entry, 0, 2*len(conns))
+	seen := make(map[ID]struct{}, 2*len(conns))
+	take := func(id ID, c *Conn) {
+		if _, ok := seen[id]; ok {
+			return
+		}
+		seen[id] = struct{}{}
+		entries = append(entries, entry{id: id, conn: c})
+	}
+	for i, c := range conns {
+		take(sets[i][0], c)
+	}
+	for i, c := range conns {
+		for _, id := range sets[i][1:] {
+			take(id, c)
 		}
 	}
-	if len(entries) > maxMailboxes {
-		d.log.Warn("too many relay mailboxes for one connection", "mailboxes", len(entries))
-		entries = entries[:maxMailboxes]
+
+	limit := d.limit
+	if limit <= 0 {
+		limit = defaultMailboxLimit
+	}
+	limit = min(limit, maxMailboxes)
+	if len(entries) > limit {
+		d.log.Debug("relay mailboxes cut at the limit of the relay", "mailboxes", len(entries), "limit", limit)
+		entries = entries[:limit]
 	}
 
 	ids := make([]ID, 0, len(entries))
@@ -415,18 +506,6 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// The connection ends at the next UTC midnight, when the mailboxes of the
-	// day change.
-	until := nextMidnight(d.clock.Now()).Sub(d.clock.Now())
-	go func() {
-		defer observability.Recover()
-		select {
-		case <-runCtx.Done():
-		case <-d.clock.After(until):
-			d.requestRollover()
-		}
-	}()
-
 	d.mu.Lock()
 	if d.closed {
 		d.mu.Unlock()
@@ -436,17 +515,29 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	d.sender = conn
 	d.byID = byID
 	d.registered = rev
+	d.registeredIDs = idSet(ids)
+	d.limit = limits.MaxMailboxes
+	d.updates = limits.Updates
+	d.answers = make(chan *relayv1.UpdateResult, 4)
 	d.lastErr = nil
 	d.status = Status{Connected: true, Transport: conn.transport(), Limits: limits}
 	d.cancelConn = cancel
-	stale := d.rev != rev
 	d.notifyLocked()
 	d.mu.Unlock()
 
-	if stale {
-		// The mailboxes changed while the connection was opening, so the next
-		// connection registers the current set.
-		d.requestReconnect()
+	if limits.Updates {
+		// The connection follows the changes of the mailbox set, including
+		// the ones of the day boundary, in place.
+		go d.keepMailboxes(runCtx, conn)
+	} else {
+		d.legacyRollover(runCtx)
+		// The mailboxes changed while the connection was opening, or the
+		// limit of the relay allows another set: the next connection
+		// registers the current one.
+		fresh, freshRev, _ := d.mailboxSet()
+		if freshRev != rev || !sameIDs(fresh, d.carriedIDs()) {
+			d.requestReconnect()
+		}
 	}
 
 	d.log.Info("relay connected",
@@ -461,6 +552,9 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	d.mu.Lock()
 	d.sender = nil
 	d.byID = nil
+	d.registeredIDs = nil
+	d.updates = false
+	d.answers = nil
 	d.status = Status{}
 	d.cancelConn = nil
 	if err != nil && !errors.Is(err, context.Canceled) {
@@ -485,6 +579,160 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	}
 }
 
+// legacyRollover ends the connection of a relay without mailbox updates at the
+// next UTC midnight, so the next connection registers the mailboxes of the new
+// day.
+func (d *Dialer) legacyRollover(ctx context.Context) {
+	until := nextMidnight(d.clock.Now()).Sub(d.clock.Now())
+	go func() {
+		defer observability.Recover()
+		select {
+		case <-ctx.Done():
+		case <-d.clock.After(until):
+			d.requestRollover()
+		}
+	}()
+}
+
+// carriedIDs returns the mailboxes the relay holds for the live connection.
+func (d *Dialer) carriedIDs() map[ID]struct{} {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.registeredIDs
+}
+
+// keepMailboxes keeps the mailbox set of a live connection up to date until the
+// connection ends: after a pair opened or closed, and at the moments around
+// midnight when the mailboxes of the day change. An update that fails replaces
+// the connection, which registers the current set.
+func (d *Dialer) keepMailboxes(ctx context.Context, conn carrier) {
+	defer observability.Recover()
+
+	for {
+		if err := d.syncMailboxes(ctx, conn); err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			if !errors.Is(err, errNoMailboxes) {
+				d.log.Debug("relay mailbox update failed, reconnecting", "error", err)
+			}
+			d.requestReconnect()
+			return
+		}
+		now := d.clock.Now()
+		change := nextMailboxChange(now, d.cfg.Rollover)
+		select {
+		case <-ctx.Done():
+			return
+		case <-d.sync:
+		case <-d.clock.After(change.Sub(now)):
+		}
+	}
+}
+
+// syncMailboxes sends the current mailbox set to the relay unless it already
+// holds it, and waits for the answer.
+func (d *Dialer) syncMailboxes(ctx context.Context, conn carrier) error {
+	ids, rev, byID := d.mailboxSet()
+	if len(ids) == 0 {
+		return errNoMailboxes
+	}
+
+	d.mu.Lock()
+	if d.sender != conn {
+		d.mu.Unlock()
+		return nil
+	}
+	if sameIDs(ids, d.registeredIDs) {
+		d.byID = byID
+		d.registered = max(d.registered, rev)
+		d.notifyLocked()
+		d.mu.Unlock()
+		return nil
+	}
+	d.updateSeq++
+	seq := d.updateSeq
+	// The datagrams of both sets are delivered while the update travels.
+	merged := maps.Clone(d.byID)
+	maps.Copy(merged, byID)
+	d.byID = merged
+	answers := d.answers
+	d.mu.Unlock()
+
+	data, err := marshalFrame(updateFrame(seq, ids))
+	if err != nil {
+		return err
+	}
+	answer, err := d.awaitUpdate(ctx, conn, data, seq, answers)
+	if err != nil {
+		return err
+	}
+	if status := answer.GetStatus(); status != relayv1.RelayStatus_RELAY_STATUS_OK {
+		return &rejectedError{status: status}
+	}
+
+	d.mu.Lock()
+	if d.sender != conn {
+		d.mu.Unlock()
+		return nil
+	}
+	d.byID = byID
+	d.registeredIDs = idSet(ids)
+	d.registered = max(d.registered, rev)
+	d.notifyLocked()
+	d.mu.Unlock()
+	d.log.Debug("relay mailboxes updated", "mailboxes", len(ids))
+	return nil
+}
+
+// awaitUpdate sends an update until the relay answers it.
+func (d *Dialer) awaitUpdate(ctx context.Context, conn carrier, data []byte, seq uint64, answers <-chan *relayv1.UpdateResult) (*relayv1.UpdateResult, error) {
+	deadline := time.NewTimer(updateTimeout)
+	defer deadline.Stop()
+	for {
+		if err := conn.send(data); err != nil && !errors.Is(err, errDropped) {
+			return nil, err
+		}
+		retry := time.NewTimer(updateRetry)
+		select {
+		case <-ctx.Done():
+			retry.Stop()
+			return nil, ctx.Err()
+		case <-deadline.C:
+			retry.Stop()
+			return nil, errUpdateTimeout
+		case answer := <-answers:
+			retry.Stop()
+			if answer.GetSeq() == seq {
+				return answer, nil
+			}
+		case <-retry.C:
+		}
+	}
+}
+
+// idSet returns the mailboxes as a set.
+func idSet(ids []ID) map[ID]struct{} {
+	set := make(map[ID]struct{}, len(ids))
+	for _, id := range ids {
+		set[id] = struct{}{}
+	}
+	return set
+}
+
+// sameIDs reports whether the mailboxes are exactly the set.
+func sameIDs(ids []ID, set map[ID]struct{}) bool {
+	if len(ids) != len(set) {
+		return false
+	}
+	for _, id := range ids {
+		if _, ok := set[id]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 // fail records the failure of a connection attempt and wakes the callers that
 // wait for the relay.
 func (d *Dialer) fail(err error) {
@@ -501,6 +749,18 @@ func (d *Dialer) dispatch(data []byte) {
 	frame, err := parseFrame(data, maxRelayDatagrams+frameOverheadBytes)
 	if err != nil {
 		d.log.Debug("relay frame dropped", "error", err)
+		return
+	}
+	if answer := frame.GetUpdateResult(); answer != nil {
+		d.mu.Lock()
+		answers := d.answers
+		d.mu.Unlock()
+		if answers != nil {
+			select {
+			case answers <- answer:
+			default:
+			}
+		}
 		return
 	}
 	datagram := frame.GetDatagram()

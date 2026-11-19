@@ -39,7 +39,7 @@ peer session
 | Dial timeout | 3 s |
 | Reconnect delay | 1 s, doubling to 30 s |
 | Queue per pair | 256 datagrams |
-| Rollover window | 30 minutes before UTC midnight |
+| Rollover window | 30 minutes before and after UTC midnight |
 | Mailbox id | 16 bytes |
 
 ### Mailboxes
@@ -55,19 +55,35 @@ know each other through the group derive it from the group relay token and both 
 device IDs alone do not reveal the mailbox. The id changes every day and reveals nothing about the
 pair, so the relay cannot follow a device across days.
 
-`Mailboxes` returns the current day and, within the last 30 minutes of the day, the next one as
-well. At UTC midnight the client drops the connection, reconnects without backoff and registers the
-new set.
+`Mailboxes` returns the current day first, then the next day within the last 30 minutes of the day
+and the previous day within the first 30 minutes, so a peer whose clock is a little behind still
+reaches the pair. A connection that takes updates follows the set at these moments in place; one to
+an older relay is dropped at UTC midnight and registers the new set without backoff.
 
 ### Connection
 
 `Dialer.Run` keeps one connection to the relay:
 
-1. collect the mailboxes of every open pair, at most 256;
+1. collect the mailboxes of every open pair, cut at the mailbox limit of the relay;
 2. dial QUIC and fall back to WebSocket when the QUIC attempt fails within 3 s;
 3. send `Register` with the token and the mailbox ids, read `RegisterResult` with the limits;
-4. serve datagrams until the carrier ends;
-5. reconnect immediately for a rollover or a mailbox set change, and with the backoff otherwise.
+4. serve datagrams until the carrier ends, and keep the mailbox set up to date with `Update`;
+5. reconnect immediately for a failed update, a rollover or a mailbox set change on an older relay,
+   and with the backoff otherwise.
+
+The limit is 8 until the first registration reports the real one. The set is cut so that the
+current day mailbox of every pair comes before the extra mailboxes around midnight, and an earlier
+pair before a later one. `Open` fails with `ErrMailboxLimit` for a pair that finds no room once
+the set is full; the node logs it and tries again with the backoff, so the pair gets a mailbox when
+another one closes.
+
+`RegisterResult` reports in `mailbox_updates` whether the relay takes `Update`. When a pair opens or
+closes, or the mailboxes of the day change, the client sends `Update` with a new sequence number and
+the whole set. It travels like a datagram, so the client sends it again every 250 ms until
+`UpdateResult` with that number arrives, and replaces the connection when no answer arrives within
+5 s or the relay refuses the update. While an update travels, datagrams of both the old and the
+new set are delivered. Without `mailbox_updates` the client replaces the connection for every
+change, as relays before the update did require.
 
 The WebSocket preference is sticky across reconnects until `NetworkChanged` resets it, so a network
 that blocks UDP does not retry QUIC on every attempt.
@@ -95,7 +111,8 @@ The local network always wins:
 1. the node tries the manual, the discovered and the cached addresses;
 2. when a peer stays offline for `RelayDelay` (3 s) and the network policy allows the relay, one
    goroutine per pair opens the relay path;
-3. while the pair is online over the relay, the node keeps dialing the local addresses;
+3. while the pair is online over the relay, the node keeps dialing the local addresses, with a
+   delay that doubles from 1 s to 30 s and starts over after a network change;
 4. as soon as a local connection is established, it takes over and the relay path is closed.
 
 The relay client also stops when the group turns the relay off, and links that are on the relay path
@@ -145,6 +162,18 @@ or ends the WebSocket registration phase.
 On QUIC the codes map to application error codes `0x01` to `0x06`; on WebSocket they map to close
 codes `4000 + status`.
 
+### Updates
+
+A registered connection replaces its mailbox set with `Update`, which carries a sequence number and
+the whole new set. It arrives like a datagram, on the datagram path of QUIC or as a WebSocket
+message, and counts against the rate and the quota of the token. The server checks the set like a
+registration, leaves the mailboxes that are not in it, joins the new ones and answers with
+`UpdateResult` and the same sequence number. A refused update, `INVALID_ARGUMENT` or `UNAVAILABLE`,
+leaves the previous set and the connection in place. An update with the number of the last applied
+one gets the same answer again, for a client whose answer was lost, and an older number is ignored.
+`Config.NoMailboxUpdates` turns updates off; it has no flag and exists for the compatibility tests
+of the clients.
+
 ### Mailboxes
 
 A mailbox exists while at least one connection is a member of it. Four members fit into one
@@ -179,7 +208,7 @@ closed with `QUOTA_EXCEEDED`. Only accepted datagrams count as traffic.
 | `-tokens` | `UNISON_RELAY_TOKENS` | none |
 | `-tokens-file` | `UNISON_RELAY_TOKENS_FILE` | none |
 | `-log-level` | `UNISON_RELAY_LOG_LEVEL` | `info` |
-| `-max-mailboxes` | `UNISON_RELAY_MAX_MAILBOXES` | 8 per connection |
+| `-max-mailboxes` | `UNISON_RELAY_MAX_MAILBOXES` | 32 per connection |
 | `-max-datagram-bytes` | `UNISON_RELAY_MAX_DATAGRAM_BYTES` | 1400 |
 | `-rate`, `-rate-burst` | `UNISON_RELAY_RATE`, `UNISON_RELAY_RATE_BURST` | 200 per second, burst 400 |
 | `-quota-bytes`, `-quota-window` | `UNISON_RELAY_QUOTA_BYTES`, `UNISON_RELAY_QUOTA_WINDOW` | 1 GiB per 24 hours |
@@ -197,8 +226,8 @@ server keeps only the SHA-256 of every token.
 `/healthz` reports the process, `/readyz` reports that new connections are accepted, and `/metrics`
 renders the Prometheus text format over plain HTTP, for a sidecar scrape.
 
-The metrics cover connections and registrations per transport, live mailboxes, datagrams and bytes
-per direction, uptime and dropped datagrams per reason. The labels never carry mailboxes, tokens,
+The metrics cover connections and registrations per transport, mailbox updates per outcome, live
+mailboxes, datagrams and bytes per direction, uptime and dropped datagrams per reason. The labels never carry mailboxes, tokens,
 addresses or device IDs. Logs are JSON on stderr and never carry payloads, tokens or mailbox ids.
 
 ### Lifecycle

@@ -31,8 +31,10 @@ const (
 
 // Limits and timeouts of a server.
 const (
-	// DefaultMaxMailboxes bounds the mailboxes of one connection.
-	DefaultMaxMailboxes = 8
+	// DefaultMaxMailboxes bounds the mailboxes of one connection. A device
+	// holds one mailbox per peer it reaches through the relay and two of them
+	// around UTC midnight.
+	DefaultMaxMailboxes = 32
 	// DefaultMaxDatagramBytes bounds the payload of one datagram. A datagram
 	// travels in a single QUIC packet, so it stays below the path MTU. The QUIC
 	// connection between devices runs inside these datagrams and needs at least
@@ -118,6 +120,9 @@ type Config struct {
 	PingInterval time.Duration
 	// RegisterTimeout bounds the registration of a connection.
 	RegisterTimeout time.Duration
+	// NoMailboxUpdates makes the relay answer like a version without mailbox
+	// updates, for the compatibility tests of the clients.
+	NoMailboxUpdates bool
 }
 
 // DefaultConfig returns a configuration with the package defaults.

@@ -128,6 +128,7 @@ type testClient struct {
 	reply *relayv1.RegisterResult
 
 	incoming chan *relayv1.Datagram
+	answers  chan *relayv1.UpdateResult
 	closed   chan struct{}
 }
 
@@ -177,6 +178,7 @@ func dialQUICIDs(t *testing.T, server *Server, token string, boxes [][]byte) *te
 		conn:     conn,
 		reply:    reply.GetRegisterResult(),
 		incoming: make(chan *relayv1.Datagram, 16),
+		answers:  make(chan *relayv1.UpdateResult, 16),
 		closed:   make(chan struct{}),
 	}
 	t.Cleanup(func() {
@@ -237,6 +239,7 @@ func dialWSIDs(t *testing.T, server *Server, token string, boxes [][]byte) *test
 		sock:     sock,
 		reply:    frame.GetRegisterResult(),
 		incoming: make(chan *relayv1.Datagram, 16),
+		answers:  make(chan *relayv1.UpdateResult, 16),
 		closed:   make(chan struct{}),
 	}
 	t.Cleanup(func() {
@@ -280,6 +283,14 @@ func (c *testClient) deliver(data []byte) bool {
 	if err != nil {
 		return true
 	}
+	if answer := frame.GetUpdateResult(); answer != nil {
+		select {
+		case c.answers <- answer:
+			return true
+		case <-time.After(testTimeout):
+			return false
+		}
+	}
 	datagram := frame.GetDatagram()
 	if datagram == nil {
 		return true
@@ -308,6 +319,50 @@ func (c *testClient) send(id mailboxID, payload []byte) error {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 	return c.sock.Write(ctx, websocket.MessageBinary, data)
+}
+
+// update sends a replacement of the mailbox set.
+func (c *testClient) update(seq uint64, boxes ...mailboxID) error {
+	frame := &relayv1.Frame{Body: &relayv1.Frame_Update{Update: &relayv1.Update{
+		Seq:        seq,
+		MailboxIds: wireMailboxes(boxes),
+	}}}
+	data, err := proto.Marshal(frame)
+	if err != nil {
+		return err
+	}
+	if c.conn != nil {
+		return c.conn.SendDatagram(data)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+	return c.sock.Write(ctx, websocket.MessageBinary, data)
+}
+
+// expectAnswer waits for the answer to an update and checks it.
+func (c *testClient) expectAnswer(seq uint64, status relayv1.RelayStatus) {
+	c.t.Helper()
+
+	select {
+	case answer := <-c.answers:
+		if answer.GetSeq() != seq || answer.GetStatus() != status {
+			c.t.Fatalf("update answer is seq %d status %s, want seq %d status %s",
+				answer.GetSeq(), answer.GetStatus(), seq, status)
+		}
+	case <-time.After(testTimeout):
+		c.t.Fatalf("no answer to update %d", seq)
+	}
+}
+
+// expectNoAnswer fails when an update answer arrives within the grace period.
+func (c *testClient) expectNoAnswer() {
+	c.t.Helper()
+
+	select {
+	case answer := <-c.answers:
+		c.t.Fatalf("unexpected answer to update %d", answer.GetSeq())
+	case <-time.After(150 * time.Millisecond):
+	}
 }
 
 // recv waits for the next datagram.

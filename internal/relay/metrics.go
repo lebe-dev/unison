@@ -74,6 +74,7 @@ type metrics struct {
 	connections   [numTransports]atomic.Int64
 	opened        [numTransports]atomic.Int64
 	registrations [numStatuses]atomic.Int64
+	updates       [numStatuses]atomic.Int64
 	datagramsIn   [numTransports]atomic.Int64
 	datagramsOut  [numTransports]atomic.Int64
 	bytesIn       [numTransports]atomic.Int64
@@ -102,6 +103,13 @@ func (m *metrics) disconnect(transport int) {
 func (m *metrics) registration(status relayv1.RelayStatus) {
 	if index := int(status); index >= 0 && index < numStatuses {
 		m.registrations[index].Add(1)
+	}
+}
+
+// update counts the outcome of a mailbox update.
+func (m *metrics) update(status relayv1.RelayStatus) {
+	if index := int(status); index >= 0 && index < numStatuses {
+		m.updates[index].Add(1)
 	}
 }
 
@@ -162,6 +170,12 @@ func (m *metrics) write(w io.Writer) {
 	line("# TYPE unison_relay_registrations_total counter\n")
 	for i, name := range statusLabels {
 		line("unison_relay_registrations_total%s %d\n", label(fmt.Sprintf("status=%q", name)), m.registrations[i].Load())
+	}
+
+	line("# HELP unison_relay_mailbox_updates_total Mailbox updates by outcome.\n")
+	line("# TYPE unison_relay_mailbox_updates_total counter\n")
+	for i, name := range statusLabels {
+		line("unison_relay_mailbox_updates_total%s %d\n", label(fmt.Sprintf("status=%q", name)), m.updates[i].Load())
 	}
 
 	line("# HELP unison_relay_mailboxes Mailboxes with at least one member.\n")

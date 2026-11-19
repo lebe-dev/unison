@@ -45,17 +45,39 @@ func MailboxID(rendezvousKey []byte, t time.Time) ID {
 }
 
 // Mailboxes returns the mailboxes a pair registers at t: the current UTC day
-// and, once midnight is within rollover, the next one, so a pair stays
-// reachable across the day boundary.
+// first, then, once midnight is within rollover, the next one, and until
+// rollover passed after midnight, the previous one. The pair stays reachable
+// across the day boundary, also for a peer whose clock is a little off.
 func Mailboxes(rendezvousKey []byte, t time.Time, rollover time.Duration) []ID {
 	utc := t.UTC()
 	ids := []ID{MailboxID(rendezvousKey, utc)}
-	if rollover > 0 {
-		if next := nextMidnight(utc); next.Sub(utc) <= rollover {
-			ids = append(ids, MailboxID(rendezvousKey, next))
-		}
+	if rollover <= 0 {
+		return ids
+	}
+	next := nextMidnight(utc)
+	if next.Sub(utc) <= rollover {
+		ids = append(ids, MailboxID(rendezvousKey, next))
+	}
+	start := next.Add(-dayLength)
+	if utc.Sub(start) < rollover {
+		ids = append(ids, MailboxID(rendezvousKey, start.Add(-dayLength)))
 	}
 	return ids
+}
+
+// nextMailboxChange returns the next moment after t at which the mailboxes of
+// a pair change: the end of the previous day mailbox, the start of the next day
+// mailbox or midnight.
+func nextMailboxChange(t time.Time, rollover time.Duration) time.Time {
+	utc := t.UTC()
+	next := nextMidnight(utc)
+	start := next.Add(-dayLength)
+	for _, at := range []time.Time{start.Add(rollover), next.Add(-rollover), next} {
+		if at.After(utc) {
+			return at
+		}
+	}
+	return next
 }
 
 // nextMidnight returns the next UTC midnight after t.

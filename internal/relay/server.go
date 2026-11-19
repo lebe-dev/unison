@@ -240,6 +240,7 @@ func (s *Server) limits() *relayv1.Limits {
 		RateBurst:          uint32(s.cfg.RateBurst),
 		QuotaBytes:         uint64(s.cfg.QuotaBytes),
 		QuotaWindowSeconds: uint64(s.cfg.QuotaWindow / time.Second),
+		MailboxUpdates:     !s.cfg.NoMailboxUpdates,
 	}
 }
 
@@ -316,6 +317,10 @@ func (s *Server) forward(p *peer, data []byte) {
 		s.metrics.dropped(dropMalformed)
 		return
 	}
+	if update := frame.GetUpdate(); update != nil {
+		s.update(p, len(data), update)
+		return
+	}
 	datagram := frame.GetDatagram()
 	if datagram == nil {
 		s.metrics.dropped(dropMalformed)
@@ -364,6 +369,76 @@ func (s *Server) forward(p *peer, data []byte) {
 	}
 }
 
+// update replaces the mailbox set of a registered connection and answers with
+// the outcome. Updates count against the rate and the quota of the token like
+// datagrams, so they cannot be used to flood the relay.
+func (s *Server) update(p *peer, size int, update *relayv1.Update) {
+	if s.cfg.NoMailboxUpdates {
+		s.metrics.dropped(dropMalformed)
+		return
+	}
+	switch err := p.token.take(time.Now(), size); {
+	case errors.Is(err, errQuotaExceeded):
+		s.log.Warn("token quota exceeded",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+		)
+		p.stop(relayv1.RelayStatus_RELAY_STATUS_QUOTA_EXCEEDED)
+		return
+	case err != nil:
+		s.metrics.dropped(dropRateLimit)
+		return
+	}
+
+	seq := update.GetSeq()
+	switch {
+	case seq != 0 && seq < p.updateSeq:
+		// A late copy of an update the connection already replaced.
+		return
+	case seq != 0 && seq == p.updateSeq:
+		// The client did not get the answer and sent the update again.
+		p.answer(seq, p.updateStatus)
+		return
+	}
+
+	status := s.applyUpdate(p, update.GetMailboxIds())
+	if seq != 0 {
+		p.updateSeq, p.updateStatus = seq, status
+	}
+	s.metrics.update(status)
+	s.log.Debug("mailboxes updated",
+		"conn", p.id,
+		"transport", transportLabels[p.transport],
+		"status", statusLabel(status),
+		"mailboxes", len(update.GetMailboxIds()),
+	)
+	p.answer(seq, status)
+}
+
+// applyUpdate validates the mailboxes of an update and makes them the set of
+// the connection.
+func (s *Server) applyUpdate(p *peer, raw [][]byte) relayv1.RelayStatus {
+	if len(raw) == 0 || len(raw) > s.cfg.MaxMailboxes {
+		return relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT
+	}
+	ids := make([]mailboxID, 0, len(raw))
+	for _, id := range raw {
+		mailbox, ok := mailboxIDOf(id)
+		if !ok {
+			return relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT
+		}
+		ids = append(ids, mailbox)
+	}
+	switch err := s.boxes.replace(p, ids); {
+	case err == nil:
+		return relayv1.RelayStatus_RELAY_STATUS_OK
+	case errors.Is(err, errRegistryFull):
+		return relayv1.RelayStatus_RELAY_STATUS_UNAVAILABLE
+	default:
+		return relayv1.RelayStatus_RELAY_STATUS_INVALID_ARGUMENT
+	}
+}
+
 // connWriter is the transport side of a connection.
 type connWriter interface {
 	// write sends one frame to the client.
@@ -381,10 +456,21 @@ type peer struct {
 	writer    connWriter
 	token     *tokenState
 	started   time.Time
+	// updateSeq and updateStatus are the last applied update and its
+	// outcome. Only the receive loop of the connection touches them.
+	updateSeq    uint64
+	updateStatus relayv1.RelayStatus
 
 	out  chan []byte
 	done chan struct{}
 	once sync.Once
+}
+
+// answer queues the answer to a mailbox update.
+func (p *peer) answer(seq uint64, status relayv1.RelayStatus) {
+	if frame := updateResultFrame(seq, status); frame != nil {
+		p.send(frame)
+	}
 }
 
 // send queues a frame for the client. A client that cannot keep up loses

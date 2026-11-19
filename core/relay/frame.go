@@ -61,6 +61,9 @@ type Limits struct {
 	RatePerSecond int
 	// RateBurst is the burst of the datagram rate.
 	RateBurst int
+	// Updates reports a relay that changes the mailboxes of a live
+	// connection. Without it a changed mailbox set needs a new connection.
+	Updates bool
 }
 
 // PacketSize returns the largest QUIC packet that fits into one datagram of the
@@ -122,6 +125,20 @@ func registerFrame(token string, ids []ID) *relayv1.Frame {
 	return &relayv1.Frame{
 		Body: &relayv1.Frame_Register{Register: &relayv1.Register{
 			Token:      []byte(token),
+			MailboxIds: mailboxes,
+		}},
+	}
+}
+
+// updateFrame encodes the replacement of the mailbox set of a connection.
+func updateFrame(seq uint64, ids []ID) *relayv1.Frame {
+	mailboxes := make([][]byte, 0, len(ids))
+	for _, id := range ids {
+		mailboxes = append(mailboxes, id[:])
+	}
+	return &relayv1.Frame{
+		Body: &relayv1.Frame_Update{Update: &relayv1.Update{
+			Seq:        seq,
 			MailboxIds: mailboxes,
 		}},
 	}
@@ -198,6 +215,7 @@ func limitsOf(result *relayv1.RegisterResult) (Limits, error) {
 		MaxMailboxes:     int(wire.GetMaxMailboxes()),
 		RatePerSecond:    int(wire.GetRatePerSecond()),
 		RateBurst:        int(wire.GetRateBurst()),
+		Updates:          wire.GetMailboxUpdates(),
 	}
 	switch {
 	case limits.MaxDatagramBytes <= 0 || limits.MaxDatagramBytes > maxRelayDatagrams:
