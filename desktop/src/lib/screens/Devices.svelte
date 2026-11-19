@@ -7,6 +7,7 @@
   import { errorText } from "../errors";
   import { t } from "../i18n";
   import NetworkIssue from "../NetworkIssue.svelte";
+  import { deviceNameKey } from "../platform";
   import { unreachableDeviceIssue } from "../network";
   import {
     formatDateTime,
@@ -214,7 +215,7 @@
       </div>
 
       <div class="scroll">
-        <h3 class="group-title">{t("common.thisMac")}</h3>
+        <h3 class="group-title">{t(deviceNameKey())}</h3>
         <div class="entry self">
           <span class="avatar"><Icon name="laptop" size={20} stroke={1.2} /></span>
           <span class="text">
@@ -356,8 +357,8 @@
                 <div class="form-row">
                   <span class="label">
                     {side === "local"
-                      ? t("devices.onThisMacFrom", { name: fromName })
-                      : t("devices.onDeviceFromThisMac", { name: onName })}
+                      ? t("devices.onThisDeviceFrom", { name: fromName })
+                      : t("devices.onDeviceFromThisDevice", { name: onName })}
                     {#if side === "peer" && !device.online}
                       <small>{t("devices.changesWhileOnline", { name })}</small>
                     {/if}

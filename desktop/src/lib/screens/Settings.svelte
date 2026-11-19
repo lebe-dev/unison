@@ -7,6 +7,7 @@
   import { t, type MessageKey } from "../i18n";
   import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
+  import { deviceNameKey } from "../platform";
   import { setSentryEnabled } from "../sentry";
   import {
     actions,
@@ -514,7 +515,7 @@
 
     <section class="section">
       <h3 class="section-title">
-        <span class="grow">{t("common.thisMac")}</span>
+        <span class="grow">{t(deviceNameKey())}</span>
         <span class="mono count">{shortDeviceID(daemon.deviceID)}</span>
       </h3>
       <div class="list">
