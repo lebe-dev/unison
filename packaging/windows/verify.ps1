@@ -16,7 +16,8 @@ needs the user.
 Path to the installer, the artifact of the build by default.
 
 .PARAMETER InstallDir
-Installation directory, %ProgramFiles%\Unison by default.
+Installation directory, the location the uninstall entry of the product names,
+%ProgramFiles%\Unison otherwise.
 
 .PARAMETER Version
 Version of the build, the VERSION file next to the script by default.
@@ -65,6 +66,9 @@ if (-not $Installer) {
     $Installer = Join-Path $root "packaging/windows/build/$productName-$Version-setup.exe"
 }
 if (-not $InstallDir) {
+    $InstallDir = Find-InstallDir
+}
+if (-not $InstallDir) {
     $InstallDir = Join-Path $env:ProgramFiles $productName
 }
 
@@ -83,6 +87,38 @@ function Get-RegistryValue([string] $path, [string] $name) {
         return $null
     }
     return [string] $item.$name
+}
+
+# Find-InstallDir returns the directory of the installed app. The installer may
+# put the app into a directory the user chose, so the uninstall entry is the
+# source of the location and %ProgramFiles% is only the fallback.
+function Find-InstallDir {
+    $keys = @(
+        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+        'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+    )
+    foreach ($key in $keys) {
+        $entries = @(Get-ChildItem -Path $key -ErrorAction SilentlyContinue)
+        foreach ($entry in $entries) {
+            $item = Get-ItemProperty -Path $entry.PSPath -ErrorAction SilentlyContinue
+            if (-not $item) {
+                continue
+            }
+            $properties = $item.PSObject.Properties.Name
+            if ($properties -notcontains 'DisplayName' -or $item.DisplayName -ne $productName) {
+                continue
+            }
+            if ($properties -notcontains 'InstallLocation') {
+                continue
+            }
+            $location = ([string] $item.InstallLocation).TrimEnd('\')
+            if ($location) {
+                return $location
+            }
+        }
+    }
+    return $null
 }
 
 function Get-PeSubsystem([string] $path) {
@@ -182,7 +218,13 @@ else {
 $app = Join-Path $InstallDir "$productName.exe"
 $daemon = Join-Path $InstallDir 'unisond.exe'
 if (-not (Test-Path $app)) {
-    Note "the app is not installed, run $Installer first"
+    $entry = Get-RegistryValue $runKey $productName
+    if ($entry) {
+        Note "the app is not installed in $InstallDir, the startup entry points at $entry"
+    }
+    else {
+        Note "the app is not installed, run $Installer first"
+    }
 }
 else {
     Pass "installation directory $InstallDir"

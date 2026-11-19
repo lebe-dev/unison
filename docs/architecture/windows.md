@@ -75,9 +75,9 @@ Tauri merges with the shared configuration. The bundler places the daemon next t
 
 ### Installation
 
-The installer installs for all users into `%ProgramFiles%\Unison` and asks for elevation once. A
-firewall rule needs elevation, so a per-machine installation keeps the rule in the same place as the
-files.
+The installer installs for all users into `%ProgramFiles%\Unison` by default, lets the user pick
+another directory and asks for elevation once. A firewall rule needs elevation, so a per-machine
+installation keeps the rule in the same place as the files.
 
 The hooks in `desktop/src-tauri/installer-hooks.nsh` do three things:
 
