@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/quic-go/quic-go"
@@ -197,7 +196,7 @@ func failureOf(err error) Failure {
 	if _, ok := errors.AsType[*net.DNSError](err); ok {
 		return FailureAddress
 	}
-	if errors.Is(err, syscall.ECONNREFUSED) {
+	if refused(err) {
 		return FailureRefused
 	}
 	if timeoutError(err) {
