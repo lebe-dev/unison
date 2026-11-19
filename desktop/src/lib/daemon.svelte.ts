@@ -8,7 +8,7 @@ import {
   type GetStatusResponse,
 } from "./api/gen/unison/local/v1/local_pb";
 import { updateTray, type PauseChoice } from "./tray";
-import { daemonStatus, type DaemonStatus } from "./daemonStatus";
+import { daemonStatus, installDaemon, type DaemonStatus } from "./daemonStatus";
 import { shortDeviceID } from "./format";
 import { getLocale, translate } from "./i18n";
 
@@ -30,9 +30,13 @@ class DaemonStore {
   /** Reason of the last failure, absent when the daemon answers. */
   error = $state<string | null>(null);
   /** State of the daemon as the app started it. */
-  startup = $state<DaemonStatus>({ state: "offline", reason: null });
+  startup = $state<DaemonStatus>({ state: "offline", reason: null, install: "off" });
   /** Most recent daemon events, newest first. */
   activity = $state<DaemonEvent[]>([]);
+  /** An installation of the daemon is running. */
+  installing = $state(false);
+  /** Reason of the last failed installation, absent when it worked. */
+  installError = $state<string | null>(null);
 
   #running = false;
   #statusTimer: ReturnType<typeof setInterval> | null = null;
@@ -57,6 +61,18 @@ class DaemonStore {
    * runs or when the app knows no reason. */
   get offlineReason(): string | null {
     return this.failed ? this.startup.reason : null;
+  }
+
+  /** installable reports a daemon the app can install: the installation is
+   * missing and the app has a copy of the daemon at hand. */
+  get installable(): boolean {
+    return !this.connected && this.startup.install === "available";
+  }
+
+  /** installMissing reports a missing installation that the app cannot repair
+   * itself, because it has no copy of the daemon. */
+  get installMissing(): boolean {
+    return !this.connected && this.startup.install === "missing";
   }
 
   get deviceName(): string {
@@ -138,13 +154,32 @@ class DaemonStore {
     try {
       this.status = await client.getStatus({});
       this.error = null;
-      this.startup = { state: "running", reason: null };
+      this.installError = null;
+      this.startup = { state: "running", reason: null, install: "off" };
     } catch (error) {
       this.status = null;
       this.error = messageOf(error);
       await this.#loadStart();
     }
     this.#syncTray();
+  }
+
+  /** install puts the daemon in place through one elevation and starts it. A
+   * refused elevation leaves the system as it was. */
+  async install(): Promise<void> {
+    if (this.installing) {
+      return;
+    }
+    this.installing = true;
+    this.installError = null;
+    try {
+      await installDaemon();
+    } catch (error) {
+      this.installError = messageOf(error);
+    } finally {
+      this.installing = false;
+      await this.refresh();
+    }
   }
 
   /** setPause applies a pause choice and reloads the status. */
