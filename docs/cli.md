@@ -35,14 +35,19 @@ daemon      0.1.0 running
 device      MacBook (W5MF-NWIT-4C6K-P7KR)
 address     192.168.1.24:60190
 network     online, unmetered
-clipboard   on
+clipboard   pasteboard
+keystore    keychain
+pause       on
 peers       2 online, 0 offline
 ```
 
 `address` is what another device enters with `devices address` when discovery does not work.
-`network` lists the conditions that select the row of the network policy. `clipboard` is the pause
-state, `friends` appears while the search for Friends devices runs, and `relay` appears when the
-group uses a relay.
+`network` lists the conditions that select the row of the network policy. `clipboard` is the backend
+of the clipboard and `note` explains why it is not synchronized in the background; on Linux the
+backend is `x11`, `wayland` or `none`, and the note names a missing display. `keystore` is the
+backend that keeps the secrets, and `warning` says that they are stored in files. `pause` is the
+pause state, `friends` appears while the search for Friends devices runs, and `relay` appears when
+the group uses a relay.
 
 ## devices
 
@@ -259,7 +264,7 @@ the one inside its bundle. A daemon started by hand takes:
 |------|---------|
 | `--data-dir <path>` | the data directory of this instance |
 | `--endpoint <path>` | the endpoint of the local API |
-| `--clipboard system\|none` | watch the clipboard, or run without one |
+| `--clipboard system\|auto\|x11\|wayland\|none` | watch the clipboard, or run without one; the extra modes are Linux only |
 | `--name <name>` | the name announced to the other devices |
 | `--log-level debug\|info\|warn\|error` | how much to log, `info` by default |
 | `--log-stderr` | copy the log to standard error as well |

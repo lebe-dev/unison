@@ -34,14 +34,15 @@ unisond [flags]
   -version            print the version and exit
   -data-dir path      data directory of this instance
   -endpoint path      local API endpoint of this instance
-  -clipboard mode     system or none
+  -clipboard mode     system, auto, x11, wayland or none on Linux, system or none elsewhere
   -name name          device name announced to peers
   -log-level level    debug, info, warn or error
   -log-stderr         copy the log to stderr
 ```
 
 `--clipboard=none` starts a daemon without the system clipboard, which is what a second daemon on
-one machine needs: two daemons would otherwise read and write the same pasteboard. The default data
+one machine needs: two daemons would otherwise read and write the same pasteboard. `--clipboard`
+picks the backend of the session on Linux; see [Linux session](#linux-session). The default data
 directory keeps its keys in the `app.unison` Keychain service and any other data directory in a
 service named after the directory, so two instances on one machine are two devices and can pair.
 
@@ -57,16 +58,87 @@ the flag is absent, and without either the daemon uses the host name without the
 | `logs/unisond.log` | JSON log, five MiB per file, three rotated files kept |
 | `unisond.lock` | single instance lock |
 | `unisond.sock` | local API endpoint on platforms with unix sockets |
-| `keys/` | keystore files on Windows |
+| `keys/` | keystore files on Windows and Linux |
 
-The default directory is `~/Library/Application Support/Unison` on macOS and
-`%LOCALAPPDATA%\Unison` on Windows. `--data-dir` gives an instance a directory of its own, and the
-endpoint follows the directory: `unisond.sock` inside it on macOS, a named pipe derived from the path
-on Windows.
+The default directory is `~/Library/Application Support/Unison` on macOS,
+`%LOCALAPPDATA%\Unison` on Windows and `$XDG_DATA_HOME/unison`, which is
+`~/.local/share/unison` by default, on Linux. `--data-dir` gives an instance a directory of its own,
+and the endpoint follows the directory: `unisond.sock` inside it on macOS and Linux, a named pipe
+derived from the path on Windows.
 
 The log names a clipboard item by its identifier, kind, size and MIME types, never by its content,
 and it never carries keys or tokens. A peer that comes online is logged with the negotiated TLS
 version and key exchange, so a connection that falls back to a weak key exchange shows up.
+
+## Linux session
+
+The daemon runs as the user and starts with the graphical session from the user unit in
+`packaging/linux/systemd/unisond.service`; the package installs it as
+`/usr/lib/systemd/user/unisond.service`. From a checkout, copy it to `~/.config/systemd/user/` and
+enable it:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user enable --now unisond
+journalctl --user -u unisond -f
+```
+
+The unit starts the daemon with the session, sends its standard error to the journal and restarts it
+after a failure; the daemon still writes its own log file in the data directory. The user manager
+needs the variables of the session: `systemctl --user show-environment` prints them, and
+`systemctl --user import-environment DISPLAY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR`
+adds them from a shell of the session. Without `DISPLAY` the daemon runs in the manual mode until it
+is started with one.
+
+### Clipboard
+
+`--clipboard` picks the backend:
+
+| Mode | Backend |
+|------|---------|
+| `system`, `auto` | the backend of the session |
+| `x11` | the X11 CLIPBOARD selection, which reaches a Wayland session through XWayland |
+| `wayland` | the Wayland data-control protocol, which is not available yet |
+| `none` | no system clipboard, for a second daemon on one machine |
+
+`auto` takes the Wayland data-control backend when the session offers it and falls back to X11
+through XWayland when it does not, which is the case on GNOME. Without a display the daemon keeps
+running in the manual mode: peers, files, history and `unison send` work, the clipboard is not
+synchronized, and one warning line names the reason. The daemon reaches for the display again with a
+wait that doubles up to two minutes and is one minute from then on, so a display that appears after
+the daemon starts is picked up without a restart.
+
+The status reports the backend in `clipboard_backend` (`x11`, `wayland` or `none`) and the reason of
+the manual mode in `clipboard_note`; `pasteboard` and `win32` are the values of macOS and Windows.
+
+### Keystore
+
+The daemon keeps the identity and the data encryption key in the Secret Service of the session when
+it has one, and in files with 0600 permissions otherwise. The backend is fixed with the first secret
+and reported as `keystore_backend` (`secret-service` or `file`, `keychain` on macOS, `dpapi` on
+Windows). `unison status` prints a warning while the secrets are in files.
+
+### Downloads
+
+Received files go to `Unison` inside the download folder of the session: the folder named by
+`XDG_DOWNLOAD_DIR` in `~/.config/user-dirs.dirs`, which has a localized name such as `Загрузки` on a
+Russian Ubuntu, or `~/Downloads` when the file names none.
+
+### Firewall
+
+Ubuntu enables no firewall by default, so the devices of the local network find each other without a
+rule. With `ufw` enabled, allow mDNS and the UDP port of the daemon:
+
+```sh
+sudo ufw allow 5353/udp
+sudo ufw allow <port>/udp
+```
+
+`unison status` prints the port in the `address` line. It is not random per start: the first start
+picks a free port and keeps it in the settings, so one rule stays valid until the data directory is
+removed. A pairing window listens on a temporary port announced by mDNS, so a pair with another
+device needs that port as well; allowing UDP from the local subnet covers the main port, the pairing
+port and mDNS in one rule.
 
 ## Endpoint
 
@@ -122,7 +194,8 @@ Device IDs are lowercase hex and times are unix milliseconds. `GetClip` returns 
 item. The settings hold the device name, the confirmation flags of the local device, the blob store
 limit, the downloads directory, the lifetimes and the network policy; a change applies at once. The
 relay settings are reported as a URL, a change time and whether a token is stored, never as the
-token itself.
+token itself. The status names the clipboard backend and the reason of the manual mode, and the
+keystore backend; see [Linux session](#linux-session).
 
 The desktop app does not use a socket directly: its Rust shell proxies the same API from a webview
 over Tauri IPC to the endpoint. See [Desktop app](desktop.md#local-api-proxy).
