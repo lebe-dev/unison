@@ -155,8 +155,10 @@ fn copy(source: &Path, target: &Path) -> Result<(), String> {
     std::fs::create_dir_all(dir)
         .map_err(|err| format!("cannot create {}: {err}", dir.display()))?;
     let temp = target.with_extension("exe.tmp");
-    std::fs::copy(source, &temp)
-        .map_err(|err| format!("cannot copy the daemon to {}: {err}", temp.display()))?;
+    std::fs::copy(source, &temp).map_err(|err| {
+        let _ = std::fs::remove_file(&temp);
+        format!("cannot copy the daemon to {}: {err}", temp.display())
+    })?;
     std::fs::rename(&temp, target).map_err(|err| {
         let _ = std::fs::remove_file(&temp);
         format!("cannot replace the daemon {}: {err}", target.display())
