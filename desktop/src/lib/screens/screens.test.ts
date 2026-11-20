@@ -12,12 +12,30 @@ describe("screens without a daemon", () => {
   afterEach(() => {
     daemon.status = null;
     daemon.error = null;
+    daemon.connecting = false;
   });
 
   it("shows the starting state of the devices screen", () => {
     render(Devices);
 
     expect(screen.getByText("Connecting to the daemon...")).toBeTruthy();
+  });
+
+  it("shows a spinner while the daemon has not answered yet", () => {
+    const { container } = render(Devices);
+
+    expect(container.querySelector(".spinner")).not.toBeNull();
+  });
+
+  it("keeps the spinner while the daemon is still starting", () => {
+    daemon.error = "cannot reach the daemon";
+    daemon.connecting = true;
+
+    const { container } = render(Devices);
+
+    expect(container.querySelector(".spinner")).not.toBeNull();
+    expect(screen.getByText("Connecting to the daemon...")).toBeTruthy();
+    expect(screen.queryByText(/The daemon is not running/)).toBeNull();
   });
 
   it("shows the starting state of the add device screen", () => {

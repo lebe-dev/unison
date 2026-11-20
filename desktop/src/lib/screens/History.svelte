@@ -14,6 +14,7 @@
   import { history } from "../history.svelte";
   import { t } from "../i18n";
   import ImageCanvas from "../ImageCanvas.svelte";
+  import Spinner from "../Spinner.svelte";
 
   /** Height of one row of the feed, in pixels. */
   const ROW_HEIGHT = 88;
@@ -165,10 +166,11 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
+      <Spinner />
       <p class="muted">{t("devices.connecting")}</p>
     {:else}
       <p class="notice error">{t("history.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+      <button class="button" type="button" onclick={() => void daemon.retry()}>
         {t("common.tryAgain")}
       </button>
     {/if}

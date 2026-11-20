@@ -5,6 +5,7 @@
   import { filesCountText, formatBytes, formatDateTime, shortDeviceID } from "../format";
   import { t } from "../i18n";
   import { requests } from "../requests.svelte";
+  import Spinner from "../Spinner.svelte";
 
   let now = $state(Date.now());
 
@@ -36,10 +37,11 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
+      <Spinner />
       <p class="muted">{t("devices.connecting")}</p>
     {:else}
       <p class="notice error">{t("requests.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+      <button class="button" type="button" onclick={() => void daemon.retry()}>
         {t("common.tryAgain")}
       </button>
     {/if}

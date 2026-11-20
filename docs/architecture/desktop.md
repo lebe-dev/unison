@@ -38,6 +38,9 @@ screen renders it and dispatches actions.
 
 `daemon.svelte.ts` polls `GetStatus` every 5 seconds, follows `WatchEvents` and reopens the stream
 after 3 seconds when it drops, keeps the recent events and pushes the tray state on every refresh.
+While the daemon is not answering yet, the store polls it every 300 ms for up to 10 seconds and the
+screens show a spinner, so a window that opens before the daemon is up does not look broken. A start
+that failed is reported at once, without waiting for the timeout.
 Notifications subscribe before the daemon starts, because their action buttons have to be registered
 before the first one can arrive.
 

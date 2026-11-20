@@ -26,6 +26,7 @@
   } from "../policy";
   import { PolicyAction } from "../api/gen/unison/local/v1/local_pb";
   import type { PauseChoice } from "../tray";
+  import Spinner from "../Spinner.svelte";
   import {
     lifetimeText,
     parseLifetime,
@@ -521,10 +522,11 @@
   {:else if !daemon.connected}
     <section class="state">
       {#if daemon.loading}
+        <Spinner />
         <p class="muted">{t("devices.connecting")}</p>
       {:else}
         <p class="notice error">{t("settings.daemonNotRunning")}</p>
-        <button class="button" type="button" onclick={() => void daemon.refresh()}>
+        <button class="button" type="button" onclick={() => void daemon.retry()}>
           {t("common.tryAgain")}
         </button>
       {/if}

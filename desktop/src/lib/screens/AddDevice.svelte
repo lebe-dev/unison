@@ -4,6 +4,7 @@
   import QrPanel from "../pairing/QrPanel.svelte";
   import WindowTimer from "../pairing/WindowTimer.svelte";
   import NetworkIssue from "../NetworkIssue.svelte";
+  import Spinner from "../Spinner.svelte";
   import { daemon } from "../daemon.svelte";
   import { roleLabel } from "../format";
   import { t } from "../i18n";
@@ -30,10 +31,11 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
+      <Spinner />
       <p class="muted">{t("devices.connecting")}</p>
     {:else}
       <p class="notice error">{t("add.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+      <button class="button" type="button" onclick={() => void daemon.retry()}>
         {t("common.tryAgain")}
       </button>
     {/if}

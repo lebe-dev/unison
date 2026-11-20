@@ -7,6 +7,7 @@
   import { errorText } from "../errors";
   import { t } from "../i18n";
   import NetworkIssue from "../NetworkIssue.svelte";
+  import Spinner from "../Spinner.svelte";
   import { deviceNameKey } from "../platform";
   import { unreachableDeviceIssue } from "../network";
   import {
@@ -204,10 +205,11 @@
 {#if !daemon.connected}
   <section class="state">
     {#if daemon.loading}
+      <Spinner />
       <p class="muted">{t("devices.connecting")}</p>
     {:else}
       <p class="notice error">{t("devices.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.refresh()}>
+      <button class="button" type="button" onclick={() => void daemon.retry()}>
         {t("common.tryAgain")}
       </button>
     {/if}

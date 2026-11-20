@@ -14,6 +14,10 @@ import { getLocale, translate } from "./i18n";
 
 /** Times of the shell. */
 const STATUS_INTERVAL = 5_000;
+/** CONNECT_TIMEOUT is how long the shell waits for a daemon that is starting
+ * before it tells the user that it is gone. */
+const CONNECT_TIMEOUT = 10_000;
+const CONNECT_INTERVAL = 300;
 const RETRY_DELAY = 3_000;
 const ACTIVITY_LIMIT = 5;
 const FIVE_MINUTES = 5 * 60_000;
@@ -37,8 +41,11 @@ class DaemonStore {
   installing = $state(false);
   /** Reason of the last failed installation, absent when it worked. */
   installError = $state<string | null>(null);
+  /** The shell waits for a daemon that has not answered yet. */
+  connecting = $state(false);
 
   #running = false;
+  #waitToken = 0;
   #statusTimer: ReturnType<typeof setInterval> | null = null;
   #events = new Set<(event: DaemonEvent) => void>();
   #stream: AbortController | null = null;
@@ -49,7 +56,7 @@ class DaemonStore {
 
   /** loading reports a first status that has not arrived yet. */
   get loading(): boolean {
-    return this.status === null && this.error === null;
+    return this.status === null && (this.connecting || this.error === null);
   }
 
   /** failed reports a daemon that the app could not start. */
@@ -140,7 +147,7 @@ class DaemonStore {
       return;
     }
     this.#running = true;
-    await this.refresh();
+    await this.#waitForDaemon();
     this.#statusTimer = setInterval(() => void this.refresh(), STATUS_INTERVAL);
     void this.#watch();
   }
@@ -148,12 +155,19 @@ class DaemonStore {
   /** stop releases the subscriptions of the shell. */
   stop(): void {
     this.#running = false;
+    this.#waitToken++;
+    this.connecting = false;
     if (this.#statusTimer) {
       clearInterval(this.#statusTimer);
       this.#statusTimer = null;
     }
     this.#stream?.abort();
     this.#stream = null;
+  }
+
+  /** retry waits for the daemon again, as the user asked after a failure. */
+  async retry(): Promise<void> {
+    await this.#waitForDaemon();
   }
 
   /**
@@ -221,6 +235,36 @@ class DaemonStore {
       this.error = messageOf(error);
     }
     await this.refresh();
+  }
+
+  /**
+   * #waitForDaemon waits for a daemon that the shell is starting and reports
+   * the failure only after the timeout, so the window does not claim a daemon
+   * is gone while it is still on its way.
+   */
+  async #waitForDaemon(): Promise<void> {
+    if (this.connecting) {
+      return;
+    }
+    const token = ++this.#waitToken;
+    this.connecting = true;
+    const deadline = Date.now() + CONNECT_TIMEOUT;
+    try {
+      for (;;) {
+        await this.refresh();
+        if (this.connected || this.failed || token !== this.#waitToken) {
+          return;
+        }
+        if (Date.now() >= deadline) {
+          return;
+        }
+        await sleep(CONNECT_INTERVAL);
+      }
+    } finally {
+      if (token === this.#waitToken) {
+        this.connecting = false;
+      }
+    }
   }
 
   /** #loadStart reads why the app could not start the daemon. */
