@@ -14,13 +14,18 @@ package keystore
 
 // uk_keychain stores the keychain every item lives in: the default keychain of
 // the process, or the login keychain of the user when the process has none. The
-// reference is kept for the lifetime of the process.
+// reference is kept for the lifetime of the process. A call that finds no
+// keychain leaves the reference NULL, so no query can fall back to the search
+// list.
 static OSStatus uk_keychain(SecKeychainRef *keychain) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 	OSStatus status = SecKeychainCopyDefault(keychain);
-	if (status == errSecSuccess && *keychain != NULL) {
-		return errSecSuccess;
+	if (status == errSecSuccess) {
+		if (*keychain != NULL) {
+			return errSecSuccess;
+		}
+		status = errSecNoDefaultKeychain;
 	}
 	if (*keychain != NULL) {
 		CFRelease(*keychain);
@@ -194,28 +199,33 @@ import (
 	"github.com/lebe-dev/unison/core/ports"
 )
 
-// keychainOnce resolves the keychain of the process. The reference lives as
-// long as the process does.
+// The resolved keychain and whether the lookup succeeded. The reference lives
+// as long as the process does.
 var (
-	keychainOnce sync.Once
+	keychainMu   sync.Mutex
 	keychainRef  C.SecKeychainRef
-	keychainErr  error
+	keychainOpen bool
 )
 
 // keychain returns the keychain every operation names, or ErrNoKeychain. The
 // Keychain API never falls back to a default keychain of its own, so a process
-// without one fails here instead of waiting for a dialog.
+// without one fails here instead of waiting for a dialog. A successful lookup is
+// kept for the rest of the process, a failed one is retried on the next call, so
+// a keychain that is still locked at the first use works after the unlock.
 func keychain() (C.SecKeychainRef, error) {
-	keychainOnce.Do(func() {
-		var ref C.SecKeychainRef
-		//nolint:gocritic // Both sides are cgo constants, not duplicated expressions.
-		if C.uk_keychain(&ref) != C.errSecSuccess {
-			keychainErr = ErrNoKeychain
-			return
-		}
-		keychainRef = ref
-	})
-	return keychainRef, keychainErr
+	keychainMu.Lock()
+	defer keychainMu.Unlock()
+	if keychainOpen {
+		return keychainRef, nil
+	}
+	var ref C.SecKeychainRef
+	//nolint:gocritic // Both sides are cgo constants, not duplicated expressions.
+	if C.uk_keychain(&ref) != C.errSecSuccess {
+		return ref, ErrNoKeychain
+	}
+	keychainRef = ref
+	keychainOpen = true
+	return keychainRef, nil
 }
 
 // Load returns the secret stored under name, or ports.ErrNotFound.

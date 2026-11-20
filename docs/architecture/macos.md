@@ -29,7 +29,8 @@ is built with `CGO_ENABLED=1`.
   synced to iCloud;
 - the keychain is resolved on the first use, the default keychain of the process or the login
   keychain of the user, and the keychain is named in every query, so the API never looks for a
-  keychain of its own and never raises a dialog that asks for one.
+  keychain of its own and never raises a dialog that asks for one. A lookup that finds no keychain,
+  for example because the login keychain is still locked, is retried on the next call.
 
 | Service | Data directory |
 |---------|----------------|
