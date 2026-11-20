@@ -146,10 +146,9 @@ func TestSecretServiceNoCollection(t *testing.T) {
 	ring := newFakeKeyring()
 	ring.defaultAlias = ""
 	ring.loginAlias = ""
-	s := newTestSecretService(t, ring, 0)
 
-	if err := s.store(context.Background(), testService, "store.dek", []byte("key")); !errors.Is(err, ErrKeyringUnavailable) {
-		t.Fatalf("store = %v, want ErrKeyringUnavailable", err)
+	if _, err := newSecretService(ring, 0, slog.New(slog.DiscardHandler)); !errors.Is(err, ErrKeyringUnavailable) {
+		t.Fatalf("newSecretService = %v, want ErrKeyringUnavailable", err)
 	}
 }
 

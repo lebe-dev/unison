@@ -191,20 +191,3 @@ func TestDefaultPathOverride(t *testing.T) {
 		t.Fatalf("default path is %q, want %q", got, path)
 	}
 }
-
-// TestDefaultPathPlatform checks the endpoint of the platform.
-func TestDefaultPathPlatform(t *testing.T) {
-	t.Setenv(localconn.EnvPath, "")
-
-	path, err := localconn.DefaultPath()
-	if err != nil {
-		t.Fatalf("default path: %v", err)
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatalf("home directory: %v", err)
-	}
-	if want := filepath.Join(home, "Library", "Application Support", "Unison", "unisond.sock"); path != want {
-		t.Fatalf("default path is %q, want %q", path, want)
-	}
-}

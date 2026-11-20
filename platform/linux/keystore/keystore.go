@@ -98,6 +98,8 @@ type Keystore struct {
 	files   *fileStore
 	secrets *secretService
 
+	warning string
+
 	mu       sync.Mutex
 	recorded bool
 }
@@ -134,17 +136,31 @@ func Open(dataDir, service string, opts Options) (*Keystore, error) {
 	}
 	if backend == BackendFile {
 		k.files = &fileStore{dir: dir}
+		k.warning = fileWarning
 		k.logger.Info("secrets are stored in files", "backend", string(backend), "dir", dir)
 		return k, nil
 	}
 	secrets, err := openSecretService(opts)
-	if err != nil {
+	if err == nil {
+		k.backend = BackendSecretService
+		k.secrets = secrets
+		k.logger.Info("secrets are stored in the Secret Service", "backend", string(k.backend), "service", service)
+		return k, nil
+	}
+	if k.recorded || opts.Backend != "" {
 		return nil, err
 	}
-	k.secrets = secrets
-	k.logger.Info("secrets are stored in the Secret Service", "backend", string(backend), "service", service)
+	// A first run without a usable keyring keeps the keys in files: the daemon
+	// must start even when the Secret Service of the session has no collection.
+	k.backend = BackendFile
+	k.files = &fileStore{dir: dir}
+	k.warning = fileWarning + ": " + err.Error()
+	k.logger.Warn("the Secret Service is not usable, the secrets are stored in files", "error", err, "dir", dir)
 	return k, nil
 }
+
+// fileWarning is the warning of the file backend.
+const fileWarning = "the keys are stored in files with 0600 permissions"
 
 // chooseBackend returns the backend of a directory with the recorded backend
 // and the options of the call.
@@ -160,7 +176,7 @@ func chooseBackend(recorded string, opts Options) (Backend, error) {
 	}
 	switch Backend(recorded) {
 	case "":
-		return detectBackend(opts), nil
+		return BackendSecretService, nil
 	case BackendFile, BackendSecretService:
 		return Backend(recorded), nil
 	default:
@@ -196,7 +212,10 @@ func (k *Keystore) Warning() string {
 	if k.backend != BackendFile {
 		return ""
 	}
-	return "the session has no Secret Service, the keys are stored in files with 0600 permissions"
+	if k.warning != "" {
+		return k.warning
+	}
+	return fileWarning
 }
 
 // Load returns the secret stored under name, or ports.ErrNotFound.
@@ -274,18 +293,4 @@ func readBackendFile(dir string) (string, error) {
 	default:
 		return "", fmt.Errorf("keystore: unknown backend %q in %s", value, backendFileName)
 	}
-}
-
-// detectBackend picks the backend of a directory without a record: the Secret
-// Service when the session has one, files otherwise.
-func detectBackend(opts Options) Backend {
-	conn, err := opts.connect()
-	if err != nil {
-		return BackendFile
-	}
-	owned, err := serviceOnBus(conn)
-	if err != nil || !owned {
-		return BackendFile
-	}
-	return BackendSecretService
 }

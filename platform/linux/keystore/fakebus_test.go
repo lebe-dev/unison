@@ -22,6 +22,9 @@ type fakeKeyring struct {
 	// path means the alias does not exist.
 	defaultAlias dbus.ObjectPath
 	loginAlias   dbus.ObjectPath
+	// absentCollections names the collections the service does not export, as
+	// a locked login keyring of an autologin session.
+	absentCollections map[dbus.ObjectPath]bool
 
 	// collectionLocked and itemLocked are the lock states the properties report.
 	collectionLocked bool
@@ -271,6 +274,9 @@ func (k *fakeKeyring) property(path dbus.ObjectPath, name string) (dbus.Variant,
 	defer k.mu.Unlock()
 	switch name {
 	case ifaceCollection + ".Locked":
+		if k.absentCollections[path] {
+			return dbus.Variant{}, dbus.NewError("org.freedesktop.DBus.Error.UnknownObject", []any{"Object does not exist at path " + string(path)})
+		}
 		return dbus.MakeVariant(k.collectionLocked), nil
 	case ifaceItem + ".Locked":
 		if _, ok := k.items[path]; !ok {

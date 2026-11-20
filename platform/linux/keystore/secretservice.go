@@ -104,11 +104,13 @@ func Inspect() (Session, error) {
 		if path == emptyPath || path == "" {
 			continue
 		}
-		session.Alias = alias
 		locked, err := lockedAt(conn, path, ifaceCollection)
 		if err != nil {
-			return session, err
+			// The alias names a collection the service does not export yet, so
+			// it cannot be used; keep looking at the other alias.
+			continue
 		}
+		session.Alias = alias
 		session.Locked = locked
 		break
 	}
@@ -138,6 +140,11 @@ type secretService struct {
 func newSecretService(conn busConn, timeout time.Duration, logger *slog.Logger) (*secretService, error) {
 	s := &secretService{conn: conn, logger: logger, timeout: timeout}
 	if err := s.openSession(); err != nil {
+		return nil, err
+	}
+	// The session can hold a Secret Service without a collection the secrets
+	// could go to, for example a locked login keyring of an autologin session.
+	if _, err := s.collection(); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -273,14 +280,25 @@ func (s *secretService) search(ctx context.Context, service, name string) ([]dbu
 // the login alias when there is no default. It never creates a collection.
 func (s *secretService) collection() (dbus.ObjectPath, error) {
 	service := s.conn.Object(busName, pathService)
+	var cause error
 	for _, alias := range []string{aliasDefault, aliasLogin} {
 		var path dbus.ObjectPath
 		if err := service.Call(ifaceService+".ReadAlias", 0, alias).Store(&path); err != nil {
 			return "", fmt.Errorf("keystore: read the %s collection: %w", alias, err)
 		}
-		if path != emptyPath && path != "" {
-			return path, nil
+		if path == emptyPath || path == "" {
+			continue
 		}
+		// An alias can name a collection that the service does not export, as
+		// a login keyring does while it is locked.
+		if _, err := lockedAt(s.conn, path, ifaceCollection); err != nil {
+			cause = err
+			continue
+		}
+		return path, nil
+	}
+	if cause != nil {
+		return "", fmt.Errorf("%w: the keyring has no usable collection: %w", ErrKeyringUnavailable, cause)
 	}
 	return "", fmt.Errorf("%w: the keyring has neither a %s nor a %s collection", ErrKeyringUnavailable, aliasDefault, aliasLogin)
 }
