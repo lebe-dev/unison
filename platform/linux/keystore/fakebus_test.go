@@ -33,6 +33,9 @@ type fakeKeyring struct {
 	dismissPrompt bool
 	// silentPrompt leaves every prompt unanswered.
 	silentPrompt bool
+	// promptWait blocks the call that shows a prompt until the channel is
+	// closed, which is what a real prompt does while it waits for the user.
+	promptWait chan struct{}
 
 	items map[dbus.ObjectPath]*fakeItem
 
@@ -197,6 +200,12 @@ func (k *fakeKeyring) openSession(args []any) ([]any, error) {
 
 // answerPrompt completes a prompt the way the test asked for.
 func (k *fakeKeyring) answerPrompt() ([]any, error) {
+	if k.promptWait != nil {
+		wait := k.promptWait
+		k.mu.Unlock()
+		<-wait
+		k.mu.Lock()
+	}
 	if k.silentPrompt {
 		return nil, nil
 	}

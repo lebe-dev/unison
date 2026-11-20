@@ -199,6 +199,25 @@ func TestSecretServicePromptTimeout(t *testing.T) {
 	}
 }
 
+// TestSecretServicePromptCallBlocks keeps the wait bounded when the call that
+// shows the prompt does not return until the user answers it.
+func TestSecretServicePromptCallBlocks(t *testing.T) {
+	ring := newFakeKeyring()
+	ring.collectionLocked = true
+	ring.promptWait = make(chan struct{})
+	t.Cleanup(func() { close(ring.promptWait) })
+	s := newTestSecretService(t, ring, 20*time.Millisecond)
+
+	started := time.Now()
+	err := s.store(context.Background(), testService, "store.dek", []byte("key"))
+	if !errors.Is(err, ErrKeyringLocked) {
+		t.Fatalf("store = %v, want ErrKeyringLocked", err)
+	}
+	if waited := time.Since(started); waited > 2*time.Second {
+		t.Fatalf("the wait took %s", waited)
+	}
+}
+
 // TestSecretServiceUnlocksItem unlocks a locked item before reading it.
 func TestSecretServiceUnlocksItem(t *testing.T) {
 	ring := newFakeKeyring()

@@ -364,18 +364,26 @@ func (s *secretService) prompt(ctx context.Context, path dbus.ObjectPath) (bool,
 	signals := make(chan *dbus.Signal, 8)
 	s.conn.Signal(signals)
 	defer s.conn.RemoveSignal(signals)
-	call := s.conn.Object(busName, path).Call(ifacePrompt+".Prompt", 0, "Unison needs the keyring")
-	if call.Err != nil {
-		return false, fmt.Errorf("keystore: show the keyring prompt: %w", call.Err)
-	}
+	// The call returns only when the user answers the prompt, so it runs on its
+	// own goroutine and the timer below bounds the wait.
+	answers := make(chan error, 1)
+	go func() {
+		answers <- s.conn.Object(busName, path).Call(ifacePrompt+".Prompt", 0, "Unison needs the keyring").Err
+	}()
 	timer := time.NewTimer(s.timeout)
 	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
+			s.dismiss(path)
 			return false, ctx.Err()
 		case <-timer.C:
+			s.dismiss(path)
 			return false, fmt.Errorf("%w: no answer within %s", ErrKeyringLocked, s.timeout)
+		case err := <-answers:
+			if err != nil {
+				return false, fmt.Errorf("keystore: show the keyring prompt: %w", err)
+			}
 		case signal, ok := <-signals:
 			if !ok {
 				return false, errors.New("keystore: the bus closed the signal channel")
@@ -393,6 +401,14 @@ func (s *secretService) prompt(ctx context.Context, path dbus.ObjectPath) (bool,
 			return accepted, nil
 		}
 	}
+}
+
+// dismiss closes a prompt that nobody answered, so the dialog does not stay on
+// the screen after the wait is over.
+func (s *secretService) dismiss(path dbus.ObjectPath) {
+	go func() {
+		_ = s.conn.Object(busName, path).Call(ifacePrompt+".Dismiss", 0).Err
+	}()
 }
 
 // seal encrypts the secret for the session.
