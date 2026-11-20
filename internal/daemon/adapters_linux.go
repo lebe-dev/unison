@@ -4,7 +4,6 @@ package daemon
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -38,10 +37,8 @@ func NewClipboard(mode string) (ports.Clipboard, error) {
 		mode = ClipboardAuto
 	}
 	switch mode {
-	case ClipboardAuto, ClipboardX11:
+	case ClipboardAuto, ClipboardX11, ClipboardWayland:
 		return newManagedClipboard(mode, systemClipboardEnvironment()), nil
-	case ClipboardWayland:
-		return nil, errWaylandUnavailable
 	case ClipboardNone:
 		return NoClipboard(), nil
 	default:
@@ -92,12 +89,11 @@ func systemClipboardEnvironment() clipboardEnvironment {
 }
 
 // newWaylandClipboard returns the clipboard of the Wayland data-control
-// protocol.
-func newWaylandClipboard() (ports.Clipboard, error) { return nil, errWaylandUnavailable }
-
-// errWaylandUnavailable reports the backend that the Wayland data-control
-// protocol needs and the daemon does not have yet.
-var errWaylandUnavailable = errors.New("clipboard: the Wayland data-control backend is not available yet, use x11")
+// protocol. A compositor without the protocol is reported as an error, so the
+// automatic mode can fall back to X11.
+func newWaylandClipboard() (ports.Clipboard, error) {
+	return clipboard.NewWayland(clipboard.WaylandOptions{})
+}
 
 // clipboardWatchBuffer is the number of snapshots buffered for a watcher. A
 // slow watcher loses snapshots instead of blocking the daemon.

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/platform/linux/clipboard"
 )
 
 // testClipboard is a clipboard of a test that records writes and lets the test
@@ -194,7 +195,7 @@ func TestClipboardFallsBackFromWayland(t *testing.T) {
 		probe:  func(context.Context, string) error { return nil },
 		newX11: func(string) (ports.Clipboard, error) { return &testClipboard{}, nil },
 		newWayland: func() (ports.Clipboard, error) {
-			return nil, errWaylandUnavailable
+			return nil, clipboard.ErrNoDataControl
 		},
 	})
 
@@ -284,10 +285,41 @@ func TestNewClipboardModes(t *testing.T) {
 	} else if _, ok := clip.(noClipboard); !ok {
 		t.Fatalf("none returned %T", clip)
 	}
-	if _, err := NewClipboard(ClipboardWayland); !errors.Is(err, errWaylandUnavailable) {
-		t.Fatalf("wayland = %v, want %v", err, errWaylandUnavailable)
+	clip, err := NewClipboard(ClipboardWayland)
+	if err != nil {
+		t.Fatalf("wayland: %v", err)
+	}
+	managed, ok := clip.(*managedClipboard)
+	if !ok {
+		t.Fatalf("wayland returned %T", clip)
+	}
+	backend, note := managed.ClipboardStatus()
+	if backend != ClipboardWayland && (backend != ClipboardNone || note == "") {
+		t.Fatalf("wayland status is %q %q", backend, note)
 	}
 	if _, err := NewClipboard("bogus"); err == nil {
 		t.Fatal("an unknown mode has no error")
+	}
+}
+
+// TestClipboardWaylandModeReportsTheReason checks the status of the explicit
+// Wayland mode without a usable compositor.
+func TestClipboardWaylandModeReportsTheReason(t *testing.T) {
+	c := newManagedClipboard(ClipboardWayland, clipboardEnvironment{
+		getenv:     env(nil),
+		newWayland: func() (ports.Clipboard, error) { return nil, clipboard.ErrNoDataControl },
+	})
+	backend, note := c.ClipboardStatus()
+	if backend != ClipboardNone || note != "WAYLAND_DISPLAY is not set" {
+		t.Fatalf("status without a display is %q %q", backend, note)
+	}
+
+	c = newManagedClipboard(ClipboardWayland, clipboardEnvironment{
+		getenv:     env(map[string]string{"WAYLAND_DISPLAY": "wayland-0"}),
+		newWayland: func() (ports.Clipboard, error) { return nil, clipboard.ErrNoDataControl },
+	})
+	backend, note = c.ClipboardStatus()
+	if backend != ClipboardNone || note != "the compositor does not offer the data-control protocol" {
+		t.Fatalf("status without data-control is %q %q", backend, note)
 	}
 }

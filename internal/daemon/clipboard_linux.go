@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/platform/linux/clipboard"
 )
 
 // ErrClipboardUnavailable reports a clipboard that has no display behind it.
@@ -49,10 +50,17 @@ func newManagedClipboard(mode string, env clipboardEnvironment) *managedClipboar
 // resolve returns the clipboard of the session, or nil and the reason it is not
 // available.
 func (c *managedClipboard) resolve() (ports.Clipboard, string, string) {
-	if c.mode == ClipboardAuto && c.env.getenv("WAYLAND_DISPLAY") != "" {
-		if wayland, err := c.env.newWayland(); err == nil {
+	if c.mode != ClipboardX11 && c.env.getenv("WAYLAND_DISPLAY") != "" {
+		wayland, err := c.env.newWayland()
+		if err == nil {
 			return wayland, ClipboardWayland, ""
 		}
+		if c.mode == ClipboardWayland {
+			return nil, ClipboardNone, waylandNote(err)
+		}
+	}
+	if c.mode == ClipboardWayland {
+		return nil, ClipboardNone, "WAYLAND_DISPLAY is not set"
 	}
 	display := strings.TrimSpace(c.env.getenv("DISPLAY"))
 	if display == "" {
@@ -66,6 +74,14 @@ func (c *managedClipboard) resolve() (ports.Clipboard, string, string) {
 		return nil, ClipboardNone, "the X11 clipboard is not available"
 	}
 	return x11, ClipboardX11, ""
+}
+
+// waylandNote explains why the Wayland clipboard is not available.
+func waylandNote(err error) string {
+	if errors.Is(err, clipboard.ErrNoDataControl) {
+		return "the compositor does not offer the data-control protocol"
+	}
+	return "the Wayland clipboard is not available"
 }
 
 // ClipboardStatus reports the backend of the clipboard and the reason of the
