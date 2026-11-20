@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+
+	"github.com/lebe-dev/unison/internal/xdg"
 )
 
 // Socket permissions. The directory is private to the user and the socket is
@@ -28,6 +30,9 @@ func platformPath() (string, error) {
 	}
 	if runtime.GOOS == "darwin" {
 		return filepath.Join(home, "Library", "Application Support", "Unison", "unisond.sock"), nil
+	}
+	if runtime.GOOS == "linux" {
+		return filepath.Join(xdg.DataHome(home, os.Getenv("XDG_DATA_HOME")), "unison", "unisond.sock"), nil
 	}
 	return filepath.Join(home, ".local", "share", "unison", "unisond.sock"), nil
 }
