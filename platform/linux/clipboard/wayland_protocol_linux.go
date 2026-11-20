@@ -3,6 +3,7 @@
 package clipboard
 
 import (
+	"bytes"
 	"sync"
 
 	"github.com/SpinningVinyl/go-wayland/wayland/client"
@@ -265,19 +266,27 @@ func stringArg(value string) []byte {
 	return buf
 }
 
-// stringAt decodes a string argument of an event body. A truncated body yields
-// an empty string instead of a panic, because the body comes from the
-// compositor.
+// stringAt decodes a string argument of an event body. A truncated body and a
+// value without a terminator yield an empty string instead of a panic, because
+// the body comes from the compositor.
 func stringAt(body []byte, offset int) string {
 	if len(body) < offset+4 {
 		return ""
 	}
 	length := int(client.Uint32(body[offset:]))
-	padded := client.PaddedLen(length)
-	if length < 1 || len(body) < offset+4+padded {
+	if length < 1 {
 		return ""
 	}
-	return client.String(body[offset+4 : offset+4+padded])
+	padded := client.PaddedLen(length)
+	if len(body) < offset+4+padded {
+		return ""
+	}
+	value := body[offset+4 : offset+4+padded]
+	end := bytes.IndexByte(value, 0)
+	if end < 0 {
+		return ""
+	}
+	return string(value[:end])
 }
 
 // closeReceivedFD closes a descriptor that arrived with an event the clipboard

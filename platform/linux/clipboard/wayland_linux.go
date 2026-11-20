@@ -51,6 +51,13 @@ var (
 	errNoSeat = errors.New("clipboard: the compositor has no seat")
 	// errConnClosed reports a protocol connection that is gone.
 	errConnClosed = errors.New("clipboard: the Wayland connection is closed")
+	// errHandshakeTimeout reports a compositor that did not finish the
+	// handshake in time.
+	errHandshakeTimeout = errors.New("clipboard: the compositor did not answer the handshake in time")
+	// handshakeTimeout bounds the handshake with the compositor, so a socket
+	// that accepts a connection but never answers does not block the daemon.
+	// Tests shorten it.
+	handshakeTimeout = 5 * time.Second
 )
 
 // WaylandOptions configures a clipboard of the data-control protocol.
@@ -154,20 +161,13 @@ func NewWayland(opts WaylandOptions) (*Wayland, error) {
 	return w, nil
 }
 
-// Close stops the watcher and releases the protocol connection.
+// Close stops the supervisor, which releases the protocol connection.
 func (w *Wayland) Close() error {
 	w.state.mu.Lock()
 	cancel := w.state.cancel
 	w.state.mu.Unlock()
 	if cancel != nil {
 		cancel()
-	}
-	w.state.connMu.Lock()
-	conn := w.state.conn
-	w.state.conn = nil
-	w.state.connMu.Unlock()
-	if conn != nil {
-		conn.close()
 	}
 	return nil
 }
@@ -241,11 +241,13 @@ func (w *Wayland) Read(ctx context.Context) (Report, error) {
 	// arrived before is covered by the state read here.
 	conn.pending.Store(false)
 	offer, targets := conn.selection()
-	report, _ := conn.read(offer, targets)
-	conn.retire()
+	report, _ := conn.read(ctx, offer, targets)
+	conn.retire(ctx)
 	conn.readMu.Unlock()
 	if conn.pending.Swap(false) {
-		go conn.readSnapshot()
+		// The reread reports the change to the watchers, so it outlives this
+		// call and ignores its deadline.
+		go conn.readSnapshot(context.WithoutCancel(ctx))
 	}
 	return report, nil
 }
@@ -410,20 +412,35 @@ func connectWayland(w *Wayland) (*waylandConn, error) {
 			conn.close()
 		}
 	}()
+	expired := new(atomic.Bool)
+	watchdog := time.AfterFunc(handshakeTimeout, func() {
+		expired.Store(true)
+		conn.close()
+	})
+	defer watchdog.Stop()
 	if err := conn.bind(); err != nil {
-		return nil, err
+		return nil, handshakeError(err, expired)
 	}
 	// The device reports the selection right after the bind. That content was
 	// there before the clipboard started, so it is the starting state and not a
 	// change to report.
 	if err := conn.drain(); err != nil {
-		return nil, fmt.Errorf("clipboard: read the starting selection: %w", err)
+		return nil, handshakeError(fmt.Errorf("clipboard: read the starting selection: %w", err), expired)
 	}
 	conn.mu.Lock()
 	conn.baseline = false
 	conn.mu.Unlock()
 	ok = true
 	return conn, nil
+}
+
+// handshakeError reports the timeout of the handshake instead of the socket
+// error of the connection the watchdog closed.
+func handshakeError(err error, expired *atomic.Bool) error {
+	if expired.Load() {
+		return fmt.Errorf("%w: %w", ErrNoWaylandDisplay, errHandshakeTimeout)
+	}
+	return err
 }
 
 // bind finds the data-control manager and the seat and creates the device.
@@ -599,7 +616,7 @@ func (c *waylandConn) selectionChanged(offer *dcOffer) {
 	if baseline {
 		return
 	}
-	go c.readSnapshot()
+	go c.readSnapshot(context.Background())
 }
 
 // selection returns the current offer and its MIME types.
@@ -610,14 +627,14 @@ func (c *waylandConn) selection() (*dcOffer, targetList) {
 }
 
 // retire destroys the offers of earlier selections after their state was read.
-func (c *waylandConn) retire() {
+func (c *waylandConn) retire(ctx context.Context) {
 	c.mu.Lock()
 	pending := len(c.retired) > 0
 	c.mu.Unlock()
 	if !pending {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.w.valueTimeout)
+	ctx, cancel := context.WithTimeout(ctx, c.w.valueTimeout)
 	defer cancel()
 	_ = c.do(ctx, func() error {
 		c.mu.Lock()
@@ -637,14 +654,14 @@ func (c *waylandConn) retire() {
 
 // readSnapshot reads the current selection and publishes it. A change that
 // arrives during a read is read again after it.
-func (c *waylandConn) readSnapshot() {
+func (c *waylandConn) readSnapshot(ctx context.Context) {
 	if !c.readMu.TryLock() {
 		c.pending.Store(true)
 		return
 	}
 	defer c.readMu.Unlock()
 	for {
-		c.publishCurrent()
+		c.publishCurrent(ctx)
 		if !c.pending.Swap(false) {
 			return
 		}
@@ -652,10 +669,10 @@ func (c *waylandConn) readSnapshot() {
 }
 
 // publishCurrent reads the selection and reports it to the watchers.
-func (c *waylandConn) publishCurrent() {
+func (c *waylandConn) publishCurrent(ctx context.Context) {
 	offer, targets := c.selection()
-	report, ok := c.read(offer, targets)
-	c.retire()
+	report, ok := c.read(ctx, offer, targets)
+	c.retire(ctx)
 	if !ok {
 		return
 	}
@@ -667,7 +684,7 @@ func (c *waylandConn) publishCurrent() {
 
 // read returns the state of the selection. It reports false when the clipboard
 // has nothing the backend reads, but the report still carries the MIME types.
-func (c *waylandConn) read(offer *dcOffer, targets targetList) (Report, bool) {
+func (c *waylandConn) read(ctx context.Context, offer *dcOffer, targets targetList) (Report, bool) {
 	report := Report{At: time.Now(), Targets: targets}
 	if offer == nil {
 		return report, false
@@ -682,7 +699,7 @@ func (c *waylandConn) read(offer *dcOffer, targets targetList) (Report, bool) {
 	}
 	representations := make([]ports.Representation, 0, 3+maxFiles)
 	if target, _ := targets.pickPlain(); target != "" {
-		if value, ok := c.readValue(offer, target); ok && len(value) > 0 {
+		if value, ok := c.readValue(ctx, offer, target); ok && len(value) > 0 {
 			representations = append(representations, ports.Representation{
 				MIME: MIMETextPlain,
 				Data: value,
@@ -690,7 +707,7 @@ func (c *waylandConn) read(offer *dcOffer, targets targetList) (Report, bool) {
 		}
 	}
 	if target := targets.pickHTML(); target != "" {
-		if value, ok := c.readValue(offer, target); ok && len(value) > 0 {
+		if value, ok := c.readValue(ctx, offer, target); ok && len(value) > 0 {
 			representations = append(representations, ports.Representation{
 				MIME: MIMETextHTML,
 				Data: decodeHTML(value),
@@ -699,7 +716,7 @@ func (c *waylandConn) read(offer *dcOffer, targets targetList) (Report, bool) {
 	}
 	imageBytes := 0
 	if target := targets.pickImage(); target != "" {
-		if value, ok := c.readValue(offer, target); ok && len(value) > 0 {
+		if value, ok := c.readValue(ctx, offer, target); ok && len(value) > 0 {
 			png, err := readImagePNG(target, value)
 			switch {
 			case err != nil:
@@ -712,7 +729,7 @@ func (c *waylandConn) read(offer *dcOffer, targets targetList) (Report, bool) {
 	}
 	fileList := []string(nil)
 	if target := targets.pickFiles(); target != "" {
-		if value, ok := c.readValue(offer, target); ok && len(value) > 0 {
+		if value, ok := c.readValue(ctx, offer, target); ok && len(value) > 0 {
 			fileList = parseFileList(target, value)
 		}
 	}
@@ -742,13 +759,13 @@ func (c *waylandConn) read(offer *dcOffer, targets targetList) (Report, bool) {
 
 // readValue asks the owner for one MIME type and reads the pipe of the
 // transfer.
-func (c *waylandConn) readValue(offer *dcOffer, mime string) ([]byte, bool) {
+func (c *waylandConn) readValue(ctx context.Context, offer *dcOffer, mime string) ([]byte, bool) {
 	reader, writer, err := os.Pipe()
 	if err != nil {
 		return nil, false
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.w.valueTimeout)
-	err = c.do(ctx, func() error { return offer.receive(mime, int(writer.Fd())) })
+	call, cancel := context.WithTimeout(ctx, c.w.valueTimeout)
+	err = c.do(call, func() error { return offer.receive(mime, int(writer.Fd())) })
 	cancel()
 	// The compositor holds its own descriptor now, so the local one only keeps
 	// the pipe from reaching EOF.
@@ -759,7 +776,7 @@ func (c *waylandConn) readValue(offer *dcOffer, mime string) ([]byte, bool) {
 		return nil, false
 	}
 	defer func() { _ = reader.Close() }()
-	value, err := readValue(context.Background(), pipeSource{file: reader, timeout: c.w.valueTimeout}, MaxValueBytes)
+	value, err := readValue(ctx, pipeSource{file: reader, timeout: c.w.valueTimeout}, MaxValueBytes)
 	if err != nil {
 		c.logger().Debug("could not read a clipboard value", "mime", mime, "error", err)
 		return nil, false

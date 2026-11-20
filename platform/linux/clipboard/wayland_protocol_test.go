@@ -192,6 +192,37 @@ func TestNewWaylandNoSocket(t *testing.T) {
 	}
 }
 
+// TestConnectSilentCompositor checks that a compositor which accepts the
+// connection but never answers does not block the handshake.
+func TestConnectSilentCompositor(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "wayland-silent")
+	listener, err := net.Listen("unix", path)
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		// Hold the connection open and answer nothing.
+		_, _ = io.Copy(io.Discard, conn)
+	}()
+	previous := handshakeTimeout
+	handshakeTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { handshakeTimeout = previous })
+
+	started := time.Now()
+	if _, err := NewWayland(WaylandOptions{Display: path}); !errors.Is(err, errHandshakeTimeout) {
+		t.Fatalf("NewWayland = %v, want %v", err, errHandshakeTimeout)
+	}
+	if waited := time.Since(started); waited > 5*time.Second {
+		t.Fatalf("the handshake waited %s", waited)
+	}
+}
+
 // TestDeviceSelectionEvent checks the selection event with an announced offer.
 func TestDeviceSelectionEvent(t *testing.T) {
 	ctx := newTestContext(t)
@@ -333,6 +364,7 @@ func TestStringAt(t *testing.T) {
 		{"empty", u32Arg(0), ""},
 		{"truncated length", []byte{1, 0}, ""},
 		{"truncated value", []byte{9, 0, 0, 0, 'a'}, ""},
+		{"missing terminator", []byte{4, 0, 0, 0, 'a', 'b', 'c', 'd'}, ""},
 		{"offset", append(u32Arg(1), readFragment(t, "dc_offer_text_html.bin")...), "text/html"},
 	}
 	for _, test := range cases {
@@ -340,7 +372,7 @@ func TestStringAt(t *testing.T) {
 			t.Fatalf("%s: %q", test.name, got)
 		}
 	}
-	if got := stringAt(cases[4].body, 4); got != "text/html" {
+	if got := stringAt(cases[5].body, 4); got != "text/html" {
 		t.Fatalf("offset: %q", got)
 	}
 }
