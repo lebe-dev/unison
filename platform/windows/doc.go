@@ -1,2 +1,3 @@
-// Package windows provides Windows adapters: clipboard, DPAPI, autostart and firewall.
+// Package windows provides the Windows adapters of the platform ports: the
+// Win32 clipboard and the DPAPI keystore.
 package windows
