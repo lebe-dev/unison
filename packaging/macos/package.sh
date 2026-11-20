@@ -75,17 +75,19 @@ done
 # ---------------------------------------------------------------------------
 
 # The daemon needs cgo for the Keychain and the pasteboard, so every slice is
-# built on macOS and merged into one universal binary.
+# built on macOS and merged into one universal binary. clang compiles for the
+# host architecture by default, so the target architecture is named for the
+# slice the host does not build by itself.
 daemon_ldflags="-s -w -X main.version=$version -X github.com/lebe-dev/unison/internal/observability.buildDSN=${SENTRY_DSN:-} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
 
 build_daemon() {
     local arch=$1 target=$2
-    local cc=clang
+    local cc_arch=arm64
     if [[ "$arch" == "amd64" ]]; then
-        cc="clang -arch x86_64"
+        cc_arch=x86_64
     fi
     echo "package-macos: building unisond for darwin/$arch"
-    GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="$cc" go build \
+    GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build \
         -trimpath -ldflags "$daemon_ldflags" \
         -o "$target" "$root/cmd/unisond"
 }

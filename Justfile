@@ -396,13 +396,15 @@ release-macos-cli ver=release_version:
     ldflags="-s -w -X main.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
     cd "$root"
     for arch in arm64 amd64; do
-        cc=clang
+        # clang compiles for the host architecture by default, so the target
+        # architecture is named for every slice.
+        cc_arch=arm64
         if [ "$arch" = amd64 ]; then
-            cc="clang -arch x86_64"
+            cc_arch=x86_64
         fi
         echo "release: building the command line tools for darwin/$arch"
-        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="$cc" go build -trimpath -ldflags "$ldflags" -o "$stage/unison-$arch" ./cmd/unison
-        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="$cc" go build -trimpath -ldflags "$ldflags" -o "$stage/unisond-$arch" ./cmd/unisond
+        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build -trimpath -ldflags "$ldflags" -o "$stage/unison-$arch" ./cmd/unison
+        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build -trimpath -ldflags "$ldflags" -o "$stage/unisond-$arch" ./cmd/unisond
     done
     lipo -create -output "$stage/unison/unison" "$stage/unison-arm64" "$stage/unison-amd64"
     lipo -create -output "$stage/unison/unisond" "$stage/unisond-arm64" "$stage/unisond-amd64"
