@@ -142,7 +142,7 @@ func probeNetEcho(ctx context.Context, address string, wait time.Duration, out i
 		return exitError
 	}
 	if !bytes.Equal(reply[:n], netEchoProbe) {
-		_, _ = fmt.Fprintf(out, "net-echo: %s answered with %q\n", address, reply[:n])
+		_, _ = fmt.Fprintf(out, "net-echo: %s answered with %d unexpected bytes\n", address, n)
 		return exitError
 	}
 
