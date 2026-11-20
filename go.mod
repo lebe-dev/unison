@@ -14,6 +14,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.4
 	github.com/coder/websocket v1.8.15
 	github.com/getsentry/sentry-go v0.50.0
+	github.com/godbus/dbus/v5 v5.2.4
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.61
 	github.com/quic-go/quic-go v0.65.0
