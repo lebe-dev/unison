@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/ports"
@@ -62,5 +63,25 @@ func TestLocalEventFailureReason(t *testing.T) {
 	}
 	if got := localEventToProto(node.Event{Kind: node.EventPairingFailed, Err: pairing.ErrRejected}); got.GetFailureReason() != localv1.FailureReason_FAILURE_REASON_UNSPECIFIED {
 		t.Errorf("reason of a refusal = %v, want none", got.GetFailureReason())
+	}
+}
+
+func TestPlatformToProto(t *testing.T) {
+	tests := map[string]struct {
+		platform model.Platform
+		want     localv1.Platform
+	}{
+		"macos":   {platform: model.PlatformMacOS, want: localv1.Platform_PLATFORM_MACOS},
+		"windows": {platform: model.PlatformWindows, want: localv1.Platform_PLATFORM_WINDOWS},
+		"android": {platform: model.PlatformAndroid, want: localv1.Platform_PLATFORM_ANDROID},
+		"linux":   {platform: model.PlatformLinux, want: localv1.Platform_PLATFORM_LINUX},
+		"unknown": {platform: model.PlatformUnknown, want: localv1.Platform_PLATFORM_UNSPECIFIED},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := platformToProto(test.platform); got != test.want {
+				t.Fatalf("platformToProto = %v, want %v", got, test.want)
+			}
+		})
 	}
 }

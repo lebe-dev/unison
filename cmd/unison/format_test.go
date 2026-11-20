@@ -44,3 +44,23 @@ func TestPauseStateText(t *testing.T) {
 		})
 	}
 }
+
+func TestPlatformText(t *testing.T) {
+	tests := map[string]struct {
+		platform localv1.Platform
+		want     string
+	}{
+		"macos":   {platform: localv1.Platform_PLATFORM_MACOS, want: "macos"},
+		"windows": {platform: localv1.Platform_PLATFORM_WINDOWS, want: "windows"},
+		"android": {platform: localv1.Platform_PLATFORM_ANDROID, want: "android"},
+		"linux":   {platform: localv1.Platform_PLATFORM_LINUX, want: "linux"},
+		"unknown": {platform: localv1.Platform_PLATFORM_UNSPECIFIED, want: "unknown"},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := platformText(test.platform); got != test.want {
+				t.Fatalf("platformText = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

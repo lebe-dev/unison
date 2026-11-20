@@ -130,6 +130,8 @@ func platformText(platform localv1.Platform) string {
 		return "windows"
 	case localv1.Platform_PLATFORM_ANDROID:
 		return "android"
+	case localv1.Platform_PLATFORM_LINUX:
+		return "linux"
 	default:
 		return "unknown"
 	}
