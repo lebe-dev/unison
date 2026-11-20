@@ -4,7 +4,16 @@ use std::path::Path;
 
 fn main() {
     emit_build_env();
+    emit_icon_watch();
     tauri_build::build();
+}
+
+/// emit_icon_watch rebuilds the app whenever an icon changes, because the
+/// development Dock icon is embedded at compile time.
+fn emit_icon_watch() {
+    let manifest = env::var("CARGO_MANIFEST_DIR").expect("the manifest directory is set");
+    let icons = Path::new(&manifest).join("icons");
+    println!("cargo:rerun-if-changed={}", icons.display());
 }
 
 /// emit_build_env bakes the Sentry DSN and the version of the repository into
