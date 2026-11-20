@@ -744,8 +744,10 @@ by `just test-blob-large`, which also asserts that the heap stays bounded.
 The relay in `cmd/unison-relay` and `internal/relay` moves opaque datagrams between the members of
 a mailbox. A client registers with an access token and up to eight mailbox ids of 16 bytes, the
 relay forwards every datagram to the other members of its mailbox and forgets the mailbox when its
-last member leaves. Nothing is written to disk, so the mailbox id is all the relay learns about a
-pair of devices, and the payload is the ciphertext of the inner QUIC connection.
+last member leaves. Mailboxes are scoped to the token the connection registered with, so one relay
+serves several groups and they never meet, even when two of them name the same mailbox id. Nothing
+is written to disk, so the mailbox id is all the relay learns about a pair of devices, and the
+payload is the ciphertext of the inner QUIC connection.
 
 The main transport is QUIC over UDP with RFC 9221 datagrams and ALPN `unison-relay/1`. The fallback
 is WebSocket over TLS on TCP for networks that block UDP: one frame per binary message, path

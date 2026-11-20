@@ -327,7 +327,7 @@ func (s *Server) authenticate(p *peer, reg *relayv1.Register) relayv1.RelayStatu
 		}
 		ids = append(ids, mailbox)
 	}
-	if err := s.boxes.join(p, ids); err != nil {
+	if err := s.boxes.join(p, state.tenant, ids); err != nil {
 		if errors.Is(err, errRegistryFull) {
 			return relayv1.RelayStatus_RELAY_STATUS_UNAVAILABLE
 		}
@@ -377,7 +377,8 @@ func (s *Server) forward(p *peer, data []byte) {
 		s.metrics.dropped(dropTooLarge)
 		return
 	}
-	if !s.boxes.member(p, id) {
+	tenant := p.token.tenant
+	if !s.boxes.member(p, tenant, id) {
 		s.metrics.dropped(dropNotMember)
 		return
 	}
@@ -395,7 +396,7 @@ func (s *Server) forward(p *peer, data []byte) {
 		return
 	}
 
-	targets := s.boxes.targets(id, p)
+	targets := s.boxes.targets(tenant, id, p)
 	s.metrics.received(p.transport, len(data))
 	if len(targets) == 0 {
 		s.metrics.dropped(dropNoPeer)
@@ -466,7 +467,7 @@ func (s *Server) applyUpdate(p *peer, raw [][]byte) relayv1.RelayStatus {
 		}
 		ids = append(ids, mailbox)
 	}
-	switch err := s.boxes.replace(p, ids); {
+	switch err := s.boxes.replace(p, p.token.tenant, ids); {
 	case err == nil:
 		return relayv1.RelayStatus_RELAY_STATUS_OK
 	case errors.Is(err, errRegistryFull):

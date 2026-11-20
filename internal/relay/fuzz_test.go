@@ -39,7 +39,7 @@ func FuzzServerDatagram(f *testing.F) {
 		if err == nil {
 			if datagram := frame.GetDatagram(); datagram != nil {
 				if mailbox, ok := mailboxIDOf(datagram.GetMailboxId()); ok {
-					if err := server.boxes.join(client, []mailboxID{mailbox}); err != nil {
+					if err := server.boxes.join(client, client.token.tenant, []mailboxID{mailbox}); err != nil {
 						t.Fatalf("join a mailbox: %v", err)
 					}
 				}

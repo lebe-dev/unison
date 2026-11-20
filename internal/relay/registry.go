@@ -18,15 +18,24 @@ var errPeerGone = errors.New("relay: connection left its mailboxes")
 // mailboxID identifies a mailbox. The relay treats it as opaque.
 type mailboxID [mailboxIDLen]byte
 
+// mailboxKey identifies a mailbox inside the namespace of one token. The same
+// mailbox id under two tokens is two unrelated mailboxes.
+type mailboxKey struct {
+	tenant tenantID
+	id     mailboxID
+}
+
 // registry stores the mailbox memberships in memory. A mailbox exists while at
-// least one connection is a member of it.
+// least one connection is a member of it. Mailboxes of different tokens never
+// share a member list, so one token cannot observe or join the traffic of
+// another.
 type registry struct {
 	metrics *metrics
 	log     *slog.Logger
 
 	mu     sync.Mutex
-	boxes  map[mailboxID][]*peer
-	byPeer map[*peer]map[mailboxID]struct{}
+	boxes  map[mailboxKey][]*peer
+	byPeer map[*peer]map[mailboxKey]struct{}
 	limit  int
 }
 
@@ -35,29 +44,39 @@ func newRegistry(limit int, m *metrics, log *slog.Logger) *registry {
 	return &registry{
 		metrics: m,
 		log:     log,
-		boxes:   make(map[mailboxID][]*peer),
-		byPeer:  make(map[*peer]map[mailboxID]struct{}),
+		boxes:   make(map[mailboxKey][]*peer),
+		byPeer:  make(map[*peer]map[mailboxKey]struct{}),
 		limit:   limit,
 	}
 }
 
-// join adds a connection to the mailboxes. When a mailbox is full the oldest
-// member is removed from it, so a client that reconnects wins over a stale
-// connection.
-func (r *registry) join(p *peer, ids []mailboxID) error {
+// mailboxKeys scopes mailbox ids to the namespace of a token.
+func mailboxKeys(tenant tenantID, ids []mailboxID) []mailboxKey {
+	keys := make([]mailboxKey, 0, len(ids))
+	for _, id := range ids {
+		keys = append(keys, mailboxKey{tenant: tenant, id: id})
+	}
+	return keys
+}
+
+// join adds a connection to the mailboxes of its token. When a mailbox is full
+// the oldest member is removed from it, so a client that reconnects wins over a
+// stale connection. The eviction stays inside the token.
+func (r *registry) join(p *peer, tenant tenantID, ids []mailboxID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.reserve(ids); err != nil {
+	keys := mailboxKeys(tenant, ids)
+	if err := r.reserve(keys); err != nil {
 		return err
 	}
-	r.joinLocked(p, ids)
+	r.joinLocked(p, keys)
 	return nil
 }
 
 // replace makes the mailboxes the whole set of a registered connection. On a
 // failure the connection keeps its previous set.
-func (r *registry) replace(p *peer, ids []mailboxID) error {
+func (r *registry) replace(p *peer, tenant tenantID, ids []mailboxID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -65,46 +84,47 @@ func (r *registry) replace(p *peer, ids []mailboxID) error {
 	if !ok {
 		return errPeerGone
 	}
-	if err := r.reserve(ids); err != nil {
+	keys := mailboxKeys(tenant, ids)
+	if err := r.reserve(keys); err != nil {
 		return err
 	}
-	want := make(map[mailboxID]struct{}, len(ids))
-	for _, id := range ids {
-		want[id] = struct{}{}
+	want := make(map[mailboxKey]struct{}, len(keys))
+	for _, key := range keys {
+		want[key] = struct{}{}
 	}
-	for id := range own {
-		if _, keep := want[id]; !keep {
-			r.remove(p, id)
+	for key := range own {
+		if _, keep := want[key]; !keep {
+			r.remove(p, key)
 		}
 	}
-	r.joinLocked(p, ids)
+	r.joinLocked(p, keys)
 	return nil
 }
 
 // joinLocked adds a connection to the mailboxes. The caller must hold r.mu and
 // have reserved the mailboxes.
-func (r *registry) joinLocked(p *peer, ids []mailboxID) {
+func (r *registry) joinLocked(p *peer, keys []mailboxKey) {
 	own := r.byPeer[p]
 	if own == nil {
-		own = make(map[mailboxID]struct{}, len(ids))
+		own = make(map[mailboxKey]struct{}, len(keys))
 		r.byPeer[p] = own
 	}
-	for _, id := range ids {
-		if _, ok := own[id]; ok {
+	for _, key := range keys {
+		if _, ok := own[key]; ok {
 			continue
 		}
-		members, existed := r.boxes[id]
+		members, existed := r.boxes[key]
 		if len(members) >= maxMailboxMembers {
 			evicted := members[0]
 			r.log.Debug("mailbox member evicted",
 				"conn", evicted.id,
 				"transport", transportLabels[evicted.transport],
 			)
-			r.remove(evicted, id)
-			members = r.boxes[id]
+			r.remove(evicted, key)
+			members = r.boxes[key]
 		}
-		r.boxes[id] = append(members, p)
-		own[id] = struct{}{}
+		r.boxes[key] = append(members, p)
+		own[key] = struct{}{}
 		if !existed {
 			r.metrics.mailboxes.Add(1)
 		}
@@ -112,15 +132,15 @@ func (r *registry) joinLocked(p *peer, ids []mailboxID) {
 }
 
 // reserve checks that the mailboxes fit into the limit.
-func (r *registry) reserve(ids []mailboxID) error {
+func (r *registry) reserve(keys []mailboxKey) error {
 	created := 0
-	seen := make(map[mailboxID]struct{}, len(ids))
-	for _, id := range ids {
-		if _, ok := seen[id]; ok {
+	seen := make(map[mailboxKey]struct{}, len(keys))
+	for _, key := range keys {
+		if _, ok := seen[key]; ok {
 			continue
 		}
-		seen[id] = struct{}{}
-		if _, ok := r.boxes[id]; !ok {
+		seen[key] = struct{}{}
+		if _, ok := r.boxes[key]; !ok {
 			created++
 		}
 	}
@@ -131,23 +151,23 @@ func (r *registry) reserve(ids []mailboxID) error {
 }
 
 // remove drops one connection from one mailbox.
-func (r *registry) remove(p *peer, id mailboxID) {
-	members := r.boxes[id]
+func (r *registry) remove(p *peer, key mailboxKey) {
+	members := r.boxes[key]
 	for i, member := range members {
 		if member != p {
 			continue
 		}
 		members = append(members[:i], members[i+1:]...)
 		if len(members) == 0 {
-			delete(r.boxes, id)
+			delete(r.boxes, key)
 			r.metrics.mailboxes.Add(-1)
 		} else {
-			r.boxes[id] = members
+			r.boxes[key] = members
 		}
 		break
 	}
 	if own := r.byPeer[p]; own != nil {
-		delete(own, id)
+		delete(own, key)
 	}
 }
 
@@ -158,25 +178,25 @@ func (r *registry) leave(p *peer) {
 
 	own := r.byPeer[p]
 	delete(r.byPeer, p)
-	for id := range own {
-		r.remove(p, id)
+	for key := range own {
+		r.remove(p, key)
 	}
 }
 
-// member reports whether the connection joined the mailbox.
-func (r *registry) member(p *peer, id mailboxID) bool {
+// member reports whether the connection joined the mailbox of its token.
+func (r *registry) member(p *peer, tenant tenantID, id mailboxID) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	_, ok := r.byPeer[p][id]
+	_, ok := r.byPeer[p][mailboxKey{tenant: tenant, id: id}]
 	return ok
 }
 
-// targets returns the other members of a mailbox.
-func (r *registry) targets(id mailboxID, from *peer) []*peer {
+// targets returns the other members of a mailbox of the token.
+func (r *registry) targets(tenant tenantID, id mailboxID, from *peer) []*peer {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	members := r.boxes[id]
+	members := r.boxes[mailboxKey{tenant: tenant, id: id}]
 	if len(members) == 0 {
 		return nil
 	}

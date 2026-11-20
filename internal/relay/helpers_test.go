@@ -32,6 +32,9 @@ import (
 // testToken is the access token of the test servers.
 const testToken = "test-token"
 
+// otherToken is the access token of the second test group.
+const otherToken = "other-token"
+
 // testTimeout bounds the waits of the tests.
 const testTimeout = 5 * time.Second
 
@@ -48,6 +51,15 @@ func testConfig(t *testing.T) Config {
 	cfg.TLSKeyFile = keyFile
 	cfg.Tokens = []string{testToken}
 	cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	return cfg
+}
+
+// twoTokenConfig returns a loopback configuration that serves two groups.
+func twoTokenConfig(t *testing.T) Config {
+	t.Helper()
+
+	cfg := testConfig(t)
+	cfg.Tokens = []string{testToken, otherToken}
 	return cfg
 }
 
@@ -460,8 +472,11 @@ func waitFor(t *testing.T, what string, condition func() bool) {
 	t.Fatalf("condition %q did not hold", what)
 }
 
+// drainQuiet is how long drain waits for the line to stay quiet.
+const drainQuiet = 200 * time.Millisecond
+
 // drain collects the datagrams that arrive until the line stays quiet.
-func (c *testClient) drain(quiet time.Duration) []*relayv1.Datagram {
+func (c *testClient) drain() []*relayv1.Datagram {
 	var out []*relayv1.Datagram
 	for {
 		select {
@@ -476,7 +491,7 @@ func (c *testClient) drain(quiet time.Duration) []*relayv1.Datagram {
 					return out
 				}
 			}
-		case <-time.After(quiet):
+		case <-time.After(drainQuiet):
 			return out
 		}
 	}

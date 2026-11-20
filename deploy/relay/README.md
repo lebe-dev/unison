@@ -179,8 +179,9 @@ certificates, because devices authenticate each other end to end inside the encr
 ## Access tokens
 
 Every device registers with an access token, and the relay keeps only SHA-256 hashes of them in
-memory, never the tokens themselves. One token per Personal group is enough. Generate one and put
-it into the tokens file:
+memory, never the tokens themselves. One token per Personal group is enough. One relay serves every
+group in the file: mailboxes are scoped to the token, so the groups never share traffic. Generate a
+token and put it into the tokens file:
 
 ```sh
 openssl rand -hex 32 > deploy/relay/secrets/tokens.txt

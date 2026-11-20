@@ -154,11 +154,11 @@ with an access token, and a mailbox is a set of connections that share an id.
 The first message of a connection is `Register` with the token, the mailbox ids and the protocol
 version. The server compares the SHA-256 of the presented token with every configured hash in
 constant time, checks that there are at most `max_mailboxes` ids of 16 bytes each, and joins the
-mailboxes. It answers with `RegisterResult`, which carries the limits block and the protocol
-version, then closes the registration stream or ends the WebSocket registration phase. A client
-that does not send the version is read as version `1`. The server logs a client with a newer
-version, because the client has to be updated, and a client with an older one, because the server
-has to be updated; both continue.
+mailboxes inside the namespace of the token. It answers with `RegisterResult`, which carries the
+limits block and the protocol version, then closes the registration stream or ends the WebSocket
+registration phase. A client that does not send the version is read as version `1`. The server logs
+a client with a newer version, because the client has to be updated, and a client with an older
+one, because the server has to be updated; both continue.
 
 | Status | Meaning |
 |--------|---------|
@@ -190,6 +190,12 @@ of the clients.
 A mailbox exists while at least one connection is a member of it. Four members fit into one
 mailbox; a fifth join evicts the oldest member, so a reconnecting client wins over a stale
 connection. `max_mailboxes_total` bounds the registry.
+
+The registry keys a mailbox by the token and the mailbox id. The token part is the SHA-256 the
+server already keeps, so a connection never joins or receives a mailbox of another token, and an
+eviction stays inside the token. The same id under two tokens is two mailboxes, and the live
+mailbox metric counts both. `max_connections` and `max_mailboxes_total` bound the whole server and
+are shared by every token; the rate and the quota belong to one token.
 
 A datagram is forwarded byte for byte to every other member of its mailbox. The server checks that
 the sender is a member, that the payload is not empty or oversized, and that the token has rate and
@@ -281,4 +287,5 @@ across days. The inner connection keeps its own TLS 1.3, hybrid key exchange, ce
 verification and session authentication proof, so the relay is a transport that sees ciphertext.
 
 Without a mailbox id, a client cannot receive the traffic of a pair even with a valid token, and a
-mailbox id is a 128 bit hash that cannot be enumerated.
+mailbox id is a 128 bit hash that cannot be enumerated. A mailbox id of another token is useless as
+well: the registry scopes every mailbox to the token that a connection presented.

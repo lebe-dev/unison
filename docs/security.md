@@ -219,8 +219,9 @@ nothing to disk.
 The mailbox of a pair is `BLAKE3(rendezvous_key || day)[:16]`, with the day counted from the Unix
 epoch in UTC. The id changes every day and is unrelated to the previous one, so the relay cannot
 follow a pair across days. The server keeps only SHA-256 hashes of the access tokens in memory and
-compares them in constant time. A token has a datagram rate and a daily traffic quota; above them the
-relay drops datagrams or closes the connection.
+compares them in constant time. Mailboxes are scoped to the token that a connection presented, so one
+group cannot join or receive the mailbox of another even when its id is known. A token has a datagram
+rate and a daily traffic quota; above them the relay drops datagrams or closes the connection.
 
 ## Retention
 

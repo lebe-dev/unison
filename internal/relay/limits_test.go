@@ -28,7 +28,7 @@ func TestQuotaExceeded(t *testing.T) {
 		}
 	}
 
-	if delivered := len(receiver.drain(200 * time.Millisecond)); delivered != 2 {
+	if delivered := len(receiver.drain()); delivered != 2 {
 		t.Fatalf("delivered datagrams: got %d, want 2", delivered)
 	}
 	sender.expectClosed()
@@ -82,7 +82,7 @@ func TestRateLimit(t *testing.T) {
 		}
 	}
 
-	if delivered := len(receiver.drain(200 * time.Millisecond)); delivered > 2 {
+	if delivered := len(receiver.drain()); delivered > 2 {
 		t.Fatalf("delivered datagrams: got %d, want at most 2", delivered)
 	}
 	if dropped := server.metrics.drops[dropRateLimit].Load(); dropped < 1 {

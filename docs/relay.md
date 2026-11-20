@@ -113,6 +113,10 @@ stays reachable across the boundary even when the clocks of the two devices diff
 relay of this version changes the mailboxes of a live connection; an older relay gets a new
 connection with the new set.
 
+Mailboxes are scoped to the access token. A connection joins mailboxes only inside the namespace
+of its own token, so the same mailbox id under two tokens is two unrelated mailboxes. Devices of
+different groups never meet, even when one of them knows the mailbox id of the other.
+
 ## What the relay can see
 
 The relay observes the client addresses, the TLS server name and timing, the token a connection
@@ -120,9 +124,10 @@ presents, the mailbox ids it joins, and the size and rate of the datagrams. It c
 connections share a mailbox on one day and that devices share a token.
 
 It cannot observe the payload, the keys, the device identities, or the link between a pair across
-days. The inner connection keeps its own TLS 1.3, hybrid key exchange, certificate verification and
-session authentication proof, so the relay is a transport that sees ciphertext. See
-[Security](security.md).
+days. A connection of one token cannot join or receive the mailboxes of another token, so a group
+stays isolated even when its mailbox ids become known. The inner connection keeps its own TLS 1.3,
+hybrid key exchange, certificate verification and session authentication proof, so the relay is a
+transport that sees ciphertext. See [Security](security.md).
 
 ## Run a relay
 
@@ -177,6 +182,9 @@ The file holds one token per line; empty lines and lines starting with `#` are i
 `UNISON_RELAY_TOKENS` takes a comma separated list instead, which leaves the tokens in the
 environment of the container. The server reads the tokens at start, so restart the container after
 changing them.
+
+One relay serves as many groups as the tokens file lists. The SHA-256 of a token also names the
+namespace of its mailboxes, so the groups share the server but never each other's traffic.
 
 A token allows 200 datagrams per second with a burst of 400, and 1 GiB of traffic per 24-hour
 window. The rate and the quota belong to the token, not to one connection, so all devices of the

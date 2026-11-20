@@ -48,10 +48,15 @@ func (b *tokenBucket) take(now time.Time) bool {
 	return true
 }
 
+// tenantID names the namespace of an access token. Mailboxes are scoped to it,
+// so connections of different tokens never meet, even when their mailbox ids
+// are equal.
+type tenantID [sha256.Size]byte
+
 // tokenState is the traffic accounting of one access token. The state is shared
 // by every connection that presents the token.
 type tokenState struct {
-	hash   [sha256.Size]byte
+	tenant tenantID
 	quota  uint64
 	window time.Duration
 
@@ -64,7 +69,7 @@ type tokenState struct {
 // newTokenState hashes a token and starts its quota window.
 func newTokenState(token string, cfg Config, now time.Time) *tokenState {
 	return &tokenState{
-		hash:    sha256.Sum256([]byte(token)),
+		tenant:  sha256.Sum256([]byte(token)),
 		quota:   uint64(cfg.QuotaBytes),
 		window:  cfg.QuotaWindow,
 		bucket:  newTokenBucket(cfg.RatePerSecond, cfg.RateBurst, now),
@@ -112,7 +117,7 @@ func (s *tokenSet) find(token []byte) *tokenState {
 	sum := sha256.Sum256(token)
 	var found *tokenState
 	for _, state := range s.states {
-		if subtle.ConstantTimeCompare(sum[:], state.hash[:]) == 1 {
+		if subtle.ConstantTimeCompare(sum[:], state.tenant[:]) == 1 {
 			found = state
 		}
 	}
