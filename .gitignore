@@ -1,5 +1,6 @@
 .env
 *.md
+.DS_Store
 
 !README.md
 !DEV.md
