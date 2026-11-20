@@ -72,8 +72,9 @@ address and from the relay. Two paired devices keep exactly one connection: a si
 settled by comparing device IDs.
 
 The relay is optional. It forwards opaque datagrams between the members of a mailbox, so the peers
-still run their own QUIC connection end to end; the relay sees no keys and no plaintext. The local
-network always wins: the relay path is opened only when a peer stays unreachable directly.
+still run their own QUIC connection end to end; the relay sees no keys and no plaintext. Mailboxes
+are scoped to the access token, so one relay serves several groups and their traffic never meets.
+The local network always wins: the relay path is opened only when a peer stays unreachable directly.
 
 ## Data
 

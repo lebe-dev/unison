@@ -52,7 +52,8 @@ The client addresses, the TLS server name and timing, the access token a connect
 mailbox ids it joins, and the size and rate of the datagrams. The operator can tell that two
 connections share a mailbox on one day and that devices share a token. It cannot see the payload,
 the keys or the device identities, and the mailbox id changes every day, so a pair cannot be
-followed across days.
+followed across days. Mailboxes are scoped to the token too, so one group cannot join the mailbox
+of another even when it learns the id.
 
 ### Can someone impersonate a paired device or replay a recorded session?
 

@@ -742,12 +742,12 @@ caller pinned and partial transfers are never evicted. The round trip of a 1.2 G
 by `just test-blob-large`, which also asserts that the heap stays bounded.
 
 The relay in `cmd/unison-relay` and `internal/relay` moves opaque datagrams between the members of
-a mailbox. A client registers with an access token and up to eight mailbox ids of 16 bytes, the
-relay forwards every datagram to the other members of its mailbox and forgets the mailbox when its
-last member leaves. Mailboxes are scoped to the token the connection registered with, so one relay
-serves several groups and they never meet, even when two of them name the same mailbox id. Nothing
-is written to disk, so the mailbox id is all the relay learns about a pair of devices, and the
-payload is the ciphertext of the inner QUIC connection.
+a mailbox. A client registers with an access token and up to the mailbox limit of the relay (32 ids
+of 16 bytes by default). The relay forwards every datagram to the other members of its mailbox and
+forgets the mailbox when its last member leaves. Mailboxes are scoped to the token the connection
+registered with, so one relay serves several groups and they never meet, even when two of them name
+the same mailbox id. Nothing is written to disk, so the mailbox id is all the relay learns about a
+pair of devices, and the payload is the ciphertext of the inner QUIC connection.
 
 The main transport is QUIC over UDP with RFC 9221 datagrams and ALPN `unison-relay/1`. The fallback
 is WebSocket over TLS on TCP for networks that block UDP: one frame per binary message, path
@@ -757,15 +757,15 @@ connection starts with a `Register` frame that carries the token and the mailbox
 stream with a uvarint length prefix, on WebSocket on the first two binary messages. After that every
 datagram is a `Frame` with a `Datagram` body and no length prefix.
 
-Tokens come from `UNISON_RELAY_TOKENS` or from `UNISON_RELAY_TOKENS_FILE`, one per line, and are kept
-as SHA-256 hashes, so a running server never holds them in clear form. Every token has a datagram
-rate and a traffic quota per window, 200 datagrams per second with a burst of 400 and 1 GiB per
-24 hours by default. A client above the rate loses datagrams, a client that runs out of quota is
-closed with a status in the answer and in the application error code.
+Tokens come from `UNISON_RELAY_TOKENS` as a comma separated list or from `UNISON_RELAY_TOKENS_FILE`
+one per line, and are kept as SHA-256 hashes, so a running server never holds them in clear form.
+Every token has a datagram rate and a traffic quota per window, 200 datagrams per second with a
+burst of 400 and 1 GiB per 24 hours by default. A client above the rate loses datagrams, a client
+that runs out of quota is closed with a status in the answer and in the application error code.
 
-A datagram stays within a single QUIC packet, so its payload is capped at 1024 bytes by default. The
-inner QUIC connection has to keep its own packets within that, which means a packet size below the
-1200 bytes of a usual QUIC initial packet.
+A datagram stays within a single QUIC packet, so its payload is capped at 1400 bytes by default.
+The inner QUIC connection gets a 1216-byte packet size, above the 1200 bytes of a usual QUIC
+initial packet; path MTU discovery is off for it.
 
 The server needs a TLS certificate and key, listens on `-quic-addr` and `-ws-addr` and serves health
 and metrics on `-http-addr` over plain HTTP for a sidecar scrape. `GET /healthz` and `GET /readyz`

@@ -105,7 +105,7 @@ dropped.
 ### Packet size
 
 A relay datagram travels in one QUIC packet of the relay connection, which is 1280 bytes, so one
-relay frame carries at most 1240 bytes. A frame adds 24 bytes of headers for an empty payload.
+relay frame carries at most 1240 bytes. A frame adds 22 bytes of headers for an empty payload.
 
 The inner QUIC connection has to fit into that, and a handshake needs 1200 bytes. `PacketSize`
 returns the largest inner packet that fits; it returns zero when the datagrams are too small, and
@@ -143,7 +143,7 @@ with an access token, and a mailbox is a set of connections that share an id.
 | `server.go` | the server, capacity, registration, forwarding, peer write loop |
 | `quic.go` | the UDP listener, per connection registration, datagram loop |
 | `ws.go` | the TLS listener, the WebSocket upgrade, pings |
-| `registry.go` | the in-memory mailboxes |
+| `registry.go` | the in-memory mailboxes, scoped to the token |
 | `limits.go` | token hashes, rate and quota |
 | `frame.go` | framing and control frames |
 | `http.go` | `/healthz`, `/readyz`, `/metrics` |
@@ -253,7 +253,7 @@ addresses or device IDs. Logs are JSON on stderr and never carry payloads, token
 marks the server closed so `/readyz` fails, sends `Close` to every peer, leaves the mailboxes, and
 closes the listeners and the sockets. `cmd/unison-relay` maps `SIGINT` and `SIGTERM` to that.
 
-Only one instance can serve a group: the mailboxes live in memory, so a second replica keeps a
+Only one instance can serve a relay: the mailboxes live in memory, so a second replica keeps a
 disjoint registry and a rolling restart drops every connection.
 
 ## Deployment

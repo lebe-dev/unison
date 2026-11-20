@@ -8,8 +8,9 @@ TLS and the post-quantum key exchange inside it. The relay sees neither keys nor
 no device identity and keeps nothing on disk.
 
 The relay is optional and self-hosted: run it on a server with a public address, and the devices of
-one Personal group share it. The client is part of the daemon and of the mobile core, the server is
-`unison-relay` in this repository.
+a Personal group share it. One relay serves any number of groups, and their mailboxes never meet.
+The client is part of the daemon and of the mobile core, the server is `unison-relay` in this
+repository.
 
 ## Settings
 
@@ -58,6 +59,7 @@ The result has one line per transport: the time to connect and register, or the 
 | Busy or unavailable | The relay is full or restarting, or the proxy gets no answer from it |
 | Token not accepted | The token is missing from the tokens file of the relay |
 | Quota | The token used up its traffic quota for the window |
+| Datagrams too small | The relay limit `max_datagram_bytes` is below 1224, which cannot carry the QUIC handshake |
 
 A QUIC failure with a working WebSocket is a working relay: the devices fall back to WebSocket,
 which is slower. The technical error is shown under each failure.
@@ -70,8 +72,8 @@ for files in the relay section of the apps and `unison relay set --files-on-requ
 rule; `--files-on-request=false` allows files over the relay. It is a setting of each device, not of
 the group.
 
-The relay limit of the network policy also applies: an item above 1 MiB is not fetched eagerly over
-the relay, whatever the network condition. Files stay in the history either way; see
+The relay limit of the network policy also applies: by default an item above 1 MiB is not fetched
+eagerly over the relay, whatever the network condition. Files stay in the history either way; see
 [Network policies](policy.md). The same rules hold a file offered with `unison send`: over the relay
 it waits in `Requests` until you accept it.
 
@@ -159,7 +161,7 @@ Devices address the relay by URL, for example `https://relay.example.com`, and u
 for both transports so that a client can switch from QUIC to WebSocket without changing the
 address.
 
-Only one instance can serve a group: the mailboxes live in memory, so a second replica keeps a
+Only one instance can serve a relay: the mailboxes live in memory, so a second replica keeps a
 disjoint set of mailboxes, and a rolling restart drops the connections of the devices.
 
 ### TLS
@@ -195,8 +197,8 @@ quota it closes the connection. Only datagrams that pass the checks count as tra
 
 A relay datagram travels in a single QUIC packet, so the relay caps its payload
 (`max_datagram_bytes`). The QUIC connection between the devices runs inside those datagrams, and a
-QUIC handshake needs packets of at least 1200 bytes, which is 1224 bytes of relay payload after the
-frame headers.
+QUIC handshake needs packets of at least 1200 bytes, which is 1224 bytes of relay datagram including
+the frame headers.
 
 Keep the default of 1400 bytes. It leaves a 1216-byte packet for the inner connection and turns its
 path MTU discovery off. A value above 1240 bytes does not increase the inner packet, since one QUIC
@@ -263,6 +265,9 @@ One connection carries the mailboxes of every pair that uses the relay, up to tw
 midnight. Raise `-max-mailboxes` when many devices of a group are away from the local network at
 the same time; the largest value is 256. When a device needs more mailboxes than the relay allows,
 the pairs it opened first keep theirs, and the device logs that the others wait for a free one.
+
+`-max-connections` and `-max-mailboxes-total` bound the whole relay and every group shares them.
+The rate and the quota belong to one token.
 
 The environment supplies the defaults, and the flags override them. The flags are listed by:
 
