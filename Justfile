@@ -176,6 +176,16 @@ test-pasteboard:
 test-clipboard:
     go test -tags clipboardtest ./platform/windows/clipboard/
 
+# Run the X11 clipboard integration tests against the running display (Linux).
+test-clipboard-linux:
+    #!/usr/bin/env bash
+    set -eu -o pipefail
+    if [[ $(uname -s) != Linux ]]; then
+        echo "the X11 clipboard tests run on Linux only"
+        exit 0
+    fi
+    go test -count=1 -tags x11clipboardtest ./platform/linux/clipboard/
+
 # Run the large blob round trip, which writes about 1.2 GiB of content.
 test-blob-large:
     go test -tags bloblarge -timeout 30m ./core/blob/
