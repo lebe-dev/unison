@@ -88,6 +88,7 @@ just security-secrets     # secrets with Gitleaks
 just security-infra       # deployment files with Trivy
 just security-image       # relay image with Trivy
 just vet-windows          # vet and build everything for Windows from any host
+just vet-linux            # vet and build everything for Linux amd64 from any host
 just fmt                  # format the Go sources
 just tidy                 # update go.mod and go.sum
 just proto                # generate Go code from proto/ with buf
@@ -96,7 +97,7 @@ just check                # every linter and the tests, run before committing
 just aar                  # bind the Go core into android/core/core.aar
 just android-build        # build the Android debug APK
 just bridge-publish       # publish the keyboard bridge contract to the local Maven repository
-just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64
+just build-unisond-all    # unisond for darwin/arm64, darwin/amd64, windows/amd64, linux/amd64
 just build-unisond-host   # unisond for the host with the Keychain and pasteboard
 just run-daemon           # build and run the daemon of the default data directory
 just run-daemon-2         # run a second daemon, for pairing on one machine
