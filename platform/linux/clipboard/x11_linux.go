@@ -388,6 +388,40 @@ type x11Conn struct {
 	names  map[atom]string
 }
 
+// xfixesMu guards the process wide event tables of xgb that the XFIXES
+// initialization fills in.
+var (
+	xfixesMu         sync.Mutex
+	xfixesRegistered bool
+)
+
+// initXFixes registers the XFIXES extension on the connection. The event
+// constructors of xgb live in process wide tables, so only the first connection
+// fills them: a second connection that wrote them again would race with the
+// reader goroutine of the first one.
+func initXFixes(conn *xgb.Conn) error {
+	reply, err := xproto.QueryExtension(conn, 6, "XFIXES").Reply()
+	switch {
+	case err != nil:
+		return fmt.Errorf("clipboard: query the XFixes extension: %w", err)
+	case !reply.Present:
+		return errors.New("clipboard: the X server has no XFixes extension")
+	}
+	xfixesMu.Lock()
+	defer xfixesMu.Unlock()
+	if xfixesRegistered {
+		conn.ExtLock.Lock()
+		conn.Extensions["XFIXES"] = reply.MajorOpcode
+		conn.ExtLock.Unlock()
+		return nil
+	}
+	if err := xfixes.Init(conn); err != nil {
+		return fmt.Errorf("clipboard: initialize the XFixes extension: %w", err)
+	}
+	xfixesRegistered = true
+	return nil
+}
+
 // dial connects to the X server and prepares the window that owns the selection
 // and receives its events.
 func dial(display string) (*x11Conn, error) {
@@ -415,8 +449,8 @@ func dial(display string) (*x11Conn, error) {
 		return nil, fmt.Errorf("clipboard: create window: %w", err)
 	}
 	c.win = win
-	if err := xfixes.Init(conn); err != nil {
-		return nil, fmt.Errorf("clipboard: XFixes extension: %w", err)
+	if err := initXFixes(conn); err != nil {
+		return nil, err
 	}
 	if _, err := xfixes.QueryVersion(conn, 6, 0).Reply(); err != nil {
 		return nil, fmt.Errorf("clipboard: XFixes version: %w", err)
@@ -576,6 +610,9 @@ type incrTransfer struct {
 	// notifications older than it belong to an earlier transfer that used the
 	// same property.
 	lastWrite uint32
+	// active is when the last chunk went out. A transfer the requestor stopped
+	// reading is dropped after maxTransferTime.
+	active time.Time
 }
 
 // serve reads events until the connection breaks or the context ends.
@@ -1183,8 +1220,13 @@ func (s *server) send(event xproto.SelectionRequestEvent, property atom, valueTy
 		// The owner follows an INCR transfer through property notifications of
 		// the requestor window.
 		xproto.ChangeWindowAttributes(conn.conn, event.Requestor, xproto.CwEventMask, []uint32{xproto.EventMaskPropertyChange})
+		s.expireTransfers()
 		s.incrMu.Lock()
-		s.transfers[incrKey{requestor: event.Requestor, property: property}] = &incrTransfer{valueType: valueType, data: data}
+		s.transfers[incrKey{requestor: event.Requestor, property: property}] = &incrTransfer{
+			valueType: valueType,
+			data:      data,
+			active:    time.Now(),
+		}
 		s.incrMu.Unlock()
 		size := encodeUint32(uint32(len(data)))
 		xproto.ChangeProperty(conn.conn, xproto.PropModeReplace, event.Requestor, xproto.Atom(property), conn.atoms.incr, 32, 1, size)
@@ -1193,6 +1235,19 @@ func (s *server) send(event xproto.SelectionRequestEvent, property atom, valueTy
 	}
 	xproto.ChangeProperty(conn.conn, xproto.PropModeReplace, event.Requestor, xproto.Atom(property), xproto.Atom(valueType), format, dataLen(data, format), data)
 	s.notify(event, property)
+}
+
+// expireTransfers drops the transfers whose requestor stopped reading, so an
+// abandoned transfer does not keep its value in memory.
+func (s *server) expireTransfers() {
+	deadline := time.Now().Add(-maxTransferTime)
+	s.incrMu.Lock()
+	for key, transfer := range s.transfers {
+		if transfer.active.Before(deadline) {
+			delete(s.transfers, key)
+		}
+	}
+	s.incrMu.Unlock()
 }
 
 // observeWrite records the time of a property write of an outgoing transfer.
@@ -1226,6 +1281,7 @@ func (s *server) handleProperty(event xproto.PropertyNotifyEvent) {
 		return
 	}
 	key := incrKey{requestor: event.Window, property: atom(event.Atom)}
+	s.expireTransfers()
 	s.incrMu.Lock()
 	transfer, ok := s.transfers[key]
 	if !ok {
@@ -1249,6 +1305,7 @@ func (s *server) handleProperty(event xproto.PropertyNotifyEvent) {
 	size := min(remaining, incrChunk)
 	chunk := transfer.data[transfer.offset : transfer.offset+size]
 	transfer.offset += size
+	transfer.active = time.Now()
 	valueType := transfer.valueType
 	s.incrMu.Unlock()
 	xproto.ChangeProperty(s.conn.conn, xproto.PropModeReplace, key.requestor, xproto.Atom(key.property), xproto.Atom(valueType), 8, uint32(size), chunk)
