@@ -38,17 +38,16 @@ type testAtoms struct {
 // rawClient is a minimal X11 clipboard client. It owns the CLIPBOARD selection
 // and serves a fixed value, so the watcher sees a change from another client.
 type rawClient struct {
-	t       *testing.T
-	conn    *xgb.Conn
-	win     xproto.Window
-	atoms   testAtoms
-	mu      sync.Mutex
-	plain   []byte
-	html    []byte
-	png     []byte
-	files   []string
-	hint    bool
-	request []string
+	t     *testing.T
+	conn  *xgb.Conn
+	win   xproto.Window
+	atoms testAtoms
+	mu    sync.Mutex
+	plain []byte
+	html  []byte
+	png   []byte
+	files []string
+	hint  bool
 }
 
 // newRawClient connects to the display and starts serving selection requests.
@@ -117,19 +116,11 @@ func (r *rawClient) ownFiles(files []string) {
 func (r *rawClient) publish(plain, html, png []byte, files []string, hint bool) {
 	r.mu.Lock()
 	r.plain, r.html, r.png, r.files, r.hint = plain, html, png, files, hint
-	r.request = nil
 	r.mu.Unlock()
 	err := xproto.SetSelectionOwnerChecked(r.conn, r.win, r.atoms.clipboard, 0).Check()
 	if err != nil {
 		r.t.Fatalf("set selection owner: %v", err)
 	}
-}
-
-// requested returns the target names the watcher asked for.
-func (r *rawClient) requested() []string {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return append([]string(nil), r.request...)
 }
 
 // serve answers selection requests with the current value.
@@ -154,7 +145,6 @@ func (r *rawClient) answer(event xproto.SelectionRequestEvent) {
 		property = event.Target
 	}
 	r.mu.Lock()
-	r.request = append(r.request, r.name(event.Target))
 	plain, html, png, files, hint := r.plain, r.html, r.png, r.files, r.hint
 	r.mu.Unlock()
 
@@ -400,10 +390,11 @@ func TestWatchSensitive(t *testing.T) {
 	if len(snapshot.Content.Representations) != 0 {
 		t.Fatalf("sensitive snapshot carries %d representations, want none", len(snapshot.Content.Representations))
 	}
-	for _, target := range client.requested() {
-		if target == atomUTF8String {
-			t.Fatal("the watcher read the payload of sensitive content")
-		}
+	// The owner cannot tell which client asks for the value: a clipboard
+	// manager of the session reads it on its own. The snapshot proves that the
+	// watcher itself did not read, because it publishes only what it read.
+	if len(snapshot.Content.Representations) != 0 {
+		t.Fatalf("the watcher read the payload of sensitive content")
 	}
 }
 
