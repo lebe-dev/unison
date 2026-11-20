@@ -156,6 +156,13 @@ async fn install_daemon(state: State<'_, AppState>) -> Result<(), String> {
     daemon::ensure_running(endpoint).await
 }
 
+/// show_window brings the main window back when it is hidden or behind other
+/// windows, which a click on a notification asks for.
+#[tauri::command]
+fn show_window(app: tauri::AppHandle) {
+    tray::show_window(&app);
+}
+
 /// set_sentry_enabled grants or withdraws the consent of the shell to report
 /// errors.
 #[tauri::command]
@@ -257,7 +264,17 @@ pub fn run() {
             }
             app.manage(AppState { endpoint });
             app.manage(streams::Streams::default());
-            tray::install(app.handle())?;
+            // A desktop without status icons keeps the window as the only way
+            // into the app, so a missing icon is no reason to stay closed.
+            if let Err(err) = tray::install(app.handle()) {
+                #[cfg(not(target_os = "linux"))]
+                return Err(Box::new(err));
+                #[cfg(target_os = "linux")]
+                {
+                    journal::record("WARN", "the tray icon is not available");
+                    eprintln!("unison: the tray icon is not available: {err}");
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -281,6 +298,7 @@ pub fn run() {
             set_login_item,
             set_sentry_enabled,
             share::take_shared_files,
+            show_window,
             tray::set_tray_state,
             tray::pick_files,
             tray::pick_folder,
@@ -297,9 +315,13 @@ pub fn run() {
             }
         })
         .on_window_event(|window, event| {
-            // The window stays alive in the tray, so the app keeps the daemon
-            // events and the menu state up to date while it is hidden.
+            // A desktop without a tray icon has no way back to the window, so
+            // the app leaves with the window there. Elsewhere the window stays
+            // alive in the tray with the daemon events and the menu state.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if tray::closes_with_window() {
+                    return;
+                }
                 api.prevent_close();
                 let _ = window.hide();
             }

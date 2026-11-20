@@ -47,5 +47,5 @@ export function systemName(userAgent: string = navigator.userAgent): string {
 
 /** markPlatform tags the document so the styles can follow the platform. */
 export function markPlatform(root: HTMLElement = document.documentElement): void {
-  root.dataset.platform = isMac() ? "mac" : "other";
+  root.dataset.platform = isMac() ? "mac" : isLinux() ? "linux" : "other";
 }

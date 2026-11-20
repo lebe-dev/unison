@@ -113,26 +113,70 @@ fn endpoint_from(
     platform()
 }
 
+/// LOG_HINT is how the user reads the journal of the installed daemon.
+#[cfg(target_os = "linux")]
+const LOG_HINT: &str = "journalctl --user -u unisond -n 50";
+
 /// Startup is what the app consults to bring the daemon up: the login item,
-/// the binary it may start itself and the limits of the waits.
+/// the service manager, the binary it may start itself and the limits of the
+/// waits.
 struct Startup {
     login: fn() -> crate::agent::LoginItemStatus,
+    /// The daemon runs as a user unit of the service manager of the session.
+    unit: Box<dyn Fn() -> bool + Send + Sync>,
+    /// Asks the service manager to start the unit.
+    service: Box<dyn Fn() -> Result<(), String> + Send + Sync>,
     binary: Box<dyn Fn() -> Option<PathBuf> + Send + Sync>,
     login_wait: Duration,
     start_timeout: Duration,
 }
 
 impl Startup {
-    /// system is the startup of the app: the login item of the system and the
-    /// binary of the bundle.
+    /// system is the startup of the app: the login item of the system, the user
+    /// unit of the package and the binary of the bundle.
     fn system() -> Self {
         Self {
             login: crate::agent::status,
+            unit: Box::new(use_unit),
+            service: Box::new(start_service),
             binary: Box::new(binary),
             login_wait: LOGIN_WAIT,
             start_timeout: START_TIMEOUT,
         }
     }
+}
+
+/// StartPlan is how the app brings the daemon up.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum StartPlan {
+    /// The login item of the system starts the daemon, the app only waits.
+    WaitForLoginItem,
+    /// The service manager of the session starts the user unit.
+    StartService,
+    /// The app runs the daemon binary itself.
+    StartChild,
+    /// The user has to allow the login item in the system settings.
+    RequiresApproval,
+}
+
+/// start_plan returns how the app brings the daemon up. A user unit of the
+/// service manager starts on demand, whether or not it is enabled at login, so
+/// the state of the login item does not matter there.
+fn start_plan(login: crate::agent::LoginItemStatus, unit: bool) -> StartPlan {
+    if unit {
+        return StartPlan::StartService;
+    }
+    match login {
+        crate::agent::LoginItemStatus::Enabled => StartPlan::WaitForLoginItem,
+        crate::agent::LoginItemStatus::RequiresApproval => StartPlan::RequiresApproval,
+        _ => StartPlan::StartChild,
+    }
+}
+
+/// use_unit reports whether the daemon runs as a user unit of the service
+/// manager. A development build runs the binary next to the repository.
+fn use_unit() -> bool {
+    cfg!(target_os = "linux") && !cfg!(debug_assertions)
 }
 
 /// ensure_running starts the daemon when it does not answer on the endpoint and
@@ -151,49 +195,109 @@ async fn ensure_running_with(endpoint: &str, startup: &Startup) -> Result<(), St
             Ok(())
         }
         Err(err) => {
-            set_status(State::Failed, Some(err.clone()));
+            let reason = start_reason(err);
+            set_status(State::Failed, Some(reason.clone()));
             crate::observability::capture_error("the daemon did not start");
-            Err(err)
+            Err(reason)
         }
     }
 }
 
-/// start_if_needed starts the daemon when it does not answer on the endpoint. A
-/// login item that the system manages owns the daemon, so the app only waits
-/// for it.
+/// start_reason adds the way to the log of the daemon to a failed start.
+fn start_reason(reason: String) -> String {
+    #[cfg(target_os = "linux")]
+    {
+        with_hint(reason, LOG_HINT)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        reason
+    }
+}
+
+/// with_hint adds where the details of a failed start are. A hint the reason
+/// already carries is not repeated.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn with_hint(reason: String, hint: &str) -> String {
+    if hint.is_empty() || reason.contains(hint) {
+        return reason;
+    }
+    format!("{reason}; see {hint}")
+}
+
+/// start_if_needed starts the daemon when it does not answer on the endpoint.
 async fn start_if_needed(endpoint: &str, startup: &Startup) -> Result<(), String> {
     if probe(endpoint).await {
         return Ok(());
     }
 
-    match (startup.login)() {
-        crate::agent::LoginItemStatus::Enabled => {
+    match start_plan((startup.login)(), (startup.unit)()) {
+        StartPlan::RequiresApproval => {
+            Err("the login item waits for approval in System Settings".to_string())
+        }
+        StartPlan::WaitForLoginItem => {
             if wait_for(endpoint, startup.login_wait).await.is_ok() {
                 return Ok(());
             }
             // A login item that the system cannot start must not leave the app
             // without a daemon.
-            match (startup.binary)() {
-                Some(binary) => {
-                    let pid = start(&binary)?;
-                    wait_started(endpoint, startup.start_timeout, pid).await
-                }
-                None => Err(format!(
-                    "the login item does not start the daemon on {endpoint}"
-                )),
-            }
+            start_child(
+                endpoint,
+                startup,
+                "the login item does not start the daemon",
+            )
+            .await
         }
-        crate::agent::LoginItemStatus::RequiresApproval => {
-            Err("the login item waits for approval in System Settings".to_string())
-        }
-        _ => match (startup.binary)() {
-            Some(binary) => {
-                let pid = start(&binary)?;
-                wait_started(endpoint, startup.start_timeout, pid).await
+        StartPlan::StartService => match (startup.service)() {
+            Ok(()) => wait_for(endpoint, startup.start_timeout).await,
+            Err(err) => {
+                // A session without a service manager keeps the daemon of the
+                // app, which the window starts and hands over at login.
+                crate::journal::record(
+                    "WARN",
+                    "the service did not start the daemon, starting it directly",
+                );
+                eprintln!("unison: {err}");
+                start_child(endpoint, startup, "the daemon is not running").await
             }
-            None => Err(format!("the daemon is not running on {endpoint}")),
         },
+        StartPlan::StartChild => start_child(endpoint, startup, "the daemon is not running").await,
     }
+}
+
+/// start_child starts the daemon of the app and waits for it to answer.
+async fn start_child(endpoint: &str, startup: &Startup, missing: &str) -> Result<(), String> {
+    let Some(binary) = (startup.binary)() else {
+        return Err(format!("{missing} on {endpoint}"));
+    };
+    let pid = start(&binary)?;
+    wait_started(endpoint, startup.start_timeout, pid).await
+}
+
+/// start_service asks the service manager of the session to start the unit of
+/// the daemon.
+#[cfg(target_os = "linux")]
+fn start_service() -> Result<(), String> {
+    let unit = crate::agent::UNIT;
+    let output = Command::new("systemctl")
+        .args(["--user", "start", unit])
+        .stdin(Stdio::null())
+        .output()
+        .map_err(|err| format!("cannot run systemctl: {err}"))?;
+    if output.status.success() {
+        return Ok(());
+    }
+    let details = String::from_utf8_lossy(&output.stderr);
+    Err(format!(
+        "systemctl --user start {unit} failed: {}",
+        details.trim()
+    ))
+}
+
+/// start_service has no service manager on this system.
+#[cfg(not(target_os = "linux"))]
+fn start_service() -> Result<(), String> {
+    Err("this system has no user unit for the daemon".to_string())
 }
 
 /// wait_for waits for the daemon to answer on the endpoint.
@@ -501,8 +605,27 @@ mod tests {
     fn startup(login: fn() -> LoginItemStatus, binary: Option<PathBuf>) -> Startup {
         Startup {
             login,
+            unit: Box::new(|| false),
+            service: Box::new(|| Err("this system has no user unit".to_string())),
             binary: Box::new(move || binary.clone()),
             login_wait: Duration::from_millis(400),
+            start_timeout: Duration::from_secs(5),
+        }
+    }
+
+    /// unit_startup returns a startup that starts the daemon through the
+    /// service manager.
+    fn unit_startup(
+        login: fn() -> LoginItemStatus,
+        service: fn() -> Result<(), String>,
+        binary: Option<PathBuf>,
+    ) -> Startup {
+        Startup {
+            login,
+            unit: Box::new(|| true),
+            service: Box::new(service),
+            binary: Box::new(move || binary.clone()),
+            login_wait: Duration::from_millis(50),
             start_timeout: Duration::from_secs(5),
         }
     }
@@ -675,6 +798,10 @@ mod tests {
         set_failed("an earlier failure");
         let startup = Startup {
             login: unreachable_login,
+            unit: Box::new(|| panic!("a unit was consulted although the daemon answers")),
+            service: Box::new(|| {
+                panic!("the service manager was asked although the daemon answers")
+            }),
             binary: Box::new(|| panic!("a binary was looked up although the daemon answers")),
             login_wait: Duration::ZERO,
             start_timeout: Duration::ZERO,
@@ -855,6 +982,111 @@ mod tests {
     fn stop_started_without_a_started_daemon_does_nothing() {
         let _globals = globals();
         assert!(!stop_started());
+    }
+
+    #[test]
+    fn a_unit_starts_through_the_service_manager() {
+        for login in [
+            LoginItemStatus::Enabled,
+            LoginItemStatus::NotRegistered,
+            LoginItemStatus::NotFound,
+        ] {
+            assert_eq!(
+                start_plan(login, true),
+                StartPlan::StartService,
+                "{login:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_login_item_of_the_system_owns_the_daemon_without_a_unit() {
+        assert_eq!(
+            start_plan(LoginItemStatus::Enabled, false),
+            StartPlan::WaitForLoginItem
+        );
+        assert_eq!(
+            start_plan(LoginItemStatus::RequiresApproval, false),
+            StartPlan::RequiresApproval
+        );
+        for login in [
+            LoginItemStatus::Unsupported,
+            LoginItemStatus::NotRegistered,
+            LoginItemStatus::NotFound,
+        ] {
+            assert_eq!(start_plan(login, false), StartPlan::StartChild, "{login:?}");
+        }
+    }
+
+    #[test]
+    fn the_service_manager_starts_the_unit() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let result = block_on(async {
+            let server = serve_later(&path, Duration::from_millis(100));
+            let startup = unit_startup(not_registered, || Ok(()), None);
+            let result = start_if_needed(path.to_str().unwrap(), &startup).await;
+            (result, server.await)
+        });
+        assert_eq!(result.0, Ok(()));
+    }
+
+    #[test]
+    fn a_missing_service_manager_keeps_the_daemon_of_the_app() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let binary = script(&dir, "unisond", "exec sleep 30");
+        let result = block_on(async {
+            let server = serve_later(&path, Duration::from_millis(100));
+            let startup = unit_startup(
+                not_registered,
+                || Err("no user bus".to_string()),
+                Some(binary),
+            );
+            let result = start_if_needed(path.to_str().unwrap(), &startup).await;
+            (result, server.await)
+        });
+        assert_eq!(result.0, Ok(()));
+        assert!(stop_started(), "the started daemon was not kept");
+    }
+
+    #[test]
+    fn a_unit_that_does_not_answer_ends_the_wait_with_the_limit() {
+        let _globals = globals();
+        let dir = TempDir::new();
+        let path = dir.join("unisond.sock");
+        let err = block_on(async {
+            let startup = unit_startup(not_registered, || Ok(()), None);
+            start_if_needed(path.to_str().unwrap(), &startup).await
+        })
+        .expect_err("a unit that never answers was reported as running");
+        assert!(err.contains("did not answer"), "{err}");
+    }
+
+    #[test]
+    fn a_failed_start_points_at_the_journal() {
+        let hint = "journalctl --user -u unisond -n 50";
+        assert_eq!(
+            with_hint("the daemon did not answer".to_string(), hint),
+            format!("the daemon did not answer; see {hint}")
+        );
+        assert_eq!(
+            with_hint(format!("the daemon stopped; see {hint}"), hint),
+            format!("the daemon stopped; see {hint}"),
+            "the hint was repeated"
+        );
+        assert_eq!(
+            with_hint("the daemon did not answer".to_string(), ""),
+            "the daemon did not answer",
+            "an empty hint was added"
+        );
+    }
+
+    #[test]
+    fn a_development_build_runs_the_daemon_itself() {
+        assert!(!use_unit(), "a development build asked for the unit");
     }
 
     #[test]
