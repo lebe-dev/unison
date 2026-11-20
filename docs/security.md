@@ -178,9 +178,19 @@ nonce is random and stored in front of the ciphertext, and the additional data b
 table and row key, so a sealed value cannot be moved to another row.
 
 The 32 byte data encryption key is kept in the keystore of the platform: the login Keychain on macOS,
-the Android Keystore on Android. It is created on first use and never leaves the device. A database
-without its key is refused instead of being opened, and a key is never created over an existing
-database.
+the Secret Service of the session on Linux, the Android Keystore on Android. It is created on first
+use and never leaves the device. A database without its key is refused instead of being opened, and
+a key is never created over an existing database.
+
+On Linux the keystore is the Secret Service over D-Bus (GNOME Keyring, KWallet, KeePassXC), with a
+key exchange that keeps the secrets off the bus in clear text. The backend is chosen once, when the
+first secret is stored, and does not change by itself: a data directory that recorded the Secret
+Service refuses to move its keys to files. When the session has no usable Secret Service, for
+example an autologin session whose keyring is still locked, the keys are stored as files with `0600`
+permissions in `<data directory>/keys`, the directory has mode `0700`, and `unison status` prints
+`keystore file` and a warning. That warning means the identity seeds and the data encryption key lie
+in the file system of the user session, readable by anything that runs as that user. Unlocking the
+keyring of the session and starting from a fresh data directory gives the Secret Service backend.
 
 Blob chunks are sealed the same way and bound to the blob hash and the chunk index, so a chunk of one
 blob cannot be opened as a chunk of another. An item up to 64 KiB travels inside its announcement;

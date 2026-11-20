@@ -10,6 +10,11 @@ How an item leaves a device:
 
 - **macOS** - the daemon watches the clipboard of the session. A copy is announced to the online
   Personal devices about a quarter of a second after it happened.
+- **Linux** - the daemon watches the clipboard of the X11 session. On GNOME Wayland the desktop
+  keeps one clipboard for native windows and for XWayland, so the same path works there; on KDE
+  Plasma and wlroots desktops the daemon can use the data-control protocol instead, which is not
+  implemented yet. Without a display, or with `--clipboard=none`, the daemon runs in the manual
+  mode described below.
 - **Android** - the system does not let an app watch the clipboard in the background, so the phone
   sends when you ask: the quick settings tile `Send clipboard`, the `Send clipboard` action of the
   notification, the button on the main screen, or `Share` in another app. Incoming text and images
@@ -19,6 +24,24 @@ What arrives from the other devices is decided on the device that receives; see
 [Network policies](policy.md).
 
 An item that Unison itself put into the clipboard is not announced again.
+
+## Linux specifics
+
+Only the `CLIPBOARD` selection is synchronized; the `PRIMARY` selection, which a text selection
+fills in X11, is left alone.
+
+A password manager on Linux marks a copied password with the target `x-kde-passwordManagerHint`.
+Such content is not sent and is not recorded in the history.
+
+Content written by the daemon lives in its memory. When the daemon stops, the `CLIPBOARD` selection
+has no owner any more, so the content disappears unless a clipboard manager of the desktop kept a
+copy.
+
+The daemon starts even when there is no display yet, which is what happens when the user unit runs
+before the GNOME session is ready. It works in the manual mode: the paired devices, the file
+transfers and the history work, but nothing is captured and incoming items are only recorded. The
+daemon tries the display again with a growing delay, up to once a minute, and switches to automatic
+without a restart. `unison status` shows the mode in `clipboard` and the reason in `note`:
 
 ## Advertising parameters
 
@@ -66,7 +89,11 @@ downloads folder:
 | Platform | Folder |
 |----------|--------|
 | macOS | `~/Downloads/Unison` |
+| Linux | `~/Downloads/Unison`, or the folder of `XDG_DOWNLOAD_DIR` |
 | Android | `Download/Unison` |
+
+On Linux the folder comes from `~/.config/user-dirs.dirs`, so a localized `Загрузки` is used when
+the session has one; `unison settings` shows the result.
 
 On the Mac the folder can be changed in Settings under "Received files". "Use default folder"
 brings back `~/Downloads/Unison`. The new folder applies to the files that arrive afterwards;

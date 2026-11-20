@@ -105,10 +105,28 @@ service.
   Personal device above the files limit of the current network (10 MiB on Wi-Fi, 1 MiB on mobile
   data) or over the relay; see [Network policies](policy.md).
 - An item that is listed as not downloaded needs the device that has it to be online.
-- Files land in `~/Downloads/Unison` on macOS and in `Download/Unison` on Android, unless you chose
-  another folder in Settings.
+- Files land in `~/Downloads/Unison` on macOS, in the `XDG_DOWNLOAD_DIR` folder of the session plus
+  `Unison` on Linux, and in `Download/Unison` on Android, unless you chose another folder in
+  Settings.
 - The cache of a device holds at most 2 GiB. A larger file is refused, and a full disk stops the
   download as well.
+
+## Nothing is copied on Linux
+
+- `unison status` shows the backend in `clipboard` and the reason in `note`. `none` means the
+  daemon works in the manual mode: there is no display, the daemon started before the session was
+  ready, or `--clipboard=none` was asked for. It reaches for the display again by itself, up to
+  once a minute.
+- On GNOME the clipboard lives in the session. If the daemon is started over ssh it has no display
+  and stays in the manual mode until `DISPLAY` points at the session; the unit of the package starts
+  with the session instead.
+- The keystore warning `secrets are stored in files` means the Secret Service of the session was
+  not usable, often because an autologin session keeps the keyring locked. Unlock the keyring and
+  start from a fresh data directory to use the Secret Service. See [Security](security.md).
+- No tray icon: GNOME shows AppIndicator icons only with the `AppIndicator` extension enabled, which
+  Ubuntu has by default. Without it the app works and closing the window quits it.
+- The firewall of Ubuntu is off by default. With `ufw` on, allow the port of the daemon
+  (`unison status` prints it in `address`) and mDNS on `5353/udp`.
 
 ## A revoked device still appears on another device
 

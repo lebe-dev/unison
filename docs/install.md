@@ -1,6 +1,6 @@
 # Install
 
-Unison runs on macOS and on Android. Windows and Linux are not supported yet.
+Unison runs on macOS and on Android. Linux has a package for Ubuntu; Windows is not supported yet.
 
 ## macOS
 
@@ -72,7 +72,48 @@ clipboard when you ask it to, from the quick settings tile, the notification or 
 text and images are written to the clipboard without asking. See
 [Clipboard and history](clipboard.md).
 
-## Windows and Linux
+## Linux
 
-Not available yet. There is no installer, no package and no supported way to run Unison on Windows
-or Linux at the moment.
+Unison needs Ubuntu 24.04 or 22.04 LTS on 64-bit x86 with GNOME, a desktop with webkit2gtk-4.1
+and systemd. Other distributions with the same pieces should work but are not tested.
+
+The package is a file named `Unison_<version>_amd64.deb`. Install it with:
+
+```sh
+sudo apt install ./Unison_<version>_amd64.deb
+```
+
+`apt` takes the dependencies from the repositories of Ubuntu. The menu entry `Unison` starts the
+app; the app starts the daemon through the user unit `unisond.service` and turns the autostart on
+at the first start. The unit can be managed without the app:
+
+```sh
+systemctl --user status unisond
+systemctl --user disable unisond     # stop starting it with the session
+```
+
+The daemon and the client are `/usr/bin/unisond` and `/usr/bin/unison`, the unit is
+`/usr/lib/systemd/user/unisond.service`. Logs go to `<data directory>/logs` and to the journal of
+the user unit:
+
+```sh
+journalctl --user -u unisond -n 50
+```
+
+Data lives in `$XDG_DATA_HOME/unison` (by default `~/.local/share/unison`): the identity, the
+paired devices, the history and the cached payloads. The keystore is the Secret Service of the
+session (GNOME Keyring, KWallet, KeePassXC); when it is not usable, the keys are stored in
+`<data directory>/keys` with 0600 permissions and `unison status` warns about it. See
+[Security](security.md).
+
+Removing the package keeps the data and the identity:
+
+```sh
+sudo apt remove unison
+```
+
+Install the package again and the app finds the paired devices of before.
+
+## Windows
+
+Not available yet. There is no supported way to run Unison on Windows at the moment.
