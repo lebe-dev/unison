@@ -9,11 +9,11 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/internal/daemon"
 	"github.com/lebe-dev/unison/internal/observability"
 )
@@ -23,12 +23,6 @@ var version = "dev"
 
 // flushTimeout bounds the wait for the queued reports when the daemon exits.
 const flushTimeout = 5 * time.Second
-
-// Clipboard modes of the daemon.
-const (
-	clipboardSystem = "system"
-	clipboardNone   = "none"
-)
 
 // Exit codes of the command.
 const (
@@ -73,7 +67,7 @@ func run(args []string) int {
 	showVersion := flags.Bool("version", false, "print the version and exit")
 	dataDir := flags.String("data-dir", "", "data directory of this instance")
 	endpoint := flags.String("endpoint", "", "local API endpoint of this instance")
-	clipboard := flags.String("clipboard", clipboardSystem, "clipboard to use: system or none")
+	clipboard := flags.String("clipboard", daemon.DefaultClipboardMode, "clipboard to use: "+strings.Join(daemon.ClipboardModes, ", "))
 	name := flags.String("name", "", "device name announced to peers")
 	level := flags.String("log-level", "info", "log level: debug, info, warn or error")
 	stderr := flags.Bool("log-stderr", false, "copy the log to stderr")
@@ -107,8 +101,8 @@ func run(args []string) int {
 		return exitUsage
 	}
 	mode := strings.ToLower(strings.TrimSpace(*clipboard))
-	if mode != clipboardSystem && mode != clipboardNone {
-		_, _ = fmt.Fprintf(os.Stderr, "unisond: unknown clipboard %q, use %s or %s\n", *clipboard, clipboardSystem, clipboardNone)
+	if !slices.Contains(daemon.ClipboardModes, mode) {
+		_, _ = fmt.Fprintf(os.Stderr, "unisond: unknown clipboard %q, use %s\n", *clipboard, strings.Join(daemon.ClipboardModes, ", "))
 		return exitUsage
 	}
 
@@ -120,7 +114,7 @@ func run(args []string) int {
 	if err != nil {
 		return fail(err)
 	}
-	clip, err := newClipboard(mode)
+	clip, err := daemon.NewClipboard(mode)
 	if err != nil {
 		return fail(err)
 	}
@@ -152,14 +146,6 @@ func fail(err error) int {
 	}
 	_, _ = fmt.Fprintln(os.Stderr, "unisond: "+err.Error())
 	return exitError
-}
-
-// newClipboard returns the clipboard of the mode.
-func newClipboard(mode string) (ports.Clipboard, error) {
-	if mode == clipboardNone {
-		return daemon.NoClipboard(), nil
-	}
-	return daemon.NewClipboard()
 }
 
 // parseLevel returns the log level of a name.

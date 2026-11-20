@@ -510,6 +510,15 @@ message GetStatusResponse {
   // device is neither found nor finds the others. On macOS the daemon lacks the
   // local network permission.
   bool local_network_blocked = 10;
+  // The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+  // on macOS and win32 on Windows.
+  string clipboard_backend = 11;
+  // Why the clipboard is not synchronized in the background, in English. Empty
+  // while the clipboard works.
+  string clipboard_note = 12;
+  // The keystore the daemon keeps secrets in: secret-service or file on Linux,
+  // keychain on macOS and dpapi on Windows.
+  string keystore_backend = 13;
 }
 
 message WatchEventsRequest {}

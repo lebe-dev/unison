@@ -5,6 +5,7 @@ package daemon
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -17,6 +18,9 @@ import (
 // Platform is the platform this build reports to peers.
 const Platform = model.PlatformMacOS
 
+// ClipboardModes lists the modes of the clipboard flag on this platform.
+var ClipboardModes = []string{ClipboardSystem, ClipboardNone}
+
 // NewKeystore returns the Keychain keystore of a data directory.
 func NewKeystore(dataDir string) (ports.Keystore, error) {
 	if !cgoAvailable {
@@ -26,7 +30,14 @@ func NewKeystore(dataDir string) (ports.Keystore, error) {
 }
 
 // NewClipboard returns the pasteboard clipboard of this platform.
-func NewClipboard() (ports.Clipboard, error) {
+func NewClipboard(mode string) (ports.Clipboard, error) {
+	switch mode {
+	case "", ClipboardSystem, ClipboardAuto:
+	case ClipboardNone:
+		return NoClipboard(), nil
+	default:
+		return nil, fmt.Errorf("clipboard: %q is available on Linux only, use %s or %s", mode, ClipboardSystem, ClipboardNone)
+	}
 	if !cgoAvailable {
 		return nil, errors.New("daemon: the pasteboard needs a build with cgo, set CGO_ENABLED=1")
 	}
@@ -40,6 +51,18 @@ func NewClipboard() (ports.Clipboard, error) {
 		behavior = reported
 	}
 	return &policyClipboard{Clipboard: pasteboard, behavior: behavior}, nil
+}
+
+// keystoreBackend names the keystore of the daemon for the status.
+func keystoreBackend(ports.Keystore) string { return "keychain" }
+
+// clipboardStatus reports the backend of the clipboard and the reason of the
+// manual mode.
+func clipboardStatus(clip ports.Clipboard) (string, string) {
+	if _, ok := clip.(noClipboard); ok {
+		return ClipboardNone, "the clipboard is turned off"
+	}
+	return "pasteboard", ""
 }
 
 // behaviorUnknown reports a policy the system did not report.

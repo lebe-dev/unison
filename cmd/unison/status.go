@@ -11,6 +11,9 @@ import (
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
+// keystoreFileBackend is the keystore backend that keeps secrets in files.
+const keystoreFileBackend = "file"
+
 // status prints the state of the daemon, of the network and of the peers.
 func (a *app) status(ctx context.Context, args []string) error {
 	flags := a.newFlagSet("status")
@@ -57,6 +60,19 @@ func (a *app) writeStatus(status *localv1.GetStatusResponse) {
 	}
 	a.field("device", device)
 
+	if backend := status.GetClipboardBackend(); backend != "" {
+		a.field("clipboard", backend)
+	}
+	if note := status.GetClipboardNote(); note != "" {
+		a.field("note", note)
+	}
+	if backend := status.GetKeystoreBackend(); backend != "" {
+		a.field("keystore", backend)
+		if backend == keystoreFileBackend {
+			a.field("warning", "secrets are stored in files")
+		}
+	}
+
 	if !status.GetRunning() {
 		return
 	}
@@ -64,7 +80,7 @@ func (a *app) writeStatus(status *localv1.GetStatusResponse) {
 		a.field("address", strings.Join(addrs, ", "))
 	}
 	a.field("network", networkText(status.GetNetwork()))
-	a.field("clipboard", pauseText(status.GetPause()))
+	a.field("pause", pauseText(status.GetPause()))
 	if search := status.GetFriendsDiscovery(); search.GetOn() {
 		a.field("friends", fmt.Sprintf("searching until %s", time.UnixMilli(search.GetUntilUnixMs()).Format("15:04")))
 	}

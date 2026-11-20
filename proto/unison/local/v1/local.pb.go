@@ -2382,8 +2382,17 @@ type GetStatusResponse struct {
 	// device is neither found nor finds the others. On macOS the daemon lacks the
 	// local network permission.
 	LocalNetworkBlocked bool `protobuf:"varint,10,opt,name=local_network_blocked,json=localNetworkBlocked,proto3" json:"local_network_blocked,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+	// on macOS and win32 on Windows.
+	ClipboardBackend string `protobuf:"bytes,11,opt,name=clipboard_backend,json=clipboardBackend,proto3" json:"clipboard_backend,omitempty"`
+	// Why the clipboard is not synchronized in the background, in English. Empty
+	// while the clipboard works.
+	ClipboardNote string `protobuf:"bytes,12,opt,name=clipboard_note,json=clipboardNote,proto3" json:"clipboard_note,omitempty"`
+	// The keystore the daemon keeps secrets in: secret-service or file on Linux,
+	// keychain on macOS and dpapi on Windows.
+	KeystoreBackend string `protobuf:"bytes,13,opt,name=keystore_backend,json=keystoreBackend,proto3" json:"keystore_backend,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *GetStatusResponse) Reset() {
@@ -2484,6 +2493,27 @@ func (x *GetStatusResponse) GetLocalNetworkBlocked() bool {
 		return x.LocalNetworkBlocked
 	}
 	return false
+}
+
+func (x *GetStatusResponse) GetClipboardBackend() string {
+	if x != nil {
+		return x.ClipboardBackend
+	}
+	return ""
+}
+
+func (x *GetStatusResponse) GetClipboardNote() string {
+	if x != nil {
+		return x.ClipboardNote
+	}
+	return ""
+}
+
+func (x *GetStatusResponse) GetKeystoreBackend() string {
+	if x != nil {
+		return x.KeystoreBackend
+	}
+	return ""
 }
 
 type WatchEventsRequest struct {
@@ -7108,7 +7138,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x0estrip_tracking\x18\x0f \x01(\bR\rstripTracking\x12'\n" +
 	"\x0fjournal_enabled\x18\x10 \x01(\bR\x0ejournalEnabled\x122\n" +
 	"\x15allow_remote_settings\x18\x11 \x01(\bR\x13allowRemoteSettings\"\x12\n" +
-	"\x10GetStatusRequest\"\xb9\x03\n" +
+	"\x10GetStatusRequest\"\xb8\x04\n" +
 	"\x11GetStatusResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1f\n" +
@@ -7121,7 +7151,10 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x11friends_discovery\x18\b \x01(\v2!.unison.local.v1.FriendsDiscoveryR\x10friendsDiscovery\x12\x14\n" +
 	"\x05addrs\x18\t \x03(\tR\x05addrs\x122\n" +
 	"\x15local_network_blocked\x18\n" +
-	" \x01(\bR\x13localNetworkBlocked\"\x14\n" +
+	" \x01(\bR\x13localNetworkBlocked\x12+\n" +
+	"\x11clipboard_backend\x18\v \x01(\tR\x10clipboardBackend\x12%\n" +
+	"\x0eclipboard_note\x18\f \x01(\tR\rclipboardNote\x12)\n" +
+	"\x10keystore_backend\x18\r \x01(\tR\x0fkeystoreBackend\"\x14\n" +
 	"\x12WatchEventsRequest\"C\n" +
 	"\x13WatchEventsResponse\x12,\n" +
 	"\x05event\x18\x01 \x01(\v2\x16.unison.local.v1.EventR\x05event\"=\n" +
