@@ -190,6 +190,10 @@ clipboard item, a peer that has to be updated and the pairing events with the ad
 and the short code. The response of a server stream arrives with the first event, so a client opens
 the stream before it needs the events.
 
+The status, a device and the relay carry the protocol version they announced. The events and the
+device list also report whether the other side is newer, so a client can tell the user to update
+instead of only reporting a version number.
+
 Device IDs are lowercase hex and times are unix milliseconds. `GetClip` returns the latest clipboard
 item. The settings hold the device name, the confirmation flags of the local device, the blob store
 limit, the downloads directory, the lifetimes and the network policy; a change applies at once. The

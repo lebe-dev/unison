@@ -185,6 +185,26 @@ describe("devices screen", () => {
     expect(await screen.findByText(/The device is offline/)).toBeTruthy();
   });
 
+  it("warns about a device that speaks a newer protocol", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { protocolNewer: true })],
+    });
+
+    render(Devices);
+
+    expect(screen.getByText("MacBook speaks a newer protocol than this app.")).toBeTruthy();
+    expect(screen.getByText("Update Unison on this device to connect to it.")).toBeTruthy();
+  });
+
+  it("keeps a device with an older protocol quiet", () => {
+    render(Devices);
+
+    expect(screen.queryByText(/speaks a newer protocol/)).toBeNull();
+  });
+
   it("shows the flags the device reported", () => {
     daemon.status = create(GetStatusResponseSchema, {
       running: true,
@@ -368,6 +388,7 @@ function personal(
     peerRequireFileConfirmation?: boolean;
     allowRemoteSettings?: boolean;
     online?: boolean;
+    protocolNewer?: boolean;
   } = {},
 ) {
   return create(DeviceSchema, {

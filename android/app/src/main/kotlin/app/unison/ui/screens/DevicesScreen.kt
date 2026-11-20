@@ -79,8 +79,8 @@ import app.unison.ui.roleLabel
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
 import app.unison.ui.state.NetworkIssues
-import java.util.Date
 import unison.local.v1.Local
+import java.util.Date
 
 /** Paired devices and the state of this device; a tap on a device opens its page. */
 @Composable
@@ -134,9 +134,10 @@ fun DevicesScreen(
                 onClick = onAdd,
                 icon = { Icon(painter = painterResource(R.drawable.ic_nav_add), contentDescription = null) },
                 text = { Text(text = stringResource(R.string.devices_add)) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
             )
         }
     }
@@ -200,10 +201,11 @@ private fun DeviceList(
     onOpen: (Local.Device) -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
     ) {
         ScreenTitle(title = stringResource(R.string.nav_devices)) {
             TextButton(onClick = onRefresh) {
@@ -218,9 +220,10 @@ private fun DeviceList(
 
         if (state.loading) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -261,15 +264,19 @@ private fun DeviceList(
 
 /** Name, network and clipboard state of this device with its two quick actions. */
 @Composable
-private fun ThisDevice(status: Local.GetStatusResponse, onPause: (PauseRequest) -> Unit) {
+private fun ThisDevice(
+    status: Local.GetStatusResponse,
+    onPause: (PauseRequest) -> Unit,
+) {
     val context = LocalContext.current
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onPrimaryContainer) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.extraLarge)
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(20.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(
@@ -289,11 +296,12 @@ private fun ThisDevice(status: Local.GetStatusResponse, onPause: (PauseRequest) 
                     )
                     Text(text = status.deviceName, style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = stringResource(
-                            R.string.device_summary,
-                            networkLabel(status.network),
-                            pauseLabel(status.pause),
-                        ),
+                        text =
+                            stringResource(
+                                R.string.device_summary,
+                                networkLabel(status.network),
+                                pauseLabel(status.pause),
+                            ),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -301,9 +309,10 @@ private fun ThisDevice(status: Local.GetStatusResponse, onPause: (PauseRequest) 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = { context.startActivity(Intent(context, SendClipboardActivity::class.java)) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_send),
@@ -321,7 +330,10 @@ private fun ThisDevice(status: Local.GetStatusResponse, onPause: (PauseRequest) 
 
 /** Pause of the clipboard: a menu of durations, or resume while paused. */
 @Composable
-private fun PauseButton(pause: Local.Pause?, onPause: (PauseRequest) -> Unit) {
+private fun PauseButton(
+    pause: Local.Pause?,
+    onPause: (PauseRequest) -> Unit,
+) {
     if (pause?.paused == true) {
         OutlinedButton(
             onClick = { onPause(PauseRequest.resume()) },
@@ -367,11 +379,12 @@ private fun ClipboardOffer(
     onDismiss: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(groupItemColor)
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(
@@ -403,9 +416,10 @@ private fun ClipboardOffer(
             }
         }
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         ) {
             TextButton(onClick = onDismiss) {
@@ -415,6 +429,31 @@ private fun ClipboardOffer(
                 Text(text = stringResource(R.string.action_send))
             }
         }
+    }
+}
+
+/** Warning inside a device row when the device speaks a newer protocol. */
+@Composable
+private fun InlineProtocolWarning(device: Local.Device) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp)
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.device_protocol_newer_summary, displayName(device)),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
+        Text(
+            text = stringResource(R.string.device_protocol_newer_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 
@@ -447,6 +486,9 @@ private fun DeviceSection(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (NetworkIssues.isNewerProtocol(device)) {
+                        InlineProtocolWarning(device = device)
+                    }
                 }
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_right),
@@ -470,15 +512,17 @@ private fun DeviceDetail(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -517,15 +561,25 @@ private fun DeviceDetail(
 
         if (NetworkIssues.isUnreachable(device)) {
             val timeFormat = DateFormat.getTimeFormat(LocalContext.current)
-            val since = stringResource(
-                R.string.device_unreachable_since,
-                timeFormat.format(Date(device.unreachableSinceUnixMs)),
-            )
+            val since =
+                stringResource(
+                    R.string.device_unreachable_since,
+                    timeFormat.format(Date(device.unreachableSinceUnixMs)),
+                )
             Spacer(modifier = Modifier.height(16.dp))
             NetworkIssueCard(
                 summary = stringResource(R.string.device_unreachable_summary, displayName(device)),
                 hint = stringResource(R.string.device_unreachable_hint),
                 details = NetworkIssues.deviceDetails(device) { since },
+            )
+        }
+
+        if (NetworkIssues.isNewerProtocol(device)) {
+            Spacer(modifier = Modifier.height(16.dp))
+            NetworkIssueCard(
+                summary = stringResource(R.string.device_protocol_newer_summary, displayName(device)),
+                hint = stringResource(R.string.device_protocol_newer_hint),
+                details = "",
             )
         }
 
@@ -572,27 +626,32 @@ private fun DeviceDetail(
 
 /** Small label of the device page, with a status dot when [dot] is set. */
 @Composable
-private fun DetailChip(text: String, dot: Color? = null, highlighted: Boolean = false) {
+private fun DetailChip(
+    text: String,
+    dot: Color? = null,
+    highlighted: Boolean = false,
+) {
     Row(
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.small)
-            .background(
-                if (highlighted) {
-                    MaterialTheme.colorScheme.secondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHighest
-                },
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .clip(MaterialTheme.shapes.small)
+                .background(
+                    if (highlighted) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest
+                    },
+                ).padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (dot != null) {
             Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(dot),
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(dot),
             )
         }
         Text(text = text, style = MaterialTheme.typography.labelLarge)
@@ -679,16 +738,20 @@ private fun ConfirmationFlags(
 
 /** Heading of one side of the confirmation flags, inside the group. */
 @Composable
-private fun FlagHeader(index: Int, text: String) {
+private fun FlagHeader(
+    index: Int,
+    text: String,
+) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(groupShape(index, FLAG_ROWS))
-            .background(groupItemColor)
-            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(groupShape(index, FLAG_ROWS))
+                .background(groupItemColor)
+                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 6.dp),
     )
 }
 
@@ -720,20 +783,25 @@ private fun FlagRow(
 
 /** Platform icon of a device in a tile with its status dot. */
 @Composable
-private fun DeviceTile(device: Local.Device, size: Dp) {
+private fun DeviceTile(
+    device: Local.Device,
+    size: Dp,
+) {
     val friends = device.role == Local.Role.ROLE_FRIENDS
     IconTile(
         icon = platformIcon(device.platform),
-        container = if (friends) {
-            MaterialTheme.colorScheme.tertiaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHighest
-        },
-        content = if (friends) {
-            MaterialTheme.colorScheme.onTertiaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
+        container =
+            if (friends) {
+                MaterialTheme.colorScheme.tertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            },
+        content =
+            if (friends) {
+                MaterialTheme.colorScheme.onTertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         size = size,
         badge = statusColor(device),
     )
@@ -741,13 +809,14 @@ private fun DeviceTile(device: Local.Device, size: Dp) {
 
 /** Online, offline, or not answering although it should. */
 @Composable
-private fun statusLabel(device: Local.Device): String = stringResource(
-    when {
-        device.online -> R.string.device_online
-        NetworkIssues.isUnreachable(device) -> R.string.devices_not_answering
-        else -> R.string.device_offline
-    },
-)
+private fun statusLabel(device: Local.Device): String =
+    stringResource(
+        when {
+            device.online -> R.string.device_online
+            NetworkIssues.isUnreachable(device) -> R.string.devices_not_answering
+            else -> R.string.device_offline
+        },
+    )
 
 /** Platform of a device, with the network path while it is online. */
 @Composable
@@ -761,24 +830,25 @@ private fun detailLabel(device: Local.Device): String {
 
 /** Color of the status dot: green online, red not answering, grey offline. */
 @Composable
-private fun statusColor(device: Local.Device): Color = when {
-    device.online -> if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
-    NetworkIssues.isUnreachable(device) -> MaterialTheme.colorScheme.error
-    else -> MaterialTheme.colorScheme.outline
-}
+private fun statusColor(device: Local.Device): Color =
+    when {
+        device.online -> if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
+        NetworkIssues.isUnreachable(device) -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.outline
+    }
 
 /** Icon of the operating system of a device. */
 @DrawableRes
-private fun platformIcon(platform: Local.Platform): Int = when (platform) {
-    Local.Platform.PLATFORM_MACOS -> R.drawable.ic_device_laptop
-    Local.Platform.PLATFORM_WINDOWS -> R.drawable.ic_device_desktop
-    Local.Platform.PLATFORM_ANDROID -> R.drawable.ic_device_phone
-    else -> R.drawable.ic_nav_devices
-}
+private fun platformIcon(platform: Local.Platform): Int =
+    when (platform) {
+        Local.Platform.PLATFORM_MACOS -> R.drawable.ic_device_laptop
+        Local.Platform.PLATFORM_WINDOWS -> R.drawable.ic_device_desktop
+        Local.Platform.PLATFORM_ANDROID -> R.drawable.ic_device_phone
+        else -> R.drawable.ic_nav_devices
+    }
 
 /** Name of a device, or the start of its ID when the name is empty. */
-private fun displayName(device: Local.Device): String =
-    device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) }
+private fun displayName(device: Local.Device): String = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) }
 
 /** Key of a device that survives a configuration change. */
 private fun keyOf(device: Local.Device): String = device.deviceId.ifEmpty { device.name }

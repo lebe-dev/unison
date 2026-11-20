@@ -62,4 +62,9 @@ type PeerState struct {
 	// UnreachableDetail lists the addresses of the last attempt and why each
 	// one failed, one per line, for the technical details of the UI.
 	UnreachableDetail string
+	// ProtocolVersion is the protocol version the peer announced at the last
+	// Hello.
+	ProtocolVersion uint32
+	// ProtocolKnown reports that the peer announced a protocol version.
+	ProtocolKnown bool
 }

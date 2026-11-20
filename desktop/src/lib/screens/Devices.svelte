@@ -9,7 +9,7 @@
   import NetworkIssue from "../NetworkIssue.svelte";
   import Spinner from "../Spinner.svelte";
   import { deviceNameKey } from "../platform";
-  import { unreachableDeviceIssue } from "../network";
+  import { deviceProtocolIssue, unreachableDeviceIssue } from "../network";
   import {
     formatDateTime,
     formatTime,
@@ -361,6 +361,13 @@
           {@const issue = unreachableDeviceIssue(device)}
           {#if issue}
             <NetworkIssue summary={issue.summary} hint={issue.hint} details={issue.details} />
+          {/if}
+        {/if}
+
+        {#if device.protocolNewer}
+          {@const protocolIssue = deviceProtocolIssue(device)}
+          {#if protocolIssue}
+            <NetworkIssue summary={protocolIssue.summary} hint={protocolIssue.hint} />
           {/if}
         {/if}
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.ui.SectionTitle
+import app.unison.ui.state.NetworkIssues
 import kotlinx.coroutines.delay
 import unison.local.v1.Local
 
@@ -67,14 +68,23 @@ fun RelaySection(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    if (NetworkIssues.isNewerProtocol(relay)) {
+        Text(
+            text = stringResource(R.string.relay_protocol_newer),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
 
     OutlinedTextField(
         value = url,
         onValueChange = { url = it },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .testTag("relay_url"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("relay_url"),
         label = { Text(text = stringResource(R.string.relay_url_label)) },
         singleLine = true,
     )
@@ -87,26 +97,29 @@ fun RelaySection(
     OutlinedTextField(
         value = token,
         onValueChange = { token = it },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .testTag("relay_token"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("relay_token"),
         label = { Text(text = stringResource(R.string.relay_token_label)) },
         visualTransformation = PasswordVisualTransformation(),
         singleLine = true,
     )
     Text(
-        text = stringResource(
-            if (tokenStored) R.string.relay_token_stored else R.string.relay_token_missing,
-        ),
+        text =
+            stringResource(
+                if (tokenStored) R.string.relay_token_stored else R.string.relay_token_missing,
+            ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -128,22 +141,24 @@ fun RelaySection(
     }
 
     when {
-        checking -> Text(
-            text = stringResource(R.string.relay_checking),
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        checking ->
+            Text(
+                text = stringResource(R.string.relay_checking),
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         check != null -> RelayCheckResult(check)
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(
             onClick = { onCheck(address, token.trim().takeIf { it.isNotEmpty() }) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-                .testTag("relay_check"),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .testTag("relay_check"),
             enabled = canSave && !checking,
         ) {
             Text(text = stringResource(R.string.relay_check))
@@ -191,10 +206,11 @@ private fun relayStateText(relay: Local.Relay?): String {
 @Composable
 private fun RelayCheckResult(check: Local.TestRelayResponse) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .testTag("relay_check_result"),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .testTag("relay_check_result"),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
@@ -208,7 +224,10 @@ private fun RelayCheckResult(check: Local.TestRelayResponse) {
 
 /** Outcome of the check of one transport, with the technical detail of a failure. */
 @Composable
-private fun RelayCheckRow(label: String, result: Local.RelayCheck) {
+private fun RelayCheckRow(
+    label: String,
+    result: Local.RelayCheck,
+) {
     Column {
         Text(
             text = label,
@@ -216,11 +235,12 @@ private fun RelayCheckRow(label: String, result: Local.RelayCheck) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = if (result.ok) {
-                stringResource(R.string.relay_check_ok, result.latencyMs)
-            } else {
-                stringResource(relayFailureText(result.failure))
-            },
+            text =
+                if (result.ok) {
+                    stringResource(R.string.relay_check_ok, result.latencyMs)
+                } else {
+                    stringResource(relayFailureText(result.failure))
+                },
             style = MaterialTheme.typography.bodyMedium,
             color = if (result.ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
         )
@@ -249,15 +269,16 @@ private fun relayCheckSummary(check: Local.TestRelayResponse): Int {
 
 /** Plain explanation of the reason a check failed. */
 @StringRes
-private fun relayFailureText(failure: Local.RelayCheckFailure): Int = when (failure) {
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_ADDRESS -> R.string.relay_fail_address
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT -> R.string.relay_fail_timeout
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_REFUSED -> R.string.relay_fail_refused
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_CERTIFICATE -> R.string.relay_fail_certificate
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NOT_RELAY -> R.string.relay_fail_not_relay
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_UNAVAILABLE -> R.string.relay_fail_unavailable
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_UNAUTHORIZED -> R.string.relay_fail_unauthorized
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_QUOTA_EXCEEDED -> R.string.relay_fail_quota
-    Local.RelayCheckFailure.RELAY_CHECK_FAILURE_DATAGRAMS_TOO_SMALL -> R.string.relay_fail_datagrams
-    else -> R.string.relay_fail_other
-}
+private fun relayFailureText(failure: Local.RelayCheckFailure): Int =
+    when (failure) {
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_ADDRESS -> R.string.relay_fail_address
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT -> R.string.relay_fail_timeout
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_REFUSED -> R.string.relay_fail_refused
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_CERTIFICATE -> R.string.relay_fail_certificate
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NOT_RELAY -> R.string.relay_fail_not_relay
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_UNAVAILABLE -> R.string.relay_fail_unavailable
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_UNAUTHORIZED -> R.string.relay_fail_unauthorized
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_QUOTA_EXCEEDED -> R.string.relay_fail_quota
+        Local.RelayCheckFailure.RELAY_CHECK_FAILURE_DATAGRAMS_TOO_SMALL -> R.string.relay_fail_datagrams
+        else -> R.string.relay_fail_other
+    }

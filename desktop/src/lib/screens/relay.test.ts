@@ -93,6 +93,29 @@ describe("relay settings", () => {
     expect(screen.getByPlaceholderText(/Stored on this device/)).toBeTruthy();
   });
 
+  it("warns about a relay that speaks a newer protocol", async () => {
+    getRelay.mockResolvedValue(
+      create(GetRelayResponseSchema, {
+        relay: create(RelaySchema, {
+          url: "relay.example.com:443",
+          protocolNewer: true,
+        }),
+      }),
+    );
+
+    render(RelaySection);
+
+    expect(await screen.findByText(/The relay speaks a newer protocol/)).toBeTruthy();
+  });
+
+  it("keeps a relay with an older protocol quiet", async () => {
+    render(RelaySection);
+
+    await screen.findByDisplayValue("relay.example.com:443");
+
+    expect(screen.queryByText(/speaks a newer protocol/)).toBeNull();
+  });
+
   it("stores the relay without sending an empty token", async () => {
     render(RelaySection);
 

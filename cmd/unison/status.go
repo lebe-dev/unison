@@ -33,16 +33,27 @@ func (a *app) status(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("read the status: %w", err)
 	}
-	if a.json {
-		return a.writeJSON(response.Msg)
+	status := response.Msg
+	var relay *localv1.Relay
+	if status.GetRunning() {
+		if reply, err := client.GetRelay(ctx, connect.NewRequest(&localv1.GetRelayRequest{})); err == nil {
+			relay = reply.Msg.GetRelay()
+		}
 	}
-	a.writeStatus(response.Msg)
-	if !response.Msg.GetRunning() {
+	if a.json {
+		if err := a.writeJSON(status); err != nil {
+			return err
+		}
+		a.writeDaemonProtocolNotice(status)
+		a.writeDeviceProtocolNotices(status.GetDevices())
+		a.writeRelayProtocolNotice(relay)
 		return nil
 	}
-	if relay, err := client.GetRelay(ctx, connect.NewRequest(&localv1.GetRelayRequest{})); err == nil {
-		a.writeRelayStatus(relay.Msg.GetRelay())
-	}
+	a.writeStatus(status)
+	a.writeRelayStatus(relay)
+	a.writeDaemonProtocolNotice(status)
+	a.writeDeviceProtocolNotices(status.GetDevices())
+	a.writeRelayProtocolNotice(relay)
 	return nil
 }
 

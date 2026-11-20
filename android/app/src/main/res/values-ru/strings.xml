@@ -179,6 +179,7 @@
     <string name="relay_state_connected">Подключено к ретранслятору.</string>
     <string name="relay_state_quic">Подключено к ретранслятору через QUIC.</string>
     <string name="relay_state_wss">Подключено к ретранслятору через WebSocket.</string>
+    <string name="relay_protocol_newer">Ретранслятор поддерживает более новый протокол, чем это приложение. Обновите Unison на этом устройстве.</string>
     <string name="relay_off">Отключить для группы</string>
     <string name="relay_saved">Ретранслятор сохранен и отправлен другим вашим устройствам</string>
     <string name="relay_save_failed">Не удалось сохранить ретранслятор</string>
@@ -309,6 +310,10 @@
     <string name="device_unreachable_summary">%1$s не отвечает.</string>
     <string name="device_unreachable_hint">Возможно, оно выключено. Если включено, проверьте, что оба устройства в одной сети и сеть не разделяет свои устройства.</string>
     <string name="device_unreachable_since">Не отвечает с %1$s.</string>
+    <string name="device_protocol_newer_summary">Устройство %1$s поддерживает более новый протокол, чем это приложение.</string>
+    <string name="device_protocol_newer_hint">Обновите Unison на этом устройстве, чтобы синхронизация с ним продолжилась.</string>
+    <string name="protocol_newer_notice">Другое устройство поддерживает более новый протокол. Обновите Unison на этом устройстве.</string>
+    <string name="protocol_older_notice">Другое устройство использует более старый протокол. Обновите Unison на том устройстве.</string>
     <string name="network_details_show">Подробности</string>
     <string name="network_details_hide">Скрыть подробности</string>
 

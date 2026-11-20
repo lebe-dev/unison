@@ -76,6 +76,8 @@ export const en = {
   "app.localNetworkHint": "Allow Unison in System Settings > Privacy & Security > Local Network.",
   "app.manualClipboardBanner":
     "Unison cannot read the clipboard of this desktop, so nothing is copied or applied automatically.",
+  "app.protocolNewerBanner":
+    "A device speaks a newer protocol than this app. Update Unison on this device to keep working with it.",
   "app.openSettings": "Open Settings",
   "app.activity": "Activity",
   "app.noEvents": "No events yet.",
@@ -214,6 +216,8 @@ export const en = {
   "network.deviceDoesNotAnswer": "{name} does not answer.",
   "network.deviceOffHint":
     "It may be turned off. If it is on, check that both devices are on the same network and that the network does not keep its devices apart.",
+  "network.deviceProtocolNewer": "{name} speaks a newer protocol than this app.",
+  "network.deviceProtocolNewerHint": "Update Unison on this device to connect to it.",
   "network.noAnnouncement": {
     one: "No pairing announcement arrived in {count} second.",
     other: "No pairing announcement arrived in {count} seconds.",
@@ -326,6 +330,8 @@ export const en = {
   "relay.stateQuic": "Connected to the relay over QUIC.",
   "relay.stateWss": "Connected to the relay over WebSocket.",
   "relay.stateConnected": "Connected to the relay.",
+  "relay.protocolNewer":
+    "The relay speaks a newer protocol than this app. Update Unison on this device to use it.",
   "relay.tokenStored": "An access token is stored on this device. Type a new one to replace it.",
   "relay.tokenHint": "The access token of the group relay.",
   "relay.loadFailed": "The relay settings could not be loaded.",

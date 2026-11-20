@@ -193,6 +193,7 @@ func localEventToProto(event node.Event) *localv1.Event {
 		Addr:            event.Addr,
 		Sas:             sasToProto(event.SAS),
 		ProtocolVersion: event.Version,
+		ProtocolNewer:   event.ProtocolNewer,
 		AtUnixMs:        unixMilli(event.At),
 		PairingMethod:   pairingMethodToProto(event.Method),
 	}

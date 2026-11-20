@@ -195,6 +195,9 @@
       {notice.text}
     </p>
   {/if}
+  {#if relay?.protocolNewer}
+    <p class="notice warn" role="alert">{t("relay.protocolNewer")}</p>
+  {/if}
   <div class="list">
     <div class="form-row">
       <span class="label">{stateText}</span>

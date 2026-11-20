@@ -1,10 +1,14 @@
 package session
 
-import "time"
+import (
+	"time"
+
+	"github.com/lebe-dev/unison/core/protocol"
+)
 
 // ProtocolVersion is the peer protocol version announced in Hello. A peer that
 // announces another version is asked to update.
-const ProtocolVersion uint32 = 1
+const ProtocolVersion = protocol.Version
 
 // Timing and resource limits. Every session applies them to its peer.
 const (

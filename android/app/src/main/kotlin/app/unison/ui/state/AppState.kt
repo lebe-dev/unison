@@ -11,7 +11,6 @@ import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
 import app.unison.pairing.PairingLink
 import app.unison.service.IncomingFiles
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,6 +33,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import unison.local.v1.Local
 import unison.mobile.v1.Mobile
+import kotlin.coroutines.cancellation.CancellationException
 
 /** State of the screens over the core and the changes they request. */
 class AppState(
@@ -64,10 +64,11 @@ class AppState(
     /** What the requests screen renders. */
     val requests: StateFlow<RequestsState> = mutableRequests.asStateFlow()
 
-    private val mutableNotices = MutableSharedFlow<Int>(
-        extraBufferCapacity = NOTICE_BUFFER,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private val mutableNotices =
+        MutableSharedFlow<Int>(
+            extraBufferCapacity = NOTICE_BUFFER,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     /** One-off messages for the snackbar, as string resources. */
     val notices: SharedFlow<Int> = mutableNotices.asSharedFlow()
@@ -113,6 +114,7 @@ class AppState(
                 if (event.isHeld()) {
                     rememberHeld(event.event)
                 }
+                onPeerCompatibilityEvent(event)
                 onPairingEvent(event)
             }
         }
@@ -129,46 +131,48 @@ class AppState(
     /** Reloads the status and the settings of the core. */
     fun refresh() {
         load?.cancel()
-        load = scope.launch {
-            mutableState.update { it.copy(loading = it.status == null, failure = null) }
-            try {
-                val status = core.status()
-                val settings = loadSettings()
-                val relay = loadRelay()
-                mutableState.update {
-                    it.copy(
-                        loading = false,
-                        status = status,
-                        settings = settings ?: it.settings,
-                        relay = relay ?: it.relay,
-                        failure = null,
-                    )
+        load =
+            scope.launch {
+                mutableState.update { it.copy(loading = it.status == null, failure = null) }
+                try {
+                    val status = core.status()
+                    val settings = loadSettings()
+                    val relay = loadRelay()
+                    mutableState.update {
+                        it.copy(
+                            loading = false,
+                            status = status,
+                            settings = settings ?: it.settings,
+                            relay = relay ?: it.relay,
+                            failure = null,
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    mutableState.update { it.copy(loading = false, failure = failureOf(e)) }
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                mutableState.update { it.copy(loading = false, failure = failureOf(e)) }
             }
-        }
     }
 
     /** Reloads the history with the current filters. */
     fun refreshHistory() {
         loadHistory?.cancel()
-        loadHistory = scope.launch {
-            mutableHistory.update { it.copy(loading = true, failure = null) }
-            try {
-                val filter = mutableHistory.value
-                val response = core.listHistory(filter.kind, filter.deviceId)
-                mutableHistory.update {
-                    it.copy(loading = false, loaded = true, items = response.itemsList, failure = null)
+        loadHistory =
+            scope.launch {
+                mutableHistory.update { it.copy(loading = true, failure = null) }
+                try {
+                    val filter = mutableHistory.value
+                    val response = core.listHistory(filter.kind, filter.deviceId)
+                    mutableHistory.update {
+                        it.copy(loading = false, loaded = true, items = response.itemsList, failure = null)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    mutableHistory.update { it.copy(loading = false, failure = failureOf(e)) }
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                mutableHistory.update { it.copy(loading = false, failure = failureOf(e)) }
             }
-        }
     }
 
     /** Shows entries of one kind only, KIND_UNSPECIFIED shows every kind. */
@@ -190,36 +194,39 @@ class AppState(
     }
 
     /** Writes an entry back to the clipboard. */
-    fun copyHistoryItem(itemId: String) = runHistoryAction(
-        itemId = itemId,
-        failure = R.string.history_copy_failed,
-    ) {
-        core.copyHistoryItem(itemId)
-        mutableNotices.tryEmit(R.string.history_copied)
-        refreshHistory()
-    }
+    fun copyHistoryItem(itemId: String) =
+        runHistoryAction(
+            itemId = itemId,
+            failure = R.string.history_copy_failed,
+        ) {
+            core.copyHistoryItem(itemId)
+            mutableNotices.tryEmit(R.string.history_copied)
+            refreshHistory()
+        }
 
     /** Saves the payloads of an entry into the Downloads collection. */
-    fun downloadHistoryItem(itemId: String) = runHistoryAction(
-        itemId = itemId,
-        failure = R.string.history_download_failed,
-    ) {
-        if (saver.save(itemId) <= 0) {
-            throw IllegalStateException("nothing was saved")
+    fun downloadHistoryItem(itemId: String) =
+        runHistoryAction(
+            itemId = itemId,
+            failure = R.string.history_download_failed,
+        ) {
+            if (saver.save(itemId) <= 0) {
+                throw IllegalStateException("nothing was saved")
+            }
+            mutableNotices.tryEmit(R.string.history_downloaded)
+            refreshHistory()
         }
-        mutableNotices.tryEmit(R.string.history_downloaded)
-        refreshHistory()
-    }
 
     /** Deletes an entry on every device. */
-    fun deleteHistoryItem(itemId: String) = runHistoryAction(
-        itemId = itemId,
-        failure = R.string.history_delete_failed,
-    ) {
-        core.deleteHistoryItem(itemId)
-        mutableNotices.tryEmit(R.string.history_deleted)
-        refreshHistory()
-    }
+    fun deleteHistoryItem(itemId: String) =
+        runHistoryAction(
+            itemId = itemId,
+            failure = R.string.history_delete_failed,
+        ) {
+            core.deleteHistoryItem(itemId)
+            mutableNotices.tryEmit(R.string.history_deleted)
+            refreshHistory()
+        }
 
     /** Deletes every entry on every device. */
     fun clearHistory() {
@@ -245,15 +252,16 @@ class AppState(
     }
 
     /** Writes an entry that waited for a confirmation to the clipboard. */
-    fun applyHistoryItem(itemId: String) = runHistoryAction(
-        itemId = itemId,
-        failure = R.string.history_apply_failed,
-    ) {
-        core.applyHistoryItem(itemId)
-        held.remove(itemId)
-        mutableNotices.tryEmit(R.string.history_applied)
-        refreshHistory()
-    }
+    fun applyHistoryItem(itemId: String) =
+        runHistoryAction(
+            itemId = itemId,
+            failure = R.string.history_apply_failed,
+        ) {
+            core.applyHistoryItem(itemId)
+            held.remove(itemId)
+            mutableNotices.tryEmit(R.string.history_applied)
+            refreshHistory()
+        }
 
     /** Changes the pause of the clipboard synchronization. */
     fun setPause(request: PauseRequest) {
@@ -276,7 +284,10 @@ class AppState(
     }
 
     /** Accepts or declines one offer of a Friends device. */
-    fun decideRequest(id: String, accept: Boolean) {
+    fun decideRequest(
+        id: String,
+        accept: Boolean,
+    ) {
         if (id.isEmpty() || id in mutableRequests.value.answering) {
             return
         }
@@ -326,8 +337,9 @@ class AppState(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val offline = side == Local.ConfirmationSide.CONFIRMATION_SIDE_PEER &&
-                    (e as? CoreException)?.isUnavailable == true
+                val offline =
+                    side == Local.ConfirmationSide.CONFIRMATION_SIDE_PEER &&
+                        (e as? CoreException)?.isUnavailable == true
                 mutableNotices.tryEmit(
                     if (offline) R.string.devices_confirmation_offline else R.string.devices_confirmation_failed,
                 )
@@ -336,7 +348,10 @@ class AppState(
     }
 
     /** Allows a paired device to change the confirmation flags of this device remotely. */
-    fun setDeviceRemoteSettings(deviceId: String, allow: Boolean) {
+    fun setDeviceRemoteSettings(
+        deviceId: String,
+        allow: Boolean,
+    ) {
         if (deviceId.isEmpty()) {
             return
         }
@@ -376,7 +391,10 @@ class AppState(
     }
 
     /** Renames a paired device; the name stays on this device. */
-    fun renameDevice(deviceId: String, name: String) {
+    fun renameDevice(
+        deviceId: String,
+        name: String,
+    ) {
         val trimmed = name.trim()
         if (deviceId.isEmpty() || trimmed.isEmpty()) {
             return
@@ -414,7 +432,10 @@ class AppState(
 
     /** Leaves the group: the other devices stop syncing with this one. */
     fun leaveGroup() {
-        val own = mutableState.value.status?.deviceId.orEmpty()
+        val own =
+            mutableState.value.status
+                ?.deviceId
+                .orEmpty()
         if (own.isEmpty()) {
             return
         }
@@ -447,7 +468,11 @@ class AppState(
     }
 
     /** Stores the relay address and token of the group. */
-    fun setRelay(url: String, token: String?, filesOnRequest: Boolean?) {
+    fun setRelay(
+        url: String,
+        token: String?,
+        filesOnRequest: Boolean?,
+    ) {
         scope.launch {
             try {
                 val relay = core.setRelay(url.trim(), token?.trim()?.takeIf { it.isNotEmpty() }, filesOnRequest)
@@ -477,7 +502,10 @@ class AppState(
     }
 
     /** Checks that the relay accepts this device, without storing the settings. */
-    fun testRelay(url: String, token: String?) {
+    fun testRelay(
+        url: String,
+        token: String?,
+    ) {
         mutableState.update { it.copy(relayChecking = true, relayCheck = null) }
         scope.launch {
             try {
@@ -494,7 +522,10 @@ class AppState(
     }
 
     /** Makes this device ask before it takes the content of [scope] from any device. */
-    fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean) {
+    fun setSelfConfirmation(
+        scope: Local.ConfirmationScope,
+        require: Boolean,
+    ) {
         this.scope.launch {
             try {
                 val settings = core.setSelfConfirmation(scope, require)
@@ -723,11 +754,12 @@ class AppState(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val failure = if (e is CoreException && e.isInvalidArgument) {
-                    R.string.pairing_code_invalid
-                } else {
-                    R.string.pairing_scan_failed
-                }
+                val failure =
+                    if (e is CoreException && e.isInvalidArgument) {
+                        R.string.pairing_code_invalid
+                    } else {
+                        R.string.pairing_scan_failed
+                    }
                 mutablePairing.update { it.copy(scanning = false, failure = failure) }
             }
         }
@@ -768,7 +800,11 @@ class AppState(
     }
 
     /** Runs one action on an entry and marks it as busy meanwhile. */
-    private fun runHistoryAction(itemId: String, @StringRes failure: Int, action: suspend () -> Unit) {
+    private fun runHistoryAction(
+        itemId: String,
+        @StringRes failure: Int,
+        action: suspend () -> Unit,
+    ) {
         if (itemId.isEmpty() || itemId in mutableHistory.value.busy) {
             return
         }
@@ -801,27 +837,32 @@ class AppState(
     }
 
     /** Reads the settings of the core, null when they are not available. */
-    private suspend fun loadSettings(): Local.Settings? = try {
-        core.settings()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        null
-    }
+    private suspend fun loadSettings(): Local.Settings? =
+        try {
+            core.settings()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
 
-    private suspend fun loadRelay(): Local.Relay? = try {
-        core.relay()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        null
-    }
+    private suspend fun loadRelay(): Local.Relay? =
+        try {
+            core.relay()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
 
     private fun failureOf(e: Exception): CoreFailure =
         if (e is CoreException && e.isNotRunning) CoreFailure.STOPPED else CoreFailure.UNAVAILABLE
 
     /** Stores an open window and follows its deadline. */
-    private fun applyWindow(window: Local.PairingWindow, role: Local.Role) {
+    private fun applyWindow(
+        window: Local.PairingWindow,
+        role: Local.Role,
+    ) {
         if (!window.open) {
             closePairingState()
             return
@@ -832,18 +873,19 @@ class AppState(
     }
 
     /** Replaces a window that was left open by an earlier session of the app. */
-    private suspend fun replaceOpenWindow(): Boolean = try {
-        core.closePairingWindow()
-        val role = mutablePairing.value.role
-        applyWindow(core.openPairingWindow(role), role)
-        loadPairingQr()
-        loadPairingCandidates()
-        true
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        false
-    }
+    private suspend fun replaceOpenWindow(): Boolean =
+        try {
+            core.closePairingWindow()
+            val role = mutablePairing.value.role
+            applyWindow(core.openPairingWindow(role), role)
+            loadPairingQr()
+            loadPairingCandidates()
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
+        }
 
     /** Reloads the code of the open window. */
     private suspend fun loadPairingQr() {
@@ -871,11 +913,12 @@ class AppState(
         }
         loadingCandidates = true
         try {
-            val candidates = withoutOwnService(
-                candidates = core.pairingCandidates(),
-                windowAddr = window.addr,
-                ipv4 = localAddresses(),
-            )
+            val candidates =
+                withoutOwnService(
+                    candidates = core.pairingCandidates(),
+                    windowAddr = window.addr,
+                    ipv4 = localAddresses(),
+                )
             mutablePairing.update { it.copy(candidates = candidates) }
         } catch (e: CancellationException) {
             throw e
@@ -891,12 +934,13 @@ class AppState(
         if (pollCandidates != null) {
             return
         }
-        pollCandidates = scope.launch {
-            while (isActive) {
-                delay(CANDIDATE_POLL_MS)
-                loadPairingCandidates()
+        pollCandidates =
+            scope.launch {
+                while (isActive) {
+                    delay(CANDIDATE_POLL_MS)
+                    loadPairingCandidates()
+                }
             }
-        }
     }
 
     /** Stops the candidate poll. */
@@ -912,13 +956,14 @@ class AppState(
         if (expiresAtUnixMs <= 0) {
             return
         }
-        closeWindow = scope.launch {
-            delay((expiresAtUnixMs - System.currentTimeMillis()).coerceAtLeast(0) + CLOSE_MARGIN_MS)
-            val window = mutablePairing.value.window ?: return@launch
-            if (window.expiresAtUnixMs <= System.currentTimeMillis()) {
-                closePairingState()
+        closeWindow =
+            scope.launch {
+                delay((expiresAtUnixMs - System.currentTimeMillis()).coerceAtLeast(0) + CLOSE_MARGIN_MS)
+                val window = mutablePairing.value.window ?: return@launch
+                if (window.expiresAtUnixMs <= System.currentTimeMillis()) {
+                    closePairingState()
+                }
             }
-        }
     }
 
     /** Drops the window, its code and the exchanges in it. */
@@ -938,6 +983,20 @@ class AppState(
         }
     }
 
+    /** Tells the user about a peer that speaks another protocol version. */
+    private fun onPeerCompatibilityEvent(event: Mobile.Event) {
+        if (!event.hasEvent() || event.event.kind != Local.EventKind.EVENT_KIND_PEER_INCOMPATIBLE) {
+            return
+        }
+        mutableNotices.tryEmit(
+            if (event.event.protocolNewer) {
+                R.string.protocol_newer_notice
+            } else {
+                R.string.protocol_older_notice
+            },
+        )
+    }
+
     /** Follows the pairing events of the core. */
     private fun onPairingEvent(event: Mobile.Event) {
         if (!event.hasEvent()) {
@@ -950,22 +1009,24 @@ class AppState(
                     refreshPairingCandidates()
                 }
             }
-            Local.EventKind.EVENT_KIND_PAIRING_REQUEST -> mutablePairing.update {
-                it.copy(
-                    request = PairingRequest(
-                        deviceId = payload.deviceId,
-                        name = payload.name,
-                        role = payload.role,
-                        platform = payload.platform,
-                        sas = if (payload.hasSas()) payload.sas else null,
-                        method = payload.pairingMethod,
-                    ),
-                    dialing = "",
-                    scanning = false,
-                    result = null,
-                    failure = null,
-                )
-            }
+            Local.EventKind.EVENT_KIND_PAIRING_REQUEST ->
+                mutablePairing.update {
+                    it.copy(
+                        request =
+                            PairingRequest(
+                                deviceId = payload.deviceId,
+                                name = payload.name,
+                                role = payload.role,
+                                platform = payload.platform,
+                                sas = if (payload.hasSas()) payload.sas else null,
+                                method = payload.pairingMethod,
+                            ),
+                        dialing = "",
+                        scanning = false,
+                        result = null,
+                        failure = null,
+                    )
+                }
             Local.EventKind.EVENT_KIND_PAIRING_PAIRED -> {
                 mutablePairing.update {
                     it.copy(
@@ -982,18 +1043,20 @@ class AppState(
                     loadPairingCandidates()
                 }
             }
-            Local.EventKind.EVENT_KIND_PAIRING_FAILED -> mutablePairing.update {
-                it.copy(
-                    request = null,
-                    dialing = "",
-                    scanning = false,
-                    result = PairingResult(
-                        paired = false,
-                        error = payload.error,
-                        unreachable = payload.failureReason == Local.FailureReason.FAILURE_REASON_UNREACHABLE,
-                    ),
-                )
-            }
+            Local.EventKind.EVENT_KIND_PAIRING_FAILED ->
+                mutablePairing.update {
+                    it.copy(
+                        request = null,
+                        dialing = "",
+                        scanning = false,
+                        result =
+                            PairingResult(
+                                paired = false,
+                                error = payload.error,
+                                unreachable = payload.failureReason == Local.FailureReason.FAILURE_REASON_UNREACHABLE,
+                            ),
+                    )
+                }
             Local.EventKind.EVENT_KIND_PAIRING_CLOSED -> closePairingState()
             else -> Unit
         }
@@ -1005,24 +1068,33 @@ class AppState(
         if (item.id.isEmpty()) {
             return
         }
-        val device = event.name.ifEmpty {
-            mutableState.value.status?.devicesList?.firstOrNull { it.deviceId == event.deviceId }?.name.orEmpty()
-        }
+        val device =
+            event.name.ifEmpty {
+                mutableState.value.status
+                    ?.devicesList
+                    ?.firstOrNull { it.deviceId == event.deviceId }
+                    ?.name
+                    .orEmpty()
+            }
         heldPrompts.update { it + (item.id to PendingPrompt.clipboard(item, device)) }
         held.add(item.id)
     }
 
     /** Events that change the list of devices in the status. */
-    private fun Mobile.Event.changesDevices(): Boolean = when (type) {
-        Mobile.EventType.EVENT_TYPE_PEER_ONLINE,
-        Mobile.EventType.EVENT_TYPE_PEER_OFFLINE,
-        Mobile.EventType.EVENT_TYPE_PAIRING_PAIRED,
-        -> true
-        else -> hasEvent() && (
-            event.kind == Local.EventKind.EVENT_KIND_DEVICE_UPDATED ||
-                event.kind == Local.EventKind.EVENT_KIND_PEER_UNREACHABLE
-            )
-    }
+    private fun Mobile.Event.changesDevices(): Boolean =
+        when (type) {
+            Mobile.EventType.EVENT_TYPE_PEER_ONLINE,
+            Mobile.EventType.EVENT_TYPE_PEER_OFFLINE,
+            Mobile.EventType.EVENT_TYPE_PAIRING_PAIRED,
+            -> true
+            else ->
+                hasEvent() &&
+                    (
+                        event.kind == Local.EventKind.EVENT_KIND_DEVICE_UPDATED ||
+                            event.kind == Local.EventKind.EVENT_KIND_PEER_UNREACHABLE ||
+                            event.kind == Local.EventKind.EVENT_KIND_PEER_INCOMPATIBLE
+                    )
+        }
 
     /** Events that change the entries of the history. */
     private fun Mobile.Event.changesHistory(): Boolean {
@@ -1040,14 +1112,14 @@ class AppState(
     }
 
     /** Events of the file transfers, new offers arrive with them. */
+
     /** A new offer or a change of a listed one; the progress of a transfer is not. */
     private fun Mobile.Event.changesRequests(): Boolean =
         hasEvent() &&
             IncomingFiles.changesRequests(event, mutableRequests.value.requests.mapTo(HashSet()) { it.id })
 
     /** Events of an item that waits for the user to apply it. */
-    private fun Mobile.Event.isHeld(): Boolean =
-        hasEvent() && event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY
+    private fun Mobile.Event.isHeld(): Boolean = hasEvent() && event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY
 
     private companion object {
         const val NOTICE_BUFFER = 4

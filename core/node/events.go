@@ -126,6 +126,9 @@ type Event struct {
 	// Version is the protocol version of the peer, set on
 	// EventPeerIncompatible.
 	Version uint32
+	// ProtocolNewer reports that the peer of EventPeerIncompatible speaks a
+	// newer protocol version, so this device needs an update.
+	ProtocolNewer bool
 	// Transfer is the file transfer, set on EventTransfer.
 	Transfer share.Transfer
 	// Err reports a failure.

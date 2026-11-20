@@ -2,8 +2,10 @@ package relay
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/quic-go/quic-go"
 
+	"github.com/lebe-dev/unison/core/protocol"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
 
@@ -207,6 +210,113 @@ func TestShutdown(t *testing.T) {
 	client.expectClosed()
 	if err := server.Close(); err != nil {
 		t.Fatalf("second close: %v", err)
+	}
+}
+
+// TestRegisterWithoutProtocolVersion accepts a client that predates the version
+// field, which reads as version 1.
+func TestRegisterWithoutProtocolVersion(t *testing.T) {
+	server := startServer(t, testConfig(t))
+	box := newMailboxID("old client")
+
+	for name, client := range map[string]*testClient{
+		"quic": dialQUIC(t, server, testToken, box),
+		"ws":   dialWS(t, server, testToken, box),
+	} {
+		client.expectStatus(relayv1.RelayStatus_RELAY_STATUS_OK)
+		if got := client.reply.GetProtocolVersion(); got != protocol.Version {
+			t.Errorf("%s: relay answered protocol %d, want %d", name, got, protocol.Version)
+		}
+	}
+}
+
+// TestRegisterWithNewerProtocolVersion accepts a client of a newer protocol and
+// answers with the version of the relay.
+func TestRegisterWithNewerProtocolVersion(t *testing.T) {
+	server := startServer(t, testConfig(t))
+	box := newMailboxID("new client")
+
+	conn := dialRawQUIC(t, server, &quic.Config{EnableDatagrams: true})
+	reply := registerStream(t, conn, &relayv1.Frame{Body: &relayv1.Frame_Register{
+		Register: &relayv1.Register{
+			Token:           []byte(testToken),
+			MailboxIds:      wireMailboxes([]mailboxID{box}),
+			ProtocolVersion: protocol.Version + 1,
+		},
+	}})
+	if got := reply.GetStatus(); got != relayv1.RelayStatus_RELAY_STATUS_OK {
+		t.Fatalf("registration status: got %v, want ok", got)
+	}
+	if got := reply.GetProtocolVersion(); got != protocol.Version {
+		t.Fatalf("relay answered protocol %d, want %d", got, protocol.Version)
+	}
+}
+
+// TestRegisterLogsANewerClient checks the warning about a client of a newer
+// protocol version.
+func TestRegisterLogsANewerClient(t *testing.T) {
+	cfg := testConfig(t)
+	logs := newMessageLog()
+	cfg.Logger = slog.New(logs)
+	server := startServer(t, cfg)
+	box := newMailboxID("new client")
+
+	conn := dialRawQUIC(t, server, &quic.Config{EnableDatagrams: true})
+	reply := registerStream(t, conn, &relayv1.Frame{Body: &relayv1.Frame_Register{
+		Register: &relayv1.Register{
+			Token:           []byte(testToken),
+			MailboxIds:      wireMailboxes([]mailboxID{box}),
+			ProtocolVersion: protocol.Version + 1,
+		},
+	}})
+	if got := reply.GetStatus(); got != relayv1.RelayStatus_RELAY_STATUS_OK {
+		t.Fatalf("registration status: got %v, want ok", got)
+	}
+	logs.expect(t, "client runs a newer protocol version")
+}
+
+// messageLog collects the messages of a logger and never blocks the caller.
+type messageLog struct {
+	messages chan string
+}
+
+// newMessageLog returns a handler that keeps the messages of a logger.
+func newMessageLog() *messageLog {
+	return &messageLog{messages: make(chan string, 16)}
+}
+
+// Enabled accepts every level.
+func (m *messageLog) Enabled(context.Context, slog.Level) bool { return true }
+
+// Handle keeps one message.
+func (m *messageLog) Handle(_ context.Context, record slog.Record) error {
+	select {
+	case m.messages <- record.Message:
+	default:
+	}
+	return nil
+}
+
+// WithAttrs returns the handler, which ignores attributes.
+func (m *messageLog) WithAttrs([]slog.Attr) slog.Handler { return m }
+
+// WithGroup returns the handler, which ignores groups.
+func (m *messageLog) WithGroup(string) slog.Handler { return m }
+
+// expect waits for one logged message.
+func (m *messageLog) expect(t *testing.T, want string) {
+	t.Helper()
+
+	deadline := time.After(testTimeout)
+	for {
+		select {
+		case got := <-m.messages:
+			if got == want {
+				return
+			}
+		case <-deadline:
+			t.Fatalf("no log message %q", want)
+		}
 	}
 }
 

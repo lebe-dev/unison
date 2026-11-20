@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/protocol"
 	"github.com/lebe-dev/unison/internal/observability"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
@@ -53,8 +54,8 @@ const defaultMailboxLimit = 8
 // carrier is one connection to the relay: the QUIC datagram transport or the
 // WebSocket fallback.
 type carrier interface {
-	// register sends the registration and returns the limits of the relay.
-	register(ctx context.Context, token string, ids []ID) (Limits, error)
+	// register sends the registration and returns the answer of the relay.
+	register(ctx context.Context, token string, ids []ID) (registration, error)
 	// send transmits one frame without waiting for the network.
 	send(frame []byte) error
 	// receive hands every received frame to fn until the connection ends.
@@ -496,12 +497,13 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	if err != nil {
 		return false, err
 	}
-	limits, err := conn.register(ctx, d.cfg.Token, ids)
+	reg, err := conn.register(ctx, d.cfg.Token, ids)
 	if err != nil {
 		_ = conn.close()
 		d.fail(err)
 		return false, err
 	}
+	limits := reg.Limits
 
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -520,7 +522,7 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 	d.updates = limits.Updates
 	d.answers = make(chan *relayv1.UpdateResult, 4)
 	d.lastErr = nil
-	d.status = Status{Connected: true, Transport: conn.transport(), Limits: limits}
+	d.status = statusOf(conn.transport(), reg)
 	d.cancelConn = cancel
 	d.notifyLocked()
 	d.mu.Unlock()
@@ -545,7 +547,9 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 		"mailboxes", len(ids),
 		"max_datagram_bytes", limits.MaxDatagramBytes,
 		"packet_size", limits.PacketSize(),
+		"protocol_version", reg.ProtocolVersion,
 	)
+	d.logProtocol(conn.transport(), reg.ProtocolVersion)
 
 	err = conn.receive(runCtx, d.dispatch)
 
@@ -576,6 +580,25 @@ func (d *Dialer) connect(ctx context.Context, ids []ID, byID map[ID]*Conn, rev u
 		return true, errRollover
 	default:
 		return true, err
+	}
+}
+
+// logProtocol reports a relay whose protocol version differs from the one of
+// this client. Both sides keep working, the message tells which one is behind.
+func (d *Dialer) logProtocol(transport Transport, version uint32) {
+	switch protocol.Compare(version) {
+	case protocol.PeerNewer:
+		d.log.Warn("relay runs a newer protocol version, this client needs an update",
+			"transport", transport,
+			"relay_protocol_version", version,
+			"client_protocol_version", protocol.Version,
+		)
+	case protocol.PeerOlder:
+		d.log.Debug("relay runs an older protocol version",
+			"transport", transport,
+			"relay_protocol_version", version,
+			"client_protocol_version", protocol.Version,
+		)
 	}
 }
 

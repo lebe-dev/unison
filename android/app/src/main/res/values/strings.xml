@@ -177,6 +177,7 @@
     <string name="relay_state_connected">Connected to the relay.</string>
     <string name="relay_state_quic">Connected to the relay over QUIC.</string>
     <string name="relay_state_wss">Connected to the relay over WebSocket.</string>
+    <string name="relay_protocol_newer">The relay speaks a newer protocol than this app. Update Unison on this device.</string>
     <string name="relay_off">Turn off for the group</string>
     <string name="relay_saved">Relay saved and sent to your other devices</string>
     <string name="relay_save_failed">Cannot save the relay</string>
@@ -306,6 +307,10 @@
     <string name="device_unreachable_summary">%1$s does not answer.</string>
     <string name="device_unreachable_hint">It may be turned off. If it is on, check that both devices are on the same network and that the network does not keep its devices apart.</string>
     <string name="device_unreachable_since">Not answering since %1$s.</string>
+    <string name="device_protocol_newer_summary">%1$s speaks a newer protocol than this app.</string>
+    <string name="device_protocol_newer_hint">Update Unison on this device to keep syncing with it.</string>
+    <string name="protocol_newer_notice">Another device speaks a newer protocol. Update Unison on this device.</string>
+    <string name="protocol_older_notice">The other device runs an older protocol. Update Unison on that device.</string>
     <string name="network_details_show">Details</string>
     <string name="network_details_hide">Hide details</string>
 

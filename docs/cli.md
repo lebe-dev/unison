@@ -50,6 +50,10 @@ pause switch: `off` while the clipboard is synchronized, `on` while it is paused
 turned off and `until HH:MM` while it is paused for a while, `friends` appears while the search for Friends devices runs, and `relay` appears when
 the group uses a relay.
 
+When another device, the relay or the daemon speaks a newer protocol version than this command, it
+prints one line saying that this client has to be updated. `devices` and `relay` print the same
+notice. With `--json` the notices go to stderr, so stdout keeps carrying only JSON.
+
 ## devices
 
 ```sh

@@ -148,13 +148,13 @@ func (d *Dialer) probe(ctx context.Context, transport Transport, dial func(conte
 	}
 	defer func() { _ = conn.close() }()
 
-	limits, err := conn.register(ctx, d.cfg.Token, []ID{id})
+	reg, err := conn.register(ctx, d.cfg.Token, []ID{id})
 	if err != nil {
 		return out.failed(err)
 	}
 	out.Latency = time.Since(start)
-	out.Limits = limits
-	if limits.PacketSize() == 0 {
+	out.Limits = reg.Limits
+	if reg.Limits.PacketSize() == 0 {
 		return out.failed(ErrDatagramTooSmall)
 	}
 	return out

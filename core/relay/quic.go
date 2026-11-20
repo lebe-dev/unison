@@ -56,32 +56,32 @@ func (d *Dialer) dialQUIC(ctx context.Context) (carrier, error) {
 	return &quicCarrier{conn: conn, timeout: registerTimeout}, nil
 }
 
-// register joins the mailboxes and reads the limits of the relay.
-func (c *quicCarrier) register(ctx context.Context, token string, ids []ID) (Limits, error) {
+// register joins the mailboxes and reads the answer of the relay.
+func (c *quicCarrier) register(ctx context.Context, token string, ids []ID) (registration, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
 	stream, err := c.conn.OpenStreamSync(ctx)
 	if err != nil {
-		return Limits{}, fmt.Errorf("relay: open registration stream: %w", err)
+		return registration{}, fmt.Errorf("relay: open registration stream: %w", err)
 	}
 	if deadline, ok := ctx.Deadline(); ok {
 		if err := stream.SetDeadline(deadline); err != nil {
-			return Limits{}, err
+			return registration{}, err
 		}
 	}
 
 	data, err := marshalFrame(registerFrame(token, ids))
 	if err != nil {
-		return Limits{}, err
+		return registration{}, err
 	}
 	if err := writeStreamFrame(stream, data); err != nil {
-		return Limits{}, fmt.Errorf("relay: write registration: %w", err)
+		return registration{}, fmt.Errorf("relay: write registration: %w", err)
 	}
 
 	frame, err := readStreamFrame(bufio.NewReaderSize(stream, streamBufferSize), maxRegisterBytes)
 	if err != nil {
-		return Limits{}, fmt.Errorf("relay: read registration: %w", err)
+		return registration{}, fmt.Errorf("relay: read registration: %w", err)
 	}
 	// The relay closes a refused connection only after the client closes the
 	// stream, otherwise the answer is lost.
@@ -89,9 +89,9 @@ func (c *quicCarrier) register(ctx context.Context, token string, ids []ID) (Lim
 
 	result := frame.GetRegisterResult()
 	if result == nil {
-		return Limits{}, fmt.Errorf("%w: unexpected answer", errMalformedFrame)
+		return registration{}, fmt.Errorf("%w: unexpected answer", errMalformedFrame)
 	}
-	return limitsOf(result)
+	return registrationOf(result)
 }
 
 // send transmits one frame as a QUIC datagram.

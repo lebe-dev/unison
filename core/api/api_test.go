@@ -10,6 +10,7 @@ import (
 	"github.com/lebe-dev/unison/core/api"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports/fake"
+	"github.com/lebe-dev/unison/core/protocol"
 	"github.com/lebe-dev/unison/core/transport/vnet"
 	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
@@ -30,6 +31,9 @@ func TestGetStatus(t *testing.T) {
 	status := response.Msg
 	if status.GetVersion() != "1.2.3" {
 		t.Errorf("version is %q, want %q", status.GetVersion(), "1.2.3")
+	}
+	if status.GetProtocolVersion() != protocol.Version {
+		t.Errorf("protocol version is %d, want %d", status.GetProtocolVersion(), protocol.Version)
 	}
 	if status.GetDeviceId() != n.DeviceID().String() {
 		t.Errorf("device id is %q, want %q", status.GetDeviceId(), n.DeviceID().String())

@@ -47,9 +47,14 @@ func (a *app) relayStatus(ctx context.Context, args []string) error {
 		return fmt.Errorf("read the relay settings: %w", err)
 	}
 	if a.json {
-		return a.writeJSON(response.Msg)
+		if err := a.writeJSON(response.Msg); err != nil {
+			return err
+		}
+		a.writeRelayProtocolNotice(response.Msg.GetRelay())
+		return nil
 	}
 	a.writeRelay(response.Msg.GetRelay())
+	a.writeRelayProtocolNotice(response.Msg.GetRelay())
 	return nil
 }
 

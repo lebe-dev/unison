@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { GetStatusResponseSchema } from "./api/gen/unison/local/v1/local_pb";
+import {
+  DeviceSchema,
+  EventKind,
+  EventSchema,
+  GetStatusResponseSchema,
+} from "./api/gen/unison/local/v1/local_pb";
 import { client } from "./api/client";
 import { daemon } from "./daemon.svelte";
 import { daemonStatus, installDaemon } from "./daemonStatus";
@@ -49,6 +54,7 @@ describe("daemon store", () => {
     daemon.startup = { state: "offline", reason: null, install: "off" };
     daemon.installing = false;
     daemon.installError = null;
+    daemon.peerIncompatible = null;
   });
 
   afterEach(() => {
@@ -71,6 +77,40 @@ describe("daemon store", () => {
     readStatus.mockResolvedValue({ state: "offline", reason: null, install: "off" });
     await daemon.refresh();
     expect(daemon.localNetworkBlocked).toBe(false);
+  });
+
+  it("reports a paired device that speaks a newer protocol", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      devices: [create(DeviceSchema, { deviceId: "device-1", protocolNewer: true })],
+    });
+
+    expect(daemon.newerProtocolDevices).toHaveLength(1);
+    expect(daemon.protocolUpdateNeeded).toBe(true);
+  });
+
+  it("reports the latest event of an incompatible peer", () => {
+    daemon.peerIncompatible = create(EventSchema, {
+      kind: EventKind.PEER_INCOMPATIBLE,
+      protocolNewer: true,
+    });
+    expect(daemon.protocolUpdateNeeded).toBe(true);
+
+    daemon.peerIncompatible = create(EventSchema, {
+      kind: EventKind.PEER_INCOMPATIBLE,
+      protocolNewer: false,
+    });
+    expect(daemon.protocolUpdateNeeded).toBe(false);
+  });
+
+  it("ignores a peer that speaks an older protocol", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      devices: [create(DeviceSchema, { deviceId: "device-1", protocolVersion: 0 })],
+    });
+
+    expect(daemon.newerProtocolDevices).toHaveLength(0);
+    expect(daemon.protocolUpdateNeeded).toBe(false);
   });
 
   it("keeps the reason of a failed start while the daemon is offline", async () => {

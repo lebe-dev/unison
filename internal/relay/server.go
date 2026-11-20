@@ -15,6 +15,7 @@ import (
 
 	"github.com/quic-go/quic-go"
 
+	"github.com/lebe-dev/unison/core/protocol"
 	"github.com/lebe-dev/unison/internal/observability"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
@@ -130,6 +131,7 @@ func (s *Server) Start() error {
 	addrs := s.Addrs()
 	s.log.Info("relay started",
 		"version", s.cfg.Version,
+		"protocol_version", protocol.Version,
 		"quic", addrs.QUIC,
 		"ws", addrs.WS,
 		"http", addrs.HTTP,
@@ -248,6 +250,9 @@ func (s *Server) limits() *relayv1.Limits {
 // outcome.
 func (s *Server) register(p *peer, reg *relayv1.Register) relayv1.RelayStatus {
 	status := s.authenticate(p, reg)
+	if status == relayv1.RelayStatus_RELAY_STATUS_OK {
+		s.checkProtocol(p, reg.GetProtocolVersion())
+	}
 	s.metrics.registration(status)
 	mailboxes := len(reg.GetMailboxIds())
 	if status == relayv1.RelayStatus_RELAY_STATUS_OK {
@@ -265,6 +270,38 @@ func (s *Server) register(p *peer, reg *relayv1.Register) relayv1.RelayStatus {
 		"mailboxes", mailboxes,
 	)
 	return status
+}
+
+// checkProtocol compares the protocol version of a client with the one of the
+// relay. The versions are additive, so a mismatch never refuses a registration.
+func (s *Server) checkProtocol(p *peer, version uint32) {
+	version = protocolVersionOf(version)
+	switch protocol.Compare(version) {
+	case protocol.PeerNewer:
+		s.log.Warn("client runs a newer protocol version",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"client_protocol_version", version,
+			"protocol_version", protocol.Version,
+		)
+	case protocol.PeerOlder:
+		s.log.Debug("client runs an older protocol version",
+			"conn", p.id,
+			"transport", transportLabels[p.transport],
+			"client_protocol_version", version,
+			"protocol_version", protocol.Version,
+		)
+	}
+}
+
+// protocolVersionOf reads the protocol version of a client. An unset field
+// comes from a client that predates it and reads as the first protocol
+// version.
+func protocolVersionOf(version uint32) uint32 {
+	if version == 0 {
+		return unsetProtocolVersion
+	}
+	return version
 }
 
 // authenticate checks the token and the mailboxes of a registration.

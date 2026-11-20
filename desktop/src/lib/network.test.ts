@@ -6,7 +6,12 @@ import {
   EventSchema,
   FailureReason,
 } from "./api/gen/unison/local/v1/local_pb";
-import { pairingFailure, quietWindowIssue, unreachableDeviceIssue } from "./network";
+import {
+  deviceProtocolIssue,
+  pairingFailure,
+  quietWindowIssue,
+  unreachableDeviceIssue,
+} from "./network";
 
 describe("pairingFailure", () => {
   it("explains an unreachable device in plain words and keeps the error as details", () => {
@@ -31,6 +36,23 @@ describe("pairingFailure", () => {
 
     expect(result.message).toBe("pairing rejected");
     expect(result.details).toBeUndefined();
+  });
+});
+
+describe("deviceProtocolIssue", () => {
+  it("is absent for a device that speaks this protocol or an older one", () => {
+    expect(deviceProtocolIssue(create(DeviceSchema, { name: "Pixel" }))).toBeNull();
+    expect(
+      deviceProtocolIssue(create(DeviceSchema, { name: "Pixel", protocolVersion: 1 })),
+    ).toBeNull();
+  });
+
+  it("names a device that speaks a newer protocol and asks for an update", () => {
+    const issue = deviceProtocolIssue(create(DeviceSchema, { name: "Pixel", protocolNewer: true }));
+
+    expect(issue?.summary).toBe("Pixel speaks a newer protocol than this app.");
+    expect(issue?.hint).toBe("Update Unison on this device to connect to it.");
+    expect(issue?.details).toBeUndefined();
   });
 });
 

@@ -4,30 +4,25 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,8 +33,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.unison.R
 
@@ -51,9 +51,10 @@ fun ScreenTitle(
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 4.dp, top = 20.dp, bottom = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, top = 20.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -67,7 +68,10 @@ fun ScreenTitle(
 
 /** Heading of a group of rows inside a screen. */
 @Composable
-fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+fun SectionTitle(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
@@ -88,7 +92,10 @@ val groupItemColor: Color
  * Shape of the row at [index] in a group of [count] rows: the outer corners of
  * the group are round, the corners between the rows are tight.
  */
-fun groupShape(index: Int, count: Int): Shape {
+fun groupShape(
+    index: Int,
+    count: Int,
+): Shape {
     val top = if (index == 0) GROUP_OUTER else GROUP_INNER
     val bottom = if (index == count - 1) GROUP_OUTER else GROUP_INNER
     return RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
@@ -96,7 +103,10 @@ fun groupShape(index: Int, count: Int): Shape {
 
 /** Rows of one group, separated by a thin gap. */
 @Composable
-fun ItemGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun ItemGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(GROUP_GAP),
@@ -115,13 +125,14 @@ fun GroupItem(
 ) {
     val shape = groupShape(index, count)
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clip(shape)
-            .background(groupItemColor)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .clip(shape)
+                .background(groupItemColor)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         content = content,
@@ -130,14 +141,18 @@ fun GroupItem(
 
 /** A block of settings in one container, with its heading inside. */
 @Composable
-fun SettingsCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun SettingsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp)
-            .clip(MaterialTheme.shapes.large)
-            .background(groupItemColor)
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         content = content,
     )
 }
@@ -154,10 +169,11 @@ fun IconTile(
 ) {
     Box(modifier = modifier.size(size)) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(size * TILE_ROUNDNESS))
-                .background(container),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(size * TILE_ROUNDNESS))
+                    .background(container),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -169,15 +185,16 @@ fun IconTile(
         }
         if (badge != null) {
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 2.dp, y = 2.dp)
-                    .size(14.dp)
-                    .clip(CircleShape)
-                    .background(groupItemColor)
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(badge),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 2.dp, y = 2.dp)
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(groupItemColor)
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(badge),
             )
         }
     }
@@ -200,20 +217,26 @@ private const val ICON_SCALE = 0.55f
 
 /** Failure of the core with a way to load the status again. */
 @Composable
-fun ErrorCard(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+fun ErrorCard(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = message, style = MaterialTheme.typography.bodyMedium)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = onRetry) {
@@ -239,10 +262,11 @@ fun NetworkIssueCard(
     var expanded by rememberSaveable { mutableStateOf(false) }
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = summary, style = MaterialTheme.typography.titleSmall)
@@ -261,24 +285,28 @@ fun NetworkIssueCard(
                     )
                 }
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                if (details.isNotEmpty()) {
-                    TextButton(onClick = { expanded = !expanded }) {
-                        Text(
-                            text = stringResource(
-                                if (expanded) R.string.network_details_hide else R.string.network_details_show,
-                            ),
-                        )
+            if (details.isNotEmpty() || onDismiss != null) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    if (details.isNotEmpty()) {
+                        TextButton(onClick = { expanded = !expanded }) {
+                            Text(
+                                text =
+                                    stringResource(
+                                        if (expanded) R.string.network_details_hide else R.string.network_details_show,
+                                    ),
+                            )
+                        }
                     }
-                }
-                onDismiss?.let { dismiss ->
-                    TextButton(onClick = dismiss) {
-                        Text(text = stringResource(R.string.action_dismiss))
+                    onDismiss?.let { dismiss ->
+                        TextButton(onClick = dismiss) {
+                            Text(text = stringResource(R.string.action_dismiss))
+                        }
                     }
                 }
             }

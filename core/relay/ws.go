@@ -105,36 +105,36 @@ func (d *Dialer) dialWebSocket(ctx context.Context) (carrier, error) {
 	return c, nil
 }
 
-// register joins the mailboxes and reads the limits of the relay.
-func (c *wsCarrier) register(ctx context.Context, token string, ids []ID) (Limits, error) {
+// register joins the mailboxes and reads the answer of the relay.
+func (c *wsCarrier) register(ctx context.Context, token string, ids []ID) (registration, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
 	data, err := marshalFrame(registerFrame(token, ids))
 	if err != nil {
-		return Limits{}, err
+		return registration{}, err
 	}
 	if err := c.write(ctx, data); err != nil {
-		return Limits{}, fmt.Errorf("relay: write registration: %w", err)
+		return registration{}, fmt.Errorf("relay: write registration: %w", err)
 	}
 
 	for {
 		typ, data, err := c.conn.Read(ctx)
 		if err != nil {
-			return Limits{}, fmt.Errorf("relay: read registration: %w", err)
+			return registration{}, fmt.Errorf("relay: read registration: %w", err)
 		}
 		if typ != websocket.MessageBinary {
 			continue
 		}
 		frame, err := parseFrame(data, maxRegisterBytes)
 		if err != nil {
-			return Limits{}, err
+			return registration{}, err
 		}
 		result := frame.GetRegisterResult()
 		if result == nil {
 			continue
 		}
-		return limitsOf(result)
+		return registrationOf(result)
 	}
 }
 

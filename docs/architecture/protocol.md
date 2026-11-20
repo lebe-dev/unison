@@ -12,6 +12,24 @@ transport                          QUIC, TLS 1.3, certificates, auth proof
 QUIC / UDP (+ relay datagrams)
 ```
 
+## Protocol version
+
+One version covers the peer protocol and the relay protocol. `core/protocol` holds it and the current
+value is `1`. Raise it when a change is not backwards compatible.
+
+Every client checks the version it receives:
+
+| Client | Check |
+|--------|-------|
+| daemon and mobile core | `Hello` of a peer |
+| relay client | `RegisterResult` of the relay |
+| relay server | `Register` of a client |
+
+A peer with the same version continues. A peer with another version is reported: when the peer is
+newer, this client needs an update; when it is older, the peer needs an update. The daemon reports
+the direction through the local API, so the command line, the desktop app and the Android app show
+it; the relay logs it.
+
 ## Transport
 
 `core/transport` runs peer connections over QUIC. Both sides present the self-signed certificate of
@@ -54,15 +72,16 @@ and leaves the decision to a `PairingPolicy`: `AcceptPairingPeer` for the short 
 A session starts with `Hello` on the control stream, which is the stream that already carried the
 authentication proof. Both sides announce:
 
-- the protocol version, currently `1`;
+- the protocol version, currently `1`, from `core/protocol`;
 - the device name, at most 128 bytes;
 - the platform;
 - the local clipboard policy;
 - up to 32 capability names of at most 64 bytes each.
 
 A peer with another version gets the `peer-needs-update` event and the connection is closed with
-code `0x10`; a malformed Hello or another protocol violation closes it with `0x11`, and a handler
-that panics ends the session with `0x12`, never the process.
+code `0x10`; the event and the log tell whether the peer is newer, so this client has to be updated,
+or older, so the peer has to be updated. A malformed Hello or another protocol violation closes it
+with `0x11`, and a handler that panics ends the session with `0x12`, never the process.
 
 ### Framing
 

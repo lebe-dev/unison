@@ -40,6 +40,18 @@ export function pairingFailure(event: Event): PairingFailure {
   };
 }
 
+/** deviceProtocolIssue describes a paired device that speaks a newer protocol. */
+export function deviceProtocolIssue(device: Device): NetworkIssueText | null {
+  if (!device.protocolNewer) {
+    return null;
+  }
+  const name = device.name || translate("common.theDevice");
+  return {
+    summary: translate("network.deviceProtocolNewer", { name }),
+    hint: translate("network.deviceProtocolNewerHint"),
+  };
+}
+
 /** unreachableDeviceIssue describes a paired device that does not answer. */
 export function unreachableDeviceIssue(device: Device): NetworkIssueText | null {
   if (device.online || !device.unreachable) {

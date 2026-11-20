@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lebe-dev/unison/core/protocol"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
 
@@ -19,6 +20,10 @@ const (
 	// maxMailboxes bounds the mailboxes of one registration.
 	maxMailboxes = 256
 )
+
+// unsetProtocolVersion is the version of a peer that predates the version
+// field, which reads as the first relay protocol.
+const unsetProtocolVersion uint32 = 1
 
 // Errors of the frame parser.
 var (
@@ -80,6 +85,23 @@ type Status struct {
 	Transport Transport
 	// Limits are the limits of the connection.
 	Limits Limits
+	// ProtocolVersion is the version the relay announced at the last
+	// registration.
+	ProtocolVersion uint32
+	// ProtocolNewer reports a relay with a newer protocol version than this
+	// client.
+	ProtocolNewer bool
+}
+
+// statusOf returns the status of a registered connection.
+func statusOf(transport Transport, reg registration) Status {
+	return Status{
+		Connected:       true,
+		Transport:       transport,
+		Limits:          reg.Limits,
+		ProtocolVersion: reg.ProtocolVersion,
+		ProtocolNewer:   protocol.Compare(reg.ProtocolVersion) == protocol.PeerNewer,
+	}
 }
 
 // marshalFrame encodes a frame.
@@ -124,8 +146,9 @@ func registerFrame(token string, ids []ID) *relayv1.Frame {
 	}
 	return &relayv1.Frame{
 		Body: &relayv1.Frame_Register{Register: &relayv1.Register{
-			Token:      []byte(token),
-			MailboxIds: mailboxes,
+			Token:           []byte(token),
+			MailboxIds:      mailboxes,
+			ProtocolVersion: protocol.Version,
 		}},
 	}
 }
@@ -198,6 +221,37 @@ func readUvarint(r io.Reader) (uint64, error) {
 		}
 	}
 	return 0, errMalformedFrame
+}
+
+// registration is the answer to a registration: the limits of the relay and
+// the protocol version it speaks.
+type registration struct {
+	// Limits are the limits the relay applies to the connection.
+	Limits Limits
+	// ProtocolVersion is the version the relay announced. A relay that
+	// predates the field reads as version 1.
+	ProtocolVersion uint32
+}
+
+// registrationOf validates the answer to a registration.
+func registrationOf(result *relayv1.RegisterResult) (registration, error) {
+	limits, err := limitsOf(result)
+	if err != nil {
+		return registration{}, err
+	}
+	return registration{
+		Limits:          limits,
+		ProtocolVersion: protocolVersionOf(result.GetProtocolVersion()),
+	}, nil
+}
+
+// protocolVersionOf reads the protocol version of a peer. An unset field comes
+// from a peer that predates it and reads as the first protocol version.
+func protocolVersionOf(version uint32) uint32 {
+	if version == 0 {
+		return unsetProtocolVersion
+	}
+	return version
 }
 
 // limitsOf validates the answer to a registration.

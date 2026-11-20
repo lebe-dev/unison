@@ -16,6 +16,7 @@ import (
 	"github.com/lebe-dev/unison/core/discovery"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/protocol"
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/transport"
 	"github.com/lebe-dev/unison/core/trust"
@@ -64,6 +65,10 @@ type link struct {
 	unreachable time.Time
 	// unreachableDetail lists the failures of the last attempt.
 	unreachableDetail string
+	// protocolVersion is the version the peer announced at its last Hello.
+	protocolVersion uint32
+	// protocolKnown reports that the peer announced a protocol version.
+	protocolKnown bool
 	// relay stops the relay goroutine of the link.
 	relay context.CancelFunc
 	kick  chan struct{}
@@ -81,11 +86,21 @@ func (l *link) setPeer(peer trust.Peer) {
 	l.mu.Unlock()
 }
 
+// setProtocolVersion records the version the peer announced at its last Hello.
+func (l *link) setProtocolVersion(version uint32) {
+	l.mu.Lock()
+	l.protocolVersion = version
+	l.protocolKnown = true
+	l.mu.Unlock()
+}
+
 // state returns the live state of the link.
 func (l *link) state() model.PeerState {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	state := model.PeerState{DeviceID: l.id}
+	state.ProtocolVersion = l.protocolVersion
+	state.ProtocolKnown = l.protocolKnown
 	if l.online {
 		state.Online = true
 		state.Path = l.path
@@ -914,9 +929,24 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 			version := uint32(0)
 			if sess != nil {
 				version = sess.PeerHello().Version
+				l.setProtocolVersion(version)
 			}
-			n.publish(Event{Kind: EventPeerIncompatible, Peer: l.id, Name: peer.Name, Version: version, Err: err})
-			n.log.Info("peer needs an update", "peer", l.id, "version", version)
+			newer := protocol.Compare(version) == protocol.PeerNewer
+			n.publish(Event{
+				Kind:          EventPeerIncompatible,
+				Peer:          l.id,
+				Name:          peer.Name,
+				Version:       version,
+				ProtocolNewer: newer,
+				Err:           err,
+			})
+			if newer {
+				n.log.Warn("peer runs a newer protocol version, this device needs an update",
+					"peer", l.id, "version", version, "local_version", protocol.Version)
+			} else {
+				n.log.Warn("peer runs an older protocol version and needs an update",
+					"peer", l.id, "version", version, "local_version", protocol.Version)
+			}
 		}
 		return sess, err
 	}
@@ -928,6 +958,8 @@ func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) 
 		return nil, errSuperseded
 	}
 	l.sess = sess
+	l.protocolVersion = sess.PeerHello().Version
+	l.protocolKnown = true
 	l.online = true
 	l.path = path
 	l.attempts = 0

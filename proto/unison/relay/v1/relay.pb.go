@@ -201,9 +201,12 @@ type Register struct {
 	// Access token, opaque bytes.
 	Token []byte `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	// Mailbox ids to join, 16 bytes each.
-	MailboxIds    [][]byte `protobuf:"bytes,2,rep,name=mailbox_ids,json=mailboxIds,proto3" json:"mailbox_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	MailboxIds [][]byte `protobuf:"bytes,2,rep,name=mailbox_ids,json=mailboxIds,proto3" json:"mailbox_ids,omitempty"`
+	// Protocol version of the client. A relay of version 1 sends no version, so
+	// an unset field is read as version 1.
+	ProtocolVersion uint32 `protobuf:"varint,3,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Register) Reset() {
@@ -250,14 +253,23 @@ func (x *Register) GetMailboxIds() [][]byte {
 	return nil
 }
 
+func (x *Register) GetProtocolVersion() uint32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
+}
+
 // Answer to a registration. It is the second frame of a connection.
 type RegisterResult struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Status RelayStatus            `protobuf:"varint,1,opt,name=status,proto3,enum=unison.relay.v1.RelayStatus" json:"status,omitempty"`
 	// Limits the relay applies, sent on success.
-	Limits        *Limits `protobuf:"bytes,2,opt,name=limits,proto3" json:"limits,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Limits *Limits `protobuf:"bytes,2,opt,name=limits,proto3" json:"limits,omitempty"`
+	// Protocol version of the relay.
+	ProtocolVersion uint32 `protobuf:"varint,3,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *RegisterResult) Reset() {
@@ -302,6 +314,13 @@ func (x *RegisterResult) GetLimits() *Limits {
 		return x.Limits
 	}
 	return nil
+}
+
+func (x *RegisterResult) GetProtocolVersion() uint32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
 }
 
 // Replacement of the mailbox set of a registered connection. It travels like a
@@ -678,14 +697,16 @@ const file_unison_relay_v1_relay_proto_rawDesc = "" +
 	"\vquota_bytes\x18\x05 \x01(\x04R\n" +
 	"quotaBytes\x120\n" +
 	"\x14quota_window_seconds\x18\x06 \x01(\x04R\x12quotaWindowSeconds\x12'\n" +
-	"\x0fmailbox_updates\x18\a \x01(\bR\x0emailboxUpdates\"A\n" +
+	"\x0fmailbox_updates\x18\a \x01(\bR\x0emailboxUpdates\"l\n" +
 	"\bRegister\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\fR\x05token\x12\x1f\n" +
 	"\vmailbox_ids\x18\x02 \x03(\fR\n" +
-	"mailboxIds\"w\n" +
+	"mailboxIds\x12)\n" +
+	"\x10protocol_version\x18\x03 \x01(\rR\x0fprotocolVersion\"\xa2\x01\n" +
 	"\x0eRegisterResult\x124\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1c.unison.relay.v1.RelayStatusR\x06status\x12/\n" +
-	"\x06limits\x18\x02 \x01(\v2\x17.unison.relay.v1.LimitsR\x06limits\";\n" +
+	"\x06limits\x18\x02 \x01(\v2\x17.unison.relay.v1.LimitsR\x06limits\x12)\n" +
+	"\x10protocol_version\x18\x03 \x01(\rR\x0fprotocolVersion\";\n" +
 	"\x06Update\x12\x10\n" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x12\x1f\n" +
 	"\vmailbox_ids\x18\x02 \x03(\fR\n" +

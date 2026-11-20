@@ -1111,8 +1111,13 @@ type Device struct {
 	// remotely. The switch in the settings of this device can turn the permission
 	// off for every device.
 	AllowRemoteSettings bool `protobuf:"varint,19,opt,name=allow_remote_settings,json=allowRemoteSettings,proto3" json:"allow_remote_settings,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Protocol version the device announced at its last handshake.
+	ProtocolVersion uint32 `protobuf:"varint,20,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
+	// The device speaks a newer protocol version than this device, so this client
+	// has to be updated.
+	ProtocolNewer bool `protobuf:"varint,21,opt,name=protocol_newer,json=protocolNewer,proto3" json:"protocol_newer,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Device) Reset() {
@@ -1267,6 +1272,20 @@ func (x *Device) GetUnreachableDetail() string {
 func (x *Device) GetAllowRemoteSettings() bool {
 	if x != nil {
 		return x.AllowRemoteSettings
+	}
+	return false
+}
+
+func (x *Device) GetProtocolVersion() uint32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
+}
+
+func (x *Device) GetProtocolNewer() bool {
+	if x != nil {
+		return x.ProtocolNewer
 	}
 	return false
 }
@@ -1681,6 +1700,9 @@ type Event struct {
 	// Why the operation of the event failed, set together with error when the
 	// reason is known.
 	FailureReason FailureReason `protobuf:"varint,16,opt,name=failure_reason,json=failureReason,proto3,enum=unison.local.v1.FailureReason" json:"failure_reason,omitempty"`
+	// The peer speaks a newer protocol version than this device, so this client
+	// has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+	ProtocolNewer bool `protobuf:"varint,17,opt,name=protocol_newer,json=protocolNewer,proto3" json:"protocol_newer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1825,6 +1847,13 @@ func (x *Event) GetFailureReason() FailureReason {
 		return x.FailureReason
 	}
 	return FailureReason_FAILURE_REASON_UNSPECIFIED
+}
+
+func (x *Event) GetProtocolNewer() bool {
+	if x != nil {
+		return x.ProtocolNewer
+	}
+	return false
 }
 
 // State of the pairing window.
@@ -2391,6 +2420,8 @@ type GetStatusResponse struct {
 	// The keystore the daemon keeps secrets in: secret-service or file on Linux,
 	// keychain on macOS and dpapi on Windows.
 	KeystoreBackend string `protobuf:"bytes,13,opt,name=keystore_backend,json=keystoreBackend,proto3" json:"keystore_backend,omitempty"`
+	// Protocol version of this daemon.
+	ProtocolVersion uint32 `protobuf:"varint,14,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2514,6 +2545,13 @@ func (x *GetStatusResponse) GetKeystoreBackend() string {
 		return x.KeystoreBackend
 	}
 	return ""
+}
+
+func (x *GetStatusResponse) GetProtocolVersion() uint32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
 }
 
 type WatchEventsRequest struct {
@@ -6392,8 +6430,13 @@ type Relay struct {
 	ChangedAtUnixMs int64 `protobuf:"varint,5,opt,name=changed_at_unix_ms,json=changedAtUnixMs,proto3" json:"changed_at_unix_ms,omitempty"`
 	// Files travel over the relay only when the user asks for them.
 	FilesOnRequest bool `protobuf:"varint,6,opt,name=files_on_request,json=filesOnRequest,proto3" json:"files_on_request,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Protocol version the relay announced at the last registration.
+	ProtocolVersion uint32 `protobuf:"varint,7,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
+	// The relay speaks a newer protocol version than this device, so this client
+	// has to be updated.
+	ProtocolNewer bool `protobuf:"varint,8,opt,name=protocol_newer,json=protocolNewer,proto3" json:"protocol_newer,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Relay) Reset() {
@@ -6464,6 +6507,20 @@ func (x *Relay) GetChangedAtUnixMs() int64 {
 func (x *Relay) GetFilesOnRequest() bool {
 	if x != nil {
 		return x.FilesOnRequest
+	}
+	return false
+}
+
+func (x *Relay) GetProtocolVersion() uint32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
+}
+
+func (x *Relay) GetProtocolNewer() bool {
+	if x != nil {
+		return x.ProtocolNewer
 	}
 	return false
 }
@@ -7022,7 +7079,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\aroaming\x18\x05 \x01(\bR\aroaming\x12\x10\n" +
 	"\x03vpn\x18\x06 \x01(\bR\x03vpn\x12\x1d\n" +
 	"\n" +
-	"data_saver\x18\a \x01(\bR\tdataSaver\"\xa6\x06\n" +
+	"data_saver\x18\a \x01(\bR\tdataSaver\"\xf8\x06\n" +
 	"\x06Device\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
@@ -7042,7 +7099,9 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\vunreachable\x18\x10 \x01(\bR\vunreachable\x129\n" +
 	"\x19unreachable_since_unix_ms\x18\x11 \x01(\x03R\x16unreachableSinceUnixMs\x12-\n" +
 	"\x12unreachable_detail\x18\x12 \x01(\tR\x11unreachableDetail\x122\n" +
-	"\x15allow_remote_settings\x18\x13 \x01(\bR\x13allowRemoteSettings\"F\n" +
+	"\x15allow_remote_settings\x18\x13 \x01(\bR\x13allowRemoteSettings\x12)\n" +
+	"\x10protocol_version\x18\x14 \x01(\rR\x0fprotocolVersion\x12%\n" +
+	"\x0eprotocol_newer\x18\x15 \x01(\bR\rprotocolNewer\"F\n" +
 	"\x10FriendsDiscovery\x12\x0e\n" +
 	"\x02on\x18\x01 \x01(\bR\x02on\x12\"\n" +
 	"\runtil_unix_ms\x18\x02 \x01(\x03R\vuntilUnixMs\"c\n" +
@@ -7071,7 +7130,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\adeleted\x18\t \x01(\bR\adeleted\"3\n" +
 	"\x03Sas\x12\x16\n" +
 	"\x06digits\x18\x01 \x01(\tR\x06digits\x12\x14\n" +
-	"\x05emoji\x18\x02 \x03(\tR\x05emoji\"\x9a\x05\n" +
+	"\x05emoji\x18\x02 \x03(\tR\x05emoji\"\xc1\x05\n" +
 	"\x05Event\x12.\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1a.unison.local.v1.EventKindR\x04kind\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x12\n" +
@@ -7090,7 +7149,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"at_unix_ms\x18\r \x01(\x03R\batUnixMs\x125\n" +
 	"\btransfer\x18\x0e \x01(\v2\x19.unison.local.v1.TransferR\btransfer\x12E\n" +
 	"\x0epairing_method\x18\x0f \x01(\x0e2\x1e.unison.local.v1.PairingMethodR\rpairingMethod\x12E\n" +
-	"\x0efailure_reason\x18\x10 \x01(\x0e2\x1e.unison.local.v1.FailureReasonR\rfailureReason\"d\n" +
+	"\x0efailure_reason\x18\x10 \x01(\x0e2\x1e.unison.local.v1.FailureReasonR\rfailureReason\x12%\n" +
+	"\x0eprotocol_newer\x18\x11 \x01(\bR\rprotocolNewer\"d\n" +
 	"\rPairingWindow\x12\x12\n" +
 	"\x04open\x18\x01 \x01(\bR\x04open\x12\x12\n" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x12+\n" +
@@ -7138,7 +7198,7 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x0estrip_tracking\x18\x0f \x01(\bR\rstripTracking\x12'\n" +
 	"\x0fjournal_enabled\x18\x10 \x01(\bR\x0ejournalEnabled\x122\n" +
 	"\x15allow_remote_settings\x18\x11 \x01(\bR\x13allowRemoteSettings\"\x12\n" +
-	"\x10GetStatusRequest\"\xb8\x04\n" +
+	"\x10GetStatusRequest\"\xe3\x04\n" +
 	"\x11GetStatusResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
 	"\tdevice_id\x18\x02 \x01(\tR\bdeviceId\x12\x1f\n" +
@@ -7154,7 +7214,8 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	" \x01(\bR\x13localNetworkBlocked\x12+\n" +
 	"\x11clipboard_backend\x18\v \x01(\tR\x10clipboardBackend\x12%\n" +
 	"\x0eclipboard_note\x18\f \x01(\tR\rclipboardNote\x12)\n" +
-	"\x10keystore_backend\x18\r \x01(\tR\x0fkeystoreBackend\"\x14\n" +
+	"\x10keystore_backend\x18\r \x01(\tR\x0fkeystoreBackend\x12)\n" +
+	"\x10protocol_version\x18\x0e \x01(\rR\x0fprotocolVersion\"\x14\n" +
 	"\x12WatchEventsRequest\"C\n" +
 	"\x13WatchEventsResponse\x12,\n" +
 	"\x05event\x18\x01 \x01(\v2\x16.unison.local.v1.EventR\x05event\"=\n" +
@@ -7372,14 +7433,16 @@ const file_unison_local_v1_local_proto_rawDesc = "" +
 	"\x10_journal_enabledB\x18\n" +
 	"\x16_allow_remote_settings\"O\n" +
 	"\x16UpdateSettingsResponse\x125\n" +
-	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xea\x01\n" +
+	"\bsettings\x18\x01 \x01(\v2\x19.unison.local.v1.SettingsR\bsettings\"\xbc\x02\n" +
 	"\x05Relay\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1b\n" +
 	"\ttoken_set\x18\x02 \x01(\bR\btokenSet\x12\x1c\n" +
 	"\tconnected\x18\x03 \x01(\bR\tconnected\x12=\n" +
 	"\ttransport\x18\x04 \x01(\x0e2\x1f.unison.local.v1.RelayTransportR\ttransport\x12+\n" +
 	"\x12changed_at_unix_ms\x18\x05 \x01(\x03R\x0fchangedAtUnixMs\x12(\n" +
-	"\x10files_on_request\x18\x06 \x01(\bR\x0efilesOnRequest\"\x11\n" +
+	"\x10files_on_request\x18\x06 \x01(\bR\x0efilesOnRequest\x12)\n" +
+	"\x10protocol_version\x18\a \x01(\rR\x0fprotocolVersion\x12%\n" +
+	"\x0eprotocol_newer\x18\b \x01(\bR\rprotocolNewer\"\x11\n" +
 	"\x0fGetRelayRequest\"@\n" +
 	"\x10GetRelayResponse\x12,\n" +
 	"\x05relay\x18\x01 \x01(\v2\x16.unison.local.v1.RelayR\x05relay\"\x8c\x01\n" +

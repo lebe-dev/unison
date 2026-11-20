@@ -66,10 +66,18 @@ an older relay is dropped at UTC midnight and registers the new set without back
 
 1. collect the mailboxes of every open pair, cut at the mailbox limit of the relay;
 2. dial QUIC and fall back to WebSocket when the QUIC attempt fails within 3 s;
-3. send `Register` with the token and the mailbox ids, read `RegisterResult` with the limits;
+3. send `Register` with the token, the mailbox ids and the protocol version, read
+   `RegisterResult` with the limits and the relay version;
 4. serve datagrams until the carrier ends, and keep the mailbox set up to date with `Update`;
 5. reconnect immediately for a failed update, a rollover or a mailbox set change on an older relay,
    and with the backoff otherwise.
+
+`Register` and `RegisterResult` carry the protocol version from `core/protocol`. The client logs a
+relay with a newer version, because the client has to be updated, and a relay with an older one,
+because the relay has to be updated. A message that does not carry the field comes from a relay of
+version `1`, which is the version that predates the field, so the client reads it as `1`. A
+mismatch does not close the connection: the versioned fields stay additive, and both sides continue
+with the parts they understand.
 
 The limit is 8 until the first registration reports the real one. The set is cut so that the
 current day mailbox of every pair comes before the extra mailboxes around midnight, and an earlier
@@ -143,11 +151,14 @@ with an access token, and a mailbox is a set of connections that share an id.
 
 ### Registration
 
-The first message of a connection is `Register` with the token and the mailbox ids. The server
-compares the SHA-256 of the presented token with every configured hash in constant time, checks
-that there are at most `max_mailboxes` ids of 16 bytes each, and joins the mailboxes. It answers
-with `RegisterResult`, which always carries the limits block, then closes the registration stream
-or ends the WebSocket registration phase.
+The first message of a connection is `Register` with the token, the mailbox ids and the protocol
+version. The server compares the SHA-256 of the presented token with every configured hash in
+constant time, checks that there are at most `max_mailboxes` ids of 16 bytes each, and joins the
+mailboxes. It answers with `RegisterResult`, which carries the limits block and the protocol
+version, then closes the registration stream or ends the WebSocket registration phase. A client
+that does not send the version is read as version `1`. The server logs a client with a newer
+version, because the client has to be updated, and a client with an older one, because the server
+has to be updated; both continue.
 
 | Status | Meaning |
 |--------|---------|

@@ -37,6 +37,9 @@ class DaemonStore {
   startup = $state<DaemonStatus>({ state: "offline", reason: null, install: "off" });
   /** Most recent daemon events, newest first. */
   activity = $state<DaemonEvent[]>([]);
+  /** Most recent event that reported a peer with another protocol, absent when
+   * no such event arrived. */
+  peerIncompatible = $state<DaemonEvent | null>(null);
   /** An installation of the daemon is running. */
   installing = $state(false);
   /** Reason of the last failed installation, absent when it worked. */
@@ -96,6 +99,17 @@ class DaemonStore {
 
   get onlinePeers(): number {
     return this.devices.filter((device) => device.online).length;
+  }
+
+  /** newerProtocolDevices lists paired devices that speak a newer protocol. */
+  get newerProtocolDevices(): Device[] {
+    return this.devices.filter((device) => device.protocolNewer);
+  }
+
+  /** protocolUpdateNeeded reports a device or event that speaks a newer
+   * protocol than this app. */
+  get protocolUpdateNeeded(): boolean {
+    return this.newerProtocolDevices.length > 0 || (this.peerIncompatible?.protocolNewer ?? false);
   }
 
   /** localNetworkBlocked reports a daemon that the system keeps off the local
@@ -333,6 +347,17 @@ class DaemonStore {
   }
 
   #record(event: DaemonEvent): void {
+    if (event.kind === EventKind.PEER_INCOMPATIBLE) {
+      this.peerIncompatible = event;
+    }
+    // A peer that comes online after the update no longer reports a newer
+    // protocol, so its old event stops warning.
+    if (
+      event.kind === EventKind.PEER_ONLINE &&
+      this.peerIncompatible?.deviceId === event.deviceId
+    ) {
+      this.peerIncompatible = null;
+    }
     this.activity = [event, ...this.activity].slice(0, ACTIVITY_LIMIT);
     for (const handler of this.#events) {
       handler(event);

@@ -40,7 +40,11 @@ func logEvent(log *slog.Logger, event node.Event) {
 		attrs = append(attrs, errorAttr(event.Err)...)
 		log.Info("peer offline", attrs...)
 	case node.EventPeerIncompatible:
-		log.Warn("peer runs another protocol version",
+		message := "peer runs an older protocol version and needs an update"
+		if event.ProtocolNewer {
+			message = "peer runs a newer protocol version, this device needs an update"
+		}
+		log.Warn(message,
 			"peer", deviceID(event.Peer),
 			"version", event.Version,
 		)

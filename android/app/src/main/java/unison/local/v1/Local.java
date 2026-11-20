@@ -3165,6 +3165,27 @@ public final class Local {
      * @return The allowRemoteSettings.
      */
     boolean getAllowRemoteSettings();
+
+    /**
+     * <pre>
+     * Protocol version the device announced at its last handshake.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+     * @return The protocolVersion.
+     */
+    int getProtocolVersion();
+
+    /**
+     * <pre>
+     * The device speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+     * @return The protocolNewer.
+     */
+    boolean getProtocolNewer();
   }
   /**
    * <pre>
@@ -3981,6 +4002,85 @@ public final class Local {
     private void clearAllowRemoteSettings() {
 
       allowRemoteSettings_ = false;
+    }
+
+    public static final int PROTOCOL_VERSION_FIELD_NUMBER = 20;
+    private int protocolVersion_;
+    /**
+     * <pre>
+     * Protocol version the device announced at its last handshake.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+     * @return The protocolVersion.
+     */
+    @java.lang.Override
+    public int getProtocolVersion() {
+      return protocolVersion_;
+    }
+    /**
+     * <pre>
+     * Protocol version the device announced at its last handshake.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+     * @param value The protocolVersion to set.
+     */
+    private void setProtocolVersion(int value) {
+
+      protocolVersion_ = value;
+    }
+    /**
+     * <pre>
+     * Protocol version the device announced at its last handshake.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+     */
+    private void clearProtocolVersion() {
+
+      protocolVersion_ = 0;
+    }
+
+    public static final int PROTOCOL_NEWER_FIELD_NUMBER = 21;
+    private boolean protocolNewer_;
+    /**
+     * <pre>
+     * The device speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+     * @return The protocolNewer.
+     */
+    @java.lang.Override
+    public boolean getProtocolNewer() {
+      return protocolNewer_;
+    }
+    /**
+     * <pre>
+     * The device speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+     * @param value The protocolNewer to set.
+     */
+    private void setProtocolNewer(boolean value) {
+
+      protocolNewer_ = value;
+    }
+    /**
+     * <pre>
+     * The device speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+     */
+    private void clearProtocolNewer() {
+
+      protocolNewer_ = false;
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -4925,6 +5025,89 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * Protocol version the device announced at its last handshake.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+       * @return The protocolVersion.
+       */
+      @java.lang.Override
+      public int getProtocolVersion() {
+        return instance.getProtocolVersion();
+      }
+      /**
+       * <pre>
+       * Protocol version the device announced at its last handshake.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+       * @param value The protocolVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProtocolVersion(int value) {
+        copyOnWrite();
+        instance.setProtocolVersion(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Protocol version the device announced at its last handshake.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 20 [json_name = "protocolVersion"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProtocolVersion() {
+        copyOnWrite();
+        instance.clearProtocolVersion();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The device speaks a newer protocol version than this device, so this client
+       * has to be updated.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+       * @return The protocolNewer.
+       */
+      @java.lang.Override
+      public boolean getProtocolNewer() {
+        return instance.getProtocolNewer();
+      }
+      /**
+       * <pre>
+       * The device speaks a newer protocol version than this device, so this client
+       * has to be updated.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+       * @param value The protocolNewer to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProtocolNewer(boolean value) {
+        copyOnWrite();
+        instance.setProtocolNewer(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device speaks a newer protocol version than this device, so this client
+       * has to be updated.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 21 [json_name = "protocolNewer"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProtocolNewer() {
+        copyOnWrite();
+        instance.clearProtocolNewer();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -4959,12 +5142,14 @@ public final class Local {
               "unreachableSinceUnixMs_",
               "unreachableDetail_",
               "allowRemoteSettings_",
+              "protocolVersion_",
+              "protocolNewer_",
             };
             java.lang.String info =
-                "\u0000\u0012\u0000\u0000\u0001\u0013\u0012\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0000\u0014\u0000\u0000\u0001\u0015\u0014\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
                 "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
                 "\r\u0208\u000e\u0007\u000f\u0007\u0010\u0007\u0011\u0002\u0012\u0208\u0013\u0007" +
-                "";
+                "\u0014\u000b\u0015\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -8884,6 +9069,17 @@ public final class Local {
      * @return The failureReason.
      */
     unison.local.v1.Local.FailureReason getFailureReason();
+
+    /**
+     * <pre>
+     * The peer speaks a newer protocol version than this device, so this client
+     * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+     * @return The protocolNewer.
+     */
+    boolean getProtocolNewer();
   }
   /**
    * <pre>
@@ -9771,6 +9967,47 @@ public final class Local {
     private void clearFailureReason() {
 
       failureReason_ = 0;
+    }
+
+    public static final int PROTOCOL_NEWER_FIELD_NUMBER = 17;
+    private boolean protocolNewer_;
+    /**
+     * <pre>
+     * The peer speaks a newer protocol version than this device, so this client
+     * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+     * @return The protocolNewer.
+     */
+    @java.lang.Override
+    public boolean getProtocolNewer() {
+      return protocolNewer_;
+    }
+    /**
+     * <pre>
+     * The peer speaks a newer protocol version than this device, so this client
+     * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+     * @param value The protocolNewer to set.
+     */
+    private void setProtocolNewer(boolean value) {
+
+      protocolNewer_ = value;
+    }
+    /**
+     * <pre>
+     * The peer speaks a newer protocol version than this device, so this client
+     * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+     */
+    private void clearProtocolNewer() {
+
+      protocolNewer_ = false;
     }
 
     public static unison.local.v1.Local.Event parseFrom(
@@ -10793,6 +11030,49 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * The peer speaks a newer protocol version than this device, so this client
+       * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+       * @return The protocolNewer.
+       */
+      @java.lang.Override
+      public boolean getProtocolNewer() {
+        return instance.getProtocolNewer();
+      }
+      /**
+       * <pre>
+       * The peer speaks a newer protocol version than this device, so this client
+       * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+       * @param value The protocolNewer to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProtocolNewer(boolean value) {
+        copyOnWrite();
+        instance.setProtocolNewer(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The peer speaks a newer protocol version than this device, so this client
+       * has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 17 [json_name = "protocolNewer"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProtocolNewer() {
+        copyOnWrite();
+        instance.clearProtocolNewer();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Event)
     }
     @java.lang.Override
@@ -10826,11 +11106,12 @@ public final class Local {
               "transfer_",
               "pairingMethod_",
               "failureReason_",
+              "protocolNewer_",
             };
             java.lang.String info =
-                "\u0000\u0010\u0000\u0001\u0001\u0010\u0010\u0000\u0000\u0000\u0001\f\u0002\u0208" +
+                "\u0000\u0011\u0000\u0001\u0001\u0011\u0011\u0000\u0000\u0000\u0001\f\u0002\u0208" +
                 "\u0003\u0208\u0004\f\u0005\f\u0006\f\u0007\u0007\b\u1009\u0000\t\u0208\n\u1009\u0001" +
-                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f\u0010\f";
+                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f\u0010\f\u0011\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -16265,6 +16546,16 @@ java.lang.String defaultValue) {
      */
     com.google.protobuf.ByteString
         getKeystoreBackendBytes();
+
+    /**
+     * <pre>
+     * Protocol version of this daemon.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+     * @return The protocolVersion.
+     */
+    int getProtocolVersion();
   }
   /**
    * Protobuf type {@code unison.local.v1.GetStatusResponse}
@@ -17138,6 +17429,44 @@ java.lang.String defaultValue) {
       checkByteStringIsUtf8(value);
       keystoreBackend_ = value.toStringUtf8();
 
+    }
+
+    public static final int PROTOCOL_VERSION_FIELD_NUMBER = 14;
+    private int protocolVersion_;
+    /**
+     * <pre>
+     * Protocol version of this daemon.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+     * @return The protocolVersion.
+     */
+    @java.lang.Override
+    public int getProtocolVersion() {
+      return protocolVersion_;
+    }
+    /**
+     * <pre>
+     * Protocol version of this daemon.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+     * @param value The protocolVersion to set.
+     */
+    private void setProtocolVersion(int value) {
+
+      protocolVersion_ = value;
+    }
+    /**
+     * <pre>
+     * Protocol version of this daemon.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+     */
+    private void clearProtocolVersion() {
+
+      protocolVersion_ = 0;
     }
 
     public static unison.local.v1.Local.GetStatusResponse parseFrom(
@@ -18119,6 +18448,46 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Protocol version of this daemon.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+       * @return The protocolVersion.
+       */
+      @java.lang.Override
+      public int getProtocolVersion() {
+        return instance.getProtocolVersion();
+      }
+      /**
+       * <pre>
+       * Protocol version of this daemon.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+       * @param value The protocolVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProtocolVersion(int value) {
+        copyOnWrite();
+        instance.setProtocolVersion(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Protocol version of this daemon.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 14 [json_name = "protocolVersion"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProtocolVersion() {
+        copyOnWrite();
+        instance.clearProtocolVersion();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.GetStatusResponse)
     }
     @java.lang.Override
@@ -18150,11 +18519,12 @@ java.lang.String defaultValue) {
               "clipboardBackend_",
               "clipboardNote_",
               "keystoreBackend_",
+              "protocolVersion_",
             };
             java.lang.String info =
-                "\u0000\r\u0000\u0001\u0001\r\r\u0000\u0002\u0000\u0001\u0208\u0002\u0208\u0003\u0208" +
-                "\u0004\u0007\u0005\u1009\u0000\u0006\u001b\u0007\u1009\u0001\b\u1009\u0002\t\u021a" +
-                "\n\u0007\u000b\u0208\f\u0208\r\u0208";
+                "\u0000\u000e\u0000\u0001\u0001\u000e\u000e\u0000\u0002\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\u0208\u0004\u0007\u0005\u1009\u0000\u0006\u001b\u0007\u1009\u0001\b\u1009" +
+                "\u0002\t\u021a\n\u0007\u000b\u0208\f\u0208\r\u0208\u000e\u000b";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -48380,6 +48750,27 @@ java.lang.String defaultValue) {
      * @return The filesOnRequest.
      */
     boolean getFilesOnRequest();
+
+    /**
+     * <pre>
+     * Protocol version the relay announced at the last registration.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+     * @return The protocolVersion.
+     */
+    int getProtocolVersion();
+
+    /**
+     * <pre>
+     * The relay speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+     * @return The protocolNewer.
+     */
+    boolean getProtocolNewer();
   }
   /**
    * <pre>
@@ -48664,6 +49055,85 @@ java.lang.String defaultValue) {
     private void clearFilesOnRequest() {
 
       filesOnRequest_ = false;
+    }
+
+    public static final int PROTOCOL_VERSION_FIELD_NUMBER = 7;
+    private int protocolVersion_;
+    /**
+     * <pre>
+     * Protocol version the relay announced at the last registration.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+     * @return The protocolVersion.
+     */
+    @java.lang.Override
+    public int getProtocolVersion() {
+      return protocolVersion_;
+    }
+    /**
+     * <pre>
+     * Protocol version the relay announced at the last registration.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+     * @param value The protocolVersion to set.
+     */
+    private void setProtocolVersion(int value) {
+
+      protocolVersion_ = value;
+    }
+    /**
+     * <pre>
+     * Protocol version the relay announced at the last registration.
+     * </pre>
+     *
+     * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+     */
+    private void clearProtocolVersion() {
+
+      protocolVersion_ = 0;
+    }
+
+    public static final int PROTOCOL_NEWER_FIELD_NUMBER = 8;
+    private boolean protocolNewer_;
+    /**
+     * <pre>
+     * The relay speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+     * @return The protocolNewer.
+     */
+    @java.lang.Override
+    public boolean getProtocolNewer() {
+      return protocolNewer_;
+    }
+    /**
+     * <pre>
+     * The relay speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+     * @param value The protocolNewer to set.
+     */
+    private void setProtocolNewer(boolean value) {
+
+      protocolNewer_ = value;
+    }
+    /**
+     * <pre>
+     * The relay speaks a newer protocol version than this device, so this client
+     * has to be updated.
+     * </pre>
+     *
+     * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+     */
+    private void clearProtocolNewer() {
+
+      protocolNewer_ = false;
     }
 
     public static unison.local.v1.Local.Relay parseFrom(
@@ -49051,6 +49521,89 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * Protocol version the relay announced at the last registration.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+       * @return The protocolVersion.
+       */
+      @java.lang.Override
+      public int getProtocolVersion() {
+        return instance.getProtocolVersion();
+      }
+      /**
+       * <pre>
+       * Protocol version the relay announced at the last registration.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+       * @param value The protocolVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProtocolVersion(int value) {
+        copyOnWrite();
+        instance.setProtocolVersion(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Protocol version the relay announced at the last registration.
+       * </pre>
+       *
+       * <code>uint32 protocol_version = 7 [json_name = "protocolVersion"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProtocolVersion() {
+        copyOnWrite();
+        instance.clearProtocolVersion();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The relay speaks a newer protocol version than this device, so this client
+       * has to be updated.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+       * @return The protocolNewer.
+       */
+      @java.lang.Override
+      public boolean getProtocolNewer() {
+        return instance.getProtocolNewer();
+      }
+      /**
+       * <pre>
+       * The relay speaks a newer protocol version than this device, so this client
+       * has to be updated.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+       * @param value The protocolNewer to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProtocolNewer(boolean value) {
+        copyOnWrite();
+        instance.setProtocolNewer(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The relay speaks a newer protocol version than this device, so this client
+       * has to be updated.
+       * </pre>
+       *
+       * <code>bool protocol_newer = 8 [json_name = "protocolNewer"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProtocolNewer() {
+        copyOnWrite();
+        instance.clearProtocolNewer();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Relay)
     }
     @java.lang.Override
@@ -49073,10 +49626,12 @@ java.lang.String defaultValue) {
               "transport_",
               "changedAtUnixMs_",
               "filesOnRequest_",
+              "protocolVersion_",
+              "protocolNewer_",
             };
             java.lang.String info =
-                "\u0000\u0006\u0000\u0000\u0001\u0006\u0006\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
-                "\u0003\u0007\u0004\f\u0005\u0002\u0006\u0007";
+                "\u0000\b\u0000\u0000\u0001\b\b\u0000\u0000\u0000\u0001\u0208\u0002\u0007\u0003\u0007" +
+                "\u0004\f\u0005\u0002\u0006\u0007\u0007\u000b\b\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

@@ -9,8 +9,13 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lebe-dev/unison/core/protocol"
 	relayv1 "github.com/lebe-dev/unison/proto/unison/relay/v1"
 )
+
+// unsetProtocolVersion is the version of a peer that predates the version
+// field, which reads as the first relay protocol.
+const unsetProtocolVersion uint32 = 1
 
 const (
 	// mailboxIDLen is the size of a mailbox id.
@@ -96,7 +101,11 @@ func closeFrame(status relayv1.RelayStatus) []byte {
 func registerResultFrame(status relayv1.RelayStatus, limits *relayv1.Limits) []byte {
 	data, err := marshalFrame(&relayv1.Frame{
 		Body: &relayv1.Frame_RegisterResult{
-			RegisterResult: &relayv1.RegisterResult{Status: status, Limits: limits},
+			RegisterResult: &relayv1.RegisterResult{
+				Status:          status,
+				Limits:          limits,
+				ProtocolVersion: protocol.Version,
+			},
 		},
 	})
 	if err != nil {

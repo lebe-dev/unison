@@ -60,13 +60,21 @@ func (a *app) devicesList(ctx context.Context, args []string) error {
 		return err
 	}
 	if a.json {
-		return a.writeJSON(&localv1.ListDevicesResponse{Devices: devices})
+		if err := a.writeJSON(&localv1.ListDevicesResponse{Devices: devices}); err != nil {
+			return err
+		}
+		a.writeDeviceProtocolNotices(devices)
+		return nil
 	}
 	if len(devices) == 0 {
 		a.info("no paired devices")
 		return nil
 	}
-	return a.writeTable(devices)
+	if err := a.writeTable(devices); err != nil {
+		return err
+	}
+	a.writeDeviceProtocolNotices(devices)
+	return nil
 }
 
 // devicesRename changes the display name of a device. The name of a peer is

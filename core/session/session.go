@@ -15,6 +15,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/protocol"
 	"github.com/lebe-dev/unison/core/transport"
 	"github.com/lebe-dev/unison/core/trust"
 	"github.com/lebe-dev/unison/internal/observability"
@@ -367,8 +368,8 @@ func (s *Session) handshake(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if hello.Version != ProtocolVersion {
-		return fmt.Errorf("%w: peer version %d, want %d", ErrIncompatibleVersion, hello.Version, ProtocolVersion)
+	if relation := protocol.Compare(hello.Version); relation != protocol.Same {
+		return fmt.Errorf("%w: peer version %d, want %d (%s)", ErrIncompatibleVersion, hello.Version, ProtocolVersion, relation)
 	}
 	s.recordPeer(ctx, hello)
 	return nil

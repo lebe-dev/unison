@@ -44,15 +44,19 @@ func FuzzRelayFrame(f *testing.F) {
 			}
 		}
 		if result := frame.GetRegisterResult(); result != nil {
-			limits, err := limitsOf(result)
+			reg, err := registrationOf(result)
 			if err != nil {
 				return
 			}
+			limits := reg.Limits
 			if limits.MaxDatagramBytes <= 0 || limits.MaxDatagramBytes > maxRelayDatagrams {
 				t.Fatalf("accepted %d datagram bytes", limits.MaxDatagramBytes)
 			}
 			if limits.MaxMailboxes <= 0 || limits.MaxMailboxes > maxMailboxes {
 				t.Fatalf("accepted %d mailboxes", limits.MaxMailboxes)
+			}
+			if reg.ProtocolVersion == 0 {
+				t.Fatal("accepted a registration without a protocol version")
 			}
 		}
 		_, _ = readStreamFrame(bytes.NewReader(data), maxRelayDatagrams+frameOverheadBytes)

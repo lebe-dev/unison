@@ -13,6 +13,7 @@ import (
 
 	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/protocol"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -91,9 +92,10 @@ func addrPort(value string) (string, *connect.Error) {
 // GetStatus reports the version and the runtime state of the daemon.
 func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetStatusRequest]) (*connect.Response[localv1.GetStatusResponse], error) {
 	status := &localv1.GetStatusResponse{
-		Version:    s.version,
-		DeviceName: s.name,
-		Running:    s.running(),
+		Version:         s.version,
+		DeviceName:      s.name,
+		Running:         s.running(),
+		ProtocolVersion: protocol.Version,
 	}
 	if s.clipStatus != nil {
 		status.ClipboardBackend, status.ClipboardNote = s.clipStatus()

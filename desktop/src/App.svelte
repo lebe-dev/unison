@@ -189,6 +189,12 @@
     </header>
 
     <div class="content" class:bleed={active === "devices"}>
+      {#if daemon.protocolUpdateNeeded}
+        <div class="banner" role="alert">
+          <p>{t("app.protocolNewerBanner")}</p>
+        </div>
+      {/if}
+
       {#if daemon.localNetworkBlocked}
         <div class="banner" role="alert">
           <p>{t("app.localNetworkBanner")}</p>

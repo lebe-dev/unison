@@ -297,6 +297,11 @@ message Device {
   // remotely. The switch in the settings of this device can turn the permission
   // off for every device.
   bool allow_remote_settings = 19;
+  // Protocol version the device announced at its last handshake.
+  uint32 protocol_version = 20;
+  // The device speaks a newer protocol version than this device, so this client
+  // has to be updated.
+  bool protocol_newer = 21;
 }
 
 // State of the clipboard pause.
@@ -389,6 +394,9 @@ message Event {
   // Why the operation of the event failed, set together with error when the
   // reason is known.
   FailureReason failure_reason = 16;
+  // The peer speaks a newer protocol version than this device, so this client
+  // has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+  bool protocol_newer = 17;
 }
 
 // State of the pairing window.
@@ -519,6 +527,8 @@ message GetStatusResponse {
   // The keystore the daemon keeps secrets in: secret-service or file on Linux,
   // keychain on macOS and dpapi on Windows.
   string keystore_backend = 13;
+  // Protocol version of this daemon.
+  uint32 protocol_version = 14;
 }
 
 message WatchEventsRequest {}
@@ -959,6 +969,11 @@ message Relay {
   int64 changed_at_unix_ms = 5;
   // Files travel over the relay only when the user asks for them.
   bool files_on_request = 6;
+  // Protocol version the relay announced at the last registration.
+  uint32 protocol_version = 7;
+  // The relay speaks a newer protocol version than this device, so this client
+  // has to be updated.
+  bool protocol_newer = 8;
 }
 
 message GetRelayRequest {}

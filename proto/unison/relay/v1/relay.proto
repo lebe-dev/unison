@@ -49,6 +49,9 @@ message Register {
   bytes token = 1;
   // Mailbox ids to join, 16 bytes each.
   repeated bytes mailbox_ids = 2;
+  // Protocol version of the client. A relay of version 1 sends no version, so
+  // an unset field is read as version 1.
+  uint32 protocol_version = 3;
 }
 
 // Answer to a registration. It is the second frame of a connection.
@@ -56,6 +59,8 @@ message RegisterResult {
   RelayStatus status = 1;
   // Limits the relay applies, sent on success.
   Limits limits = 2;
+  // Protocol version of the relay.
+  uint32 protocol_version = 3;
 }
 
 // Replacement of the mailbox set of a registered connection. It travels like a

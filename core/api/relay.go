@@ -160,6 +160,8 @@ func relayToProto(settings trust.RelaySettings, changedAt time.Time, status rela
 		ChangedAtUnixMs: unixMilli(changedAt),
 		Connected:       status.Connected,
 		Transport:       relayTransportToProto(status.Transport),
+		ProtocolVersion: status.ProtocolVersion,
+		ProtocolNewer:   status.ProtocolNewer,
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/pairing"
+	"github.com/lebe-dev/unison/core/protocol"
 	"github.com/lebe-dev/unison/core/trust"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
@@ -147,6 +148,8 @@ func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 		Unreachable:                 state.Unreachable,
 		UnreachableSinceUnixMs:      unixMilli(state.UnreachableSince),
 		UnreachableDetail:           state.UnreachableDetail,
+		ProtocolVersion:             state.ProtocolVersion,
+		ProtocolNewer:               state.ProtocolKnown && protocol.Compare(state.ProtocolVersion) == protocol.PeerNewer,
 	}
 	if !peer.IntroducedBy.IsZero() {
 		device.IntroducedBy = peer.IntroducedBy.String()
@@ -257,6 +260,7 @@ func eventToProto(event node.Event) *localv1.Event {
 		Sas:             sasToProto(event.SAS),
 		PairingMethod:   pairingMethodToProto(event.Method),
 		ProtocolVersion: event.Version,
+		ProtocolNewer:   event.ProtocolNewer,
 		AtUnixMs:        unixMilli(event.At),
 	}
 	switch event.Kind {
