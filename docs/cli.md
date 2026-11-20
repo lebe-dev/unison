@@ -265,3 +265,8 @@ the one inside its bundle. A daemon started by hand takes:
 | `--log-stderr` | copy the log to standard error as well |
 | `--version` | print the version and exit |
 
+`--net-echo`, `--net-echo-listen`, `--net-echo-peer` and `--net-echo-wait` run a plain UDP echo
+instead of the daemon. It carries no protocol and no identity: a machine answers every datagram with
+the same bytes, and `--net-echo-peer <host:port>` sends one probe and prints whether the echo comes
+back. The Linux test kit uses it to show that UDP reaches the Mac in both directions.
+

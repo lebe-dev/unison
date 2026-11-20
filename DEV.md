@@ -735,3 +735,59 @@ Every flag reads an environment variable as well: `UNISON_RELAY_QUIC_ADDR`, `UNI
 `UNISON_RELAY_QUOTA_BYTES`, `UNISON_RELAY_QUOTA_WINDOW`, `UNISON_RELAY_MAX_CONNECTIONS`,
 `UNISON_RELAY_MAX_MAILBOXES_TOTAL`, `UNISON_RELAY_PING_INTERVAL` and
 `UNISON_RELAY_REGISTER_TIMEOUT`.
+
+## Building for Linux on macOS
+
+The Linux test kit is built on the Mac: every Go part is pure Go, so the target machine needs no
+Go, just, Rust or Node and the build needs no Docker.
+
+```sh
+just linux-kit
+just linux-kit --with-deb
+```
+
+`linux-kit` writes `packaging/linux/build/Unison-<version>-linux-kit-<date>-<time>.tar.gz`; a second
+run in the same minute keeps the earlier archive with a numeric suffix. The archive holds:
+
+- `bin/unisond` and `bin/unison` for linux/amd64, built with the version of the `VERSION` file, and
+  `bin/unison-probe` once that command exists;
+- `tests/<package>/<name>.test` for every Go package with tests on Linux, with the `testdata`
+  directory of the package next to the binary, because a test binary reads the fuzz corpus relative
+  to its working directory. The clipboard and keyring packages are built with the
+  `x11clipboardtest` and `secretservicetest` tags; the heavy tests with the `bloblarge` and
+  `sharelarge` tags are not part of the kit. A package without tests on Linux is not an error;
+- `scripts/run-tests.sh` runs the test binaries one at a time and writes `report/<package>.txt`, the
+  state of the system and a summary into `Unison-tests-<machine>-<date>.tar.gz` next to the kit.
+  `--package` picks a part of the path, `--timeout` sets the timeout of one package, and
+  `--skip-clipboard` and `--skip-keyring` skip the tests that change the session of the user; the
+  script asks before it runs them otherwise;
+- `scripts/verify.sh` checks the binaries of the kit, and the package, the files, the user unit, the
+  process and the socket of the daemon when the package is installed;
+- `scripts/net-check.sh` describes the network of the machine, pings the Mac and sends a UDP probe
+  to `bin/unisond --net-echo` with `--peer`, then waits for a probe from the Mac;
+- `scripts/collect.sh` writes `Unison-collect-<machine>-<date>.tar.gz` with the log files of the
+  data directory, the journal of the user unit, the output of `verify.sh` and `net-check.sh`, the
+  state of the system, the process and the socket, and `unison status`. The keys, the database and
+  the blobs never go into the archive, and the script checks the archive for them;
+- `deb/` holds the newest `.deb` of `packaging/linux/build` when `--with-deb` is used;
+- `README.txt` has the steps for the person at the virtual machine, including bridged networking.
+
+The scripts need only what Ubuntu 24.04 Desktop installs: bash, coreutils, tar, gzip, iproute2,
+procps and systemd, plus avahi-utils for the mDNS listing when it is installed. The kit runs in the
+desktop session of the user, because the clipboard and keyring tests need the display and the
+session bus.
+
+For the two way UDP check the Mac answers probes from the repository:
+
+```sh
+just build-unisond-host
+bin/unisond --net-echo
+```
+
+Then `scripts/net-check.sh --peer <address of the Mac>` on the machine sends one probe and prints
+the address the Mac has to use for its own probe. The echo mode carries no protocol: it answers
+every datagram with the same bytes and reports the sender.
+
+The machine brings back `Unison-tests-<machine>-<date>.tar.gz` and
+`Unison-collect-<machine>-<date>.tar.gz`. The first holds the output of every test binary, the second
+the logs and the state of the system; extract them and read `summary.txt` first.

@@ -333,6 +333,10 @@ package-windows-cross:
 windows-kit: package-windows-cross
     packaging/windows/kit.sh
 
+# Build the Linux test kit that runs on an Ubuntu virtual machine.
+linux-kit *args:
+    packaging/linux/kit.sh {{args}}
+
 # Check the Windows installer and the installed application.
 verify-windows *args:
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/verify.ps1 {{args}}

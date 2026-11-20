@@ -77,6 +77,10 @@ func run(args []string) int {
 	name := flags.String("name", "", "device name announced to peers")
 	level := flags.String("log-level", "info", "log level: debug, info, warn or error")
 	stderr := flags.Bool("log-stderr", false, "copy the log to stderr")
+	netEcho := flags.Bool("net-echo", false, "answer UDP probes of the network check")
+	netEchoListen := flags.String("net-echo-listen", defaultNetEchoListen, "address of the UDP echo")
+	netEchoPeer := flags.String("net-echo-peer", "", "probe this UDP address and exit")
+	netEchoWait := flags.Duration("net-echo-wait", 0, "time to wait for a probe, unlimited when zero")
 
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -87,6 +91,14 @@ func run(args []string) int {
 	if *showVersion {
 		_, _ = fmt.Printf("unisond %s\n", version)
 		return exitOK
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	echo := netEchoOptions{listen: *netEchoListen, peer: *netEchoPeer, wait: *netEchoWait}
+	if *netEcho || echo.peer != "" {
+		return runNetEcho(ctx, echo, os.Stdout)
 	}
 
 	logLevel, err := parseLevel(*level)
@@ -112,9 +124,6 @@ func run(args []string) int {
 	if err != nil {
 		return fail(err)
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	options := daemon.Options{
 		DataDir:   dir,
