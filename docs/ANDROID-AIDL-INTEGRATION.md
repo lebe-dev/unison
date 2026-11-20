@@ -33,9 +33,11 @@ tile and its own screen.
 - It does not carry files out of the phone. The app publishes text, HTML and images; an item that
   carries files can be received and opened, file by file.
 - It does not read the clipboard for the keyboard. Android lets an app read the clipboard only while
-  it is in the foreground, so the keyboard reads it from the input method and hands the content over.
+  it is in the foreground or is the default input method, so the keyboard reads it from the input
+  method and hands the content over.
 - It does not decide what is sensitive. The app skips a clip that carries
-  `ClipDescription.EXTRA_IS_SENSITIVE`, the keyboard has to skip password fields.
+  `ClipDescription.EXTRA_IS_SENSITIVE`, the keyboard has to skip the clips taken while it types into
+  a password or a private field.
 - It does not queue what it cannot deliver. A publish while the synchronization is paused, or
   content the core cannot carry, is refused; the publish methods with a result report the refusal
   and the plain methods only log it.
@@ -681,7 +683,7 @@ it to the app, so the capture rules below are what keeps passwords out of the sy
 
 ### When to read
 
-Read only while an editor is attached to the keyboard and the clipboard changed:
+Read the clipboard whenever it changed, whatever is in front:
 
 ```kotlin
 override fun onPrimaryClipChanged() {
@@ -701,20 +703,25 @@ Skip the whole capture when any of these is true:
 - `primaryClipDescription.extras` carries `android.content.extra.IS_SENSITIVE` set to true. The
   constant `ClipDescription.EXTRA_IS_SENSITIVE` exists from API 33, the string works from API 29 and
   is what the system writes.
-- The focused editor is a password field: `TYPE_TEXT_VARIATION_PASSWORD`,
+- The keyboard types into a password field: `TYPE_TEXT_VARIATION_PASSWORD`,
   `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD`, `TYPE_TEXT_VARIATION_WEB_PASSWORD` or
   `TYPE_TEXT_VARIATION_NUMBER_PASSWORD`.
-- The focused editor is not a text editor, for example `TYPE_NULL`, or `currentInputEditorInfo` is
-  null, which means no editor is attached.
+- The keyboard types into a private field, one that asks for no personalized learning
+  (`IME_FLAG_NO_PERSONALIZED_LEARNING`), such as the field of an incognito tab.
 - `primaryClipDescription.extras` carries `BridgeContract.EXTRA_ITEM_ID`. Unison wrote the clip
   itself, see [Clips the app writes](#clips-the-app-writes).
 - The content is empty, or it is the content that this keyboard just committed from an incoming
   item.
 
+An editor that is missing (`currentInputEditorInfo` is null) or that is not a text editor is not a
+reason to skip: the copy was made in another app, for example in Contacts or on a page of a browser.
+Publishing it at once is what makes a copy from such an app reach the other devices.
+
 ```kotlin
-private fun isTextEditor(inputType: Int): Boolean {
-    val cls = inputType and InputType.TYPE_MASK_CLASS
-    return cls == InputType.TYPE_CLASS_TEXT || cls == InputType.TYPE_CLASS_NUMBER
+private fun skipBecauseOfEditor(info: EditorInfo?): Boolean {
+    if (info == null) return false
+    if (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING != 0) return true
+    return isPasswordField(info.inputType)
 }
 
 private fun isPasswordField(inputType: Int): Boolean = when (inputType and InputType.TYPE_MASK_VARIATION) {
@@ -729,7 +736,8 @@ private fun isPasswordField(inputType: Int): Boolean = when (inputType and Input
 
 The check runs on the state of the editor at the moment of the read, not at the moment of the copy.
 A password manager that copies a password while the editor is a password field is therefore caught,
-and a copy in a search field is not.
+and a copy in a search field is not. A copy made with no editor attached cannot be told from a
+private one, so it is published: the sensitive marker of the app is what keeps a secret out then.
 
 ### Text
 
@@ -933,16 +941,16 @@ clipboard is not touched on the way, only the history travels.
 
 - The bridge carries content, not metadata about a person. Do not log the text, the file names or the
   preview: an id, a kind and a size are enough for a debug line.
-- The keyboard is the trusted peer of the app. It reads the clipboard in the foreground and decides
-  what to publish; the signature permission and the caller check only make sure that no other app
-  takes its place.
+- The keyboard is the trusted peer of the app. It reads the clipboard and decides what to publish;
+  the signature permission and the caller check only make sure that no other app takes its place.
 - The app checks the signature of the caller by uid on every call, not only at bind time, because a
   package can be replaced while a binding is alive.
 - Do not keep a copy of an item after the user committed it. Write the bytes for `commitContent` into
   the cache, let the editor read them, and let the cleanup remove them. Do not copy an incoming item
   into the database, the preferences or the backup of the keyboard.
-- Never read the clipboard when the keyboard is not on screen. Android refuses it in the background
-  anyway, and a retry loop only drains the battery.
+- Never poll the clipboard. Read it when the change listener fires, also while the keyboard is not on
+  screen: Android lets the default input method read it, and that is what sends a copy made in another
+  app. A retry loop only drains the battery.
 
 ## Complete example
 
@@ -1297,8 +1305,7 @@ class MyKeyboardService : InputMethodService(), ClipboardManager.OnPrimaryClipCh
         if (paused) {
             return
         }
-        val info = currentInputEditorInfo ?: return
-        if (!isTextEditor(info.inputType) || isPasswordField(info.inputType)) {
+        if (skipBecauseOfEditor(currentInputEditorInfo)) {
             return
         }
         val description = clipboard.primaryClipDescription ?: return
@@ -1346,9 +1353,14 @@ class MyKeyboardService : InputMethodService(), ClipboardManager.OnPrimaryClipCh
         }
     }
 
-    private fun isTextEditor(inputType: Int): Boolean {
-        val cls = inputType and InputType.TYPE_MASK_CLASS
-        return cls == InputType.TYPE_CLASS_TEXT || cls == InputType.TYPE_CLASS_NUMBER
+    private fun skipBecauseOfEditor(info: EditorInfo?): Boolean {
+        if (info == null) {
+            return false
+        }
+        if (info.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING != 0) {
+            return true
+        }
+        return isPasswordField(info.inputType)
     }
 
     private fun isPasswordField(inputType: Int): Boolean = when (inputType and InputType.TYPE_MASK_VARIATION) {
@@ -1571,7 +1583,7 @@ working bridge without a restart of the keyboard.
 | `onServiceConnected` is never called | The binding was not made, or the component name is wrong | Use `ComponentName(BridgeContract.PACKAGE, BridgeContract.SERVICE_CLASS)` and `BIND_AUTO_CREATE` |
 | No callbacks at all | No listener registered, or it was registered before the app was ready | Register in `onServiceConnected` after the version check, and register again on every reconnect |
 | Callbacks stop after an update of Unison | The old binder is dead | Rebind in `onBindingDied`, and register the listener again |
-| A clipboard change is not delivered | The clip is sensitive, the editor is a password field, the pause is on, or the keyboard was not focused when the change happened | Check the logcat of the keyboard and the pause state of the app |
+| A clipboard change is not delivered | The clip is sensitive, the keyboard is in a password or private field, or the pause is on | Check the logcat of the keyboard and the pause state of the app |
 | A publish reports 1 | The pause is on, `PUBLISH_PAUSED` | Resume the pause; the state arrives through `onStateChanged` |
 | A publish reports 2 | The core is not running and did not start, `PUBLISH_CORE_UNAVAILABLE` | Bring Unison to the foreground once; the next publish starts the core again |
 | A publish reports 3 | The type is not text or an image, or `meta.mime` is empty, `PUBLISH_UNSUPPORTED_TYPE` | Send a real `text/plain`, `text/html` or `image/*` type |
