@@ -101,10 +101,11 @@ func readClipboard(ctx context.Context, args []string) error {
 // reports the result.
 func writeClipboard(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("clipboard write", flag.ExitOnError)
+	hold := flags.Duration("hold", 0, "keep the selection after the write for this long")
 	_ = flags.Parse(args)
 	text := strings.Join(flags.Args(), " ")
 	if text == "" {
-		return errors.New("usage: clipboard write <text>")
+		return errors.New("usage: clipboard write [--hold 30s] <text>")
 	}
 	clip, err := clipboard.NewX11(clipboard.X11Options{})
 	if err != nil {
@@ -125,6 +126,16 @@ func writeClipboard(ctx context.Context, args []string) error {
 		return err
 	}
 	printReport(report, "")
+	// The value of a selection lives only while its owner runs, so a check of
+	// another client needs the probe to keep the ownership.
+	if *hold > 0 {
+		timer := time.NewTimer(*hold)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+		case <-timer.C:
+		}
+	}
 	return nil
 }
 
