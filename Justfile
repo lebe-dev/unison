@@ -225,10 +225,10 @@ proto-lint:
 lint-desktop:
     cd desktop && yarn lint
 
-# Lint the Rust shell of the desktop app.
+# Lint the Rust shell of the desktop app: the format and the warnings.
 lint-rust:
-    cd desktop/src-tauri && cargo fmt --check
-    cd desktop/src-tauri && cargo clippy --all-targets -- -D warnings
+    cd desktop/src-tauri && cargo fmt --all --check
+    cd desktop/src-tauri && cargo clippy --all-targets --locked -- -D warnings
 
 # Run the Android lint checks.
 android-lint:
@@ -237,9 +237,13 @@ android-lint:
 # Run every linter of the repository.
 lint: lint-go lint-desktop lint-rust proto-lint android-lint
 
-# Format the Go sources.
-fmt:
+# Format the Go and the Rust sources of the desktop shell.
+fmt: fmt-rust
     golangci-lint fmt
+
+# Format the Rust shell of the desktop app.
+fmt-rust:
+    cd desktop/src-tauri && cargo fmt --all
 
 # Update go.mod and go.sum.
 tidy:
@@ -326,15 +330,15 @@ security: security-deps security-go security-secrets security-infra security-ima
 check: lint test vet-linux
 
 # Run the desktop app with hot reload.
-desktop-dev:
+desktop-dev: lint-rust
     cd desktop && yarn tauri dev
 
 # Build the desktop app bundle for the host platform.
-desktop-build:
+desktop-build: lint-rust
     cd desktop && yarn tauri build
 
 # Build the macOS bundle with the daemon, then sign and notarize it.
-package-macos *args:
+package-macos *args: lint-rust
     packaging/macos/package.sh {{args}}
 
 # Check the layout, the property lists and the signature of the packaged macOS bundle.
@@ -342,15 +346,15 @@ verify-macos *args:
     packaging/macos/verify.sh {{args}}
 
 # Build the Windows installer with the daemon, its startup entry and its firewall rule.
-package-windows *args:
+package-windows *args: lint-rust
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/package.ps1 {{args}}
 
 # Build the Windows installer from macOS with cargo-xwin and NSIS.
-package-windows-cross:
+package-windows-cross: lint-rust
     packaging/windows/package-cross.sh
 
 # Build the Linux package in a linux/amd64 Docker container.
-package-linux *args:
+package-linux *args: lint-rust
     packaging/linux/package.sh {{args}}
 
 # Build the Windows installer and the test kit that runs on a Windows host.

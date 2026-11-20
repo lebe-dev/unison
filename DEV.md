@@ -89,7 +89,8 @@ just security-infra       # deployment files with Trivy
 just security-image       # relay image with Trivy
 just vet-windows          # vet and build everything for Windows from any host
 just vet-linux            # vet and build everything for Linux amd64 from any host
-just fmt                  # format the Go sources
+just fmt                  # format the Go and Rust sources
+just fmt-rust             # format the Rust shell of the desktop app
 just tidy                 # update go.mod and go.sum
 just proto                # generate Go code from proto/ with buf
 just proto-android        # generate Java lite classes for the Android app
@@ -121,6 +122,9 @@ ESLint with typescript-eslint and eslint-plugin-svelte plus Prettier for the des
 rustfmt and clippy for its shell, and the Gradle lint task for Android. The security recipes need
 network access, because OSV-Scanner and Trivy download their databases, and the secrets scan reads
 the whole git history; `just security-image` builds the relay image before it scans it.
+
+Every recipe that builds the Rust shell runs `lint-rust` first: `desktop-dev`, `desktop-build` and
+the packaging recipes.
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
 
