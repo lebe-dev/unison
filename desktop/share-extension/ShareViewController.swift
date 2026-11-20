@@ -10,6 +10,10 @@ import UniformTypeIdentifiers
 /// Most files of one share, the limit of an offer of the daemon.
 private let maxFiles = 32
 
+/// How long the extension waits for the items before it hands over the ones
+/// that arrived, so an item that never reports cannot leave it hanging.
+private let loadTimeout: DispatchTimeInterval = .seconds(10)
+
 @objc(ShareViewController)
 final class ShareViewController: NSViewController {
     override var nibName: NSNib.Name? { nil }
@@ -41,9 +45,16 @@ final class ShareViewController: NSViewController {
     }
 
     /// loadFileURLs reads the file URL of every provider and calls done on the
-    /// main queue with the URLs in the order of the providers.
+    /// main queue with the URLs that arrived. A provider that never reports
+    /// cannot hold the extension, so the wait ends after loadTimeout.
     private func loadFileURLs(_ providers: [NSItemProvider], done: @escaping ([URL]) -> Void) {
         var urls = [URL?](repeating: nil, count: providers.count)
+        var finished = false
+        let finish = {
+            guard !finished else { return }
+            finished = true
+            done(urls.compactMap { $0 })
+        }
         let group = DispatchGroup()
         for (index, provider) in providers.enumerated() {
             group.enter()
@@ -55,9 +66,8 @@ final class ShareViewController: NSViewController {
                 }
             }
         }
-        group.notify(queue: .main) {
-            done(urls.compactMap { $0 })
-        }
+        group.notify(queue: .main, execute: finish)
+        DispatchQueue.main.asyncAfter(deadline: .now() + loadTimeout, execute: finish)
     }
 
     /// fileURL turns the item of a provider into a file URL.
