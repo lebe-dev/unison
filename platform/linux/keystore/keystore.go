@@ -142,6 +142,9 @@ func Open(dataDir, service string, opts Options) (*Keystore, error) {
 	}
 	secrets, err := openSecretService(opts)
 	if err == nil {
+		err = secrets.ready(context.Background())
+	}
+	if err == nil {
 		k.backend = BackendSecretService
 		k.secrets = secrets
 		k.logger.Info("secrets are stored in the Secret Service", "backend", string(k.backend), "service", service)

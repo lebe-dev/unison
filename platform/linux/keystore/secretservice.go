@@ -303,6 +303,16 @@ func (s *secretService) collection() (dbus.ObjectPath, error) {
 	return "", fmt.Errorf("%w: the keyring has neither a %s nor a %s collection", ErrKeyringUnavailable, aliasDefault, aliasLogin)
 }
 
+// ready reports whether the collection of the secrets can be used: it exists
+// and it is unlocked, with a system prompt when it is locked.
+func (s *secretService) ready(ctx context.Context) error {
+	collection, err := s.collection()
+	if err != nil {
+		return err
+	}
+	return s.ensureUnlocked(ctx, collection, ifaceCollection)
+}
+
 // ensureUnlocked unlocks path and waits for the system prompt.
 func (s *secretService) ensureUnlocked(ctx context.Context, path dbus.ObjectPath, iface string) error {
 	locked, err := lockedAt(s.conn, path, iface)

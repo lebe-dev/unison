@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 
@@ -93,6 +94,30 @@ func TestOpenRecordedSecretServiceWithoutCollection(t *testing.T) {
 	}
 	if _, err := Open(dir, testService, Options{connect: fakeConnect(ring)}); !errors.Is(err, ErrKeyringUnavailable) {
 		t.Fatalf("Open = %v, want ErrKeyringUnavailable", err)
+	}
+}
+
+// TestOpenFallsBackWhenKeyringIsLocked keeps the daemon startable when nobody
+// answers the prompt of a locked keyring: the keys go to files.
+func TestOpenFallsBackWhenKeyringIsLocked(t *testing.T) {
+	ring := newFakeKeyring()
+	ring.collectionLocked = true
+	ring.silentPrompt = true
+	k, err := Open(t.TempDir(), testService, Options{
+		connect:       fakeConnect(ring),
+		PromptTimeout: 20 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if got := k.Backend(); got != BackendFile {
+		t.Fatalf("Backend() = %q, want %q", got, BackendFile)
+	}
+	if warning := k.Warning(); !strings.Contains(warning, "locked") {
+		t.Fatalf("Warning() = %q, want the reason of the fallback", warning)
+	}
+	if err := k.Store(context.Background(), "test/secret", []byte("value")); err != nil {
+		t.Fatalf("Store: %v", err)
 	}
 }
 
