@@ -204,6 +204,28 @@ func (s *secretService) load(ctx context.Context, service, name string) ([]byte,
 	return secret, nil
 }
 
+// searchAnswer reads the answer of SearchItems: the unlocked items and the
+// locked ones. The specification names two lists, but GNOME Keyring answers
+// with the unlocked items only.
+func searchAnswer(body []any) (unlocked, locked []dbus.ObjectPath, err error) {
+	if len(body) == 0 || len(body) > 2 {
+		return nil, nil, fmt.Errorf("the service returned %d lists, want one or two", len(body))
+	}
+	lists := make([][]dbus.ObjectPath, len(body))
+	for i, value := range body {
+		items, ok := value.([]dbus.ObjectPath)
+		if !ok {
+			return nil, nil, fmt.Errorf("the service returned %T, want object paths", value)
+		}
+		lists[i] = items
+	}
+	unlocked = lists[0]
+	if len(lists) == 2 {
+		locked = lists[1]
+	}
+	return unlocked, locked, nil
+}
+
 // store replaces the secret stored under name.
 func (s *secretService) store(ctx context.Context, service, name string, secret []byte) error {
 	if err := ctx.Err(); err != nil {
@@ -263,9 +285,12 @@ func (s *secretService) search(ctx context.Context, service, name string) ([]dbu
 	if err := s.ensureUnlocked(ctx, collection, ifaceCollection); err != nil {
 		return nil, err
 	}
-	var unlocked, locked []dbus.ObjectPath
 	call := s.conn.Object(busName, collection).Call(ifaceCollection+".SearchItems", 0, attributes(service, name))
-	if err := call.Store(&unlocked, &locked); err != nil {
+	if call.Err != nil {
+		return nil, fmt.Errorf("keystore: search the keyring: %w", call.Err)
+	}
+	unlocked, locked, err := searchAnswer(call.Body)
+	if err != nil {
 		return nil, fmt.Errorf("keystore: search the keyring: %w", err)
 	}
 	for _, item := range locked {

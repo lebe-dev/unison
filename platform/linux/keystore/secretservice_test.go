@@ -59,6 +59,25 @@ func TestSecretServiceRoundTrip(t *testing.T) {
 	}
 }
 
+// TestSecretServiceSingleSearchAnswer reads the items when the service answers
+// SearchItems with the unlocked list only, as GNOME Keyring does.
+func TestSecretServiceSingleSearchAnswer(t *testing.T) {
+	ring := newFakeKeyring()
+	ring.singleSearch = true
+	s := newTestSecretService(t, ring, 0)
+
+	if err := s.store(context.Background(), testService, "store.dek", []byte("key")); err != nil {
+		t.Fatalf("store: %v", err)
+	}
+	secret, err := s.load(context.Background(), testService, "store.dek")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if string(secret) != "key" {
+		t.Fatalf("secret = %q, want %q", secret, "key")
+	}
+}
+
 // TestSecretServiceHidesSecretOnTheBus checks that the stored value is
 // encrypted when the session uses the key exchange.
 func TestSecretServiceHidesSecretOnTheBus(t *testing.T) {

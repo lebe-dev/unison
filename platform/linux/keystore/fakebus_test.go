@@ -36,6 +36,9 @@ type fakeKeyring struct {
 	// promptWait blocks the call that shows a prompt until the channel is
 	// closed, which is what a real prompt does while it waits for the user.
 	promptWait chan struct{}
+	// singleSearch answers SearchItems with the unlocked list only, as GNOME
+	// Keyring does.
+	singleSearch bool
 
 	items map[dbus.ObjectPath]*fakeItem
 
@@ -231,6 +234,9 @@ func (k *fakeKeyring) searchItems(args []any) ([]any, error) {
 			continue
 		}
 		unlocked = append(unlocked, path)
+	}
+	if k.singleSearch {
+		return []any{unlocked}, nil
 	}
 	return []any{unlocked, locked}, nil
 }
