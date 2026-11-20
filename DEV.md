@@ -111,6 +111,7 @@ just verify-macos         # check the layout and the signature of the macOS bund
 just package-windows      # Windows installer with the daemon, run on Windows
 just verify-windows       # check the installer and the installed Windows app
 just package-windows-cross # Windows installer built on macOS
+just package-linux        # Linux package in a linux/amd64 Docker container
 just windows-kit          # Windows installer and the test kit for a Windows host
 just clean                # remove bin/
 ```
@@ -737,6 +738,86 @@ Every flag reads an environment variable as well: `UNISON_RELAY_QUIC_ADDR`, `UNI
 `UNISON_RELAY_QUOTA_BYTES`, `UNISON_RELAY_QUOTA_WINDOW`, `UNISON_RELAY_MAX_CONNECTIONS`,
 `UNISON_RELAY_MAX_MAILBOXES_TOTAL`, `UNISON_RELAY_PING_INTERVAL` and
 `UNISON_RELAY_REGISTER_TIMEOUT`.
+
+## Building the Linux package on macOS
+
+`just package-linux` builds `packaging/linux/build/Unison-<version>_amd64.deb`. The app links
+WebKitGTK, so it is built in a `linux/amd64` Docker container, and the host needs Docker Desktop
+with the amd64 emulation. On Apple Silicon that emulation runs through Rosetta: enable "Use Rosetta
+for x86_64/amd64 emulation" in Settings > General of Docker Desktop. The script stops with that hint
+when `docker run --platform linux/amd64 ubuntu:22.04 uname -m` does not print `x86_64`.
+
+The build image is `packaging/linux/build-image/Dockerfile`: Ubuntu 22.04 with the WebKitGTK, GTK3,
+appindicator and patchelf packages that Tauri needs, and the Node and Rust versions of the project.
+The 22.04 userland keeps glibc at 2.35, so one package runs on both 22.04 and 24.04. The image is
+tagged with the hash of its Dockerfile (`unison-linux-build:<hash>`): it is built once and rebuilt
+only when the Dockerfile changes, and `--rebuild-image` or `--no-cache` force a rebuild.
+
+The daemon and the client are pure Go and are cross built on the host into
+`desktop/src-tauri/binaries/unisond-x86_64-unknown-linux-gnu`, the sidecar of the bundle, and
+`binaries/unison-x86_64-unknown-linux-gnu`, the client. The container installs the frontend
+dependencies and runs `yarn tauri build --target x86_64-unknown-linux-gnu --bundles deb`; the script
+copies the package out and prints its size and SHA-256.
+
+The bundle configuration of Linux lives in `desktop/src-tauri/tauri.linux.conf.json`, which Tauri
+merges with the shared configuration: the deb target, the sidecar, the client, the user unit of the
+daemon and the icon sizes of the package. The macOS and Windows configurations are not involved.
+
+The caches are named volumes and survive between the runs:
+
+| Volume | Content |
+|--------|---------|
+| `unison-linux-cargo` | the cargo registry, its git checkout and the package cache |
+| `unison-linux-target` | the Rust target directory of the Linux build |
+| `unison-linux-node-modules` | the frontend modules with the Linux binaries |
+| `unison-linux-yarn` | the yarn cache |
+
+The target directory is a volume of its own, so the macOS `desktop/src-tauri/target` stays untouched,
+and the modules of the frontend live in their volume for the same reason. The container runs with the
+user id of the host, so no file of the working tree belongs to root. Remove the caches with:
+
+```sh
+docker volume rm unison-linux-cargo unison-linux-target unison-linux-node-modules unison-linux-yarn
+docker image rm unison-linux-build:<hash>
+```
+
+The image takes up to twelve minutes once, mostly for the base images and the system packages. With
+the image built, the first package build takes about ten minutes, because the crates and the
+frontend packages are downloaded and every dependency is compiled under the amd64 emulation; a
+rebuild with warm caches takes about two and a half minutes.
+
+The package holds:
+
+- `/usr/bin/unison-desktop`, the app. Its name is the `Exec` and the `StartupWMClass` of the desktop
+  entry, which is the class of the window;
+- `/usr/bin/unisond`, the daemon as the sidecar of the bundle;
+- `/usr/bin/unison`, the client;
+- `/usr/lib/systemd/user/unisond.service`, the user unit of the daemon. The package ships it
+  disabled, the app starts it and turns the autostart on;
+- `/usr/share/applications/Unison.desktop` with `Name=Unison` and `Categories=Utility;`;
+- `/usr/share/icons/hicolor/<size>/apps/unison-desktop.png` from 32 to 512 pixels.
+
+`Depends` are `libwebkit2gtk-4.1-0`, `libgtk-3-0` and `libayatana-appindicator3-1`. The bundler adds
+them for every Linux package, so they are not listed in the configuration. Ubuntu 24.04 renamed the
+GTK3 runtime to `libgtk-3-0t64` in the time_t transition and declares `Provides: libgtk-3-0`, so the
+same package installs on 22.04 and on 24.04.
+
+The package has no maintainer scripts: it enables and starts nothing and never touches the data of
+the user. Removing the package does not stop a running daemon, because the scripts of a package have
+no session bus of the user and `systemctl --user` fails there; the daemon runs until the end of the
+session, and the next login finds no unit. The data directory `~/.local/share/unison` with the keys,
+the database and the logs stays.
+
+`just linux-kit --with-deb` copies the newest package into `deb/` of the kit archive. Inspect the
+package without a virtual machine with the build image:
+
+```sh
+image="unison-linux-build:$(shasum -a 256 packaging/linux/build-image/Dockerfile | cut -c1-12)"
+docker run --rm --platform linux/amd64 -v "$PWD/packaging/linux/build:/pkg:ro" "$image" \
+    dpkg-deb -I /pkg/Unison-<version>_amd64.deb
+docker run --rm --platform linux/amd64 -v "$PWD/packaging/linux/build:/pkg:ro" "$image" \
+    dpkg-deb -c /pkg/Unison-<version>_amd64.deb
+```
 
 ## Building for Linux on macOS
 
