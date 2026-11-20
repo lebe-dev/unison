@@ -47,8 +47,9 @@ fun repositoryFile(path: String): File {
 }
 
 /** Version of the build, from UNISON_VERSION when it is set. */
-val appVersion = System.getenv("UNISON_VERSION")?.trim()?.takeIf { it.isNotEmpty() }
-    ?: rootProject.file("../VERSION").readText().trim()
+val appVersion =
+    System.getenv("UNISON_VERSION")?.trim()?.takeIf { it.isNotEmpty() }
+        ?: rootProject.file("../VERSION").readText().trim()
 val sentryDsn = buildValue("SENTRY_DSN")
 
 /** Keystore of the release APK; without it the release build stays unsigned. */
