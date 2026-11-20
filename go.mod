@@ -16,6 +16,7 @@ require (
 	github.com/getsentry/sentry-go v0.50.0
 	github.com/godbus/dbus/v5 v5.2.4
 	github.com/google/uuid v1.6.0
+	github.com/jezek/xgb v1.3.1
 	github.com/miekg/dns v1.1.61
 	github.com/quic-go/quic-go v0.65.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
