@@ -418,7 +418,7 @@ fn binary_from(
 /// stop_started stops the daemon the app started, so the login item can run its
 /// own. It reports whether that daemon was running.
 pub fn stop_started() -> bool {
-    let pid = STARTED.lock().ok().and_then(|mut slot| slot.take());
+    let pid = lock(&STARTED).take();
     let Some(pid) = pid else {
         return false;
     };
@@ -440,16 +440,13 @@ fn start(binary: &PathBuf) -> Result<u32, String> {
         .spawn()
         .map_err(|err| format!("cannot start the daemon {}: {err}", binary.display()))?;
     let pid = child.id();
-    if let Ok(mut slot) = STARTED.lock() {
-        *slot = Some(pid);
-    }
+    *lock(&STARTED) = Some(pid);
     std::thread::spawn(move || {
         if let Ok(status) = child.wait() {
             *lock(&LAST_EXIT) = Some((pid, status));
         }
-        if let Ok(mut slot) = STARTED.lock()
-            && *slot == Some(pid)
-        {
+        let mut slot = lock(&STARTED);
+        if *slot == Some(pid) {
             *slot = None;
         }
     });
