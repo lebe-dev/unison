@@ -6,8 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import java.util.Locale
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 /** Remaining time until [expiresAtUnixMs], updated twice a second. */
 @Composable

@@ -1,21 +1,20 @@
 package app.unison.network
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NetworkConditionsTest {
-
     @Test
     fun stateCarriesEveryFlagOfTheCore() {
-        val conditions = NetworkConditions(
-            online = true,
-            metered = true,
-            roaming = true,
-            vpn = true,
-            dataSaver = true,
-        )
+        val conditions =
+            NetworkConditions(
+                online = true,
+                metered = true,
+                roaming = true,
+                vpn = true,
+                dataSaver = true,
+            )
 
         val state = conditions.toProto()
 

@@ -5,7 +5,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class DestinationTest {
-
     @Test
     fun notificationScreensAreResolved() {
         assertEquals(Destination.REQUESTS, Destination.ofScreen("requests"))

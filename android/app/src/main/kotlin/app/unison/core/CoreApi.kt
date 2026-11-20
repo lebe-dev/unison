@@ -31,7 +31,11 @@ interface CoreApi {
      * Stores the relay address and token. A null [token] keeps the stored one and
      * a null [filesOnRequest] keeps the stored rule.
      */
-    suspend fun setRelay(url: String, token: String?, filesOnRequest: Boolean?): Local.Relay
+    suspend fun setRelay(
+        url: String,
+        token: String?,
+        filesOnRequest: Boolean?,
+    ): Local.Relay
 
     /** Turns the relay off for the whole group. */
     suspend fun relayOff(): Local.Relay
@@ -40,13 +44,19 @@ interface CoreApi {
      * Checks that the relay at [url] accepts this device over each transport,
      * without storing anything. A null [token] uses the stored one.
      */
-    suspend fun testRelay(url: String, token: String?): Local.TestRelayResponse
+    suspend fun testRelay(
+        url: String,
+        token: String?,
+    ): Local.TestRelayResponse
 
     /**
      * Makes this device ask before it takes the clipboard items or the files of
      * any device.
      */
-    suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings
+    suspend fun setSelfConfirmation(
+        scope: Local.ConfirmationScope,
+        require: Boolean,
+    ): Local.Settings
 
     /**
      * Changes one confirmation flag of a paired device: whether this device asks
@@ -65,7 +75,10 @@ interface CoreApi {
      * remotely. The permission works only while the global one is on, and it
      * is stored here, so the device does not have to be online.
      */
-    suspend fun setDeviceRemoteSettings(deviceId: String, allow: Boolean)
+    suspend fun setDeviceRemoteSettings(
+        deviceId: String,
+        allow: Boolean,
+    )
 
     /**
      * Allows every paired device to change the confirmation flags of this
@@ -77,10 +90,16 @@ interface CoreApi {
     suspend fun revokeDevice(deviceId: String)
 
     /** Changes the local name of a device, or the name this device announces. */
-    suspend fun renameDevice(deviceId: String, name: String): Local.Device
+    suspend fun renameDevice(
+        deviceId: String,
+        name: String,
+    ): Local.Device
 
     /** Changes the pause of the clipboard synchronization. */
-    suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long = 0): Local.Pause
+    suspend fun setPause(
+        mode: Local.PauseMode,
+        untilUnixMs: Long = 0,
+    ): Local.Pause
 
     /** Live history entries, newest first. */
     suspend fun listHistory(
@@ -102,7 +121,10 @@ interface CoreApi {
     suspend fun clearHistory(): Local.ClearHistoryResponse
 
     /** Downloads the payloads of one entry into [path]. */
-    suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse
+    suspend fun fetchHistoryItem(
+        id: String,
+        path: String,
+    ): Local.FetchHistoryItemResponse
 
     /** Every file transfer of this device, newest first. */
     suspend fun listTransfers(): Local.ListTransfersResponse
@@ -114,7 +136,10 @@ interface CoreApi {
     suspend fun requests(): Local.ListRequestsResponse
 
     /** Accepts or declines an incoming file offer. */
-    suspend fun decideRequest(id: String, accept: Boolean)
+    suspend fun decideRequest(
+        id: String,
+        accept: Boolean,
+    )
 
     /** Opens a pairing window that proposes [role] to the devices it pairs with. */
     suspend fun openPairingWindow(role: Local.Role): Local.PairingWindow
@@ -149,7 +174,6 @@ class RunningCore(
     private val context: Context,
     private val client: CoreClient = CoreClient(),
 ) : CoreApi {
-
     override suspend fun status(): Local.GetStatusResponse {
         ensureRunning()
         return client.status()
@@ -185,7 +209,11 @@ class RunningCore(
         return client.relay()
     }
 
-    override suspend fun setRelay(url: String, token: String?, filesOnRequest: Boolean?): Local.Relay {
+    override suspend fun setRelay(
+        url: String,
+        token: String?,
+        filesOnRequest: Boolean?,
+    ): Local.Relay {
         ensureRunning()
         return client.setRelay(url, token, filesOnRequest)
     }
@@ -195,12 +223,18 @@ class RunningCore(
         return client.relayOff()
     }
 
-    override suspend fun testRelay(url: String, token: String?): Local.TestRelayResponse {
+    override suspend fun testRelay(
+        url: String,
+        token: String?,
+    ): Local.TestRelayResponse {
         ensureRunning()
         return client.testRelay(url, token)
     }
 
-    override suspend fun setSelfConfirmation(scope: Local.ConfirmationScope, require: Boolean): Local.Settings {
+    override suspend fun setSelfConfirmation(
+        scope: Local.ConfirmationScope,
+        require: Boolean,
+    ): Local.Settings {
         ensureRunning()
         return client.setSelfConfirmation(scope, require)
     }
@@ -215,7 +249,10 @@ class RunningCore(
         client.setDeviceConfirmation(deviceId, scope, side, require)
     }
 
-    override suspend fun setDeviceRemoteSettings(deviceId: String, allow: Boolean) {
+    override suspend fun setDeviceRemoteSettings(
+        deviceId: String,
+        allow: Boolean,
+    ) {
         ensureRunning()
         client.setDeviceRemoteSettings(deviceId, allow)
     }
@@ -230,17 +267,27 @@ class RunningCore(
         client.revokeDevice(deviceId)
     }
 
-    override suspend fun renameDevice(deviceId: String, name: String): Local.Device {
+    override suspend fun renameDevice(
+        deviceId: String,
+        name: String,
+    ): Local.Device {
         ensureRunning()
         return client.renameDevice(deviceId, name)
     }
 
-    override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
+    override suspend fun setPause(
+        mode: Local.PauseMode,
+        untilUnixMs: Long,
+    ): Local.Pause {
         ensureRunning()
         return client.setPause(mode, untilUnixMs)
     }
 
-    override suspend fun listHistory(kind: Local.Kind, deviceId: String, limit: Int): Local.ListHistoryResponse {
+    override suspend fun listHistory(
+        kind: Local.Kind,
+        deviceId: String,
+        limit: Int,
+    ): Local.ListHistoryResponse {
         ensureRunning()
         return client.listHistory(kind, deviceId, limit)
     }
@@ -265,7 +312,10 @@ class RunningCore(
         return client.clearHistory()
     }
 
-    override suspend fun fetchHistoryItem(id: String, path: String): Local.FetchHistoryItemResponse {
+    override suspend fun fetchHistoryItem(
+        id: String,
+        path: String,
+    ): Local.FetchHistoryItemResponse {
         ensureRunning()
         return client.fetchHistoryItem(id, path)
     }
@@ -285,7 +335,10 @@ class RunningCore(
         return client.requests()
     }
 
-    override suspend fun decideRequest(id: String, accept: Boolean) {
+    override suspend fun decideRequest(
+        id: String,
+        accept: Boolean,
+    ) {
         ensureRunning()
         client.decideRequest(id, accept)
     }
@@ -348,7 +401,10 @@ class RunningCore(
     }
 
     /** Changes the lifetime of the history items of one kind. */
-    suspend fun setHistoryTtl(kind: Local.Kind, seconds: Long): Local.Settings {
+    suspend fun setHistoryTtl(
+        kind: Local.Kind,
+        seconds: Long,
+    ): Local.Settings {
         ensureRunning()
         return client.setHistoryTtl(kind, seconds)
     }

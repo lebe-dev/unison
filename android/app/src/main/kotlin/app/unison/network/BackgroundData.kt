@@ -21,12 +21,10 @@ object BackgroundData {
     private const val TAG = "BackgroundData"
 
     /** The system data saver is on for sure. */
-    fun dataSaver(status: Int): Boolean =
-        status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_WHITELISTED
+    fun dataSaver(status: Int): Boolean = status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_WHITELISTED
 
     /** Background data of the app is restricted on metered networks. */
-    fun restricted(status: Int): Boolean =
-        status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
+    fun restricted(status: Int): Boolean = status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
 
     /** The restriction status of the app, disabled when it cannot be read. */
     fun status(context: Context): Int =
@@ -39,10 +37,11 @@ object BackgroundData {
      */
     fun openSettings(context: Context) {
         val uri = Uri.fromParts("package", context.packageName, null)
-        val intents = listOf(
-            Intent(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, uri),
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri),
-        )
+        val intents =
+            listOf(
+                Intent(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, uri),
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri),
+            )
         for (intent in intents) {
             try {
                 context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

@@ -2,12 +2,13 @@ package app.unison.core
 
 import android.content.Context
 import android.net.ConnectivityManager
-import java.net.Inet4Address
 import unison.local.v1.Local
+import java.net.Inet4Address
 
 /** Addresses of this device that another one on the same network can reach. */
-class LocalAddresses(private val context: Context) {
-
+class LocalAddresses(
+    private val context: Context,
+) {
     /** IPv4 addresses of the current networks. */
     fun ipv4(): List<String> {
         val manager = context.getSystemService(ConnectivityManager::class.java) ?: return emptyList()
@@ -30,7 +31,10 @@ class LocalAddresses(private val context: Context) {
  * Addresses of a pairing code: the addresses of this device with the port of
  * the pairing listener. An empty result lets the core list the interfaces.
  */
-internal fun qrCodeAddresses(listenerAddr: String, ipv4: List<String>): List<String> {
+internal fun qrCodeAddresses(
+    listenerAddr: String,
+    ipv4: List<String>,
+): List<String> {
     val port = listenerAddr.substringAfterLast(':', "")
     if (port.toIntOrNull() == null) {
         return emptyList()

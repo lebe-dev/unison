@@ -18,9 +18,9 @@ import app.unison.ui.screens.ShareScreen
 import app.unison.ui.state.CoreFailure
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
 import unison.local.v1.Local
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Share target: sends content of another app to the paired devices. */
 class ShareActivity : ComponentActivity() {
@@ -101,13 +101,14 @@ class ShareActivity : ComponentActivity() {
     private fun load() {
         state = state.copy(loading = true, failure = null)
         lifecycleScope.launch {
-            state = try {
-                CoreState(loading = false, status = core.status())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                CoreState(loading = false, failure = failureOf(e))
-            }
+            state =
+                try {
+                    CoreState(loading = false, status = core.status())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    CoreState(loading = false, failure = failureOf(e))
+                }
             selectDefaults()
         }
     }
@@ -120,13 +121,18 @@ class ShareActivity : ComponentActivity() {
             return
         }
         preselected = true
-        selection = state.devices(Local.Role.ROLE_PERSONAL)
-            .filter { it.online }
-            .map { it.deviceId }
-            .toSet()
+        selection =
+            state
+                .devices(Local.Role.ROLE_PERSONAL)
+                .filter { it.online }
+                .map { it.deviceId }
+                .toSet()
     }
 
-    private fun toggle(deviceId: String, selected: Boolean) {
+    private fun toggle(
+        deviceId: String,
+        selected: Boolean,
+    ) {
         selection = if (selected) selection + deviceId else selection - deviceId
     }
 
@@ -141,9 +147,10 @@ class ShareActivity : ComponentActivity() {
         if (sending) {
             return
         }
-        val targets = devices()
-            .filter { it.online && it.deviceId in selection }
-            .map { it.deviceId }
+        val targets =
+            devices()
+                .filter { it.online && it.deviceId in selection }
+                .map { it.deviceId }
         sending = true
         lifecycleScope.launch {
             val outcome = ShareSender.send(this@ShareActivity, shared, targets)

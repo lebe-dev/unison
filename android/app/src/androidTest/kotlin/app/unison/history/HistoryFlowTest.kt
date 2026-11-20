@@ -33,7 +33,6 @@ import unison.local.v1.Local
  */
 @RunWith(AndroidJUnit4::class)
 class HistoryFlowTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -44,20 +43,28 @@ class HistoryFlowTest {
         assertTrue("the core did not start", runBlocking { CoreStarter.await(context, START_TIMEOUT_MS) })
         val core = CoreClient()
         val text = "history probe ${System.currentTimeMillis()}"
-        val sent = runBlocking {
-            core.call(
-                method = "SetClip",
-                request = Local.SetClipRequest.newBuilder().setText(text).build(),
-                parse = Local.SetClipResponse::parseFrom,
-            )
-        }
+        val sent =
+            runBlocking {
+                core.call(
+                    method = "SetClip",
+                    request =
+                        Local.SetClipRequest
+                            .newBuilder()
+                            .setText(text)
+                            .build(),
+                    parse = Local.SetClipResponse::parseFrom,
+                )
+            }
         val id = sent.item.id
         assertTrue("SetClip returned no id", id.isNotEmpty())
 
         val state = AppState(core, coreEvents.events, HistoryDownloads(context))
         try {
             state.refreshHistory()
-            compose.waitUntil(TIMEOUT_MS) { state.history.value.items.any { it.item.id == id } }
+            compose.waitUntil(TIMEOUT_MS) {
+                state.history.value.items
+                    .any { it.item.id == id }
+            }
 
             val history = state.history
             compose.setContent {
@@ -93,7 +100,9 @@ class HistoryFlowTest {
 
             state.deleteHistoryItem(id)
             compose.waitUntil(TIMEOUT_MS) {
-                state.history.value.loaded && state.history.value.items.none { it.item.id == id }
+                state.history.value.loaded &&
+                    state.history.value.items
+                        .none { it.item.id == id }
             }
         } finally {
             state.close()
@@ -125,15 +134,20 @@ class HistoryFlowTest {
     }
 
     /** Content of an entry, empty when it cannot be read. */
-    private fun read(uri: Uri): String = try {
-        context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }.orEmpty()
-    } catch (e: Exception) {
-        ""
-    }
+    private fun read(uri: Uri): String =
+        try {
+            context.contentResolver
+                .openInputStream(uri)
+                ?.use { it.readBytes().decodeToString() }
+                .orEmpty()
+        } catch (e: Exception) {
+            ""
+        }
 
     private companion object {
         const val TIMEOUT_MS = 20_000L
         const val START_TIMEOUT_MS = 20_000L
         const val POLL_MS = 100L
         const val DOWNLOADS_PATH = "Download/Unison%"
-    }}
+    }
+}

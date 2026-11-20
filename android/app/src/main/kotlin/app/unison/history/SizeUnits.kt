@@ -20,12 +20,13 @@ data class SizeUnits(
             val language = resources.configuration.locales[0].language
             return SizeUnits(
                 bytes = resources.getString(R.string.unit_bytes),
-                names = listOf(
-                    resources.getString(R.string.unit_kilobytes),
-                    resources.getString(R.string.unit_megabytes),
-                    resources.getString(R.string.unit_gigabytes),
-                    resources.getString(R.string.unit_terabytes),
-                ),
+                names =
+                    listOf(
+                        resources.getString(R.string.unit_kilobytes),
+                        resources.getString(R.string.unit_megabytes),
+                        resources.getString(R.string.unit_gigabytes),
+                        resources.getString(R.string.unit_terabytes),
+                    ),
                 locale = if (language == RUSSIAN) Locale.forLanguageTag(RUSSIAN) else Locale.ENGLISH,
             )
         }

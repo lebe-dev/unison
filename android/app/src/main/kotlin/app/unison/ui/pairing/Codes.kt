@@ -37,16 +37,20 @@ private const val QUIET_ZONE = 2
 const val PAIRING_CODE_TAG = "pairing-code"
 
 /** Modules of a pairing code, true for a dark module, null when the text does not encode. */
-internal fun pairingCodeModules(text: String): Array<BooleanArray>? = try {
-    val matrix = Encoder.encode(text, ErrorCorrectionLevel.M).matrix
-    Array(matrix.height) { y -> BooleanArray(matrix.width) { x -> matrix.get(x, y).toInt() == 1 } }
-} catch (_: WriterException) {
-    null
-}
+internal fun pairingCodeModules(text: String): Array<BooleanArray>? =
+    try {
+        val matrix = Encoder.encode(text, ErrorCorrectionLevel.M).matrix
+        Array(matrix.height) { y -> BooleanArray(matrix.width) { x -> matrix.get(x, y).toInt() == 1 } }
+    } catch (_: WriterException) {
+        null
+    }
 
 /** Square of a pairing code for another device to scan. */
 @Composable
-fun PairingCode(text: String, modifier: Modifier = Modifier) {
+fun PairingCode(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     val modules = remember(text) { pairingCodeModules(text) }
     if (modules == null) {
         Text(
@@ -57,10 +61,11 @@ fun PairingCode(text: String, modifier: Modifier = Modifier) {
         return
     }
     Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .testTag(PAIRING_CODE_TAG),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .testTag(PAIRING_CODE_TAG),
     ) {
         drawRect(color = Color.White, size = size)
         val total = modules.size + QUIET_ZONE * 2
@@ -83,12 +88,14 @@ fun PairingCode(text: String, modifier: Modifier = Modifier) {
 }
 
 /** Digits of a code in groups of three. */
-internal fun formatSasDigits(digits: String): String =
-    digits.chunked(SAS_GROUP).joinToString(" ")
+internal fun formatSasDigits(digits: String): String = digits.chunked(SAS_GROUP).joinToString(" ")
 
 /** Short authentication string of an exchange: six digits and four emoji. */
 @Composable
-fun SasCode(sas: Local.Sas, modifier: Modifier = Modifier) {
+fun SasCode(
+    sas: Local.Sas,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -100,10 +107,11 @@ fun SasCode(sas: Local.Sas, modifier: Modifier = Modifier) {
             fontFamily = FontFamily.Monospace,
             letterSpacing = 4.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
         )
         if (sas.emojiCount > 0) {
             Text(
@@ -117,19 +125,23 @@ fun SasCode(sas: Local.Sas, modifier: Modifier = Modifier) {
 
 /** Body of the confirmation dialog of a pairing request. */
 @Composable
-fun PairingRequestBody(request: PairingRequest, modifier: Modifier = Modifier) {
+fun PairingRequestBody(
+    request: PairingRequest,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = stringResource(
-                if (request.sas != null) {
-                    R.string.pairing_add_body_sas
-                } else {
-                    R.string.pairing_add_body_qr
-                },
-            ),
+            text =
+                stringResource(
+                    if (request.sas != null) {
+                        R.string.pairing_add_body_sas
+                    } else {
+                        R.string.pairing_add_body_qr
+                    },
+                ),
             style = MaterialTheme.typography.bodyMedium,
         )
         request.sas?.let { SasCode(it) }

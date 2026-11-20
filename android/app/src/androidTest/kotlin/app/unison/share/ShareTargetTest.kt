@@ -13,7 +13,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ShareTargetTest {
-
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test
@@ -29,16 +28,23 @@ class ShareTargetTest {
         assertTrue(activities(Intent.ACTION_SEND_MULTIPLE, "application/octet-stream").isNotEmpty())
     }
 
-    private fun single(action: String, type: String): String {
+    private fun single(
+        action: String,
+        type: String,
+    ): String {
         val found = activities(action, type)
         assertEquals(1, found.size)
         return found.single().activityInfo.name
     }
 
-    private fun activities(action: String, type: String): List<ResolveInfo> {
-        val intent = Intent(action)
-            .setType(type)
-            .addCategory(Intent.CATEGORY_DEFAULT)
+    private fun activities(
+        action: String,
+        type: String,
+    ): List<ResolveInfo> {
+        val intent =
+            Intent(action)
+                .setType(type)
+                .addCategory(Intent.CATEGORY_DEFAULT)
         return context.packageManager
             .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
             .filter { it.activityInfo.packageName == context.packageName }

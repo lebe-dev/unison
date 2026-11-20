@@ -5,7 +5,9 @@ import android.os.Build
 import androidx.core.content.edit
 
 /** How long the core stays running. */
-enum class OperatingMode(val value: String) {
+enum class OperatingMode(
+    val value: String,
+) {
     /** The core runs from boot until the user stops it. */
     ALWAYS("always"),
 
@@ -13,13 +15,13 @@ enum class OperatingMode(val value: String) {
     WIFI_ONLY("wifi_only"),
 
     /** The core runs only while the app is in the foreground. */
-    APP_OPEN("app_open");
+    APP_OPEN("app_open"),
+    ;
 
     companion object {
         val DEFAULT = ALWAYS
 
-        fun fromValue(value: String?): OperatingMode =
-            entries.firstOrNull { it.value == value } ?: DEFAULT
+        fun fromValue(value: String?): OperatingMode = entries.firstOrNull { it.value == value } ?: DEFAULT
     }
 }
 
@@ -68,8 +70,12 @@ object UnisonSettings {
         return OperatingMode.fromValue(prefs.getString(KEY_OPERATING_MODE, null))
     }
 
-    fun setOperatingMode(context: Context, mode: OperatingMode) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    fun setOperatingMode(
+        context: Context,
+        mode: OperatingMode,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putString(KEY_OPERATING_MODE, mode.value) }
     }
 
@@ -80,8 +86,12 @@ object UnisonSettings {
         return stored?.ifEmpty { null } ?: DeviceNames.fit(Build.MODEL.orEmpty())
     }
 
-    fun setDeviceName(context: Context, name: String) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    fun setDeviceName(
+        context: Context,
+        name: String,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putString(KEY_DEVICE_NAME, DeviceNames.fit(name)) }
     }
 
@@ -91,8 +101,12 @@ object UnisonSettings {
         return prefs.getString(KEY_LAST_CLIP, null)
     }
 
-    fun setLastClipHash(context: Context, hash: String) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    fun setLastClipHash(
+        context: Context,
+        hash: String,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putString(KEY_LAST_CLIP, hash) }
     }
 
@@ -102,7 +116,10 @@ object UnisonSettings {
         return prefs.getString(KEY_DOWNLOADS_TREE, null)
     }
 
-    fun setDownloadsTree(context: Context, uri: String?) {
+    fun setDownloadsTree(
+        context: Context,
+        uri: String?,
+    ) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
             if (uri == null) remove(KEY_DOWNLOADS_TREE) else putString(KEY_DOWNLOADS_TREE, uri)
         }
@@ -114,8 +131,12 @@ object UnisonSettings {
         return prefs.getBoolean(KEY_ONBOARDED, false)
     }
 
-    fun setOnboarded(context: Context, done: Boolean) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    fun setOnboarded(
+        context: Context,
+        done: Boolean,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putBoolean(KEY_ONBOARDED, done) }
     }
 
@@ -125,8 +146,12 @@ object UnisonSettings {
         return prefs.getBoolean(KEY_SENTRY_ENABLED, false)
     }
 
-    fun setSentryEnabled(context: Context, value: Boolean) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    fun setSentryEnabled(
+        context: Context,
+        value: Boolean,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putBoolean(KEY_SENTRY_ENABLED, value) }
     }
 }

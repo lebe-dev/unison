@@ -20,15 +20,15 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class TransferNotificationsTest {
-
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test
     fun progressShowsThePercentAndTheCancelAction() {
-        val notification = TransferNotifications.progress(
-            context,
-            listOf(transfer("Mac", bytes = 40, total = 100)),
-        )
+        val notification =
+            TransferNotifications.progress(
+                context,
+                listOf(transfer("Mac", bytes = 40, total = 100)),
+            )
 
         assertEquals(
             testString(R.string.transfer_progress_title, "Mac"),
@@ -52,24 +52,26 @@ class TransferNotificationsTest {
 
     @Test
     fun progressWithoutSizeIsIndeterminate() {
-        val notification = TransferNotifications.progress(
-            context,
-            listOf(transfer("Mac", bytes = 0, total = 0)),
-        )
+        val notification =
+            TransferNotifications.progress(
+                context,
+                listOf(transfer("Mac", bytes = 0, total = 0)),
+            )
 
         assertTrue(notification.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
     }
 
     @Test
     fun severalPeersAreSummarized() {
-        val notification = TransferNotifications.progress(
-            context,
-            listOf(
-                transfer("Laptop", bytes = 0, total = 10),
-                transfer("Mac", bytes = 0, total = 10),
-                transfer("Phone", bytes = 0, total = 10),
-            ),
-        )
+        val notification =
+            TransferNotifications.progress(
+                context,
+                listOf(
+                    transfer("Laptop", bytes = 0, total = 10),
+                    transfer("Mac", bytes = 0, total = 10),
+                    transfer("Phone", bytes = 0, total = 10),
+                ),
+            )
 
         assertEquals(
             testString(
@@ -94,8 +96,13 @@ class TransferNotificationsTest {
         assertNotNull(notification.contentIntent)
     }
 
-    private fun transfer(name: String, bytes: Long, total: Long): Local.Transfer =
-        Local.Transfer.newBuilder()
+    private fun transfer(
+        name: String,
+        bytes: Long,
+        total: Long,
+    ): Local.Transfer =
+        Local.Transfer
+            .newBuilder()
             .setId(name)
             .setDirection(Local.TransferDirection.TRANSFER_DIRECTION_OUTGOING)
             .setState(Local.TransferState.TRANSFER_STATE_TRANSFERRING)

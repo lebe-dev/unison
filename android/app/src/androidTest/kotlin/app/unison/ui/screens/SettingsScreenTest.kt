@@ -34,7 +34,6 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class SettingsScreenTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -126,10 +125,17 @@ class SettingsScreenTest {
     fun pausedClipboardCanBeResumed() {
         var request: PauseRequest? = null
         setContent(
-            status = Local.GetStatusResponse.newBuilder()
-                .setDeviceName("Pixel")
-                .setPause(Local.Pause.newBuilder().setPaused(true).setIndefinite(true).build())
-                .build(),
+            status =
+                Local.GetStatusResponse
+                    .newBuilder()
+                    .setDeviceName("Pixel")
+                    .setPause(
+                        Local.Pause
+                            .newBuilder()
+                            .setPaused(true)
+                            .setIndefinite(true)
+                            .build(),
+                    ).build(),
             onPause = { request = it },
         )
         open(SettingsPage.CLIPBOARD)
@@ -159,19 +165,33 @@ class SettingsScreenTest {
     fun remoteSettingsPermissionIsOffered() {
         var allowed: Boolean? = null
         setContent(
-            settings = Local.Settings.newBuilder().setAllowRemoteSettings(true).build(),
+            settings =
+                Local.Settings
+                    .newBuilder()
+                    .setAllowRemoteSettings(true)
+                    .build(),
             onAllowRemoteSettingsChange = { allowed = it },
         )
 
         open(SettingsPage.CLIPBOARD)
-        compose.onNodeWithTag(ALLOW_REMOTE_TAG).performScrollTo().assertIsOn().performClick()
+        compose
+            .onNodeWithTag(ALLOW_REMOTE_TAG)
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
 
         assertEquals(false, allowed)
     }
 
     @Test
     fun remoteSettingsPermissionIsOffWhenTheCoreSaysSo() {
-        setContent(settings = Local.Settings.newBuilder().setAllowRemoteSettings(false).build())
+        setContent(
+            settings =
+                Local.Settings
+                    .newBuilder()
+                    .setAllowRemoteSettings(false)
+                    .build(),
+        )
 
         open(SettingsPage.CLIPBOARD)
 
@@ -256,7 +276,8 @@ class SettingsScreenTest {
         compose.onNodeWithTag(ttlTag(Local.Kind.KIND_IMAGE)).performTextReplacement("soon")
         compose.onNodeWithTag(ttlSaveTag(Local.Kind.KIND_IMAGE)).performScrollTo().performClick()
 
-        compose.onNodeWithText(testString(R.string.history_ttl_invalid))
+        compose
+            .onNodeWithText(testString(R.string.history_ttl_invalid))
             .performScrollTo()
             .assertIsDisplayed()
         assertEquals(null, saved)
@@ -320,10 +341,12 @@ class SettingsScreenTest {
     private fun setContent(
         deviceName: String = "Pixel",
         operatingMode: OperatingMode = OperatingMode.ALWAYS,
-        status: Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
-            .setDeviceName(deviceName)
-            .setVersion("0.1.0")
-            .build(),
+        status: Local.GetStatusResponse =
+            Local.GetStatusResponse
+                .newBuilder()
+                .setDeviceName(deviceName)
+                .setVersion("0.1.0")
+                .build(),
         settings: Local.Settings = Local.Settings.getDefaultInstance(),
         ttl: HistoryTtl = HistoryTtlDefaults.values,
         onDeviceNameChange: (String) -> Unit = {},

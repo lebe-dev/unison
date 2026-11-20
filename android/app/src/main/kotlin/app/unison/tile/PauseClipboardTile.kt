@@ -6,13 +6,13 @@ import android.text.format.DateFormat
 import app.unison.R
 import app.unison.clipboard.ClipboardPause
 import app.unison.clipboard.PauseClipboardActivity
-import java.util.Date
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import unison.local.v1.Local
+import java.util.Date
 
 /** Quick settings tile that pauses the clipboard synchronization. */
 class PauseClipboardTile : TileService() {
@@ -40,13 +40,14 @@ class PauseClipboardTile : TileService() {
         tile.updateTile()
     }
 
-    private fun subtitle(pause: Local.Pause?): String? = when {
-        pause == null -> null
-        !pause.paused -> getString(R.string.tile_pause_off)
-        pause.indefinite -> getString(R.string.tile_pause_indefinite)
-        else -> {
-            val time = DateFormat.getTimeFormat(this).format(Date(pause.untilUnixMs))
-            getString(R.string.tile_pause_until, time)
+    private fun subtitle(pause: Local.Pause?): String? =
+        when {
+            pause == null -> null
+            !pause.paused -> getString(R.string.tile_pause_off)
+            pause.indefinite -> getString(R.string.tile_pause_indefinite)
+            else -> {
+                val time = DateFormat.getTimeFormat(this).format(Date(pause.untilUnixMs))
+                getString(R.string.tile_pause_until, time)
+            }
         }
-    }
 }

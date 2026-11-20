@@ -6,7 +6,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.core.CoreClient
 import app.unison.core.CoreStarter
 import app.unison.core.coreEvents
-import java.io.File
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -18,6 +17,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import unison.local.v1.Local
+import java.io.File
 
 /**
  * Pairs with the device of a pairing code that was put into the files of the
@@ -47,12 +47,13 @@ class PairingCodeFlowTest {
     }
 
     /** Waits for the event of a completed pairing. */
-    private suspend fun awaitPaired(timeoutMs: Long): Local.Event? = withTimeoutOrNull(timeoutMs) {
-        coreEvents.events
-            .filter { it.hasEvent() && it.event.kind == Local.EventKind.EVENT_KIND_PAIRING_PAIRED }
-            .map { it.event }
-            .first()
-    }
+    private suspend fun awaitPaired(timeoutMs: Long): Local.Event? =
+        withTimeoutOrNull(timeoutMs) {
+            coreEvents.events
+                .filter { it.hasEvent() && it.event.kind == Local.EventKind.EVENT_KIND_PAIRING_PAIRED }
+                .map { it.event }
+                .first()
+        }
 
     private companion object {
         const val CODE_FILE = "pairing-code.txt"

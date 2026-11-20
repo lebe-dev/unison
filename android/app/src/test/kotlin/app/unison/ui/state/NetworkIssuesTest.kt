@@ -48,11 +48,19 @@ class NetworkIssuesTest {
 
     @Test
     fun newerProtocolIsReportedForADeviceAndForTheRelay() {
-        val device = Local.Device.newBuilder().setProtocolNewer(true).build()
+        val device =
+            Local.Device
+                .newBuilder()
+                .setProtocolNewer(true)
+                .build()
         assertTrue(NetworkIssues.isNewerProtocol(device))
         assertFalse(NetworkIssues.isNewerProtocol(Local.Device.getDefaultInstance()))
 
-        val relay = Local.Relay.newBuilder().setProtocolNewer(true).build()
+        val relay =
+            Local.Relay
+                .newBuilder()
+                .setProtocolNewer(true)
+                .build()
         assertTrue(NetworkIssues.isNewerProtocol(relay))
         assertFalse(NetworkIssues.isNewerProtocol(Local.Relay.getDefaultInstance()))
         assertFalse(NetworkIssues.isNewerProtocol(null))

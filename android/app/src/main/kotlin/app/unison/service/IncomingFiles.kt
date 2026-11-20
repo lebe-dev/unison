@@ -4,7 +4,6 @@ import unison.local.v1.Local
 
 /** Files that peers send to this device. */
 object IncomingFiles {
-
     /** True when the event reports a file transfer towards this device. */
     fun arrives(event: Local.Event): Boolean =
         event.kind == Local.EventKind.EVENT_KIND_TRANSFER &&
@@ -20,7 +19,10 @@ object IncomingFiles {
      * offer, or any change of an offer in [shown]. Progress of an accepted
      * transfer leaves the offers as they are.
      */
-    fun changesRequests(event: Local.Event, shown: Set<String>): Boolean =
+    fun changesRequests(
+        event: Local.Event,
+        shown: Set<String>,
+    ): Boolean =
         arrives(event) &&
             (event.transfer.state == Local.TransferState.TRANSFER_STATE_PENDING || event.transfer.id in shown)
 
@@ -59,19 +61,26 @@ object IncomingFiles {
          * Receive notification to show for the event at [nowMs], or [Receipt.NONE]
          * when the event changes nothing the user should see now.
          */
-        fun next(event: Local.Event, nowMs: Long): Receipt {
+        fun next(
+            event: Local.Event,
+            nowMs: Long,
+        ): Receipt {
             val receipt = receipt(event)
             val id = event.transfer.id
-            val due = when (receipt) {
-                Receipt.NONE -> false
-                Receipt.PROGRESS -> progressDue(id, nowMs)
-                else -> finish(id)
-            }
+            val due =
+                when (receipt) {
+                    Receipt.NONE -> false
+                    Receipt.PROGRESS -> progressDue(id, nowMs)
+                    else -> finish(id)
+                }
             return if (due) receipt else Receipt.NONE
         }
 
         /** True when the progress of the transfer may be shown at [nowMs]. */
-        fun progressDue(id: String, nowMs: Long): Boolean {
+        fun progressDue(
+            id: String,
+            nowMs: Long,
+        ): Boolean {
             if (id in finished) {
                 return false
             }

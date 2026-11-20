@@ -16,11 +16,12 @@ object ServiceTypes {
     private const val PAIRING_TYPE = "_unison-pair._udp."
 
     /** DNS-SD type of the service, null for an unknown name. */
-    fun typeOf(service: String): String? = when (service) {
-        MAIN -> MAIN_TYPE
-        PAIRING -> PAIRING_TYPE
-        else -> null
-    }
+    fun typeOf(service: String): String? =
+        when (service) {
+            MAIN -> MAIN_TYPE
+            PAIRING -> PAIRING_TYPE
+            else -> null
+        }
 }
 
 /** Converts between DNS-SD records and the candidate data of the core. */
@@ -33,43 +34,48 @@ object Candidates {
      * refuses would make it refuse the whole announcement, so such a record is
      * dropped instead.
      */
-    fun records(txt: Map<String, String>): Map<String, String> = buildMap {
-        for ((key, value) in txt) {
-            if (!validKey(key)) {
-                continue
+    fun records(txt: Map<String, String>): Map<String, String> =
+        buildMap {
+            for ((key, value) in txt) {
+                if (!validKey(key)) {
+                    continue
+                }
+                if (key.length + value.toByteArray(Charsets.UTF_8).size >= MAX_RECORD) {
+                    continue
+                }
+                put(key, value)
             }
-            if (key.length + value.toByteArray(Charsets.UTF_8).size >= MAX_RECORD) {
-                continue
-            }
-            put(key, value)
         }
-    }
 
     /** Printable ASCII without '=', the keys NsdServiceInfo takes. */
-    private fun validKey(key: String): Boolean =
-        key.isNotEmpty() && key.all { it in ' '..'~' && it != '=' }
+    private fun validKey(key: String): Boolean = key.isNotEmpty() && key.all { it in ' '..'~' && it != '=' }
 
     /**
      * Serialized unison.mobile.v1.CandidateTxt of DNS-SD attributes. Any device
      * on the network writes these, and a key without a value comes as null.
      */
     fun proto(attributes: Map<String, ByteArray?>): ByteArray {
-        val records = buildMap {
-            for ((key, value) in attributes) {
-                if (key.isEmpty()) {
-                    continue
+        val records =
+            buildMap {
+                for ((key, value) in attributes) {
+                    if (key.isEmpty()) {
+                        continue
+                    }
+                    put(key, value?.toString(Charsets.UTF_8).orEmpty())
                 }
-                put(key, value?.toString(Charsets.UTF_8).orEmpty())
             }
-        }
-        return MobileProto.CandidateTxt.newBuilder()
+        return MobileProto.CandidateTxt
+            .newBuilder()
             .putAllRecords(records)
             .build()
             .toByteArray()
     }
 
     /** Address of a candidate in "host:port" form, null when it is not dialable. */
-    fun address(host: InetAddress?, port: Int): String? {
+    fun address(
+        host: InetAddress?,
+        port: Int,
+    ): String? {
         if (host == null || !dialable(host) || port !in 1..65535) {
             return null
         }
@@ -87,19 +93,24 @@ object Candidates {
      * other one: the core resolves its zone on every packet, and Android refuses
      * the interface list that needs.
      */
-    fun addresses(hosts: Iterable<InetAddress?>, own: Set<InetAddress> = emptySet()): List<InetAddress> {
-        val dialable = hosts
-            .filterNotNull()
-            .filter { dialable(it) && it !in own }
-            .sortedBy { if (it is Inet6Address) 1 else 0 }
+    fun addresses(
+        hosts: Iterable<InetAddress?>,
+        own: Set<InetAddress> = emptySet(),
+    ): List<InetAddress> {
+        val dialable =
+            hosts
+                .filterNotNull()
+                .filter { dialable(it) && it !in own }
+                .sortedBy { if (it is Inet6Address) 1 else 0 }
         val routable = dialable.filterNot { it.isLinkLocalAddress }
         return routable.ifEmpty { dialable }
     }
 
     /** True when [instance] is one of the [own] announcements; DNS-SD names ignore case. */
-    fun isOwn(instance: String, own: Iterable<String>): Boolean =
-        own.any { it.equals(instance, ignoreCase = true) }
+    fun isOwn(
+        instance: String,
+        own: Iterable<String>,
+    ): Boolean = own.any { it.equals(instance, ignoreCase = true) }
 
-    private fun dialable(host: InetAddress): Boolean =
-        !host.isAnyLocalAddress && !host.isLoopbackAddress && !host.isMulticastAddress
+    private fun dialable(host: InetAddress): Boolean = !host.isAnyLocalAddress && !host.isLoopbackAddress && !host.isMulticastAddress
 }

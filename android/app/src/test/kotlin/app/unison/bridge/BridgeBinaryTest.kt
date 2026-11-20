@@ -7,7 +7,6 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 
 class BridgeBinaryTest {
-
     @Test
     fun readsContentWithinTheLimit() {
         val data = ByteArray(1024) { (it % 251).toByte() }

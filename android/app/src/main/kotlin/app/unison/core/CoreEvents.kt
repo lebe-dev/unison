@@ -8,18 +8,20 @@ import kotlinx.coroutines.flow.asSharedFlow
 import unison.mobile.v1.Mobile
 
 /** Decodes one serialized unison.mobile.v1.Event, or returns null. */
-internal fun decodeEvent(data: ByteArray): Mobile.Event? = try {
-    Mobile.Event.parseFrom(data)
-} catch (_: InvalidProtocolBufferException) {
-    null
-}
+internal fun decodeEvent(data: ByteArray): Mobile.Event? =
+    try {
+        Mobile.Event.parseFrom(data)
+    } catch (_: InvalidProtocolBufferException) {
+        null
+    }
 
 /** Events of the core, one stream for the whole process. */
 class CoreEventStream {
-    private val mutable = MutableSharedFlow<Mobile.Event>(
-        extraBufferCapacity = BUFFER_SIZE,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private val mutable =
+        MutableSharedFlow<Mobile.Event>(
+            extraBufferCapacity = BUFFER_SIZE,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     /** Events as they arrive. Slow collectors lose the oldest ones. */
     val events: SharedFlow<Mobile.Event> = mutable.asSharedFlow()

@@ -31,25 +31,39 @@ enum class PolicyMode {
 }
 
 /** One cell of the table: the outcome and the largest size fetched eagerly. */
-data class PolicyCell(val mode: PolicyMode, val maxSizeBytes: Long)
+data class PolicyCell(
+    val mode: PolicyMode,
+    val maxSizeBytes: Long,
+)
 
 /** One row of the table. */
-data class PolicyRow(val cells: Map<PolicyKind, PolicyCell>, val relay: Boolean) {
+data class PolicyRow(
+    val cells: Map<PolicyKind, PolicyCell>,
+    val relay: Boolean,
+) {
     /** Cell of one kind. */
     operator fun get(kind: PolicyKind): PolicyCell = cells.getValue(kind)
 
     /** Copy with another cell of kind. */
-    fun with(kind: PolicyKind, cell: PolicyCell): PolicyRow = copy(cells = cells + (kind to cell))
+    fun with(
+        kind: PolicyKind,
+        cell: PolicyCell,
+    ): PolicyRow = copy(cells = cells + (kind to cell))
 }
 
 /** The policy table and the relay threshold. */
-data class PolicyConfig(val rows: Map<PolicyCondition, PolicyRow>, val relayMaxSizeBytes: Long) {
+data class PolicyConfig(
+    val rows: Map<PolicyCondition, PolicyRow>,
+    val relayMaxSizeBytes: Long,
+) {
     /** Row of one condition. */
     operator fun get(condition: PolicyCondition): PolicyRow = rows.getValue(condition)
 
     /** Copy with another row of condition. */
-    fun with(condition: PolicyCondition, row: PolicyRow): PolicyConfig =
-        copy(rows = rows + (condition to row))
+    fun with(
+        condition: PolicyCondition,
+        row: PolicyRow,
+    ): PolicyConfig = copy(rows = rows + (condition to row))
 }
 
 /** Default table: text is applied on every network, images up to the limit, files only on request. */
@@ -61,43 +75,53 @@ object PolicyDefaults {
     const val RELAY_MAX_SIZE = 1L shl 20
 
     /** Table used until the user changes it. */
-    val config: PolicyConfig = PolicyConfig(
-        rows = mapOf(
-            PolicyCondition.UNMETERED to PolicyRow(
-                cells = mapOf(
-                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, LAN_MAX_SIZE),
-                    PolicyKind.IMAGE to PolicyCell(PolicyMode.AUTO, LAN_MAX_SIZE),
-                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, LAN_MAX_SIZE),
+    val config: PolicyConfig =
+        PolicyConfig(
+            rows =
+                mapOf(
+                    PolicyCondition.UNMETERED to
+                        PolicyRow(
+                            cells =
+                                mapOf(
+                                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, LAN_MAX_SIZE),
+                                    PolicyKind.IMAGE to PolicyCell(PolicyMode.AUTO, LAN_MAX_SIZE),
+                                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, LAN_MAX_SIZE),
+                                ),
+                            relay = true,
+                        ),
+                    PolicyCondition.METERED to
+                        PolicyRow(
+                            cells =
+                                mapOf(
+                                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
+                                    PolicyKind.IMAGE to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
+                                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
+                                ),
+                            relay = true,
+                        ),
+                    PolicyCondition.ROAMING to
+                        PolicyRow(
+                            cells =
+                                mapOf(
+                                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
+                                    PolicyKind.IMAGE to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
+                                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
+                                ),
+                            relay = false,
+                        ),
+                    PolicyCondition.DATA_SAVER to
+                        PolicyRow(
+                            cells =
+                                mapOf(
+                                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
+                                    PolicyKind.IMAGE to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
+                                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
+                                ),
+                            relay = false,
+                        ),
                 ),
-                relay = true,
-            ),
-            PolicyCondition.METERED to PolicyRow(
-                cells = mapOf(
-                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
-                    PolicyKind.IMAGE to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
-                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
-                ),
-                relay = true,
-            ),
-            PolicyCondition.ROAMING to PolicyRow(
-                cells = mapOf(
-                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
-                    PolicyKind.IMAGE to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
-                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
-                ),
-                relay = false,
-            ),
-            PolicyCondition.DATA_SAVER to PolicyRow(
-                cells = mapOf(
-                    PolicyKind.TEXT to PolicyCell(PolicyMode.AUTO, RELAY_MAX_SIZE),
-                    PolicyKind.IMAGE to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
-                    PolicyKind.FILES to PolicyCell(PolicyMode.METADATA, RELAY_MAX_SIZE),
-                ),
-                relay = false,
-            ),
-        ),
-        relayMaxSizeBytes = RELAY_MAX_SIZE,
-    )
+            relayMaxSizeBytes = RELAY_MAX_SIZE,
+        )
 }
 
 /** Sizes of the table in the unit the screen edits. */

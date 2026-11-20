@@ -26,43 +26,48 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class HistoryScreenTest {
-
     @get:Rule
     val compose = createComposeRule()
 
     @Test
     fun entriesShowKindDeviceAndSize() {
         setContent(
-            history = HistoryState(
-                loaded = true,
-                items = listOf(
-                    entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11),
-                    entry(id = "2", kind = Local.Kind.KIND_FILES, origin = ORIGIN, size = 2048),
+            history =
+                HistoryState(
+                    loaded = true,
+                    items =
+                        listOf(
+                            entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11),
+                            entry(id = "2", kind = Local.Kind.KIND_FILES, origin = ORIGIN, size = 2048),
+                        ),
                 ),
-            ),
         )
 
         compose.onNodeWithText("hello world").assertIsDisplayed()
         compose.onNodeWithText("notes.txt").assertIsDisplayed()
         val units = SizeUnits.of(testContext)
-        compose.onNodeWithText(
-            testString(R.string.history_item_detail, "Mac", HistoryText.formatSize(11, units)),
-        ).assertIsDisplayed()
-        compose.onNodeWithText(
-            testString(R.string.history_item_detail, "Mac", HistoryText.formatSize(2048, units)),
-        ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testString(R.string.history_item_detail, "Mac", HistoryText.formatSize(11, units)),
+            ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testString(R.string.history_item_detail, "Mac", HistoryText.formatSize(2048, units)),
+            ).assertIsDisplayed()
     }
 
     @Test
     fun fileEntriesCannotBeCopied() {
         setContent(
-            history = HistoryState(
-                loaded = true,
-                items = listOf(
-                    entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11),
-                    entry(id = "2", kind = Local.Kind.KIND_FILES, origin = ORIGIN, size = 2048),
+            history =
+                HistoryState(
+                    loaded = true,
+                    items =
+                        listOf(
+                            entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11),
+                            entry(id = "2", kind = Local.Kind.KIND_FILES, origin = ORIGIN, size = 2048),
+                        ),
                 ),
-            ),
         )
 
         compose.onAllNodesWithText(testString(R.string.action_copy)).assertCountEquals(1)
@@ -73,19 +78,21 @@ class HistoryScreenTest {
     @Test
     fun missingPayloadIsReported() {
         setContent(
-            history = HistoryState(
-                loaded = true,
-                items = listOf(entry(id = "1", kind = Local.Kind.KIND_IMAGE, origin = ORIGIN, size = 0, complete = false)),
-            ),
+            history =
+                HistoryState(
+                    loaded = true,
+                    items = listOf(entry(id = "1", kind = Local.Kind.KIND_IMAGE, origin = ORIGIN, size = 0, complete = false)),
+                ),
         )
 
-        compose.onNodeWithText(
-            testString(
-                R.string.history_item_detail_incomplete,
-                "Mac",
-                HistoryText.formatSize(0, SizeUnits.of(testContext)),
-            ),
-        ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testString(
+                    R.string.history_item_detail_incomplete,
+                    "Mac",
+                    HistoryText.formatSize(0, SizeUnits.of(testContext)),
+                ),
+            ).assertIsDisplayed()
     }
 
     @Test
@@ -93,10 +100,11 @@ class HistoryScreenTest {
         var applied: Local.HistoryItem? = null
         var copied: Local.HistoryItem? = null
         setContent(
-            history = HistoryState(
-                loaded = true,
-                items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
-            ),
+            history =
+                HistoryState(
+                    loaded = true,
+                    items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
+                ),
             held = setOf("1"),
             onCopy = { copied = it },
             onApply = { applied = it },
@@ -116,10 +124,11 @@ class HistoryScreenTest {
         var downloaded: Local.HistoryItem? = null
         var deleted: Local.HistoryItem? = null
         setContent(
-            history = HistoryState(
-                loaded = true,
-                items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
-            ),
+            history =
+                HistoryState(
+                    loaded = true,
+                    items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
+                ),
             onCopy = { copied = it },
             onDownload = { downloaded = it },
             onDelete = { deleted = it },
@@ -138,10 +147,11 @@ class HistoryScreenTest {
     fun clearAsksBeforeRemovingEverything() {
         var cleared = 0
         setContent(
-            history = HistoryState(
-                loaded = true,
-                items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
-            ),
+            history =
+                HistoryState(
+                    loaded = true,
+                    items = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT, origin = ORIGIN, size = 11)),
+                ),
             onClear = { cleared++ },
         )
 
@@ -188,12 +198,13 @@ class HistoryScreenTest {
             onDeviceChange = { device = it },
         )
 
-        compose.onNodeWithText(
-            testString(
-                R.string.history_filter_device,
-                testString(R.string.history_all_devices),
-            ),
-        ).performClick()
+        compose
+            .onNodeWithText(
+                testString(
+                    R.string.history_filter_device,
+                    testString(R.string.history_all_devices),
+                ),
+            ).performClick()
         compose.onNodeWithText("Mac").performClick()
 
         assertEquals(ORIGIN, device)
@@ -258,46 +269,56 @@ class HistoryScreenTest {
         size: Long,
         complete: Boolean = true,
     ): Local.HistoryItem {
-        val representation = when (kind) {
-            Local.Kind.KIND_TEXT -> Local.Representation.newBuilder()
-                .setMimeType("text/plain")
-                .setSize(size)
-                .setInlineBytes(ByteString.copyFromUtf8("hello world"))
-                .build()
-            Local.Kind.KIND_FILES -> Local.Representation.newBuilder()
-                .setMimeType("application/x-unison-file")
-                .setSize(size)
-                .setFileName("notes.txt")
-                .build()
-            else -> Local.Representation.newBuilder()
-                .setMimeType("image/png")
-                .setSize(size)
-                .build()
-        }
-        return Local.HistoryItem.newBuilder()
+        val representation =
+            when (kind) {
+                Local.Kind.KIND_TEXT ->
+                    Local.Representation
+                        .newBuilder()
+                        .setMimeType("text/plain")
+                        .setSize(size)
+                        .setInlineBytes(ByteString.copyFromUtf8("hello world"))
+                        .build()
+                Local.Kind.KIND_FILES ->
+                    Local.Representation
+                        .newBuilder()
+                        .setMimeType("application/x-unison-file")
+                        .setSize(size)
+                        .setFileName("notes.txt")
+                        .build()
+                else ->
+                    Local.Representation
+                        .newBuilder()
+                        .setMimeType("image/png")
+                        .setSize(size)
+                        .build()
+            }
+        return Local.HistoryItem
+            .newBuilder()
             .setItem(
-                Local.ClipItem.newBuilder()
+                Local.ClipItem
+                    .newBuilder()
                     .setId(id)
                     .setOrigin(origin)
                     .setKind(kind)
                     .setCreatedAtUnixMs(System.currentTimeMillis() - 60_000)
                     .addRepresentations(representation),
-            )
-            .setComplete(complete)
+            ).setComplete(complete)
             .build()
     }
 
-    private fun status(): Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
-        .setDeviceId("pixel-id")
-        .setDeviceName("Pixel")
-        .addDevices(
-            Local.Device.newBuilder()
-                .setDeviceId(ORIGIN)
-                .setName("Mac")
-                .setRole(Local.Role.ROLE_PERSONAL)
-                .build(),
-        )
-        .build()
+    private fun status(): Local.GetStatusResponse =
+        Local.GetStatusResponse
+            .newBuilder()
+            .setDeviceId("pixel-id")
+            .setDeviceName("Pixel")
+            .addDevices(
+                Local.Device
+                    .newBuilder()
+                    .setDeviceId(ORIGIN)
+                    .setName("Mac")
+                    .setRole(Local.Role.ROLE_PERSONAL)
+                    .build(),
+            ).build()
 
     private companion object {
         const val ORIGIN = "mac-id"

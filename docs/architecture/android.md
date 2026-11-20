@@ -193,11 +193,16 @@ repository, which the keyboard repository adds as a repository.
 | `just aar` | `android/core/core.aar` |
 | `just android-build` | the debug APK |
 | `just deploy-android` | installs the APK over USB |
-| `just android-lint` | Android lint |
+| `just android-lint` | Android lint, ktlint and detekt |
+| `just android-check` | ktlint and detekt |
 | `just bridge-publish` | the AIDL artifact |
 
 The app targets API 37, runs from API 29, and declares `ACCESS_LOCAL_NETWORK`, which apps targeting
 API 37 need to reach the local network. The `versionName` comes from `VERSION`.
+
+ktlint checks the format and detekt the code of the Kotlin sources. The detekt rules live in
+`android/config/detekt/detekt.yml`, and `android/config/detekt/baseline.xml` keeps the findings of
+the existing code.
 
 ## Error reporting
 

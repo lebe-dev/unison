@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class OperatingModeTest {
-
     @Test
     fun storedValueMapsToMode() {
         assertEquals(OperatingMode.ALWAYS, OperatingMode.fromValue("always"))

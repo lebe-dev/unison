@@ -97,51 +97,64 @@ class NetworkMonitor(
         }
     }
 
-    private val defaultCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-            defaultCapabilities = capabilities
-            publish()
-        }
+    private val defaultCallback =
+        object : ConnectivityManager.NetworkCallback() {
+            override fun onCapabilitiesChanged(
+                network: Network,
+                capabilities: NetworkCapabilities,
+            ) {
+                defaultCapabilities = capabilities
+                publish()
+            }
 
-        override fun onLost(network: Network) {
-            defaultCapabilities = null
-            publish()
-        }
-    }
-
-    private val wifiCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) {
-            if (wifiNetworks.add(network)) {
+            override fun onLost(network: Network) {
+                defaultCapabilities = null
                 publish()
             }
         }
 
-        override fun onLost(network: Network) {
-            if (wifiNetworks.remove(network)) {
-                publish()
+    private val wifiCallback =
+        object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (wifiNetworks.add(network)) {
+                    publish()
+                }
+            }
+
+            override fun onLost(network: Network) {
+                if (wifiNetworks.remove(network)) {
+                    publish()
+                }
             }
         }
-    }
 
-    private val saverReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) = publish()
-    }
+    private val saverReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) = publish()
+        }
 
     private fun publish() {
         val capabilities = defaultCapabilities
         val cellular = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
-        val roaming = cellular && capabilities != null &&
-            !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING)
-        val next = NetworkConditions(
-            online = capabilities != null,
-            metered = capabilities != null &&
-                !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
-            roaming = roaming,
-            vpn = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true,
-            dataSaver = dataSaver(),
-            wifi = wifiNetworks.isNotEmpty(),
-            ethernet = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true,
-        )
+        val roaming =
+            cellular &&
+                capabilities != null &&
+                !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING)
+        val next =
+            NetworkConditions(
+                online = capabilities != null,
+                metered =
+                    capabilities != null &&
+                        !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+                roaming = roaming,
+                vpn = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true,
+                dataSaver = dataSaver(),
+                wifi = wifiNetworks.isNotEmpty(),
+                ethernet = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true,
+            )
         if (next == conditions) {
             return
         }
@@ -152,19 +165,22 @@ class NetworkMonitor(
 
     private fun dataSaver(): Boolean = BackgroundData.dataSaver(BackgroundData.status(appContext))
 
-    private fun describe(conditions: NetworkConditions): String = with(conditions) {
-        "online=$online metered=$metered roaming=$roaming vpn=$vpn " +
-            "wifi=$wifi ethernet=$ethernet data_saver=$dataSaver"
-    }
+    private fun describe(conditions: NetworkConditions): String =
+        with(conditions) {
+            "online=$online metered=$metered roaming=$roaming vpn=$vpn " +
+                "wifi=$wifi ethernet=$ethernet data_saver=$dataSaver"
+        }
 
     private companion object {
         const val TAG = "NetworkMonitor"
 
         // The builder asks for internet access by default; a local Wi-Fi without an uplink
         // still carries the peers, so it counts as Wi-Fi too.
-        val wifiRequest: NetworkRequest = NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
+        val wifiRequest: NetworkRequest =
+            NetworkRequest
+                .Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
     }
 }

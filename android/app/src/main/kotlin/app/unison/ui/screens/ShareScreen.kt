@@ -1,9 +1,7 @@
 package app.unison.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,11 +78,12 @@ fun ShareScreen(
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
         ) {
             ScreenTitle(title = stringResource(R.string.share_label)) {
                 TextButton(onClick = onClose) {
@@ -101,9 +100,10 @@ fun ShareScreen(
 
             if (state.loading) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
@@ -169,8 +169,9 @@ private fun canSend(
     return when (content) {
         // Text is announced to every online Personal device, so the list decides.
         is ShareContent.Text -> personal.any { it.online }
-        is ShareContent.Files -> content.files.size <= ShareIntents.MAX_FILES &&
-            (personal + friends).any { it.online && it.deviceId in selection }
+        is ShareContent.Files ->
+            content.files.size <= ShareIntents.MAX_FILES &&
+                (personal + friends).any { it.online && it.deviceId in selection }
     }
 }
 
@@ -204,12 +205,13 @@ private fun ShareSummary(content: ShareContent) {
                 is ShareContent.Files -> {
                     val total = content.files.sumOf { it.size }
                     Text(
-                        text = pluralStringResource(
-                            R.plurals.share_files_summary,
-                            content.files.size,
-                            content.files.size,
-                            HistoryText.formatSize(total, sizeUnits()),
-                        ),
+                        text =
+                            pluralStringResource(
+                                R.plurals.share_files_summary,
+                                content.files.size,
+                                content.files.size,
+                                HistoryText.formatSize(total, sizeUnits()),
+                            ),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     val names = fileNames(content)
@@ -230,7 +232,10 @@ private fun ShareSummary(content: ShareContent) {
 
 /** First file names of the request and the number that did not fit. */
 @Composable
-private fun fileNames(content: ShareContent.Files, limit: Int = SUMMARY_NAMES): String {
+private fun fileNames(
+    content: ShareContent.Files,
+    limit: Int = SUMMARY_NAMES,
+): String {
     val names = content.files.take(limit).joinToString(", ") { it.name }
     val rest = (content.files.size - limit).coerceAtLeast(0)
     return if (rest > 0) {
@@ -253,10 +258,11 @@ private fun TextRecipients(devices: List<Local.Device>) {
         return
     }
     Text(
-        text = stringResource(
-            R.string.share_text_recipients,
-            devices.joinToString(", ") { it.name.ifEmpty { it.deviceId.take(SHORT_ID_LENGTH) } },
-        ),
+        text =
+            stringResource(
+                R.string.share_text_recipients,
+                devices.joinToString(", ") { it.name.ifEmpty { it.deviceId.take(SHORT_ID_LENGTH) } },
+            ),
         style = MaterialTheme.typography.bodyMedium,
     )
 }
@@ -307,9 +313,10 @@ private fun SelectableDeviceRow(
     GroupItem(
         index = index,
         count = count,
-        modifier = Modifier
-            .clip(groupShape(index, count))
-            .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onToggle),
+        modifier =
+            Modifier
+                .clip(groupShape(index, count))
+                .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onToggle),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -318,25 +325,28 @@ private fun SelectableDeviceRow(
             )
             val path = pathLabel(device.path)
             Text(
-                text = if (path != null && device.online) {
-                    stringResource(R.string.device_detail, platformLabel(device.platform), path)
-                } else {
-                    platformLabel(device.platform)
-                },
+                text =
+                    if (path != null && device.online) {
+                        stringResource(R.string.device_detail, platformLabel(device.platform), path)
+                    } else {
+                        platformLabel(device.platform)
+                    },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
-            text = stringResource(
-                if (device.online) R.string.device_online else R.string.device_offline,
-            ),
+            text =
+                stringResource(
+                    if (device.online) R.string.device_online else R.string.device_offline,
+                ),
             style = MaterialTheme.typography.labelMedium,
-            color = if (device.online) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
+            color =
+                if (device.online) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
         )
         Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
     }
@@ -344,16 +354,21 @@ private fun SelectableDeviceRow(
 
 /** Send button of the screen. */
 @Composable
-private fun ShareAction(sending: Boolean, enabled: Boolean, onSend: () -> Unit) {
+private fun ShareAction(
+    sending: Boolean,
+    enabled: Boolean,
+    onSend: () -> Unit,
+) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Button(
             onClick = onSend,
             enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(16.dp)
-                .heightIn(min = 56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(16.dp)
+                    .heightIn(min = 56.dp),
         ) {
             if (sending) {
                 CircularProgressIndicator(

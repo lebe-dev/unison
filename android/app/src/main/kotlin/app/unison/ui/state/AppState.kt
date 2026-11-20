@@ -1111,8 +1111,6 @@ class AppState(
         }
     }
 
-    /** Events of the file transfers, new offers arrive with them. */
-
     /** A new offer or a change of a listed one; the progress of a transfer is not. */
     private fun Mobile.Event.changesRequests(): Boolean =
         hasEvent() &&

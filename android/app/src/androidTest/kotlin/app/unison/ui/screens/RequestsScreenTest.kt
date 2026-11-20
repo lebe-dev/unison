@@ -11,8 +11,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.R
 import app.unison.history.HistoryText
 import app.unison.history.SizeUnits
-import app.unison.testQuantity
 import app.unison.testContext
+import app.unison.testQuantity
 import app.unison.testString
 import app.unison.ui.state.CoreFailure
 import app.unison.ui.state.RequestsState
@@ -26,28 +26,29 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class RequestsScreenTest {
-
     @get:Rule
     val compose = createComposeRule()
 
     @Test
     fun offerShowsTheSenderTheFilesAndTheSize() {
         setContent(
-            requests = RequestsState(
-                loaded = true,
-                requests = listOf(request(id = "one", name = "Friend", files = listOf("notes.txt", "plan.pdf"))),
-            ),
+            requests =
+                RequestsState(
+                    loaded = true,
+                    requests = listOf(request(id = "one", name = "Friend", files = listOf("notes.txt", "plan.pdf"))),
+                ),
         )
 
         compose.onNodeWithText("Friend").assertIsDisplayed()
-        compose.onNodeWithText(
-            testQuantity(
-                R.plurals.request_files,
-                2,
-                2,
-                HistoryText.formatSize(2048, SizeUnits.of(testContext)),
-            ),
-        ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testQuantity(
+                    R.plurals.request_files,
+                    2,
+                    2,
+                    HistoryText.formatSize(2048, SizeUnits.of(testContext)),
+                ),
+            ).assertIsDisplayed()
         compose.onNodeWithText("notes.txt, plan.pdf").assertIsDisplayed()
     }
 
@@ -75,10 +76,11 @@ class RequestsScreenTest {
 
     @Test
     fun answersReportTheOffer() {
-        val requests = RequestsState(
-            loaded = true,
-            requests = listOf(request(id = "one", name = "Friend", files = listOf("notes.txt"))),
-        )
+        val requests =
+            RequestsState(
+                loaded = true,
+                requests = listOf(request(id = "one", name = "Friend", files = listOf("notes.txt"))),
+            )
         var accepted: Local.ShareRequest? = null
         var declined: Local.ShareRequest? = null
         setContent(
@@ -97,11 +99,12 @@ class RequestsScreenTest {
     @Test
     fun answeredOfferWaitsForTheCore() {
         setContent(
-            requests = RequestsState(
-                loaded = true,
-                requests = listOf(request(id = "one", name = "Friend", files = listOf("notes.txt"))),
-                answering = setOf("one"),
-            ),
+            requests =
+                RequestsState(
+                    loaded = true,
+                    requests = listOf(request(id = "one", name = "Friend", files = listOf("notes.txt"))),
+                    answering = setOf("one"),
+                ),
         )
 
         compose.onNodeWithText(testString(R.string.action_accept)).assertIsNotEnabled()
@@ -126,13 +129,25 @@ class RequestsScreenTest {
         }
     }
 
-    private fun request(id: String, name: String, files: List<String>): Local.ShareRequest {
-        val builder = Local.ShareRequest.newBuilder()
-            .setId(id)
-            .setDeviceId("friend-id")
-            .setDeviceName(name)
+    private fun request(
+        id: String,
+        name: String,
+        files: List<String>,
+    ): Local.ShareRequest {
+        val builder =
+            Local.ShareRequest
+                .newBuilder()
+                .setId(id)
+                .setDeviceId("friend-id")
+                .setDeviceName(name)
         files.forEach { file ->
-            builder.addFiles(Local.TransferFile.newBuilder().setName(file).setSize(1024).build())
+            builder.addFiles(
+                Local.TransferFile
+                    .newBuilder()
+                    .setName(file)
+                    .setSize(1024)
+                    .build(),
+            )
         }
         builder.setTotalBytes(files.size * 1024L)
         return builder.build()

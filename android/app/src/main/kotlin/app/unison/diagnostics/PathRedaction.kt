@@ -11,12 +11,13 @@ private const val PATH_CHAR = """[^\s"'<>|,;:()\[\]{}]"""
  * paths out of URLs and ordinary words. The spaces inside a path keep the match
  * going while the next part holds a separator.
  */
-private val PATHS = Regex(
-    """(?<![\w./:\\-])(?:""" +
-        """(?:/Users|/home|/root|/tmp|/private|/var|/opt|/mnt|/data|/storage)/$PATH_CHAR+""" +
-        """|[A-Za-z]:[\\/]$PATH_CHAR+)""" +
-        """(?:\s+(?!\S*://)$PATH_CHAR*[\\/]$PATH_CHAR*)*""",
-)
+private val PATHS =
+    Regex(
+        """(?<![\w./:\\-])(?:""" +
+            """(?:/Users|/home|/root|/tmp|/private|/var|/opt|/mnt|/data|/storage)/$PATH_CHAR+""" +
+            """|[A-Za-z]:[\\/]$PATH_CHAR+)""" +
+            """(?:\s+(?!\S*://)$PATH_CHAR*[\\/]$PATH_CHAR*)*""",
+    )
 
 /** Replaces the absolute paths that a message carries with [PLACEHOLDER]. */
 internal fun redactPaths(value: String): String = PATHS.replace(value, PLACEHOLDER)

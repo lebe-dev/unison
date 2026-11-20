@@ -10,7 +10,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CodesTest {
-
     @Test
     fun codeIsDrawnBackToTheSameText() {
         val uri = pairingUri()

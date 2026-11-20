@@ -21,18 +21,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import unison.local.v1.Local
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import unison.local.v1.Local
 import unison.mobile.v1.Mobile as MobileProto
 
 /** Serves the bridge contract against a fake core. */
 @RunWith(AndroidJUnit4::class)
 class UnisonBridgeTest {
-
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -59,26 +58,28 @@ class UnisonBridgeTest {
     @Test
     fun refusesAForeignCaller() {
         val foreignUid = context.packageManager.getApplicationInfo(FOREIGN_PACKAGE, 0).uid
-        val foreign = UnisonBridge(
-            context,
-            CallerVerifier.of(context),
-            core,
-            scope,
-            callerUid = { foreignUid },
-        )
-        try {
-            val calls = listOf<() -> Any?>(
-                { foreign.protocolVersion() },
-                { foreign.publishText(payload(text = "hidden")) },
-                { foreign.publishBinary(payload(mime = "image/png"), data = null) },
-                { foreign.registerListener(null) },
-                { foreign.unregisterListener(null) },
-                { foreign.recentRemoteItems(1) },
-                { foreign.openItem("item", "text/plain") },
-                { foreign.setPaused(0) },
-                { foreign.publishTextWithResult(payload(text = "hidden"), null) },
-                { foreign.publishBinaryWithResult(payload(mime = "image/png"), null, null) },
+        val foreign =
+            UnisonBridge(
+                context,
+                CallerVerifier.of(context),
+                core,
+                scope,
+                callerUid = { foreignUid },
             )
+        try {
+            val calls =
+                listOf<() -> Any?>(
+                    { foreign.protocolVersion() },
+                    { foreign.publishText(payload(text = "hidden")) },
+                    { foreign.publishBinary(payload(mime = "image/png"), data = null) },
+                    { foreign.registerListener(null) },
+                    { foreign.unregisterListener(null) },
+                    { foreign.recentRemoteItems(1) },
+                    { foreign.openItem("item", "text/plain") },
+                    { foreign.setPaused(0) },
+                    { foreign.publishTextWithResult(payload(text = "hidden"), null) },
+                    { foreign.publishBinaryWithResult(payload(mime = "image/png"), null, null) },
+                )
             for (call in calls) {
                 assertThrows(SecurityException::class.java) { call() }
             }
@@ -156,11 +157,12 @@ class UnisonBridgeTest {
     @Test
     fun listsRemoteItemsOnly() {
         core.awaitStatus()
-        core.history = listOf(
-            historyItem("a", ORIGIN_PEER, "one"),
-            historyItem("b", "self", "own text"),
-            historyItem("c", ORIGIN_PEER, "two"),
-        )
+        core.history =
+            listOf(
+                historyItem("a", ORIGIN_PEER, "one"),
+                historyItem("b", "self", "own text"),
+                historyItem("c", ORIGIN_PEER, "two"),
+            )
         bridge.registerListener(NoOpListener)
 
         val items = awaitRecent(2)
@@ -178,9 +180,10 @@ class UnisonBridgeTest {
 
         val descriptor = bridge.openItem("a", "text/plain")
         assertNotNull(descriptor)
-        val text = ParcelFileDescriptor.AutoCloseInputStream(descriptor!!).use {
-            it.readBytes().decodeToString()
-        }
+        val text =
+            ParcelFileDescriptor.AutoCloseInputStream(descriptor!!).use {
+                it.readBytes().decodeToString()
+            }
         assertEquals("remote text", text)
     }
 
@@ -260,20 +263,28 @@ class UnisonBridgeTest {
         val result = awaitResult(results)
         assertEquals(BridgeContract.PUBLISH_ACCEPTED, result.code)
         assertEquals(MIME_TEXT_PLAIN, result.mime)
-        assertEquals("binary", core.awaitSubmit().getParts(0).data.toStringUtf8())
+        assertEquals(
+            "binary",
+            core
+                .awaitSubmit()
+                .getParts(0)
+                .data
+                .toStringUtf8(),
+        )
     }
 
     @Test
     fun announcesPersonalItemsOnly() {
         core.awaitStatus()
         val seen = LinkedBlockingQueue<ClipSummary>()
-        val listener = object : IUnisonBridgeListener.Stub() {
-            override fun onRemoteItem(summary: ClipSummary?) {
-                summary?.let(seen::put)
-            }
+        val listener =
+            object : IUnisonBridgeListener.Stub() {
+                override fun onRemoteItem(summary: ClipSummary?) {
+                    summary?.let(seen::put)
+                }
 
-            override fun onStateChanged(state: BridgeState?) = Unit
-        }
+                override fun onStateChanged(state: BridgeState?) = Unit
+            }
 
         bridge.registerListener(listener)
         try {
@@ -292,23 +303,26 @@ class UnisonBridgeTest {
     @Test
     fun reportsTheStateOnRegister() {
         core.status = status(onlinePeers = 2)
-        core.pause = Local.Pause.newBuilder()
-            .setPaused(true)
-            .setUntilUnixMs(PAUSE_UNTIL_MS)
-            .build()
+        core.pause =
+            Local.Pause
+                .newBuilder()
+                .setPaused(true)
+                .setUntilUnixMs(PAUSE_UNTIL_MS)
+                .build()
 
         val seen = CountDownLatch(1)
         var reported: BridgeState? = null
-        val listener = object : IUnisonBridgeListener.Stub() {
-            override fun onRemoteItem(summary: ClipSummary?) = Unit
+        val listener =
+            object : IUnisonBridgeListener.Stub() {
+                override fun onRemoteItem(summary: ClipSummary?) = Unit
 
-            override fun onStateChanged(state: BridgeState?) {
-                if (state != null && state.onlinePeers == 2) {
-                    reported = state
-                    seen.countDown()
+                override fun onStateChanged(state: BridgeState?) {
+                    if (state != null && state.onlinePeers == 2) {
+                        reported = state
+                        seen.countDown()
+                    }
                 }
             }
-        }
 
         bridge.registerListener(listener)
         try {
@@ -338,8 +352,9 @@ class UnisonBridgeTest {
     ): BridgeState {
         val deadline = System.currentTimeMillis() + WAIT_MS
         while (System.currentTimeMillis() < deadline) {
-            val next = states.poll(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                ?: break
+            val next =
+                states.poll(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+                    ?: break
             if (matches(next)) {
                 return next
             }
@@ -374,33 +389,51 @@ class UnisonBridgeTest {
         size: Long = -1,
     ): ClipPayload = ClipPayload(text, html, mime, size)
 
-    private fun historyItem(id: String, origin: String, text: String): Local.HistoryItem {
-        val representation = Local.Representation.newBuilder()
-            .setMimeType(MIME_TEXT_PLAIN)
-            .setSize(text.toByteArray().size.toLong())
-            .setInlineBytes(ByteString.copyFromUtf8(text))
+    private fun historyItem(
+        id: String,
+        origin: String,
+        text: String,
+    ): Local.HistoryItem {
+        val representation =
+            Local.Representation
+                .newBuilder()
+                .setMimeType(MIME_TEXT_PLAIN)
+                .setSize(text.toByteArray().size.toLong())
+                .setInlineBytes(ByteString.copyFromUtf8(text))
+                .build()
+        val item =
+            Local.ClipItem
+                .newBuilder()
+                .setId(id)
+                .setOrigin(origin)
+                .setSeq(1)
+                .setCreatedAtUnixMs(System.currentTimeMillis())
+                .setKind(Local.Kind.KIND_TEXT)
+                .addRepresentations(representation)
+                .build()
+        return Local.HistoryItem
+            .newBuilder()
+            .setItem(item)
+            .setComplete(true)
             .build()
-        val item = Local.ClipItem.newBuilder()
-            .setId(id)
-            .setOrigin(origin)
-            .setSeq(1)
-            .setCreatedAtUnixMs(System.currentTimeMillis())
-            .setKind(Local.Kind.KIND_TEXT)
-            .addRepresentations(representation)
-            .build()
-        return Local.HistoryItem.newBuilder().setItem(item).setComplete(true).build()
     }
 
     /** Event of an item captured on another device. */
-    private fun event(id: String, role: Local.Role): MobileProto.Event {
+    private fun event(
+        id: String,
+        role: Local.Role,
+    ): MobileProto.Event {
         val item = historyItem(id, ORIGIN_PEER, "text of $id").item
-        val local = Local.Event.newBuilder()
-            .setKind(Local.EventKind.EVENT_KIND_CLIPBOARD)
-            .setDeviceId(ORIGIN_PEER)
-            .setRole(role)
-            .setItem(item)
-            .build()
-        return MobileProto.Event.newBuilder()
+        val local =
+            Local.Event
+                .newBuilder()
+                .setKind(Local.EventKind.EVENT_KIND_CLIPBOARD)
+                .setDeviceId(ORIGIN_PEER)
+                .setRole(role)
+                .setItem(item)
+                .build()
+        return MobileProto.Event
+            .newBuilder()
             .setType(MobileProto.EventType.EVENT_TYPE_CLIP_RECEIVED)
             .setEvent(local)
             .build()
@@ -410,7 +443,8 @@ class UnisonBridgeTest {
         val builder = Local.GetStatusResponse.newBuilder().setDeviceId("self")
         repeat(onlinePeers) { index ->
             builder.addDevices(
-                Local.Device.newBuilder()
+                Local.Device
+                    .newBuilder()
                     .setDeviceId(ORIGIN_PEER + index)
                     .setName("Laptop")
                     .setOnline(true)
@@ -437,16 +471,18 @@ class UnisonBridgeTest {
         var outcome = SubmitOutcome.ACCEPTED
 
         @Volatile
-        var status: Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
-            .setDeviceId("self")
-            .addDevices(
-                Local.Device.newBuilder()
-                    .setDeviceId(ORIGIN_PEER)
-                    .setName("Laptop")
-                    .setOnline(true)
-                    .build(),
-            )
-            .build()
+        var status: Local.GetStatusResponse =
+            Local.GetStatusResponse
+                .newBuilder()
+                .setDeviceId("self")
+                .addDevices(
+                    Local.Device
+                        .newBuilder()
+                        .setDeviceId(ORIGIN_PEER)
+                        .setName("Laptop")
+                        .setOnline(true)
+                        .build(),
+                ).build()
 
         @Volatile
         var pause: Local.Pause = Local.Pause.getDefaultInstance()
@@ -476,14 +512,19 @@ class UnisonBridgeTest {
             return pause
         }
 
-        override suspend fun setPause(mode: Local.PauseMode, untilUnixMs: Long): Local.Pause {
+        override suspend fun setPause(
+            mode: Local.PauseMode,
+            untilUnixMs: Long,
+        ): Local.Pause {
             checkRunning()
             pauses.put(mode to untilUnixMs)
-            val next = Local.Pause.newBuilder()
-                .setPaused(mode != Local.PauseMode.PAUSE_MODE_OFF)
-                .setIndefinite(mode == Local.PauseMode.PAUSE_MODE_INDEFINITE)
-                .setUntilUnixMs(if (mode == Local.PauseMode.PAUSE_MODE_UNTIL) untilUnixMs else 0)
-                .build()
+            val next =
+                Local.Pause
+                    .newBuilder()
+                    .setPaused(mode != Local.PauseMode.PAUSE_MODE_OFF)
+                    .setIndefinite(mode == Local.PauseMode.PAUSE_MODE_INDEFINITE)
+                    .setUntilUnixMs(if (mode == Local.PauseMode.PAUSE_MODE_UNTIL) untilUnixMs else 0)
+                    .build()
             pause = next
             return next
         }
@@ -498,7 +539,10 @@ class UnisonBridgeTest {
             return entry?.takeIf { it.item.id == id }
         }
 
-        override suspend fun fetch(id: String, path: String): List<String> {
+        override suspend fun fetch(
+            id: String,
+            path: String,
+        ): List<String> {
             checkRunning()
             return emptyList()
         }
@@ -540,15 +584,18 @@ class UnisonBridgeTest {
     }
 
     /** Pipe plus the thread that writes into it, so a call can take the read end. */
-    private class ByteArrayPipe(private val bytes: ByteArray) {
+    private class ByteArrayPipe(
+        private val bytes: ByteArray,
+    ) {
         private val pipe = ParcelFileDescriptor.createPipe()
-        private val writer = Thread {
-            try {
-                ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { it.write(bytes) }
-            } catch (e: IOException) {
-                // The app closes the pipe when it refuses the content.
-            }
-        }.apply { start() }
+        private val writer =
+            Thread {
+                try {
+                    ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { it.write(bytes) }
+                } catch (e: IOException) {
+                    // The app closes the pipe when it refuses the content.
+                }
+            }.apply { start() }
 
         /** Read end for a call; the write end stays with the writer thread. */
         fun readEnd(): ParcelFileDescriptor = pipe[0]

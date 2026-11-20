@@ -6,10 +6,8 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.test.core.app.ApplicationProvider
-import app.unison.service.UnisonSettings
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
-import java.io.FileOutputStream
+import app.unison.service.UnisonSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -20,6 +18,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import unison.mobile.v1.Mobile
+import java.io.File
+import java.io.FileOutputStream
 
 @RunWith(AndroidJUnit4::class)
 class DownloadsTest {
@@ -152,18 +152,21 @@ class DownloadsTest {
     }
 
     /** Reads the content of an entry. */
-    private fun read(uri: Uri): String =
-        context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
+    private fun read(uri: Uri): String = context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
 
-    private fun meta(name: String, size: Long): ByteArray = Mobile.FilePayload.newBuilder()
-        .setFileName(name)
-        .setMimeType("text/plain")
-        .setSize(size)
-        .build()
-        .toByteArray()
+    private fun meta(
+        name: String,
+        size: Long,
+    ): ByteArray =
+        Mobile.FilePayload
+            .newBuilder()
+            .setFileName(name)
+            .setMimeType("text/plain")
+            .setSize(size)
+            .build()
+            .toByteArray()
 
-    private fun uniqueName(extension: String): String =
-        "unison-test-${System.currentTimeMillis()}.$extension"
+    private fun uniqueName(extension: String): String = "unison-test-${System.currentTimeMillis()}.$extension"
 
     private companion object {
         const val CONTENT = "hello from unison"

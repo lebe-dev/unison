@@ -50,9 +50,10 @@ fun RequestsScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
     ) {
         ScreenTitle(title = stringResource(R.string.nav_requests)) {
             TextButton(onClick = onRefresh) {
@@ -67,9 +68,10 @@ fun RequestsScreen(
 
         if (requests.loading && !requests.loaded) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -108,11 +110,12 @@ private fun RequestRow(
     onDecline: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(groupItemColor)
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val files = request.filesList
@@ -150,24 +153,27 @@ private fun RequestRow(
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
             )
         }
 
         if (request.expiresAtUnixMs > 0) {
             Text(
-                text = stringResource(
-                    R.string.requests_expires,
-                    DateUtils.getRelativeTimeSpanString(
-                        request.expiresAtUnixMs,
-                        System.currentTimeMillis(),
-                        DateUtils.MINUTE_IN_MILLIS,
-                    ).toString(),
-                ),
+                text =
+                    stringResource(
+                        R.string.requests_expires,
+                        DateUtils
+                            .getRelativeTimeSpanString(
+                                request.expiresAtUnixMs,
+                                System.currentTimeMillis(),
+                                DateUtils.MINUTE_IN_MILLIS,
+                            ).toString(),
+                    ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -177,18 +183,20 @@ private fun RequestRow(
             OutlinedButton(
                 onClick = onDecline,
                 enabled = !answering,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
             ) {
                 Text(text = stringResource(R.string.action_decline))
             }
             Button(
                 onClick = onAccept,
                 enabled = !answering,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
             ) {
                 Text(text = stringResource(R.string.action_accept))
             }
@@ -200,9 +208,10 @@ private fun RequestRow(
 @Composable
 private fun EmptyRequests() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 48.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(bottom = 48.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

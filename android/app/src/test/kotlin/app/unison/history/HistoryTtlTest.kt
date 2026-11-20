@@ -6,7 +6,6 @@ import org.junit.Test
 import unison.local.v1.Local
 
 class HistoryTtlTest {
-
     @Test
     fun lifetimeIsRenderedInTheLargestUnit() {
         assertEquals("7d", HistoryTtlText.format(7 * 24 * 60 * 60L))

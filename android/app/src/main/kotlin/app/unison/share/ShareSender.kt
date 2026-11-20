@@ -8,14 +8,16 @@ import app.unison.clipboard.ClipboardDraft
 import app.unison.core.CoreStarter
 import app.unison.core.mobile.Mobile
 import app.unison.diagnostics.Journal
-import java.io.IOException
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import unison.mobile.v1.Mobile as MobileProto
 
 /** Result of a share attempt with the message to show to the user. */
-enum class ShareOutcome(@StringRes val message: Int) {
+enum class ShareOutcome(
+    @StringRes val message: Int,
+) {
     STARTED(R.string.share_started),
     NOTHING(R.string.share_empty),
     TOO_MANY_FILES(R.string.share_too_many_files),
@@ -32,7 +34,11 @@ object ShareSender {
      * Sends the content to the given devices and reports what happened.
      * Text goes to every online Personal device, files only to the listed ones.
      */
-    suspend fun send(context: Context, content: ShareContent, deviceIds: List<String>): ShareOutcome {
+    suspend fun send(
+        context: Context,
+        content: ShareContent,
+        deviceIds: List<String>,
+    ): ShareOutcome {
         when (content) {
             is ShareContent.Text -> if (content.draft.isEmpty) return ShareOutcome.NOTHING
             is ShareContent.Files -> {
@@ -71,31 +77,43 @@ object ShareSender {
     }
 
     /** Sends the files one by one, the core copies every descriptor while it takes it. */
-    private suspend fun submitFiles(context: Context, files: List<SharedFile>, deviceIds: List<String>) {
+    private suspend fun submitFiles(
+        context: Context,
+        files: List<SharedFile>,
+        deviceIds: List<String>,
+    ) {
         for (file in files) {
             submitFile(context, file, deviceIds)
         }
     }
 
-    private suspend fun submitFile(context: Context, file: SharedFile, deviceIds: List<String>) {
-        val meta = MobileProto.FilePayload.newBuilder()
-            .setFileName(file.name)
-            .setMimeType(file.mimeType)
-            .setSize(file.size)
-            .addAllDeviceIds(deviceIds)
-            .build()
+    private suspend fun submitFile(
+        context: Context,
+        file: SharedFile,
+        deviceIds: List<String>,
+    ) {
+        val meta =
+            MobileProto.FilePayload
+                .newBuilder()
+                .setFileName(file.name)
+                .setMimeType(file.mimeType)
+                .setSize(file.size)
+                .addAllDeviceIds(deviceIds)
+                .build()
         val payload = meta.toByteArray()
 
         withContext(Dispatchers.IO) {
-            val descriptor = context.contentResolver.openFileDescriptor(file.uri, READ_MODE)
-                ?: throw IOException("cannot open the shared file")
+            val descriptor =
+                context.contentResolver.openFileDescriptor(file.uri, READ_MODE)
+                    ?: throw IOException("cannot open the shared file")
             // The descriptor belongs to the core from this point on.
-            val fd = try {
-                descriptor.detachFd()
-            } catch (e: Exception) {
-                descriptor.close()
-                throw e
-            }
+            val fd =
+                try {
+                    descriptor.detachFd()
+                } catch (e: Exception) {
+                    descriptor.close()
+                    throw e
+                }
             Mobile.submitFile(payload, fd.toLong())
         }
     }

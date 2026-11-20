@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.File
 import unison.local.v1.Local
+import java.io.File
 import unison.mobile.v1.Mobile as MobileProto
 
 /** Server side of the bridge contract with the keyboard. */
@@ -28,7 +28,6 @@ class UnisonBridge(
     private val scope: CoroutineScope,
     private val callerUid: () -> Int = { Binder.getCallingUid() },
 ) : IUnisonBridge.Stub() {
-
     private val appContext = context.applicationContext
     private val listeners = RemoteCallbackList<IUnisonBridgeListener>()
     private val content = BridgeContent(core, scope, File(context.cacheDir, CACHE_DIR))
@@ -54,9 +53,10 @@ class UnisonBridge(
     @Volatile
     private var lastRefreshMs = 0L
 
-    private val eventsJob: Job = scope.launch {
-        coreEvents.events.collect(::onCoreEvent)
-    }
+    private val eventsJob: Job =
+        scope.launch {
+            coreEvents.events.collect(::onCoreEvent)
+        }
 
     init {
         scope.launch { refreshAll() }
@@ -72,12 +72,18 @@ class UnisonBridge(
         publishText(payload, null)
     }
 
-    override fun publishBinary(meta: ClipPayload?, data: ParcelFileDescriptor?) {
+    override fun publishBinary(
+        meta: ClipPayload?,
+        data: ParcelFileDescriptor?,
+    ) {
         checkCaller()
         publishBinary(meta, data, null)
     }
 
-    override fun publishTextWithResult(payload: ClipPayload?, callback: IPublishCallback?) {
+    override fun publishTextWithResult(
+        payload: ClipPayload?,
+        callback: IPublishCallback?,
+    ) {
         checkCaller()
         publishText(payload, callback)
     }
@@ -130,7 +136,10 @@ class UnisonBridge(
         return recent.take(limit.coerceAtMost(MAX_RECENT_ITEMS)).toMutableList()
     }
 
-    override fun openItem(itemId: String?, mime: String?): ParcelFileDescriptor? {
+    override fun openItem(
+        itemId: String?,
+        mime: String?,
+    ): ParcelFileDescriptor? {
         checkCaller()
         if (itemId.isNullOrEmpty()) {
             return null
@@ -148,11 +157,12 @@ class UnisonBridge(
         checkCaller()
         scope.launch {
             try {
-                val pause = when {
-                    untilEpochMs > 0 -> core.setPause(Local.PauseMode.PAUSE_MODE_UNTIL, untilEpochMs)
-                    untilEpochMs == 0L -> core.setPause(Local.PauseMode.PAUSE_MODE_OFF, 0)
-                    else -> core.setPause(Local.PauseMode.PAUSE_MODE_INDEFINITE, 0)
-                }
+                val pause =
+                    when {
+                        untilEpochMs > 0 -> core.setPause(Local.PauseMode.PAUSE_MODE_UNTIL, untilEpochMs)
+                        untilEpochMs == 0L -> core.setPause(Local.PauseMode.PAUSE_MODE_OFF, 0)
+                        else -> core.setPause(Local.PauseMode.PAUSE_MODE_INDEFINITE, 0)
+                    }
                 updateState(BridgeState(pause.paused, untilOf(pause), state.onlinePeers))
             } catch (e: Exception) {
                 Log.w(TAG, "pause request failed: ${e.message}")
@@ -171,14 +181,21 @@ class UnisonBridge(
         verifier.verify(callerUid())
     }
 
-    private fun publishText(source: ClipPayload?, callback: IPublishCallback?) {
+    private fun publishText(
+        source: ClipPayload?,
+        callback: IPublishCallback?,
+    ) {
         val payload = source?.let(::textPayload)
         if (payload == null) {
             Log.d(TAG, "publish refused: no text")
             report(callback, BridgeContract.PUBLISH_EMPTY, source?.mime.orEmpty())
             return
         }
-        val mime = payload.partsList.firstOrNull()?.mimeType.orEmpty()
+        val mime =
+            payload.partsList
+                .firstOrNull()
+                ?.mimeType
+                .orEmpty()
         scope.launch {
             report(callback, codeOf(submit(payload)), mime)
         }
@@ -203,40 +220,43 @@ class UnisonBridge(
             return
         }
         scope.launch(Dispatchers.IO) {
-            val payload = when (val result = readContent(data)) {
-                is ReadResult.Content -> {
-                    if (result.bytes.isEmpty()) {
-                        Log.d(TAG, "publish refused: empty content")
-                        report(callback, BridgeContract.PUBLISH_EMPTY, mime)
+            val payload =
+                when (val result = readContent(data)) {
+                    is ReadResult.Content -> {
+                        if (result.bytes.isEmpty()) {
+                            Log.d(TAG, "publish refused: empty content")
+                            report(callback, BridgeContract.PUBLISH_EMPTY, mime)
+                            return@launch
+                        }
+                        binaryPayload(mime, result.bytes)
+                    }
+                    ReadResult.TooLarge -> {
+                        Log.w(TAG, "publish refused: content is larger than $MAX_BINARY_BYTES bytes")
+                        report(callback, BridgeContract.PUBLISH_TOO_LARGE, mime)
                         return@launch
                     }
-                    binaryPayload(mime, result.bytes)
+                    ReadResult.Failed -> {
+                        report(callback, BridgeContract.PUBLISH_READ_FAILED, mime)
+                        return@launch
+                    }
                 }
-                ReadResult.TooLarge -> {
-                    Log.w(TAG, "publish refused: content is larger than $MAX_BINARY_BYTES bytes")
-                    report(callback, BridgeContract.PUBLISH_TOO_LARGE, mime)
-                    return@launch
-                }
-                ReadResult.Failed -> {
-                    report(callback, BridgeContract.PUBLISH_READ_FAILED, mime)
-                    return@launch
-                }
-            }
             report(callback, codeOf(submit(payload)), mime)
         }
     }
 
     /** Reads the pipe with a bound on the size and on the time the caller may take. */
     private suspend fun readContent(data: ParcelFileDescriptor): ReadResult {
-        val guard = scope.launch {
-            delay(READ_TIMEOUT_MS)
-            Log.w(TAG, "the caller did not finish the content in time")
-            data.closeQuietly(TAG)
-        }
-        return try {
-            val bytes = ParcelFileDescriptor.AutoCloseInputStream(data).use {
-                BridgeBinary.read(it, MAX_BINARY_BYTES)
+        val guard =
+            scope.launch {
+                delay(READ_TIMEOUT_MS)
+                Log.w(TAG, "the caller did not finish the content in time")
+                data.closeQuietly(TAG)
             }
+        return try {
+            val bytes =
+                ParcelFileDescriptor.AutoCloseInputStream(data).use {
+                    BridgeBinary.read(it, MAX_BINARY_BYTES)
+                }
             if (bytes == null) ReadResult.TooLarge else ReadResult.Content(bytes)
         } catch (e: Exception) {
             Log.w(TAG, "reading the content failed: ${e.message}")
@@ -248,14 +268,15 @@ class UnisonBridge(
 
     /** Hands the content to the core, refreshes the cache and logs a refusal. */
     private suspend fun submit(payload: MobileProto.ClipPayload): SubmitOutcome {
-        val outcome = try {
-            core.submit(payload)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "submit failed: ${e.message}")
-            SubmitOutcome.FAILED
-        }
+        val outcome =
+            try {
+                core.submit(payload)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "submit failed: ${e.message}")
+                SubmitOutcome.FAILED
+            }
         when (outcome) {
             SubmitOutcome.ACCEPTED -> refreshAfterAction()
             SubmitOutcome.PAUSED -> Log.w(TAG, "publish refused: the synchronization is paused")
@@ -267,7 +288,11 @@ class UnisonBridge(
     }
 
     /** Reports the outcome to the caller; there is no callback in the plain publish methods. */
-    private fun report(callback: IPublishCallback?, code: Int, mime: String) {
+    private fun report(
+        callback: IPublishCallback?,
+        code: Int,
+        mime: String,
+    ) {
         if (callback == null) {
             return
         }
@@ -278,13 +303,14 @@ class UnisonBridge(
         }
     }
 
-    private fun codeOf(outcome: SubmitOutcome): Int = when (outcome) {
-        SubmitOutcome.ACCEPTED -> BridgeContract.PUBLISH_ACCEPTED
-        SubmitOutcome.PAUSED -> BridgeContract.PUBLISH_PAUSED
-        SubmitOutcome.CORE_UNAVAILABLE -> BridgeContract.PUBLISH_CORE_UNAVAILABLE
-        SubmitOutcome.UNSUPPORTED_TYPE -> BridgeContract.PUBLISH_UNSUPPORTED_TYPE
-        SubmitOutcome.FAILED -> BridgeContract.PUBLISH_FAILED
-    }
+    private fun codeOf(outcome: SubmitOutcome): Int =
+        when (outcome) {
+            SubmitOutcome.ACCEPTED -> BridgeContract.PUBLISH_ACCEPTED
+            SubmitOutcome.PAUSED -> BridgeContract.PUBLISH_PAUSED
+            SubmitOutcome.CORE_UNAVAILABLE -> BridgeContract.PUBLISH_CORE_UNAVAILABLE
+            SubmitOutcome.UNSUPPORTED_TYPE -> BridgeContract.PUBLISH_UNSUPPORTED_TYPE
+            SubmitOutcome.FAILED -> BridgeContract.PUBLISH_FAILED
+        }
 
     /** Refreshes the cache after a user action, at most once per interval. */
     private suspend fun refreshAfterAction() {
@@ -313,18 +339,30 @@ class UnisonBridge(
         return if (present) builder.build() else null
     }
 
-    private fun binaryPayload(mime: String, bytes: ByteArray): MobileProto.ClipPayload =
-        MobileProto.ClipPayload.newBuilder()
+    private fun binaryPayload(
+        mime: String,
+        bytes: ByteArray,
+    ): MobileProto.ClipPayload =
+        MobileProto.ClipPayload
+            .newBuilder()
             .setMimeType(mime)
-            .setData(com.google.protobuf.ByteString.copyFrom(bytes))
-            .addParts(part(mime, bytes))
+            .setData(
+                com.google.protobuf.ByteString
+                    .copyFrom(bytes),
+            ).addParts(part(mime, bytes))
             .build()
 
-    private fun part(mime: String, bytes: ByteArray): MobileProto.ClipPart =
-        MobileProto.ClipPart.newBuilder()
+    private fun part(
+        mime: String,
+        bytes: ByteArray,
+    ): MobileProto.ClipPart =
+        MobileProto.ClipPart
+            .newBuilder()
             .setMimeType(mime)
-            .setData(com.google.protobuf.ByteString.copyFrom(bytes))
-            .build()
+            .setData(
+                com.google.protobuf.ByteString
+                    .copyFrom(bytes),
+            ).build()
 
     /** Reacts to events that change what the keyboard shows. */
     private fun onCoreEvent(event: MobileProto.Event) {
@@ -334,9 +372,11 @@ class UnisonBridge(
         when (event.event.kind) {
             Local.EventKind.EVENT_KIND_CLIPBOARD,
             Local.EventKind.EVENT_KIND_CLIP_DOWNLOAD,
-            Local.EventKind.EVENT_KIND_CLIP_APPLY -> onRemoteItem(event.event)
+            Local.EventKind.EVENT_KIND_CLIP_APPLY,
+            -> onRemoteItem(event.event)
             Local.EventKind.EVENT_KIND_PEER_ONLINE,
-            Local.EventKind.EVENT_KIND_PEER_OFFLINE -> scope.launch { refreshState() }
+            Local.EventKind.EVENT_KIND_PEER_OFFLINE,
+            -> scope.launch { refreshState() }
             else -> Unit
         }
     }
@@ -362,9 +402,10 @@ class UnisonBridge(
         }
     }
 
-    private fun addRecent(summary: ClipSummary) = synchronized(broadcast) {
-        recent = (listOf(summary) + recent.filter { it.id != summary.id }).take(MAX_RECENT_ITEMS)
-    }
+    private fun addRecent(summary: ClipSummary) =
+        synchronized(broadcast) {
+            recent = (listOf(summary) + recent.filter { it.id != summary.id }).take(MAX_RECENT_ITEMS)
+        }
 
     private fun deviceName(deviceId: String): String = deviceNames[deviceId].orEmpty()
 
@@ -382,30 +423,32 @@ class UnisonBridge(
     }
 
     /** Reads the status and the pause, then publishes the state. */
-    private suspend fun loadStatus(): Local.GetStatusResponse? = try {
-        val status = core.status()
-        ownDeviceId = status.deviceId
-        deviceNames = status.devicesList.associate { it.deviceId to it.name }
-        val pause = try {
-            core.pause()
+    private suspend fun loadStatus(): Local.GetStatusResponse? =
+        try {
+            val status = core.status()
+            ownDeviceId = status.deviceId
+            deviceNames = status.devicesList.associate { it.deviceId to it.name }
+            val pause =
+                try {
+                    core.pause()
+                } catch (e: Exception) {
+                    Log.d(TAG, "pause state is not available: ${e.message}")
+                    null
+                }
+            updateState(
+                BridgeState(
+                    pause?.paused == true,
+                    untilOf(pause),
+                    status.devicesList.count { it.online },
+                ),
+            )
+            status
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Log.d(TAG, "pause state is not available: ${e.message}")
+            Log.d(TAG, "core is not available: ${e.message}")
             null
         }
-        updateState(
-            BridgeState(
-                pause?.paused == true,
-                untilOf(pause),
-                status.devicesList.count { it.online },
-            ),
-        )
-        status
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.d(TAG, "core is not available: ${e.message}")
-        null
-    }
 
     /** Items of other devices, newest first. */
     private suspend fun loadRecent(ownId: String): List<ClipSummary> {
@@ -449,35 +492,37 @@ class UnisonBridge(
      * A RemoteCallbackList runs one broadcast at a time and throws on a second one, while the
      * bridge broadcasts from binder threads and from several coroutine threads.
      */
-    private fun dispatchState(value: BridgeState) = synchronized(broadcast) {
-        val count = listeners.beginBroadcast()
-        try {
-            for (index in 0 until count) {
-                try {
-                    listeners.getBroadcastItem(index).onStateChanged(value)
-                } catch (e: Exception) {
-                    Log.w(TAG, "state delivery failed: ${e.message}")
+    private fun dispatchState(value: BridgeState) =
+        synchronized(broadcast) {
+            val count = listeners.beginBroadcast()
+            try {
+                for (index in 0 until count) {
+                    try {
+                        listeners.getBroadcastItem(index).onStateChanged(value)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "state delivery failed: ${e.message}")
+                    }
                 }
+            } finally {
+                listeners.finishBroadcast()
             }
-        } finally {
-            listeners.finishBroadcast()
         }
-    }
 
-    private fun dispatchItem(summary: ClipSummary) = synchronized(broadcast) {
-        val count = listeners.beginBroadcast()
-        try {
-            for (index in 0 until count) {
-                try {
-                    listeners.getBroadcastItem(index).onRemoteItem(summary)
-                } catch (e: Exception) {
-                    Log.w(TAG, "item delivery failed: ${e.message}")
+    private fun dispatchItem(summary: ClipSummary) =
+        synchronized(broadcast) {
+            val count = listeners.beginBroadcast()
+            try {
+                for (index in 0 until count) {
+                    try {
+                        listeners.getBroadcastItem(index).onRemoteItem(summary)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "item delivery failed: ${e.message}")
+                    }
                 }
+            } finally {
+                listeners.finishBroadcast()
             }
-        } finally {
-            listeners.finishBroadcast()
         }
-    }
 
     private fun sendState(listener: IUnisonBridgeListener) {
         try {
@@ -492,12 +537,13 @@ class UnisonBridge(
         if (pollJob?.isActive == true) {
             return
         }
-        pollJob = scope.launch {
-            while (true) {
-                delay(POLL_MS)
-                refreshState()
+        pollJob =
+            scope.launch {
+                while (true) {
+                    delay(POLL_MS)
+                    refreshState()
+                }
             }
-        }
     }
 
     private fun stopPolling() {
@@ -505,12 +551,13 @@ class UnisonBridge(
         pollJob = null
     }
 
-    private fun untilOf(pause: Local.Pause?): Long =
-        if (pause != null && pause.paused) pause.untilUnixMs else 0
+    private fun untilOf(pause: Local.Pause?): Long = if (pause != null && pause.paused) pause.untilUnixMs else 0
 
     /** Content read from a pipe. */
     private sealed interface ReadResult {
-        class Content(val bytes: ByteArray) : ReadResult
+        class Content(
+            val bytes: ByteArray,
+        ) : ReadResult
 
         data object TooLarge : ReadResult
 

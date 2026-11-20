@@ -29,7 +29,6 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class PolicySectionTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -68,16 +67,19 @@ class PolicySectionTest {
     @Test
     fun currentConditionIsShown() {
         setContent(
-            network = Local.NetworkState.newBuilder()
-                .setOnline(true)
-                .setMetered(true)
-                .setDataSaver(true)
-                .build(),
+            network =
+                Local.NetworkState
+                    .newBuilder()
+                    .setOnline(true)
+                    .setMetered(true)
+                    .setDataSaver(true)
+                    .build(),
         )
 
-        compose.onNodeWithText(
-            testString(R.string.policy_now, testString(R.string.policy_condition_data_saver)),
-        ).assertExists()
+        compose
+            .onNodeWithText(
+                testString(R.string.policy_now, testString(R.string.policy_condition_data_saver)),
+            ).assertExists()
     }
 
     private fun setContent(

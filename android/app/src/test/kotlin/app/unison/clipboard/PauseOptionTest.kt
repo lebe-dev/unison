@@ -5,7 +5,6 @@ import org.junit.Test
 import unison.local.v1.Local
 
 class PauseOptionTest {
-
     private val now = 1_700_000_000_000L
 
     @Test

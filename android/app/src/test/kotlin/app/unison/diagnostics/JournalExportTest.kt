@@ -1,15 +1,14 @@
 package app.unison.diagnostics
 
 import app.unison.policy.PolicyDefaults
-import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import unison.local.v1.Local
+import java.time.Instant
 
 class JournalExportTest {
-
     private val generated = Instant.parse("2026-11-17T19:48:02.123Z")
 
     @Test
@@ -76,17 +75,22 @@ class JournalExportTest {
 
     @Test
     fun exportAppendsTheRecordsAfterTheHeader() {
-        val records = listOf(
-            JournalFormat.parse("2026-11-17T19:48:02.100Z INFO service created")!!,
-            JournalFormat.parse("2026-11-17T19:48:02.150Z DEBUG a detail")!!,
-        )
+        val records =
+            listOf(
+                JournalFormat.parse("2026-11-17T19:48:02.100Z INFO service created")!!,
+                JournalFormat.parse("2026-11-17T19:48:02.150Z DEBUG a detail")!!,
+            )
 
         val text = JournalExport.text(info(), records)
 
         assertTrue(text.startsWith("unison application log\n"))
-        assertTrue(text.endsWith("---\n" +
-            "2026-11-17T19:48:02.100Z INFO service created\n" +
-            "2026-11-17T19:48:02.150Z DEBUG a detail\n"))
+        assertTrue(
+            text.endsWith(
+                "---\n" +
+                    "2026-11-17T19:48:02.100Z INFO service created\n" +
+                    "2026-11-17T19:48:02.150Z DEBUG a detail\n",
+            ),
+        )
     }
 
     @Test
@@ -118,9 +122,11 @@ class JournalExportTest {
 
     @Test
     fun headerNeverCarriesTheRelayToken() {
-        val relay = relay().toBuilder()
-            .setUrl("https://user:secret@relay.example.com:443?token=abc")
-            .build()
+        val relay =
+            relay()
+                .toBuilder()
+                .setUrl("https://user:secret@relay.example.com:443?token=abc")
+                .build()
 
         val text = JournalExport.header(info().copy(relay = relay))
 
@@ -140,9 +146,11 @@ class JournalExportTest {
 
     @Test
     fun headerNeverCarriesTheDownloadsFolder() {
-        val settings = settings().toBuilder()
-            .setDownloadsDir("/data/user/0/app.unison/files/Downloads")
-            .build()
+        val settings =
+            settings()
+                .toBuilder()
+                .setDownloadsDir("/data/user/0/app.unison/files/Downloads")
+                .build()
 
         val text = JournalExport.header(info(settings))
 
@@ -150,43 +158,48 @@ class JournalExportTest {
         assertTrue(text.contains("  downloads_dir: [path]\n"))
     }
 
-    private fun info(settings: Local.Settings = settings()) = JournalHeaderInfo(
-        generated = generated,
-        appVersion = "0.1.0",
-        coreVersion = "0.1.0",
-        osRelease = "15",
-        sdk = 35,
-        deviceName = "Pixel",
-        deviceId = "3f2a",
-        online = true,
-        condition = "unmetered",
-        addresses = listOf("192.168.1.2:42000", "[::1]:42000"),
-        settings = settings,
-        journalEnabled = settings.journalEnabled,
-        relay = relay(),
-        policy = PolicyDefaults.config,
-    )
+    private fun info(settings: Local.Settings = settings()) =
+        JournalHeaderInfo(
+            generated = generated,
+            appVersion = "0.1.0",
+            coreVersion = "0.1.0",
+            osRelease = "15",
+            sdk = 35,
+            deviceName = "Pixel",
+            deviceId = "3f2a",
+            online = true,
+            condition = "unmetered",
+            addresses = listOf("192.168.1.2:42000", "[::1]:42000"),
+            settings = settings,
+            journalEnabled = settings.journalEnabled,
+            relay = relay(),
+            policy = PolicyDefaults.config,
+        )
 
-    private fun relay(): Local.Relay = Local.Relay.newBuilder()
-        .setUrl("https://relay.example.com:443")
-        .setTokenSet(true)
-        .setConnected(true)
-        .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
-        .setFilesOnRequest(true)
-        .build()
+    private fun relay(): Local.Relay =
+        Local.Relay
+            .newBuilder()
+            .setUrl("https://relay.example.com:443")
+            .setTokenSet(true)
+            .setConnected(true)
+            .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
+            .setFilesOnRequest(true)
+            .build()
 
-    private fun settings(): Local.Settings = Local.Settings.newBuilder()
-        .setDeviceName("Pixel")
-        .setRequireConfirmation(true)
-        .setRequireFileConfirmation(false)
-        .setBlobMaxSizeBytes(1L shl 20)
-        .setDownloadsDir("/data/user/0/app.unison/files/Downloads")
-        .setRelayMaxSizeBytes(1L shl 20)
-        .setHistoryTtlTextSeconds(3600)
-        .setHistoryTtlImageSeconds(7200)
-        .setHistoryTtlFilesSeconds(10800)
-        .setSentryEnabled(false)
-        .setStripTracking(true)
-        .setJournalEnabled(true)
-        .build()
+    private fun settings(): Local.Settings =
+        Local.Settings
+            .newBuilder()
+            .setDeviceName("Pixel")
+            .setRequireConfirmation(true)
+            .setRequireFileConfirmation(false)
+            .setBlobMaxSizeBytes(1L shl 20)
+            .setDownloadsDir("/data/user/0/app.unison/files/Downloads")
+            .setRelayMaxSizeBytes(1L shl 20)
+            .setHistoryTtlTextSeconds(3600)
+            .setHistoryTtlImageSeconds(7200)
+            .setHistoryTtlFilesSeconds(10800)
+            .setSentryEnabled(false)
+            .setStripTracking(true)
+            .setJournalEnabled(true)
+            .build()
 }

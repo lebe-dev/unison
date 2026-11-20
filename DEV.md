@@ -106,7 +106,9 @@ just stop-daemon          # stop the daemon of the default data directory
 just desktop-dev          # run the desktop app with hot reload
 just desktop-build        # build the desktop app bundle for the host platform
 just desktop-test         # component tests of the desktop app
-just android-lint         # Android lint checks
+just android-check        # ktlint and detekt for the Android Kotlin sources
+just android-lint         # Android lint, ktlint and detekt
+just android-test         # Android unit tests
 just package-macos        # macOS bundle with the daemon, signed and notarized
 just verify-macos         # check the layout and the signature of the macOS bundle
 just package-windows      # Windows installer with the daemon, run on Windows
@@ -119,7 +121,8 @@ just clean                # remove bin/
 
 The lint recipes cover every component: golangci-lint with gosec and the gofmt check for Go,
 ESLint with typescript-eslint and eslint-plugin-svelte plus Prettier for the desktop frontend,
-rustfmt and clippy for its shell, and the Gradle lint task for Android. The security recipes need
+rustfmt and clippy for its shell, and the Gradle lint task with ktlint and detekt for Android.
+The security recipes need
 network access, because OSV-Scanner and Trivy download their databases, and the secrets scan reads
 the whole git history; `just security-image` builds the relay image before it scans it.
 

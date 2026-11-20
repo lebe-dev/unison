@@ -27,21 +27,26 @@ data class PendingPrompt(
 
     companion object {
         /** Question about a held clipboard item. */
-        fun clipboard(item: Local.ClipItem, device: String): PendingPrompt = PendingPrompt(
-            id = item.id,
-            kind = Kind.CLIPBOARD,
-            device = device,
-            clipKind = item.kind,
-            sizeBytes = item.representationsList.sumOf { it.size },
-        )
+        fun clipboard(
+            item: Local.ClipItem,
+            device: String,
+        ): PendingPrompt =
+            PendingPrompt(
+                id = item.id,
+                kind = Kind.CLIPBOARD,
+                device = device,
+                clipKind = item.kind,
+                sizeBytes = item.representationsList.sumOf { it.size },
+            )
 
         /** Question about a file offer. */
-        fun files(request: Local.ShareRequest): PendingPrompt = PendingPrompt(
-            id = request.id,
-            kind = Kind.FILES,
-            device = request.deviceName,
-            files = request.filesList.map { it.name }.filter { it.isNotEmpty() },
-            sizeBytes = request.totalBytes,
-        )
+        fun files(request: Local.ShareRequest): PendingPrompt =
+            PendingPrompt(
+                id = request.id,
+                kind = Kind.FILES,
+                device = request.deviceName,
+                files = request.filesList.map { it.name }.filter { it.isNotEmpty() },
+                sizeBytes = request.totalBytes,
+            )
     }
 }

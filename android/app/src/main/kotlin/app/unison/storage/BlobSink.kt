@@ -21,28 +21,30 @@ class BlobSink(
     private val context: Context,
     private val scope: CoroutineScope,
 ) {
-
     /** Opens a sink for one file and returns the write descriptor, or -1. */
     @OptIn(DelicateCoroutinesApi::class)
     fun open(meta: ByteArray): Long {
-        val payload = try {
-            Mobile.FilePayload.parseFrom(meta)
-        } catch (e: InvalidProtocolBufferException) {
-            Log.w(TAG, "file metadata does not decode: ${e.message}")
-            return UNSUPPORTED
-        }
+        val payload =
+            try {
+                Mobile.FilePayload.parseFrom(meta)
+            } catch (e: InvalidProtocolBufferException) {
+                Log.w(TAG, "file metadata does not decode: ${e.message}")
+                return UNSUPPORTED
+            }
 
         val mimeType = payload.mimeType.ifBlank { Downloads.DEFAULT_MIME }
-        val uri = Downloads.create(context, Downloads.nameWithExtension(payload.fileName, mimeType), mimeType)
-            ?: return UNSUPPORTED
+        val uri =
+            Downloads.create(context, Downloads.nameWithExtension(payload.fileName, mimeType), mimeType)
+                ?: return UNSUPPORTED
 
-        val pipe = try {
-            ParcelFileDescriptor.createPipe()
-        } catch (e: Exception) {
-            Log.w(TAG, "cannot create a pipe: ${e.message}")
-            Downloads.discard(context, uri)
-            return UNSUPPORTED
-        }
+        val pipe =
+            try {
+                ParcelFileDescriptor.createPipe()
+            } catch (e: Exception) {
+                Log.w(TAG, "cannot create a pipe: ${e.message}")
+                Downloads.discard(context, uri)
+                return UNSUPPORTED
+            }
 
         // Started even when the service is going away: the read end must be drained and closed,
         // or the core blocks on a full pipe and the pending entry stays behind.
@@ -51,17 +53,22 @@ class BlobSink(
     }
 
     /** Copies the payload into the entry and publishes it. */
-    private fun receive(source: ParcelFileDescriptor, uri: Uri, expected: Long) {
-        val written = try {
-            ParcelFileDescriptor.AutoCloseInputStream(source).use { input ->
-                context.contentResolver.openOutputStream(uri)?.use { output ->
-                    input.copyTo(output)
+    private fun receive(
+        source: ParcelFileDescriptor,
+        uri: Uri,
+        expected: Long,
+    ) {
+        val written =
+            try {
+                ParcelFileDescriptor.AutoCloseInputStream(source).use { input ->
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        input.copyTo(output)
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "cannot save an incoming file: ${e.message}")
+                null
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "cannot save an incoming file: ${e.message}")
-            null
-        }
 
         if (written == null || (expected > 0 && written != expected)) {
             if (written != null) {

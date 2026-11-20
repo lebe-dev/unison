@@ -8,7 +8,6 @@ import org.junit.Test
 import unison.local.v1.Local
 
 class PolicySettingsTest {
-
     @Test
     fun defaultsMatchTheTable() {
         val table = PolicyDefaults.config
@@ -45,10 +44,11 @@ class PolicySettingsTest {
     fun cellChangeKeepsTheRestOfTheRow() {
         val table = PolicyDefaults.config
         val row = table[PolicyCondition.ROAMING]
-        val changed = table.with(
-            PolicyCondition.ROAMING,
-            row.with(PolicyKind.IMAGE, PolicyCell(PolicyMode.AUTO, PolicySize.ofMegabytes(4))),
-        )
+        val changed =
+            table.with(
+                PolicyCondition.ROAMING,
+                row.with(PolicyKind.IMAGE, PolicyCell(PolicyMode.AUTO, PolicySize.ofMegabytes(4))),
+            )
 
         assertEquals(PolicyMode.AUTO, changed[PolicyCondition.ROAMING][PolicyKind.IMAGE].mode)
         assertEquals(4 * PolicySize.MEGABYTE, changed[PolicyCondition.ROAMING][PolicyKind.IMAGE].maxSizeBytes)
@@ -97,10 +97,12 @@ class PolicySettingsTest {
         metered: Boolean = false,
         roaming: Boolean = false,
         dataSaver: Boolean = false,
-    ): Local.NetworkState = Local.NetworkState.newBuilder()
-        .setOnline(online)
-        .setMetered(metered)
-        .setRoaming(roaming)
-        .setDataSaver(dataSaver)
-        .build()
+    ): Local.NetworkState =
+        Local.NetworkState
+            .newBuilder()
+            .setOnline(online)
+            .setMetered(metered)
+            .setRoaming(roaming)
+            .setDataSaver(dataSaver)
+            .build()
 }

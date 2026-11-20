@@ -30,18 +30,23 @@ import app.unison.R
 
 /** First run explanation with the switch that starts the core. */
 @Composable
-fun OnboardingScreen(onEnable: () -> Unit, modifier: Modifier = Modifier) {
+fun OnboardingScreen(
+    onEnable: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
-        modifier = modifier
-            .fillMaxSize()
-            .safeDrawingPadding(),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .safeDrawingPadding(),
         color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -75,16 +80,18 @@ fun OnboardingScreen(onEnable: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun Bullet(text: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+            modifier =
+                Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
         )
         Text(
             text = text,

@@ -40,7 +40,10 @@ import unison.local.v1.Local
 
 /** Name announced to the other devices. */
 @Composable
-internal fun DeviceName(deviceName: String, onDeviceNameChange: (String) -> Unit) {
+internal fun DeviceName(
+    deviceName: String,
+    onDeviceNameChange: (String) -> Unit,
+) {
     var draft by rememberSaveable(deviceName) { mutableStateOf(deviceName) }
     val saved = draft.trim()
     val canSave = DeviceNames.valid(draft) && saved != deviceName
@@ -84,14 +87,14 @@ internal fun ServiceMode(
     Column(modifier = Modifier.selectableGroup()) {
         OperatingMode.entries.forEach { mode ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = mode == operatingMode,
-                        onClick = { onOperatingModeChange(mode) },
-                        role = Role.RadioButton,
-                    )
-                    .padding(vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = mode == operatingMode,
+                            onClick = { onOperatingModeChange(mode) },
+                            role = Role.RadioButton,
+                        ).padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(selected = mode == operatingMode, onClick = null)
@@ -121,11 +124,12 @@ internal fun DownloadsFolderSection(
     onPick: (Uri) -> Unit,
     onReset: () -> Unit,
 ) {
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        if (uri != null) {
-            onPick(uri)
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri != null) {
+                onPick(uri)
+            }
         }
-    }
 
     SectionTitle(text = stringResource(R.string.settings_section_downloads))
     Text(
@@ -138,9 +142,10 @@ internal fun DownloadsFolderSection(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedButton(
@@ -161,7 +166,10 @@ internal fun DownloadsFolderSection(
 
 /** Pause of the clipboard synchronization. */
 @Composable
-internal fun Pause(pause: Local.Pause?, onPause: (PauseRequest) -> Unit) {
+internal fun Pause(
+    pause: Local.Pause?,
+    onPause: (PauseRequest) -> Unit,
+) {
     SectionTitle(text = stringResource(R.string.pause_title))
     Text(
         text = pauseLabel(pause),
@@ -242,7 +250,10 @@ internal fun FileConfirmation(
 
 /** Removal of the advertising parameters from the links of the clipboard. */
 @Composable
-internal fun Links(enabled: Boolean, onChange: (Boolean) -> Unit) {
+internal fun Links(
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
     SectionTitle(text = stringResource(R.string.settings_section_links))
     SettingsSwitch(
         title = stringResource(R.string.settings_strip_tracking),
@@ -255,7 +266,10 @@ internal fun Links(enabled: Boolean, onChange: (Boolean) -> Unit) {
 
 /** Reporting of the crashes and the errors of this device to the developer. */
 @Composable
-internal fun Diagnostics(enabled: Boolean, onChange: (Boolean) -> Unit) {
+internal fun Diagnostics(
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
     SectionTitle(text = stringResource(R.string.settings_section_diagnostics))
     SettingsSwitch(
         title = stringResource(R.string.settings_diagnostics),
@@ -276,9 +290,10 @@ internal fun SettingsSwitch(
     onChange: (Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -308,9 +323,10 @@ internal fun Group(onLeave: () -> Unit) {
     )
     OutlinedButton(
         onClick = onLeave,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
     ) {
         Text(
             text = stringResource(R.string.settings_leave_group),
@@ -319,17 +335,19 @@ internal fun Group(onLeave: () -> Unit) {
     }
 }
 
-internal fun OperatingMode.label(): Int = when (this) {
-    OperatingMode.ALWAYS -> R.string.mode_always
-    OperatingMode.WIFI_ONLY -> R.string.mode_wifi_only
-    OperatingMode.APP_OPEN -> R.string.mode_app_open
-}
+internal fun OperatingMode.label(): Int =
+    when (this) {
+        OperatingMode.ALWAYS -> R.string.mode_always
+        OperatingMode.WIFI_ONLY -> R.string.mode_wifi_only
+        OperatingMode.APP_OPEN -> R.string.mode_app_open
+    }
 
-private fun OperatingMode.hint(): Int = when (this) {
-    OperatingMode.ALWAYS -> R.string.mode_always_hint
-    OperatingMode.WIFI_ONLY -> R.string.mode_wifi_only_hint
-    OperatingMode.APP_OPEN -> R.string.mode_app_open_hint
-}
+private fun OperatingMode.hint(): Int =
+    when (this) {
+        OperatingMode.ALWAYS -> R.string.mode_always_hint
+        OperatingMode.WIFI_ONLY -> R.string.mode_wifi_only_hint
+        OperatingMode.APP_OPEN -> R.string.mode_app_open_hint
+    }
 
 /** Tag of the switch of the clipboard confirmation of this device. */
 internal const val CONFIRMATION_TAG = "settings.confirmation"

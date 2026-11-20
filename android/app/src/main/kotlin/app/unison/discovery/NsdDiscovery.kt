@@ -18,13 +18,20 @@ import unison.mobile.v1.Mobile as MobileProto
 
 /** Receives the devices found on the local network. */
 fun interface CandidateSink {
-    fun offer(service: String, addr: String, txt: ByteArray)
+    fun offer(
+        service: String,
+        addr: String,
+        txt: ByteArray,
+    )
 }
 
 /** Hands the discovered devices to the core running in this process. */
 object CoreCandidates : CandidateSink {
-    override fun offer(service: String, addr: String, txt: ByteArray) =
-        Mobile.addPeerCandidate(service, addr, txt)
+    override fun offer(
+        service: String,
+        addr: String,
+        txt: ByteArray,
+    ) = Mobile.addPeerCandidate(service, addr, txt)
 }
 
 /**
@@ -66,53 +73,56 @@ class NsdDiscovery(
     private val restart = Runnable { restartDiscovery() }
 
     /** Starts discovery: takes the multicast lock and browses for devices. */
-    fun start() = onMain {
-        if (running) {
-            return@onMain
+    fun start() =
+        onMain {
+            if (running) {
+                return@onMain
+            }
+            running = true
+            acquireLock()
+            registerNetwork()
+            updateBrowsing(ServiceTypes.MAIN)
         }
-        running = true
-        acquireLock()
-        registerNetwork()
-        updateBrowsing(ServiceTypes.MAIN)
-    }
 
     /** Stops discovery and withdraws every announcement. */
-    fun stop() = onMain {
-        if (!running) {
-            return@onMain
+    fun stop() =
+        onMain {
+            if (!running) {
+                return@onMain
+            }
+            running = false
+            main.removeCallbacks(restart)
+            for (retry in retries) {
+                main.removeCallbacks(retry)
+            }
+            retries.clear()
+            unregisterNetwork()
+            for (service in browsing.keys.toList()) {
+                stopBrowsing(service)
+            }
+            queue.clear()
+            resolved.clear()
+            main.removeCallbacks(timeout)
+            resolving = null
+            for (key in callbacks.keys.toList()) {
+                unregisterCallback(key)
+            }
+            for (advertisement in announced.values.toList()) {
+                unregister(advertisement)
+            }
+            desired.clear()
+            releaseLock()
         }
-        running = false
-        main.removeCallbacks(restart)
-        for (retry in retries) {
-            main.removeCallbacks(retry)
-        }
-        retries.clear()
-        unregisterNetwork()
-        for (service in browsing.keys.toList()) {
-            stopBrowsing(service)
-        }
-        queue.clear()
-        resolved.clear()
-        main.removeCallbacks(timeout)
-        resolving = null
-        for (key in callbacks.keys.toList()) {
-            unregisterCallback(key)
-        }
-        for (advertisement in announced.values.toList()) {
-            unregister(advertisement)
-        }
-        desired.clear()
-        releaseLock()
-    }
 
     /** Applies a serialized unison.mobile.v1.Announcement. */
     fun announce(data: ByteArray) {
-        val message = try {
-            MobileProto.Announcement.parseFrom(data)
-        } catch (e: Exception) {
-            Log.w(TAG, "announcement does not decode: ${e.message}")
-            return
-        }
+        val message =
+            try {
+                MobileProto.Announcement.parseFrom(data)
+            } catch (e: Exception) {
+                Log.w(TAG, "announcement does not decode: ${e.message}")
+                return
+            }
         onMain { publish(message) }
     }
 
@@ -181,27 +191,36 @@ class NsdDiscovery(
         }
     }
 
-    private fun register(service: String, info: NsdServiceInfo) {
+    private fun register(
+        service: String,
+        info: NsdServiceInfo,
+    ) {
         val nsd = manager
         if (!running || nsd == null) {
             return
         }
         val advertisement = Advertisement(service, info)
-        val listener = object : NsdManager.RegistrationListener {
-            override fun onServiceRegistered(info: NsdServiceInfo) = onMain {
-                // The system may rename the instance to resolve a conflict.
-                advertisement.registeredName = info.serviceName
-                registered(advertisement)
+        val listener =
+            object : NsdManager.RegistrationListener {
+                override fun onServiceRegistered(info: NsdServiceInfo) =
+                    onMain {
+                        // The system may rename the instance to resolve a conflict.
+                        advertisement.registeredName = info.serviceName
+                        registered(advertisement)
+                    }
+
+                override fun onRegistrationFailed(
+                    info: NsdServiceInfo,
+                    errorCode: Int,
+                ) = onMain { registrationFailed(advertisement, errorCode) }
+
+                override fun onServiceUnregistered(info: NsdServiceInfo) = onMain { unregistered(advertisement) }
+
+                override fun onUnregistrationFailed(
+                    info: NsdServiceInfo,
+                    errorCode: Int,
+                ) = onMain { unregistrationFailed(advertisement, errorCode) }
             }
-
-            override fun onRegistrationFailed(info: NsdServiceInfo, errorCode: Int) =
-                onMain { registrationFailed(advertisement, errorCode) }
-
-            override fun onServiceUnregistered(info: NsdServiceInfo) = onMain { unregistered(advertisement) }
-
-            override fun onUnregistrationFailed(info: NsdServiceInfo, errorCode: Int) =
-                onMain { unregistrationFailed(advertisement, errorCode) }
-        }
         advertisement.listener = listener
         announced[service] = advertisement
         try {
@@ -226,7 +245,10 @@ class NsdDiscovery(
         reconcile(advertisement.service)
     }
 
-    private fun registrationFailed(advertisement: Advertisement, errorCode: Int) {
+    private fun registrationFailed(
+        advertisement: Advertisement,
+        errorCode: Int,
+    ) {
         if (announced[advertisement.service] !== advertisement) {
             return
         }
@@ -242,7 +264,10 @@ class NsdDiscovery(
         reconcile(advertisement.service)
     }
 
-    private fun unregistrationFailed(advertisement: Advertisement, errorCode: Int) {
+    private fun unregistrationFailed(
+        advertisement: Advertisement,
+        errorCode: Int,
+    ) {
         Log.w(TAG, "withdrawing ${advertisement.service} failed with code $errorCode")
         if (announced[advertisement.service] === advertisement) {
             announced.remove(advertisement.service)
@@ -268,10 +293,11 @@ class NsdDiscovery(
 
     /** Starts or stops browsing of the service. */
     private fun updateBrowsing(service: String) {
-        val wanted = when (service) {
-            ServiceTypes.MAIN -> running
-            else -> running && desired.containsKey(service)
-        }
+        val wanted =
+            when (service) {
+                ServiceTypes.MAIN -> running
+                else -> running && desired.containsKey(service)
+            }
         val active = browsing.containsKey(service)
         when {
             wanted && !active -> startBrowsing(service)
@@ -285,26 +311,32 @@ class NsdDiscovery(
         if (nsd == null || type == null) {
             return
         }
-        val listener = object : NsdManager.DiscoveryListener {
-            override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) =
-                onMain { discoveryFailed(service, errorCode) }
+        val listener =
+            object : NsdManager.DiscoveryListener {
+                override fun onStartDiscoveryFailed(
+                    serviceType: String,
+                    errorCode: Int,
+                ) = onMain { discoveryFailed(service, errorCode) }
 
-            override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
-                Log.w(TAG, "stopping discovery of $service failed with code $errorCode")
+                override fun onStopDiscoveryFailed(
+                    serviceType: String,
+                    errorCode: Int,
+                ) {
+                    Log.w(TAG, "stopping discovery of $service failed with code $errorCode")
+                }
+
+                override fun onDiscoveryStarted(serviceType: String) {
+                    Log.i(TAG, "browsing $service")
+                }
+
+                override fun onDiscoveryStopped(serviceType: String) {
+                    Log.i(TAG, "stopped browsing $service")
+                }
+
+                override fun onServiceFound(info: NsdServiceInfo) = onMain { found(service, info) }
+
+                override fun onServiceLost(info: NsdServiceInfo) = onMain { lost(service, info) }
             }
-
-            override fun onDiscoveryStarted(serviceType: String) {
-                Log.i(TAG, "browsing $service")
-            }
-
-            override fun onDiscoveryStopped(serviceType: String) {
-                Log.i(TAG, "stopped browsing $service")
-            }
-
-            override fun onServiceFound(info: NsdServiceInfo) = onMain { found(service, info) }
-
-            override fun onServiceLost(info: NsdServiceInfo) = onMain { lost(service, info) }
-        }
         browsing[service] = listener
         try {
             nsd.discoverServices(type, NsdManager.PROTOCOL_DNS_SD, listener)
@@ -314,7 +346,10 @@ class NsdDiscovery(
         }
     }
 
-    private fun discoveryFailed(service: String, errorCode: Int) {
+    private fun discoveryFailed(
+        service: String,
+        errorCode: Int,
+    ) {
         browsing.remove(service)
         Log.w(TAG, "browsing $service failed with code $errorCode, retrying later")
         retryLater { updateBrowsing(service) }
@@ -322,14 +357,15 @@ class NsdDiscovery(
 
     /** Runs a step again after a pause, while discovery is still running. */
     private fun retryLater(step: () -> Unit) {
-        val retry = object : Runnable {
-            override fun run() {
-                retries.remove(this)
-                if (running) {
-                    step()
+        val retry =
+            object : Runnable {
+                override fun run() {
+                    retries.remove(this)
+                    if (running) {
+                        step()
+                    }
                 }
             }
-        }
         retries += retry
         main.postDelayed(retry, RETRY_DELAY_MS)
     }
@@ -352,7 +388,10 @@ class NsdDiscovery(
         }
     }
 
-    private fun found(service: String, info: NsdServiceInfo) {
+    private fun found(
+        service: String,
+        info: NsdServiceInfo,
+    ) {
         if (!running) {
             return
         }
@@ -369,7 +408,10 @@ class NsdDiscovery(
         requestResolve(service, info)
     }
 
-    private fun lost(service: String, info: NsdServiceInfo) {
+    private fun lost(
+        service: String,
+        info: NsdServiceInfo,
+    ) {
         val key = keyOf(service, info.serviceName)
         resolved.remove(key)
         queue.removeAll { it.key == key }
@@ -382,14 +424,18 @@ class NsdDiscovery(
     }
 
     /** Instance names this device announces for the service. */
-    private fun ownNames(service: String): List<String> = listOfNotNull(
-        desired[service]?.serviceName,
-        announced[service]?.info?.serviceName,
-        announced[service]?.registeredName,
-    )
+    private fun ownNames(service: String): List<String> =
+        listOfNotNull(
+            desired[service]?.serviceName,
+            announced[service]?.info?.serviceName,
+            announced[service]?.registeredName,
+        )
 
     /** Queues one service for resolution. Resolution runs one request at a time. */
-    private fun requestResolve(service: String, info: NsdServiceInfo) {
+    private fun requestResolve(
+        service: String,
+        info: NsdServiceInfo,
+    ) {
         val key = keyOf(service, info.serviceName)
         if (key in resolved || queue.any { it.key == key } || resolving?.key == key) {
             return
@@ -414,35 +460,36 @@ class NsdDiscovery(
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun resolveWithCallback(request: Resolve) {
-        val callback = object : NsdManager.ServiceInfoCallback {
-            override fun onServiceInfoCallbackRegistrationFailed(errorCode: Int) {
-                onMain {
-                    Log.w(TAG, "resolving a device of ${request.service} failed with code $errorCode")
-                    finish(request, false)
-                }
-            }
-
-            override fun onServiceUpdated(serviceInfo: NsdServiceInfo) {
-                onMain {
-                    if (resolving !== request) {
-                        return@onMain
+        val callback =
+            object : NsdManager.ServiceInfoCallback {
+                override fun onServiceInfoCallbackRegistrationFailed(errorCode: Int) {
+                    onMain {
+                        Log.w(TAG, "resolving a device of ${request.service} failed with code $errorCode")
+                        finish(request, false)
                     }
-                    finish(request, emit(request.service, serviceInfo))
                 }
-            }
 
-            override fun onServiceLost() {
-                onMain {
-                    if (resolving !== request) {
-                        return@onMain
+                override fun onServiceUpdated(serviceInfo: NsdServiceInfo) {
+                    onMain {
+                        if (resolving !== request) {
+                            return@onMain
+                        }
+                        finish(request, emit(request.service, serviceInfo))
                     }
-                    Log.i(TAG, "lost a device of ${request.service} while resolving")
-                    finish(request, false)
                 }
-            }
 
-            override fun onServiceInfoCallbackUnregistered() = Unit
-        }
+                override fun onServiceLost() {
+                    onMain {
+                        if (resolving !== request) {
+                            return@onMain
+                        }
+                        Log.i(TAG, "lost a device of ${request.service} while resolving")
+                        finish(request, false)
+                    }
+                }
+
+                override fun onServiceInfoCallbackUnregistered() = Unit
+            }
         callbacks[request.key] = callback
         try {
             manager?.registerServiceInfoCallback(request.info, mainExecutor, callback)
@@ -455,32 +502,38 @@ class NsdDiscovery(
     @Suppress("DEPRECATION")
     private fun resolveLegacy(request: Resolve) {
         try {
-            manager?.resolveService(request.info, object : NsdManager.ResolveListener {
-                override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                    onMain {
-                        Log.w(TAG, "resolving a device of ${request.service} failed with code $errorCode")
-                        if (resolving !== request) {
-                            return@onMain
-                        }
-                        finish(request, false)
-                        // Before Android 14 one resolution runs at a time, also across the
-                        // ones that timed out here; the device is tried again shortly.
-                        val busy = errorCode == NsdManager.FAILURE_ALREADY_ACTIVE
-                        if (busy && request.attempt < MAX_RESOLVE_ATTEMPTS) {
-                            requeue(request)
+            manager?.resolveService(
+                request.info,
+                object : NsdManager.ResolveListener {
+                    override fun onResolveFailed(
+                        serviceInfo: NsdServiceInfo,
+                        errorCode: Int,
+                    ) {
+                        onMain {
+                            Log.w(TAG, "resolving a device of ${request.service} failed with code $errorCode")
+                            if (resolving !== request) {
+                                return@onMain
+                            }
+                            finish(request, false)
+                            // Before Android 14 one resolution runs at a time, also across the
+                            // ones that timed out here; the device is tried again shortly.
+                            val busy = errorCode == NsdManager.FAILURE_ALREADY_ACTIVE
+                            if (busy && request.attempt < MAX_RESOLVE_ATTEMPTS) {
+                                requeue(request)
+                            }
                         }
                     }
-                }
 
-                override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-                    onMain {
-                        if (resolving !== request) {
-                            return@onMain
+                    override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
+                        onMain {
+                            if (resolving !== request) {
+                                return@onMain
+                            }
+                            finish(request, emit(request.service, serviceInfo))
                         }
-                        finish(request, emit(request.service, serviceInfo))
                     }
-                }
-            })
+                },
+            )
         } catch (e: Exception) {
             Log.w(TAG, "resolving a device of ${request.service} failed: ${e.message}")
             finish(request, false)
@@ -489,25 +542,29 @@ class NsdDiscovery(
 
     /** Queues a resolution once more after a short pause. */
     private fun requeue(request: Resolve) {
-        val retry = object : Runnable {
-            override fun run() {
-                retries.remove(this)
-                if (!running || !browsing.containsKey(request.service)) {
-                    return
+        val retry =
+            object : Runnable {
+                override fun run() {
+                    retries.remove(this)
+                    if (!running || !browsing.containsKey(request.service)) {
+                        return
+                    }
+                    val key = request.key
+                    if (key in resolved || queue.any { it.key == key } || resolving?.key == key) {
+                        return
+                    }
+                    queue.addLast(Resolve(request.service, request.info, request.attempt + 1))
+                    pump()
                 }
-                val key = request.key
-                if (key in resolved || queue.any { it.key == key } || resolving?.key == key) {
-                    return
-                }
-                queue.addLast(Resolve(request.service, request.info, request.attempt + 1))
-                pump()
             }
-        }
         retries += retry
         main.postDelayed(retry, RESOLVE_RETRY_MS)
     }
 
-    private fun finish(request: Resolve, ok: Boolean) {
+    private fun finish(
+        request: Resolve,
+        ok: Boolean,
+    ) {
         if (resolving !== request) {
             return
         }
@@ -521,7 +578,10 @@ class NsdDiscovery(
     }
 
     /** Reports one resolved device to the core, false when it cannot be dialed. */
-    private fun emit(service: String, info: NsdServiceInfo): Boolean {
+    private fun emit(
+        service: String,
+        info: NsdServiceInfo,
+    ): Boolean {
         val port = info.port
         if (port !in 1..65535) {
             return false
@@ -593,10 +653,11 @@ class NsdDiscovery(
         }
         val wifi = appContext.getSystemService(WifiManager::class.java) ?: return
         try {
-            lock = wifi.createMulticastLock(LOCK_TAG).apply {
-                setReferenceCounted(false)
-                acquire()
-            }
+            lock =
+                wifi.createMulticastLock(LOCK_TAG).apply {
+                    setReferenceCounted(false)
+                    acquire()
+                }
             Log.i(TAG, "multicast lock taken")
         } catch (e: Exception) {
             Log.w(TAG, "multicast lock failed: ${e.message}")
@@ -644,21 +705,24 @@ class NsdDiscovery(
         }
     }
 
-    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) = onMain {
-            if (currentNetwork != network) {
-                currentNetwork = network
-                scheduleRestart()
-            }
-        }
+    private val networkCallback =
+        object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) =
+                onMain {
+                    if (currentNetwork != network) {
+                        currentNetwork = network
+                        scheduleRestart()
+                    }
+                }
 
-        override fun onLost(network: Network) = onMain {
-            if (currentNetwork == network) {
-                currentNetwork = null
-            }
-            scheduleRestart()
+            override fun onLost(network: Network) =
+                onMain {
+                    if (currentNetwork == network) {
+                        currentNetwork = null
+                    }
+                    scheduleRestart()
+                }
         }
-    }
 
     /** Restarts discovery once the network settles after a change. */
     private fun scheduleRestart() {
@@ -704,7 +768,10 @@ class NsdDiscovery(
         UNREGISTERING,
     }
 
-    private class Advertisement(val service: String, val info: NsdServiceInfo) {
+    private class Advertisement(
+        val service: String,
+        val info: NsdServiceInfo,
+    ) {
         var state = State.REGISTERING
         lateinit var listener: NsdManager.RegistrationListener
 
@@ -712,7 +779,11 @@ class NsdDiscovery(
         var registeredName: String? = null
     }
 
-    private class Resolve(val service: String, val info: NsdServiceInfo, val attempt: Int = 1) {
+    private class Resolve(
+        val service: String,
+        val info: NsdServiceInfo,
+        val attempt: Int = 1,
+    ) {
         val key = keyOf(service, info.serviceName)
     }
 
@@ -729,10 +800,16 @@ class NsdDiscovery(
 }
 
 /** Key of one service instance, unique across services. */
-private fun keyOf(service: String, instance: String): String = "$service|$instance"
+private fun keyOf(
+    service: String,
+    instance: String,
+): String = "$service|$instance"
 
 /** Compares two announcements by the content the platform registers. */
-private fun sameInfo(a: NsdServiceInfo, b: NsdServiceInfo): Boolean {
+private fun sameInfo(
+    a: NsdServiceInfo,
+    b: NsdServiceInfo,
+): Boolean {
     if (a.serviceName != b.serviceName || a.port != b.port) {
         return false
     }

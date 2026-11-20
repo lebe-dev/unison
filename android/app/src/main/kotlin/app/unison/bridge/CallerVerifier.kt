@@ -34,11 +34,12 @@ class CallerVerifier(
         val packages = manager.getPackagesForUid(uid) ?: return false
         for (pkg in packages) {
             for (certificate in ownCertificates) {
-                val signed = manager.hasSigningCertificate(
-                    pkg,
-                    certificate,
-                    PackageManager.CERT_INPUT_RAW_X509,
-                )
+                val signed =
+                    manager.hasSigningCertificate(
+                        pkg,
+                        certificate,
+                        PackageManager.CERT_INPUT_RAW_X509,
+                    )
                 if (signed) {
                     return true
                 }
@@ -48,19 +49,22 @@ class CallerVerifier(
     }
 
     /** Certificates of this app, empty when they cannot be read. */
-    private fun loadOwnCertificates(): List<ByteArray> = try {
-        val info = manager.getPackageInfo(ownPackage, PackageManager.GET_SIGNING_CERTIFICATES)
-        info.signingInfo?.apkContentsSigners?.map { it.toByteArray() }.orEmpty()
-    } catch (e: PackageManager.NameNotFoundException) {
-        Log.w(TAG, "cannot read the signing key: ${e.message}")
-        emptyList()
-    }
+    private fun loadOwnCertificates(): List<ByteArray> =
+        try {
+            val info = manager.getPackageInfo(ownPackage, PackageManager.GET_SIGNING_CERTIFICATES)
+            info.signingInfo
+                ?.apkContentsSigners
+                ?.map { it.toByteArray() }
+                .orEmpty()
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.w(TAG, "cannot read the signing key: ${e.message}")
+            emptyList()
+        }
 
     companion object {
         private const val TAG = "CallerVerifier"
 
         /** Verifier for the package of the context. */
-        fun of(context: Context): CallerVerifier =
-            CallerVerifier(context.packageManager, context.packageName)
+        fun of(context: Context): CallerVerifier = CallerVerifier(context.packageManager, context.packageName)
     }
 }

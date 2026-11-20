@@ -13,8 +13,8 @@ import app.unison.testQuantity
 import app.unison.testString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,15 +22,15 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class ReceiveNotificationsTest {
-
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test
     fun progressNamesTheSenderAndTheFile() {
-        val notification = ReceiveNotifications.progress(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_TRANSFERRING, files = listOf("report.pdf"), bytes = 40, total = 100),
-        )
+        val notification =
+            ReceiveNotifications.progress(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_TRANSFERRING, files = listOf("report.pdf"), bytes = 40, total = 100),
+            )
 
         assertEquals(
             testString(R.string.receive_progress_title, "Mac"),
@@ -57,10 +57,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun resultNamesTheOnlyFile() {
-        val notification = ReceiveNotifications.result(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("report.pdf")),
-        )
+        val notification =
+            ReceiveNotifications.result(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("report.pdf")),
+            )
 
         assertEquals("Mac", notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
         assertEquals(
@@ -75,10 +76,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun resultCountsSeveralFiles() {
-        val notification = ReceiveNotifications.result(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("a.jpg", "b.jpg", "c.jpg")),
-        )
+        val notification =
+            ReceiveNotifications.result(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("a.jpg", "b.jpg", "c.jpg")),
+            )
 
         assertEquals(
             testQuantity(R.plurals.receive_done_files, 3, 3),
@@ -88,10 +90,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun failedResultSaysSo() {
-        val notification = ReceiveNotifications.result(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_FAILED, files = listOf("a.jpg")),
-        )
+        val notification =
+            ReceiveNotifications.result(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_FAILED, files = listOf("a.jpg")),
+            )
 
         assertEquals(
             testString(R.string.receive_failed),
@@ -101,10 +104,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun progressWithoutSizeIsIndeterminate() {
-        val notification = ReceiveNotifications.progress(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_TRANSFERRING, files = listOf("a.jpg", "b.jpg")),
-        )
+        val notification =
+            ReceiveNotifications.progress(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_TRANSFERRING, files = listOf("a.jpg", "b.jpg")),
+            )
 
         assertTrue(notification.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
         assertEquals(
@@ -115,10 +119,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun failedResultStaysOnTheQuietChannel() {
-        val notification = ReceiveNotifications.result(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_FAILED, files = listOf("a.jpg")),
-        )
+        val notification =
+            ReceiveNotifications.result(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_FAILED, files = listOf("a.jpg")),
+            )
 
         assertEquals(NotificationChannels.TRANSFERS, notification.channelId)
         assertTrue(notification.flags and Notification.FLAG_AUTO_CANCEL != 0)
@@ -126,10 +131,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun canceledResultSaysSo() {
-        val notification = ReceiveNotifications.result(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_CANCELED, files = listOf("a.jpg")),
-        )
+        val notification =
+            ReceiveNotifications.result(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_CANCELED, files = listOf("a.jpg")),
+            )
 
         assertEquals(
             testString(R.string.receive_canceled),
@@ -139,10 +145,11 @@ class ReceiveNotificationsTest {
 
     @Test
     fun senderWithoutNameIsTheApp() {
-        val notification = ReceiveNotifications.result(
-            context,
-            transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("a.jpg")).toBuilder().setDeviceName("").build(),
-        )
+        val notification =
+            ReceiveNotifications.result(
+                context,
+                transfer(Local.TransferState.TRANSFER_STATE_DONE, files = listOf("a.jpg")).toBuilder().setDeviceName("").build(),
+            )
 
         assertEquals(
             testString(R.string.app_name),
@@ -161,14 +168,22 @@ class ReceiveNotificationsTest {
         files: List<String>,
         bytes: Long = 0,
         total: Long = 0,
-    ): Local.Transfer = Local.Transfer.newBuilder()
-        .setId("transfer-1")
-        .setDirection(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING)
-        .setState(state)
-        .setDeviceName("Mac")
-        .setDeviceId("ab".repeat(32))
-        .setBytes(bytes)
-        .setTotalBytes(total)
-        .addAllFiles(files.map { Local.TransferFile.newBuilder().setName(it).build() })
-        .build()
+    ): Local.Transfer =
+        Local.Transfer
+            .newBuilder()
+            .setId("transfer-1")
+            .setDirection(Local.TransferDirection.TRANSFER_DIRECTION_INCOMING)
+            .setState(state)
+            .setDeviceName("Mac")
+            .setDeviceId("ab".repeat(32))
+            .setBytes(bytes)
+            .setTotalBytes(total)
+            .addAllFiles(
+                files.map {
+                    Local.TransferFile
+                        .newBuilder()
+                        .setName(it)
+                        .build()
+                },
+            ).build()
 }

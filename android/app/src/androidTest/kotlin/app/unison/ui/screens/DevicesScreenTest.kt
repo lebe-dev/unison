@@ -6,12 +6,12 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.R
 import app.unison.clipboard.ClipboardDraft
@@ -29,20 +29,22 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class DevicesScreenTest {
-
     @get:Rule
     val compose = createComposeRule()
 
     @Test
     fun devicesAreSplitByRole() {
-        val state = CoreState(
-            loading = false,
-            status = Local.GetStatusResponse.newBuilder()
-                .setDeviceName("Pixel")
-                .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
-                .addDevices(device("Friend", Local.Role.ROLE_FRIENDS, Local.Path.PATH_RELAY, online = true))
-                .build(),
-        )
+        val state =
+            CoreState(
+                loading = false,
+                status =
+                    Local.GetStatusResponse
+                        .newBuilder()
+                        .setDeviceName("Pixel")
+                        .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
+                        .addDevices(device("Friend", Local.Role.ROLE_FRIENDS, Local.Path.PATH_RELAY, online = true))
+                        .build(),
+            )
         setContent(state)
 
         compose.onNodeWithText(testString(R.string.devices_section_personal)).assertIsDisplayed()
@@ -55,10 +57,15 @@ class DevicesScreenTest {
 
     @Test
     fun emptyListsAreExplained() {
-        val state = CoreState(
-            loading = false,
-            status = Local.GetStatusResponse.newBuilder().setDeviceName("Pixel").build(),
-        )
+        val state =
+            CoreState(
+                loading = false,
+                status =
+                    Local.GetStatusResponse
+                        .newBuilder()
+                        .setDeviceName("Pixel")
+                        .build(),
+            )
         setContent(state)
 
         compose.onNodeWithText(testString(R.string.devices_empty_personal)).assertIsDisplayed()
@@ -118,14 +125,17 @@ class DevicesScreenTest {
 
     @Test
     fun confirmationIsOfferedForPersonalDevicesOnly() {
-        val state = CoreState(
-            loading = false,
-            status = Local.GetStatusResponse.newBuilder()
-                .setDeviceName("Pixel")
-                .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
-                .addDevices(device("Friend", Local.Role.ROLE_FRIENDS, Local.Path.PATH_RELAY, online = true))
-                .build(),
-        )
+        val state =
+            CoreState(
+                loading = false,
+                status =
+                    Local.GetStatusResponse
+                        .newBuilder()
+                        .setDeviceName("Pixel")
+                        .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
+                        .addDevices(device("Friend", Local.Role.ROLE_FRIENDS, Local.Path.PATH_RELAY, online = true))
+                        .build(),
+            )
         var changed: Triple<Local.ConfirmationScope, Local.ConfirmationSide, Boolean>? = null
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
@@ -160,41 +170,49 @@ class DevicesScreenTest {
 
     @Test
     fun theReportedConfirmationOfADeviceIsShown() {
-        val state = CoreState(
-            loading = false,
-            status = Local.GetStatusResponse.newBuilder()
-                .setDeviceName("Pixel")
-                .addDevices(
-                    device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = false).toBuilder()
-                        .setPeerRequireConfirmation(true)
-                        .build(),
-                )
-                .build(),
-        )
+        val state =
+            CoreState(
+                loading = false,
+                status =
+                    Local.GetStatusResponse
+                        .newBuilder()
+                        .setDeviceName("Pixel")
+                        .addDevices(
+                            device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = false)
+                                .toBuilder()
+                                .setPeerRequireConfirmation(true)
+                                .build(),
+                        ).build(),
+            )
         setContent(state)
         compose.onNodeWithText("Mac").performClick()
 
-        compose.onNodeWithContentDescription(testString(R.string.devices_confirm_peer_clipboard, "Mac"))
+        compose
+            .onNodeWithContentDescription(testString(R.string.devices_confirm_peer_clipboard, "Mac"))
             .assertIsOn()
             .assertIsNotEnabled()
-        compose.onNodeWithContentDescription(testString(R.string.devices_confirm_local_files, "Mac"))
+        compose
+            .onNodeWithContentDescription(testString(R.string.devices_confirm_local_files, "Mac"))
             .assertIsOff()
             .assertIsEnabled()
     }
 
     @Test
     fun remoteSettingsSwitchIsShownEvenWhileTheDeviceIsOffline() {
-        val state = CoreState(
-            loading = false,
-            status = Local.GetStatusResponse.newBuilder()
-                .setDeviceName("Pixel")
-                .addDevices(
-                    device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = false).toBuilder()
-                        .setAllowRemoteSettings(true)
-                        .build(),
-                )
-                .build(),
-        )
+        val state =
+            CoreState(
+                loading = false,
+                status =
+                    Local.GetStatusResponse
+                        .newBuilder()
+                        .setDeviceName("Pixel")
+                        .addDevices(
+                            device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = false)
+                                .toBuilder()
+                                .setAllowRemoteSettings(true)
+                                .build(),
+                        ).build(),
+            )
         var changed: Pair<String, Boolean>? = null
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
@@ -213,7 +231,8 @@ class DevicesScreenTest {
         }
         compose.onNodeWithText("Mac").performClick()
 
-        compose.onNodeWithContentDescription(testString(R.string.devices_allow_remote_hint, "Mac"))
+        compose
+            .onNodeWithContentDescription(testString(R.string.devices_allow_remote_hint, "Mac"))
             .performScrollTo()
             .assertIsOn()
             .assertIsEnabled()
@@ -224,13 +243,16 @@ class DevicesScreenTest {
 
     @Test
     fun removalAsksForConfirmation() {
-        val state = CoreState(
-            loading = false,
-            status = Local.GetStatusResponse.newBuilder()
-                .setDeviceName("Pixel")
-                .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
-                .build(),
-        )
+        val state =
+            CoreState(
+                loading = false,
+                status =
+                    Local.GetStatusResponse
+                        .newBuilder()
+                        .setDeviceName("Pixel")
+                        .addDevices(device("Mac", Local.Role.ROLE_PERSONAL, Local.Path.PATH_LAN, online = true))
+                        .build(),
+            )
         var removed: Local.Device? = null
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
@@ -276,14 +298,21 @@ class DevicesScreenTest {
         }
     }
 
-    private fun summary(path: Int): String = testString(
-        R.string.device_row_summary,
-        testString(R.string.device_online),
-        testString(R.string.device_detail, testString(R.string.platform_macos), testString(path)),
-    )
+    private fun summary(path: Int): String =
+        testString(
+            R.string.device_row_summary,
+            testString(R.string.device_online),
+            testString(R.string.device_detail, testString(R.string.platform_macos), testString(path)),
+        )
 
-    private fun device(name: String, role: Local.Role, path: Local.Path, online: Boolean): Local.Device =
-        Local.Device.newBuilder()
+    private fun device(
+        name: String,
+        role: Local.Role,
+        path: Local.Path,
+        online: Boolean,
+    ): Local.Device =
+        Local.Device
+            .newBuilder()
             .setName(name)
             .setRole(role)
             .setPlatform(Local.Platform.PLATFORM_MACOS)

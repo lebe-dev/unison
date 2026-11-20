@@ -6,7 +6,6 @@ import org.junit.Test
 import unison.local.v1.Local
 
 class LocalAddressesTest {
-
     @Test
     fun addressesGetThePortOfTheListener() {
         assertEquals(
@@ -31,10 +30,11 @@ class LocalAddressesTest {
 
     @Test
     fun ownServiceIsNotACandidate() {
-        val candidates = listOf(
-            candidate("192.168.1.5:41234"),
-            candidate("192.168.1.7:41234"),
-        )
+        val candidates =
+            listOf(
+                candidate("192.168.1.5:41234"),
+                candidate("192.168.1.7:41234"),
+            )
 
         assertEquals(
             listOf("192.168.1.7:41234"),
@@ -51,6 +51,9 @@ class LocalAddressesTest {
 
     private companion object {
         fun candidate(addr: String): Local.PairingCandidate =
-            Local.PairingCandidate.newBuilder().setAddr(addr).build()
+            Local.PairingCandidate
+                .newBuilder()
+                .setAddr(addr)
+                .build()
     }
 }

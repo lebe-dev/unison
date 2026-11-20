@@ -24,7 +24,6 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class RelaySectionTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -58,7 +57,11 @@ class RelaySectionTest {
         })
 
         compose.onNodeWithTag("relay_url").performScrollTo().performTextReplacement("relay.example.com:443")
-        compose.onNodeWithText(testString(R.string.action_save)).performScrollTo().assertIsEnabled().performClick()
+        compose
+            .onNodeWithText(testString(R.string.action_save))
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
 
         assertEquals(null, savedToken)
     }
@@ -85,21 +88,23 @@ class RelaySectionTest {
 
     @Test
     fun checkResultExplainsEachTransport() {
-        val check = Local.TestRelayResponse.newBuilder()
-            .setQuic(
-                Local.RelayCheck.newBuilder()
-                    .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
-                    .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT)
-                    .setDetail("timeout: no recent network activity"),
-            )
-            .setWebsocket(
-                Local.RelayCheck.newBuilder()
-                    .setTransport(Local.RelayTransport.RELAY_TRANSPORT_WSS)
-                    .setOk(true)
-                    .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NONE)
-                    .setLatencyMs(85),
-            )
-            .build()
+        val check =
+            Local.TestRelayResponse
+                .newBuilder()
+                .setQuic(
+                    Local.RelayCheck
+                        .newBuilder()
+                        .setTransport(Local.RelayTransport.RELAY_TRANSPORT_QUIC)
+                        .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_TIMEOUT)
+                        .setDetail("timeout: no recent network activity"),
+                ).setWebsocket(
+                    Local.RelayCheck
+                        .newBuilder()
+                        .setTransport(Local.RelayTransport.RELAY_TRANSPORT_WSS)
+                        .setOk(true)
+                        .setFailure(Local.RelayCheckFailure.RELAY_CHECK_FAILURE_NONE)
+                        .setLatencyMs(85),
+                ).build()
         setContent(storedToken = true, check = check)
 
         compose.onNodeWithText(testString(R.string.relay_check_wss_only)).performScrollTo().assertExists()
@@ -114,11 +119,13 @@ class RelaySectionTest {
         onCheck: (url: String, token: String?) -> Unit = { _, _ -> },
         check: Local.TestRelayResponse? = null,
     ) {
-        val relay = Local.Relay.newBuilder()
-            .setUrl(if (storedToken) "relay.example.com:443" else "")
-            .setTokenSet(storedToken)
-            .setFilesOnRequest(true)
-            .build()
+        val relay =
+            Local.Relay
+                .newBuilder()
+                .setUrl(if (storedToken) "relay.example.com:443" else "")
+                .setTokenSet(storedToken)
+                .setFilesOnRequest(true)
+                .build()
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {

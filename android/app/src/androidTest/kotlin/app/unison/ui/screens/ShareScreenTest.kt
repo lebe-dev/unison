@@ -12,11 +12,11 @@ import app.unison.R
 import app.unison.clipboard.ClipboardDraft
 import app.unison.history.HistoryText
 import app.unison.history.SizeUnits
+import app.unison.share.ShareContent
+import app.unison.share.SharedFile
 import app.unison.testContext
 import app.unison.testQuantity
 import app.unison.testString
-import app.unison.share.ShareContent
-import app.unison.share.SharedFile
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
 import org.junit.Assert.assertEquals
@@ -28,7 +28,6 @@ import unison.local.v1.Local
 
 @RunWith(AndroidJUnit4::class)
 class ShareScreenTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -40,14 +39,15 @@ class ShareScreenTest {
         compose.onNodeWithText(testString(R.string.devices_section_friends)).assertIsDisplayed()
         compose.onNodeWithText("Laptop").assertIsDisplayed()
         compose.onNodeWithText("Friend").assertIsDisplayed()
-        compose.onNodeWithText(
-            testQuantity(
-                R.plurals.share_files_summary,
-                1,
-                1,
-                HistoryText.formatSize(1024, SizeUnits.of(testContext)),
-            ),
-        ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testQuantity(
+                    R.plurals.share_files_summary,
+                    1,
+                    1,
+                    HistoryText.formatSize(1024, SizeUnits.of(testContext)),
+                ),
+            ).assertIsDisplayed()
     }
 
     @Test
@@ -95,7 +95,10 @@ class ShareScreenTest {
     private var toggled: Pair<String, Boolean>? = null
     private var sent = false
 
-    private fun setContent(content: ShareContent, selection: Set<String>) {
+    private fun setContent(
+        content: ShareContent,
+        selection: Set<String>,
+    ) {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 ShareScreen(
@@ -112,23 +115,33 @@ class ShareScreenTest {
         }
     }
 
-    private fun files(): ShareContent = ShareContent.Files(
-        listOf(SharedFile(Uri.parse("content://test/doc"), "photo.jpg", 1024, "image/jpeg")),
-    )
+    private fun files(): ShareContent =
+        ShareContent.Files(
+            listOf(SharedFile(Uri.parse("content://test/doc"), "photo.jpg", 1024, "image/jpeg")),
+        )
 
-    private fun text(): ShareContent = ShareContent.Text(
-        ClipboardDraft(text = "hello", html = null),
-    )
+    private fun text(): ShareContent =
+        ShareContent.Text(
+            ClipboardDraft(text = "hello", html = null),
+        )
 
-    private fun status(): Local.GetStatusResponse = Local.GetStatusResponse.newBuilder()
-        .setDeviceName("Pixel")
-        .addDevices(device("Laptop", PERSONAL_ID, Local.Role.ROLE_PERSONAL, online = true))
-        .addDevices(device("Old phone", OFFLINE_ID, Local.Role.ROLE_PERSONAL, online = false))
-        .addDevices(device("Friend", FRIEND_ID, Local.Role.ROLE_FRIENDS, online = true))
-        .build()
+    private fun status(): Local.GetStatusResponse =
+        Local.GetStatusResponse
+            .newBuilder()
+            .setDeviceName("Pixel")
+            .addDevices(device("Laptop", PERSONAL_ID, Local.Role.ROLE_PERSONAL, online = true))
+            .addDevices(device("Old phone", OFFLINE_ID, Local.Role.ROLE_PERSONAL, online = false))
+            .addDevices(device("Friend", FRIEND_ID, Local.Role.ROLE_FRIENDS, online = true))
+            .build()
 
-    private fun device(name: String, id: String, role: Local.Role, online: Boolean): Local.Device =
-        Local.Device.newBuilder()
+    private fun device(
+        name: String,
+        id: String,
+        role: Local.Role,
+        online: Boolean,
+    ): Local.Device =
+        Local.Device
+            .newBuilder()
             .setName(name)
             .setDeviceId(id)
             .setRole(role)

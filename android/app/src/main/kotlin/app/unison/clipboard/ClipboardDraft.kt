@@ -1,12 +1,14 @@
 package app.unison.clipboard
 
 import com.google.protobuf.ByteString
-import java.security.MessageDigest
 import unison.mobile.v1.Mobile
+import java.security.MessageDigest
 
 /** Text content of the local clipboard. */
-data class ClipboardDraft(val text: String?, val html: String?) {
-
+data class ClipboardDraft(
+    val text: String?,
+    val html: String?,
+) {
     /** True when there is nothing to send. */
     val isEmpty: Boolean
         get() = text.isNullOrEmpty() && html.isNullOrEmpty()
@@ -41,8 +43,12 @@ data class ClipboardDraft(val text: String?, val html: String?) {
         return source.take(limit).trimEnd() + "..."
     }
 
-    private fun part(mime: String, value: String): Mobile.ClipPart =
-        Mobile.ClipPart.newBuilder()
+    private fun part(
+        mime: String,
+        value: String,
+    ): Mobile.ClipPart =
+        Mobile.ClipPart
+            .newBuilder()
             .setMimeType(mime)
             .setData(ByteString.copyFromUtf8(value))
             .build()
@@ -78,8 +84,12 @@ data class ClipboardDraft(val text: String?, val html: String?) {
         }
 
         /** Text of one representation, taken from the parts and then from the top fields. */
-        private fun partText(payload: Mobile.ClipPayload, mime: String): String? {
-            payload.partsList.firstOrNull { it.mimeType == mime }
+        private fun partText(
+            payload: Mobile.ClipPayload,
+            mime: String,
+        ): String? {
+            payload.partsList
+                .firstOrNull { it.mimeType == mime }
                 ?.let { return it.data.toStringUtf8() }
             if (payload.mimeType == mime && !payload.data.isEmpty) {
                 return payload.data.toStringUtf8()

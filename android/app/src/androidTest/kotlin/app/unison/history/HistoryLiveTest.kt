@@ -31,7 +31,6 @@ import unison.local.v1.Local
  */
 @RunWith(AndroidJUnit4::class)
 class HistoryLiveTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -71,7 +70,11 @@ class HistoryLiveTest {
             runBlocking {
                 core.call(
                     method = "SetClip",
-                    request = Local.SetClipRequest.newBuilder().setText(text).build(),
+                    request =
+                        Local.SetClipRequest
+                            .newBuilder()
+                            .setText(text)
+                            .build(),
                     parse = Local.SetClipResponse::parseFrom,
                 )
             }
@@ -91,7 +94,11 @@ class HistoryLiveTest {
             runBlocking {
                 core.call(
                     method = "SetClip",
-                    request = Local.SetClipRequest.newBuilder().setText(next).build(),
+                    request =
+                        Local.SetClipRequest
+                            .newBuilder()
+                            .setText(next)
+                            .build(),
                     parse = Local.SetClipResponse::parseFrom,
                 )
             }
@@ -111,13 +118,19 @@ class HistoryLiveTest {
         val state = AppState(core, coreEvents.events, HistoryDownloads(context))
         try {
             val text = "delete probe ${System.currentTimeMillis()}"
-            val id = runBlocking {
-                core.call(
-                    method = "SetClip",
-                    request = Local.SetClipRequest.newBuilder().setText(text).build(),
-                    parse = Local.SetClipResponse::parseFrom,
-                ).item.id
-            }
+            val id =
+                runBlocking {
+                    core
+                        .call(
+                            method = "SetClip",
+                            request =
+                                Local.SetClipRequest
+                                    .newBuilder()
+                                    .setText(text)
+                                    .build(),
+                            parse = Local.SetClipResponse::parseFrom,
+                        ).item.id
+                }
             assertTrue("SetClip returned no id", id.isNotEmpty())
 
             state.refreshHistory()
@@ -200,7 +213,8 @@ class HistoryLiveTest {
             runBlocking { submit(core, "scroll probe top $stamp") }
             compose.waitUntil(TIMEOUT_MS) {
                 state.history.value.items.firstOrNull()?.item?.id?.let { id ->
-                    state.history.value.items.any { it.item.id == id }
+                    state.history.value.items
+                        .any { it.item.id == id }
                 } == true
             }
             Thread.sleep(SETTLE_MS)
@@ -212,9 +226,16 @@ class HistoryLiveTest {
     }
 
     /** Records one text entry through the local API. */
-    private suspend fun submit(core: CoreClient, text: String) = core.call(
+    private suspend fun submit(
+        core: CoreClient,
+        text: String,
+    ) = core.call(
         method = "SetClip",
-        request = Local.SetClipRequest.newBuilder().setText(text).build(),
+        request =
+            Local.SetClipRequest
+                .newBuilder()
+                .setText(text)
+                .build(),
         parse = Local.SetClipResponse::parseFrom,
     )
 

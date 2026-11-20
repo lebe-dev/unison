@@ -1,10 +1,10 @@
 package app.unison.ui
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -160,38 +160,40 @@ fun UnisonRoot(
     ) { padding ->
         val content = Modifier.padding(padding)
         when (destination) {
-            Destination.DEVICES -> DevicesScreen(
-                state = state,
-                clipboardOffer = clipboardOffer,
-                onRefresh = onRefresh,
-                onSendClipboard = onSendClipboard,
-                onDismissClipboard = onDismissClipboard,
-                onSetConfirmation = onSetDeviceConfirmation,
-                onSetRemoteSettings = onSetDeviceRemoteSettings,
-                onRename = onRenameDevice,
-                onRevoke = onRevokeDevice,
-                modifier = content,
-                onPause = onPause,
-                onAdd = { destination = Destination.ADD },
-            )
-            Destination.ADD -> AddScreen(
-                state = pairing,
-                onRoleChange = onPairingRoleChange,
-                onOpenWindow = onOpenPairingWindow,
-                onExtendWindow = onExtendPairingWindow,
-                onCloseWindow = onClosePairingWindow,
-                onRefreshCandidates = onRefreshPairingCandidates,
-                onPairWith = onPairWith,
-                onConfirm = onConfirmPairing,
-                onReject = onRejectPairing,
-                onScan = onScanPairingCode,
-                onAcceptLink = onAcceptPairingLink,
-                onDismissLink = onDismissPairingLink,
-                onCancelScan = onCancelScan,
-                onDismissResult = onDismissPairingResult,
-                modifier = content,
-                onClose = { destination = Destination.DEVICES },
-            )
+            Destination.DEVICES ->
+                DevicesScreen(
+                    state = state,
+                    clipboardOffer = clipboardOffer,
+                    onRefresh = onRefresh,
+                    onSendClipboard = onSendClipboard,
+                    onDismissClipboard = onDismissClipboard,
+                    onSetConfirmation = onSetDeviceConfirmation,
+                    onSetRemoteSettings = onSetDeviceRemoteSettings,
+                    onRename = onRenameDevice,
+                    onRevoke = onRevokeDevice,
+                    modifier = content,
+                    onPause = onPause,
+                    onAdd = { destination = Destination.ADD },
+                )
+            Destination.ADD ->
+                AddScreen(
+                    state = pairing,
+                    onRoleChange = onPairingRoleChange,
+                    onOpenWindow = onOpenPairingWindow,
+                    onExtendWindow = onExtendPairingWindow,
+                    onCloseWindow = onClosePairingWindow,
+                    onRefreshCandidates = onRefreshPairingCandidates,
+                    onPairWith = onPairWith,
+                    onConfirm = onConfirmPairing,
+                    onReject = onRejectPairing,
+                    onScan = onScanPairingCode,
+                    onAcceptLink = onAcceptPairingLink,
+                    onDismissLink = onDismissPairingLink,
+                    onCancelScan = onCancelScan,
+                    onDismissResult = onDismissPairingResult,
+                    modifier = content,
+                    onClose = { destination = Destination.DEVICES },
+                )
             Destination.REQUESTS -> {
                 LaunchedEffect(Unit) { onRefreshRequests() }
                 RequestsScreen(
@@ -202,54 +204,56 @@ fun UnisonRoot(
                     modifier = content,
                 )
             }
-            Destination.HISTORY -> HistoryScreen(
-                history = history,
-                status = state.status,
-                held = held,
-                onRefresh = onRefreshHistory,
-                onKindChange = onHistoryKindChange,
-                onDeviceChange = onHistoryDeviceChange,
-                onCopy = onCopyHistoryItem,
-                onApply = onApplyHistoryItem,
-                onDownload = onDownloadHistoryItem,
-                onDelete = onDeleteHistoryItem,
-                onClear = onClearHistory,
-                modifier = content,
-            )
-            Destination.SETTINGS -> SettingsScreen(
-                state = state,
-                deviceName = deviceName,
-                operatingMode = operatingMode,
-                policy = policy,
-                ttl = ttl,
-                onDeviceNameChange = onDeviceNameChange,
-                onOperatingModeChange = onOperatingModeChange,
-                onPolicyChange = onPolicyChange,
-                onPolicyReset = onPolicyReset,
-                onTtlSave = onTtlSave,
-                onTtlReset = onTtlReset,
-                downloadsFolder = downloadsFolder,
-                onDownloadsFolderPick = onDownloadsFolderPick,
-                onDownloadsFolderReset = onDownloadsFolderReset,
-                onPause = onPause,
-                onRelaySave = onRelaySave,
-                onRelayOff = onRelayOff,
-                onRefreshRelay = onRefreshRelay,
-                onRelayCheck = onRelayCheck,
-                onSelfConfirmationChange = onSelfConfirmationChange,
-                onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
-                onLeaveGroup = onLeaveGroup,
-                diagnosticsEnabled = diagnosticsEnabled,
-                onDiagnosticsChange = onDiagnosticsChange,
-                notifications = notifications,
-                onNotificationsChange = onNotificationsChange,
-                journalEnabled = journalEnabled,
-                onJournalChange = onJournalChange,
-                stripTracking = stripTracking,
-                onStripTrackingChange = onStripTrackingChange,
-                onRefresh = onRefresh,
-                modifier = content,
-            )
+            Destination.HISTORY ->
+                HistoryScreen(
+                    history = history,
+                    status = state.status,
+                    held = held,
+                    onRefresh = onRefreshHistory,
+                    onKindChange = onHistoryKindChange,
+                    onDeviceChange = onHistoryDeviceChange,
+                    onCopy = onCopyHistoryItem,
+                    onApply = onApplyHistoryItem,
+                    onDownload = onDownloadHistoryItem,
+                    onDelete = onDeleteHistoryItem,
+                    onClear = onClearHistory,
+                    modifier = content,
+                )
+            Destination.SETTINGS ->
+                SettingsScreen(
+                    state = state,
+                    deviceName = deviceName,
+                    operatingMode = operatingMode,
+                    policy = policy,
+                    ttl = ttl,
+                    onDeviceNameChange = onDeviceNameChange,
+                    onOperatingModeChange = onOperatingModeChange,
+                    onPolicyChange = onPolicyChange,
+                    onPolicyReset = onPolicyReset,
+                    onTtlSave = onTtlSave,
+                    onTtlReset = onTtlReset,
+                    downloadsFolder = downloadsFolder,
+                    onDownloadsFolderPick = onDownloadsFolderPick,
+                    onDownloadsFolderReset = onDownloadsFolderReset,
+                    onPause = onPause,
+                    onRelaySave = onRelaySave,
+                    onRelayOff = onRelayOff,
+                    onRefreshRelay = onRefreshRelay,
+                    onRelayCheck = onRelayCheck,
+                    onSelfConfirmationChange = onSelfConfirmationChange,
+                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
+                    onLeaveGroup = onLeaveGroup,
+                    diagnosticsEnabled = diagnosticsEnabled,
+                    onDiagnosticsChange = onDiagnosticsChange,
+                    notifications = notifications,
+                    onNotificationsChange = onNotificationsChange,
+                    journalEnabled = journalEnabled,
+                    onJournalChange = onJournalChange,
+                    stripTracking = stripTracking,
+                    onStripTrackingChange = onStripTrackingChange,
+                    onRefresh = onRefresh,
+                    modifier = content,
+                )
         }
     }
 
@@ -258,7 +262,10 @@ fun UnisonRoot(
 
 /** Icon of a destination with the number of requests that wait for an answer. */
 @Composable
-private fun DestinationIcon(item: Destination, pending: Int) {
+private fun DestinationIcon(
+    item: Destination,
+    pending: Int,
+) {
     if (item != Destination.REQUESTS || pending <= 0) {
         Icon(painter = painterResource(item.icon), contentDescription = null)
         return

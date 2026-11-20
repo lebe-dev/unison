@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackgroundDataTest {
-
     @Test
     fun unrestrictedAppIsNeitherSaverNorRestricted() {
         val status = ConnectivityManager.RESTRICT_BACKGROUND_STATUS_DISABLED

@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ShareStreamsTest {
-
     @Test
     fun contentStreamsAreAccepted() {
         assertTrue(ShareIntents.acceptsScheme("content"))

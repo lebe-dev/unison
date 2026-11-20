@@ -230,8 +230,12 @@ lint-rust:
     cd desktop/src-tauri && cargo fmt --all --check
     cd desktop/src-tauri && cargo clippy --all-targets --locked -- -D warnings
 
-# Run the Android lint checks.
-android-lint:
+# Check the Kotlin sources of the Android app with ktlint and detekt.
+android-check:
+    ./android/gradlew -p android ktlintCheck detekt
+
+# Run the Android lint checks and the Kotlin checks.
+android-lint: android-check
     ./android/gradlew -p android lintDebug
 
 # Run every linter of the repository.
@@ -451,7 +455,7 @@ aar:
     rm -f android/core/core-sources.jar
 
 # Build the Android debug APK.
-android-build: aar
+android-build: android-check aar
     ./android/gradlew -p android assembleDebug
 
 apk_debug := "android/app/build/outputs/apk/debug/app-debug.apk"
@@ -476,15 +480,15 @@ deploy-android:
     adb -s "$phones" install -r {{apk_debug}}
 
 # Run the Android unit tests.
-android-test:
+android-test: android-check
     ./android/gradlew -p android testDebugUnitTest
 
 # Run the Android UI tests on the connected device or emulator.
-android-test-ui: aar
+android-test-ui: android-check aar
     ./android/gradlew -p android connectedDebugAndroidTest
 
 # Publish the keyboard bridge contract to the Maven local repository and to android/build/maven.
-bridge-publish:
+bridge-publish: android-check
     ./android/gradlew -p android :bridge-aidl:publish :bridge-aidl:publishToMavenLocal
 
 # Remove build artifacts.

@@ -9,9 +9,12 @@ import java.util.UUID
 
 /** Files of the clipboard that other apps read through the file provider. */
 object ClipboardMedia {
-
     /** Stores the image of an incoming item and returns its URI, or null. */
-    fun storeImage(context: Context, mimeType: String, data: ByteArray): Uri? {
+    fun storeImage(
+        context: Context,
+        mimeType: String,
+        data: ByteArray,
+    ): Uri? {
         if (data.isEmpty()) {
             return null
         }

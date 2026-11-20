@@ -11,12 +11,15 @@ import app.unison.clipboard.ClipboardReader
 
 /** Content another app shares with Unison. */
 sealed interface ShareContent {
-
     /** Text of another app. */
-    data class Text(val draft: ClipboardDraft) : ShareContent
+    data class Text(
+        val draft: ClipboardDraft,
+    ) : ShareContent
 
     /** Files of another app. */
-    data class Files(val files: List<SharedFile>) : ShareContent
+    data class Files(
+        val files: List<SharedFile>,
+    ) : ShareContent
 }
 
 /** One file of a share request. */
@@ -42,7 +45,10 @@ object ShareIntents {
     const val DEFAULT_MIME = "application/octet-stream"
 
     /** Content of a share intent, or null when it carries nothing to send. */
-    fun read(intent: Intent?, resolver: ContentResolver): ShareContent? {
+    fun read(
+        intent: Intent?,
+        resolver: ContentResolver,
+    ): ShareContent? {
         if (intent == null) {
             return null
         }
@@ -59,16 +65,16 @@ object ShareIntents {
 
     /** Shared streams of the intent, in the order the sender put them. */
     private fun streams(intent: Intent): List<Uri> {
-        val streams = when (intent.action) {
-            Intent.ACTION_SEND_MULTIPLE -> intent.multipleStreams()
-            Intent.ACTION_SEND -> listOfNotNull(intent.singleStream())
-            else -> emptyList()
-        }
+        val streams =
+            when (intent.action) {
+                Intent.ACTION_SEND_MULTIPLE -> intent.multipleStreams()
+                Intent.ACTION_SEND -> listOfNotNull(intent.singleStream())
+                else -> emptyList()
+            }
         return (streams + clipStreams(intent)).distinct()
     }
 
-    private fun Intent.singleStream(): Uri? =
-        IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
+    private fun Intent.singleStream(): Uri? = IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
 
     private fun Intent.multipleStreams(): List<Uri> =
         IntentCompat.getParcelableArrayListExtra(this, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
@@ -91,10 +97,15 @@ object ShareIntents {
     }
 
     /** Files behind the shared streams, without the ones that cannot be read. */
-    private fun files(uris: List<Uri>, type: String?, resolver: ContentResolver): ShareContent? {
-        val files = uris
-            .filter { acceptsScheme(it.scheme) }
-            .mapNotNull { descriptorOf(it, type, resolver) }
+    private fun files(
+        uris: List<Uri>,
+        type: String?,
+        resolver: ContentResolver,
+    ): ShareContent? {
+        val files =
+            uris
+                .filter { acceptsScheme(it.scheme) }
+                .mapNotNull { descriptorOf(it, type, resolver) }
         if (files.isEmpty()) {
             return null
         }
@@ -106,42 +117,46 @@ object ShareIntents {
      * with the permissions of Unison, so another app could hand over a private
      * file of Unison that way.
      */
-    fun acceptsScheme(scheme: String?): Boolean =
-        scheme.equals(ContentResolver.SCHEME_CONTENT, ignoreCase = true)
+    fun acceptsScheme(scheme: String?): Boolean = scheme.equals(ContentResolver.SCHEME_CONTENT, ignoreCase = true)
 
     /** Name, size and type of one shared stream, or null when it cannot be read. */
-    private fun descriptorOf(uri: Uri, type: String?, resolver: ContentResolver): SharedFile? = try {
-        var name = ""
-        var size = 0L
-        resolver.query(uri, COLUMNS, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex >= 0 && !cursor.isNull(nameIndex)) {
-                    name = cursor.getString(nameIndex)
-                }
-                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
-                    size = cursor.getLong(sizeIndex)
+    private fun descriptorOf(
+        uri: Uri,
+        type: String?,
+        resolver: ContentResolver,
+    ): SharedFile? =
+        try {
+            var name = ""
+            var size = 0L
+            resolver.query(uri, COLUMNS, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0 && !cursor.isNull(nameIndex)) {
+                        name = cursor.getString(nameIndex)
+                    }
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
+                        size = cursor.getLong(sizeIndex)
+                    }
                 }
             }
+            val mime =
+                resolver.getType(uri)
+                    ?: type?.takeIf { it.isNotEmpty() && it != ANY_MIME }
+                    ?: DEFAULT_MIME
+            SharedFile(
+                uri = uri,
+                name = name.ifBlank { nameOf(uri) },
+                size = size.coerceAtLeast(0),
+                mimeType = mime,
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "cannot read a shared file: ${e.message}")
+            null
         }
-        val mime = resolver.getType(uri)
-            ?: type?.takeIf { it.isNotEmpty() && it != ANY_MIME }
-            ?: DEFAULT_MIME
-        SharedFile(
-            uri = uri,
-            name = name.ifBlank { nameOf(uri) },
-            size = size.coerceAtLeast(0),
-            mimeType = mime,
-        )
-    } catch (e: Exception) {
-        Log.w(TAG, "cannot read a shared file: ${e.message}")
-        null
-    }
 
     /** Last path segment of a stream as a file name. */
-    private fun nameOf(uri: Uri): String =
-        uri.lastPathSegment?.substringAfterLast('/')?.ifBlank { null } ?: DEFAULT_NAME
+    private fun nameOf(uri: Uri): String = uri.lastPathSegment?.substringAfterLast('/')?.ifBlank { null } ?: DEFAULT_NAME
 
     private const val ANY_MIME = "*/*"
     private const val DEFAULT_NAME = "file"

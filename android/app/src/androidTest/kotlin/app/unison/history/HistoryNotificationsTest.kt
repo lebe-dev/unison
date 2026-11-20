@@ -34,8 +34,10 @@ class HistoryNotificationsTest {
         assertTrue(HistoryNotifications.idOf("one") != HistoryNotifications.idOf("two"))
     }
 
-    private fun image(): Local.ClipItem = Local.ClipItem.newBuilder()
-        .setId("item-id")
-        .setKind(Local.Kind.KIND_IMAGE)
-        .build()
+    private fun image(): Local.ClipItem =
+        Local.ClipItem
+            .newBuilder()
+            .setId("item-id")
+            .setKind(Local.Kind.KIND_IMAGE)
+            .build()
 }

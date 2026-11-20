@@ -1,6 +1,5 @@
 package app.unison.clipboard
 
-import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -25,10 +24,12 @@ class ClipboardWriterTest {
 
     @Test
     fun imageIsStoredAndExposedThroughTheFileProvider() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .setMimeType("image/png")
-            .setData(ByteString.copyFrom(PNG))
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .setMimeType("image/png")
+                .setData(ByteString.copyFrom(PNG))
+                .build()
 
         ClipboardWriter.write(context, payload.toByteArray())
 
@@ -47,13 +48,15 @@ class ClipboardWriterTest {
 
     @Test
     fun textIsStillWritten() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .addParts(
-                Mobile.ClipPart.newBuilder()
-                    .setMimeType("text/plain")
-                    .setData(ByteString.copyFromUtf8("hello")),
-            )
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .addParts(
+                    Mobile.ClipPart
+                        .newBuilder()
+                        .setMimeType("text/plain")
+                        .setData(ByteString.copyFromUtf8("hello")),
+                ).build()
 
         ClipboardWriter.write(context, payload.toByteArray())
 
@@ -64,14 +67,16 @@ class ClipboardWriterTest {
 
     @Test
     fun textNamesTheItemAndTheApp() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .setItemId(ITEM_ID)
-            .addParts(
-                Mobile.ClipPart.newBuilder()
-                    .setMimeType("text/plain")
-                    .setData(ByteString.copyFromUtf8("tagged")),
-            )
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .setItemId(ITEM_ID)
+                .addParts(
+                    Mobile.ClipPart
+                        .newBuilder()
+                        .setMimeType("text/plain")
+                        .setData(ByteString.copyFromUtf8("tagged")),
+                ).build()
 
         ClipboardWriter.write(context, payload.toByteArray())
 
@@ -83,11 +88,13 @@ class ClipboardWriterTest {
 
     @Test
     fun imageNamesTheItemAndTheApp() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .setItemId(ITEM_ID)
-            .setMimeType("image/png")
-            .setData(ByteString.copyFrom(PNG))
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .setItemId(ITEM_ID)
+                .setMimeType("image/png")
+                .setData(ByteString.copyFrom(PNG))
+                .build()
 
         ClipboardWriter.write(context, payload.toByteArray())
 
@@ -99,13 +106,15 @@ class ClipboardWriterTest {
 
     @Test
     fun contentWithoutAnItemHasNoItemExtra() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .addParts(
-                Mobile.ClipPart.newBuilder()
-                    .setMimeType("text/plain")
-                    .setData(ByteString.copyFromUtf8("untagged")),
-            )
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .addParts(
+                    Mobile.ClipPart
+                        .newBuilder()
+                        .setMimeType("text/plain")
+                        .setData(ByteString.copyFromUtf8("untagged")),
+                ).build()
 
         ClipboardWriter.write(context, payload.toByteArray())
 
@@ -135,9 +144,10 @@ class ClipboardWriterTest {
         const val ITEM_ID = "0f8fad5b-d9cb-469f-a165-70867728950e"
 
         /** One transparent pixel. */
-        val PNG: ByteArray = Base64.decode(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8AAAwAB/wFhHkAAAAAASUVORK5CYII=",
-            Base64.NO_WRAP,
-        )
+        val PNG: ByteArray =
+            Base64.decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8AAAwAB/wFhHkAAAAAASUVORK5CYII=",
+                Base64.NO_WRAP,
+            )
     }
 }

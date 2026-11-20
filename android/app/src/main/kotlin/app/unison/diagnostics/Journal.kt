@@ -23,7 +23,11 @@ enum class JournalDisplay {
 }
 
 /** One record of a log file. */
-data class JournalRecord(val at: Instant, val level: JournalLevel, val text: String)
+data class JournalRecord(
+    val at: Instant,
+    val level: JournalLevel,
+    val text: String,
+)
 
 /**
  * The application log of the app shell.
@@ -48,22 +52,37 @@ object Journal {
     fun enabled(): Boolean = File(logs ?: return false, JournalFiles.MARKER).isFile
 
     /** Writes a detail that helps investigate a problem. */
-    fun debug(message: String, vararg attrs: Pair<String, Any?>) = write(JournalLevel.DEBUG, message, attrs)
+    fun debug(
+        message: String,
+        vararg attrs: Pair<String, Any?>,
+    ) = write(JournalLevel.DEBUG, message, attrs)
 
     /** Writes a fact about what the app does. */
-    fun info(message: String, vararg attrs: Pair<String, Any?>) = write(JournalLevel.INFO, message, attrs)
+    fun info(
+        message: String,
+        vararg attrs: Pair<String, Any?>,
+    ) = write(JournalLevel.INFO, message, attrs)
 
     /** Writes a problem that the app recovers from. */
-    fun warn(message: String, vararg attrs: Pair<String, Any?>) = write(JournalLevel.WARN, message, attrs)
+    fun warn(
+        message: String,
+        vararg attrs: Pair<String, Any?>,
+    ) = write(JournalLevel.WARN, message, attrs)
 
     /** Writes a failure that stops a part of the app. */
-    fun error(message: String, vararg attrs: Pair<String, Any?>) = write(JournalLevel.ERROR, message, attrs)
+    fun error(
+        message: String,
+        vararg attrs: Pair<String, Any?>,
+    ) = write(JournalLevel.ERROR, message, attrs)
 
     /**
      * Records of the shell and the core, oldest first. The visible list reads
      * the current files only; the export takes the backups too.
      */
-    fun records(context: Context, backups: Boolean = true): List<JournalRecord> {
+    fun records(
+        context: Context,
+        backups: Boolean = true,
+    ): List<JournalRecord> {
         val directory = File(context.filesDir, DIRECTORY)
         return try {
             JournalFiles.records(
@@ -77,7 +96,11 @@ object Journal {
     }
 
     @Synchronized
-    private fun write(level: JournalLevel, message: String, attrs: Array<out Pair<String, Any?>>) {
+    private fun write(
+        level: JournalLevel,
+        message: String,
+        attrs: Array<out Pair<String, Any?>>,
+    ) {
         val directory = logs ?: return
         // The marker appears and disappears with the toggle, so the service does
         // not have to restart for the change to apply.

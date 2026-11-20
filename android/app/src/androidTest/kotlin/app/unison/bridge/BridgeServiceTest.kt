@@ -15,10 +15,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import unison.local.v1.Local
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import unison.local.v1.Local
 
 /**
  * The test client is a separate app signed with the same key, so the permission
@@ -26,7 +26,6 @@ import unison.local.v1.Local
  */
 @RunWith(AndroidJUnit4::class)
 class BridgeServiceTest {
-
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     private lateinit var connection: ServiceConnection
@@ -65,11 +64,12 @@ class BridgeServiceTest {
         runBlocking { core.setPause(Local.PauseMode.PAUSE_MODE_OFF, 0) }
 
         val results = LinkedBlockingQueue<PublishResult>()
-        val callback = object : IPublishCallback.Stub() {
-            override fun onPublishResult(result: PublishResult?) {
-                result?.let(results::put)
+        val callback =
+            object : IPublishCallback.Stub() {
+                override fun onPublishResult(result: PublishResult?) {
+                    result?.let(results::put)
+                }
             }
-        }
         val text = "bridge result ${System.currentTimeMillis()}"
         val bridge = IUnisonBridge.Stub.asInterface(bind())
         try {
@@ -86,13 +86,17 @@ class BridgeServiceTest {
     }
 
     /** Waits until the text shows up in the history. */
-    private suspend fun awaitHistory(core: CoreClient, text: String): Boolean {
+    private suspend fun awaitHistory(
+        core: CoreClient,
+        text: String,
+    ): Boolean {
         val deadline = System.currentTimeMillis() + START_MS
         while (System.currentTimeMillis() < deadline) {
             val items = core.listHistory(limit = 10).itemsList
-            val found = items.any { item ->
-                item.item.representationsList.any { it.inlineBytes.toStringUtf8() == text }
-            }
+            val found =
+                items.any { item ->
+                    item.item.representationsList.any { it.inlineBytes.toStringUtf8() == text }
+                }
             if (found) {
                 return true
             }
@@ -105,16 +109,21 @@ class BridgeServiceTest {
     private fun bind(): IBinder {
         val connected = CountDownLatch(1)
         var binder: IBinder? = null
-        connection = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                binder = service
-                connected.countDown()
-            }
+        connection =
+            object : ServiceConnection {
+                override fun onServiceConnected(
+                    name: ComponentName?,
+                    service: IBinder?,
+                ) {
+                    binder = service
+                    connected.countDown()
+                }
 
-            override fun onServiceDisconnected(name: ComponentName?) = Unit
-        }
-        val intent = Intent(BridgeContract.ACTION_BIND)
-            .setComponent(ComponentName(BridgeContract.PACKAGE, BridgeContract.SERVICE_CLASS))
+                override fun onServiceDisconnected(name: ComponentName?) = Unit
+            }
+        val intent =
+            Intent(BridgeContract.ACTION_BIND)
+                .setComponent(ComponentName(BridgeContract.PACKAGE, BridgeContract.SERVICE_CLASS))
         assertTrue("the bridge service is not bindable", context.bindService(intent, connection, Context.BIND_AUTO_CREATE))
         assertTrue("the bridge service did not connect", connected.await(WAIT_S, TimeUnit.SECONDS))
         return binder ?: throw AssertionError("the bridge service returned no binder")

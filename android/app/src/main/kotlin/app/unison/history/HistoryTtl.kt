@@ -8,20 +8,29 @@ private const val HOUR = 60 * MINUTE
 private const val DAY = 24 * HOUR
 
 /** Lifetimes of the history items, in seconds. */
-data class HistoryTtl(val text: Long, val image: Long, val files: Long) {
+data class HistoryTtl(
+    val text: Long,
+    val image: Long,
+    val files: Long,
+) {
     /** Lifetime of one kind. */
-    fun of(kind: Local.Kind): Long = when (kind) {
-        Local.Kind.KIND_IMAGE -> image
-        Local.Kind.KIND_FILES -> files
-        else -> text
-    }
+    fun of(kind: Local.Kind): Long =
+        when (kind) {
+            Local.Kind.KIND_IMAGE -> image
+            Local.Kind.KIND_FILES -> files
+            else -> text
+        }
 
     /** Copy with another lifetime of one kind. */
-    fun with(kind: Local.Kind, seconds: Long): HistoryTtl = when (kind) {
-        Local.Kind.KIND_IMAGE -> copy(image = seconds)
-        Local.Kind.KIND_FILES -> copy(files = seconds)
-        else -> copy(text = seconds)
-    }
+    fun with(
+        kind: Local.Kind,
+        seconds: Long,
+    ): HistoryTtl =
+        when (kind) {
+            Local.Kind.KIND_IMAGE -> copy(image = seconds)
+            Local.Kind.KIND_FILES -> copy(files = seconds)
+            else -> copy(text = seconds)
+        }
 }
 
 /** Defaults and limits of the lifetimes. */

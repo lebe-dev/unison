@@ -20,8 +20,9 @@ object DownloadsFolder {
     fun current(context: Context): Uri? {
         val stored = UnisonSettings.downloadsTree(context) ?: return null
         val tree = Uri.parse(stored)
-        val granted = context.contentResolver.persistedUriPermissions
-            .any { it.uri == tree && it.isWritePermission }
+        val granted =
+            context.contentResolver.persistedUriPermissions
+                .any { it.uri == tree && it.isWritePermission }
         if (!granted) {
             Log.w(TAG, "access to the chosen folder is gone, the default folder is used")
             return null
@@ -30,7 +31,10 @@ object DownloadsFolder {
     }
 
     /** Keeps the access to a picked folder across restarts and forgets the previous folder. */
-    fun choose(context: Context, tree: Uri): Boolean {
+    fun choose(
+        context: Context,
+        tree: Uri,
+    ): Boolean {
         try {
             context.contentResolver.takePersistableUriPermission(tree, FLAGS)
         } catch (e: SecurityException) {
@@ -50,21 +54,28 @@ object DownloadsFolder {
 
     /** Readable path of a picked folder, like `Documents/Inbox`. */
     fun label(tree: Uri): String {
-        val id = try {
-            DocumentsContract.getTreeDocumentId(tree)
-        } catch (e: IllegalArgumentException) {
-            return tree.toString()
-        }
+        val id =
+            try {
+                DocumentsContract.getTreeDocumentId(tree)
+            } catch (e: IllegalArgumentException) {
+                return tree.toString()
+            }
         val path = id.substringAfter(':', "")
         return path.ifEmpty { id.substringBefore(':') }
     }
 
     /** Creates an empty file inside the folder and returns its URI. */
-    fun create(context: Context, tree: Uri, name: String, mimeType: String): Uri? {
-        val parent = DocumentsContract.buildDocumentUriUsingTree(
-            tree,
-            DocumentsContract.getTreeDocumentId(tree),
-        )
+    fun create(
+        context: Context,
+        tree: Uri,
+        name: String,
+        mimeType: String,
+    ): Uri? {
+        val parent =
+            DocumentsContract.buildDocumentUriUsingTree(
+                tree,
+                DocumentsContract.getTreeDocumentId(tree),
+            )
         return DocumentsContract.createDocument(context.contentResolver, parent, mimeType, name)
     }
 

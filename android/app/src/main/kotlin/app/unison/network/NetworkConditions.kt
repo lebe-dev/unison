@@ -24,11 +24,13 @@ data class NetworkConditions(
         get() = wifi || ethernet
 
     /** The state in the form the core receives. */
-    fun toProto(): MobileProto.NetworkState = MobileProto.NetworkState.newBuilder()
-        .setOnline(online)
-        .setMetered(metered)
-        .setRoaming(roaming)
-        .setVpn(vpn)
-        .setDataSaver(dataSaver)
-        .build()
+    fun toProto(): MobileProto.NetworkState =
+        MobileProto.NetworkState
+            .newBuilder()
+            .setOnline(online)
+            .setMetered(metered)
+            .setRoaming(roaming)
+            .setVpn(vpn)
+            .setDataSaver(dataSaver)
+            .build()
 }

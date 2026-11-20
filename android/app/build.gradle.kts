@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
 }
 
 /** Value of the environment first and of the repository .env file second, empty when absent. */
@@ -13,25 +15,28 @@ fun buildValue(name: String): String {
     if (!file.isFile) {
         return ""
     }
-    return file.readLines().firstNotNullOfOrNull { line ->
-        val text = line.trim()
-        if (text.isEmpty() || text.startsWith("#")) {
-            return@firstNotNullOfOrNull null
-        }
-        val separator = text.indexOf('=')
-        if (separator <= 0 || text.substring(0, separator).trim() != name) {
-            return@firstNotNullOfOrNull null
-        }
-        text.substring(separator + 1).trim()
-            .removeSurrounding("\"")
-            .removeSurrounding("'")
-            .ifEmpty { null }
-    }.orEmpty()
+    return file
+        .readLines()
+        .firstNotNullOfOrNull { line ->
+            val text = line.trim()
+            if (text.isEmpty() || text.startsWith("#")) {
+                return@firstNotNullOfOrNull null
+            }
+            val separator = text.indexOf('=')
+            if (separator <= 0 || text.substring(0, separator).trim() != name) {
+                return@firstNotNullOfOrNull null
+            }
+            text
+                .substring(separator + 1)
+                .trim()
+                .removeSurrounding("\"")
+                .removeSurrounding("'")
+                .ifEmpty { null }
+        }.orEmpty()
 }
 
 /** BuildConfig string literal. */
-fun quoted(value: String): String =
-    "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+fun quoted(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 val appVersion = rootProject.file("../VERSION").readText().trim()
 val sentryDsn = buildValue("SENTRY_DSN")

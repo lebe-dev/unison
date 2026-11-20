@@ -100,12 +100,13 @@ internal fun SystemNotifications() {
     }
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                enabled = NotificationSystem.enabled(context)
-                serviceBlocked = NotificationSystem.channelBlocked(context, NotificationChannels.SERVICE)
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    enabled = NotificationSystem.enabled(context)
+                    serviceBlocked = NotificationSystem.channelBlocked(context, NotificationChannels.SERVICE)
+                }
             }
-        }
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
@@ -126,9 +127,10 @@ internal fun SystemNotifications() {
     }
     OutlinedButton(
         onClick = { NotificationSystem.openSettings(context) },
-        modifier = Modifier
-            .padding(top = 8.dp)
-            .testTag(SYSTEM_TAG),
+        modifier =
+            Modifier
+                .padding(top = 8.dp)
+                .testTag(SYSTEM_TAG),
     ) {
         Text(text = stringResource(R.string.settings_notification_system))
     }

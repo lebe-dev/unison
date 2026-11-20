@@ -31,27 +31,27 @@ class PauseClipboardActivity : ComponentActivity() {
         }
 
         val options = optionsOf(pause)
-        AlertDialog.Builder(this)
+        AlertDialog
+            .Builder(this)
             .setTitle(R.string.pause_title)
             .setItems(options.map { getString(it.label) }.toTypedArray()) { _, which ->
                 apply(options[which].request)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .setOnDismissListener {
                 if (!applying) {
                     finish()
                 }
-            }
-            .show()
+            }.show()
     }
 
-    private fun optionsOf(pause: Local.Pause): List<Option> = buildList {
-        if (pause.paused) {
-            add(Option(R.string.pause_resume, PauseRequest.resume()))
+    private fun optionsOf(pause: Local.Pause): List<Option> =
+        buildList {
+            if (pause.paused) {
+                add(Option(R.string.pause_resume, PauseRequest.resume()))
+            }
+            val now = System.currentTimeMillis()
+            PauseOption.entries.forEach { add(Option(it.label, it.request(now))) }
         }
-        val now = System.currentTimeMillis()
-        PauseOption.entries.forEach { add(Option(it.label, it.request(now))) }
-    }
 
     private fun apply(request: PauseRequest) {
         applying = true
@@ -61,11 +61,16 @@ class PauseClipboardActivity : ComponentActivity() {
         }
     }
 
-    private fun report(@StringRes message: Int) {
+    private fun report(
+        @StringRes message: Int,
+    ) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         finish()
     }
 
     /** One row of the pause dialog. */
-    private data class Option(@StringRes val label: Int, val request: PauseRequest)
+    private data class Option(
+        @StringRes val label: Int,
+        val request: PauseRequest,
+    )
 }

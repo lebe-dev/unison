@@ -35,8 +35,10 @@ class HeldNotificationsTest {
         assertTrue(HeldNotifications.RESULT_ID != HeldNotifications.idOf("one"))
     }
 
-    private fun item(): Local.ClipItem = Local.ClipItem.newBuilder()
-        .setId("item-id")
-        .setKind(Local.Kind.KIND_TEXT)
-        .build()
+    private fun item(): Local.ClipItem =
+        Local.ClipItem
+            .newBuilder()
+            .setId("item-id")
+            .setKind(Local.Kind.KIND_TEXT)
+            .build()
 }

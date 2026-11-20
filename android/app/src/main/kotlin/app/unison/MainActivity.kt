@@ -27,7 +27,6 @@ import app.unison.core.RunningCore
 import app.unison.core.coreEvents
 import app.unison.diagnostics.Diagnostics
 import app.unison.history.HistoryDownloads
-import app.unison.history.HistoryTtl
 import app.unison.history.HistoryTtlDefaults
 import app.unison.history.HistoryTtlProto
 import app.unison.pairing.PairingLink
@@ -46,12 +45,12 @@ import app.unison.ui.UnisonRoot
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.theme.UnisonTheme
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import unison.local.v1.Local
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
@@ -82,12 +81,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         core = RunningCore(this)
-        appState = AppState(
-            core = core,
-            events = coreEvents.events,
-            saver = HistoryDownloads(this),
-            localAddresses = LocalAddresses(this)::ipv4,
-        )
+        appState =
+            AppState(
+                core = core,
+                events = coreEvents.events,
+                saver = HistoryDownloads(this),
+                localAddresses = LocalAddresses(this)::ipv4,
+            )
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
         operatingMode = UnisonSettings.operatingMode(this)
@@ -306,7 +306,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        val waiting = pairingLink ?: appState.pairing.value.link?.uri
+        val waiting =
+            pairingLink ?: appState.pairing.value.link
+                ?.uri
         if (waiting != null) {
             outState.putString(STATE_PAIRING_LINK, waiting)
         }
@@ -433,7 +435,10 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Stores the lifetime of one kind of the history. */
-    private fun saveHistoryTtl(kind: Local.Kind, seconds: Long) {
+    private fun saveHistoryTtl(
+        kind: Local.Kind,
+        seconds: Long,
+    ) {
         lifecycleScope.launch {
             try {
                 historyTtl = HistoryTtlProto.values(core.setHistoryTtl(kind, seconds))
@@ -441,7 +446,8 @@ class MainActivity : ComponentActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                Toast.makeText(this@MainActivity, R.string.history_ttl_save_failed, Toast.LENGTH_SHORT)
+                Toast
+                    .makeText(this@MainActivity, R.string.history_ttl_save_failed, Toast.LENGTH_SHORT)
                     .show()
                 refreshSettings()
             }
@@ -453,12 +459,14 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 historyTtl = HistoryTtlProto.values(core.resetHistoryTtl())
-                Toast.makeText(this@MainActivity, R.string.history_ttl_reset_done, Toast.LENGTH_SHORT)
+                Toast
+                    .makeText(this@MainActivity, R.string.history_ttl_reset_done, Toast.LENGTH_SHORT)
                     .show()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                Toast.makeText(this@MainActivity, R.string.history_ttl_save_failed, Toast.LENGTH_SHORT)
+                Toast
+                    .makeText(this@MainActivity, R.string.history_ttl_save_failed, Toast.LENGTH_SHORT)
                     .show()
                 refreshSettings()
             }
@@ -484,12 +492,13 @@ class MainActivity : ComponentActivity() {
         if (requestsPoll != null) {
             return
         }
-        requestsPoll = lifecycleScope.launch {
-            while (true) {
-                delay(REQUESTS_POLL_MS)
-                appState.refreshRequests()
+        requestsPoll =
+            lifecycleScope.launch {
+                while (true) {
+                    delay(REQUESTS_POLL_MS)
+                    appState.refreshRequests()
+                }
             }
-        }
     }
 
     companion object {

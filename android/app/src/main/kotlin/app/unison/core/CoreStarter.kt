@@ -5,10 +5,10 @@ import android.os.SystemClock
 import android.util.Log
 import app.unison.diagnostics.Journal
 import app.unison.service.UnisonService
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Starts the core service and waits until the local API answers. */
 object CoreStarter {
@@ -20,7 +20,10 @@ object CoreStarter {
     private const val POLL_MS = 200L
 
     /** Starts the service when needed and reports whether the core answers. */
-    suspend fun await(context: Context, timeoutMs: Long = DEFAULT_TIMEOUT_MS): Boolean {
+    suspend fun await(
+        context: Context,
+        timeoutMs: Long = DEFAULT_TIMEOUT_MS,
+    ): Boolean {
         if (answers()) {
             return true
         }
@@ -44,12 +47,13 @@ object CoreStarter {
         return false
     }
 
-    private suspend fun answers(): Boolean = try {
-        withContext(Dispatchers.IO) { CoreClient().status() }
-        true
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        false
-    }
+    private suspend fun answers(): Boolean =
+        try {
+            withContext(Dispatchers.IO) { CoreClient().status() }
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
+        }
 }

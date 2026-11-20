@@ -22,7 +22,11 @@ object Downloads {
     const val DEFAULT_MIME = "application/octet-stream"
 
     /** Creates a pending entry and returns the URI of its content. */
-    fun create(context: Context, name: String, mimeType: String): Uri? {
+    fun create(
+        context: Context,
+        name: String,
+        mimeType: String,
+    ): Uri? {
         DownloadsFolder.current(context)?.let { tree ->
             try {
                 DownloadsFolder.create(context, tree, name, mimeType)?.let { return it }
@@ -39,16 +43,22 @@ object Downloads {
     }
 
     /** Copies a file into a new entry and publishes it. */
-    fun save(context: Context, file: File, name: String, mimeType: String): Boolean {
+    fun save(
+        context: Context,
+        file: File,
+        name: String,
+        mimeType: String,
+    ): Boolean {
         val uri = create(context, name, mimeType) ?: return false
-        val written = try {
-            context.contentResolver.openOutputStream(uri)?.use { target ->
-                file.inputStream().use { it.copyTo(target) }
+        val written =
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { target ->
+                    file.inputStream().use { it.copyTo(target) }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "cannot write an entry: ${e.message}")
+                null
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "cannot write an entry: ${e.message}")
-            null
-        }
         if (written == null) {
             discard(context, uri)
             return false
@@ -58,7 +68,10 @@ object Downloads {
     }
 
     /** Makes a finished entry visible to other apps. */
-    fun publish(context: Context, uri: Uri) {
+    fun publish(
+        context: Context,
+        uri: Uri,
+    ) {
         // Files in a picked folder are visible from the start.
         if (DocumentsContract.isDocumentUri(context, uri)) {
             return
@@ -72,7 +85,10 @@ object Downloads {
     }
 
     /** Removes an entry that was not finished. */
-    fun discard(context: Context, uri: Uri) {
+    fun discard(
+        context: Context,
+        uri: Uri,
+    ) {
         try {
             if (DocumentsContract.isDocumentUri(context, uri)) {
                 DocumentsContract.deleteDocument(context.contentResolver, uri)
@@ -91,8 +107,16 @@ object Downloads {
     }
 
     /** File name without directories, with an extension that fits the MIME type. */
-    fun nameWithExtension(name: String, mimeType: String): String {
-        val base = name.substringAfterLast('/').substringAfterLast('\\').trim().ifBlank { FALLBACK_NAME }
+    fun nameWithExtension(
+        name: String,
+        mimeType: String,
+    ): String {
+        val base =
+            name
+                .substringAfterLast('/')
+                .substringAfterLast('\\')
+                .trim()
+                .ifBlank { FALLBACK_NAME }
         if (base.contains('.')) {
             return base
         }
@@ -100,15 +124,18 @@ object Downloads {
         return "$base.$extension"
     }
 
-    private fun collection(): Uri =
-        MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    private fun collection(): Uri = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
-    private fun values(name: String, mimeType: String): ContentValues = ContentValues().apply {
-        put(MediaStore.Downloads.DISPLAY_NAME, name)
-        put(MediaStore.Downloads.MIME_TYPE, mimeType)
-        put(MediaStore.Downloads.RELATIVE_PATH, RELATIVE_PATH)
-        put(MediaStore.Downloads.IS_PENDING, 1)
-    }
+    private fun values(
+        name: String,
+        mimeType: String,
+    ): ContentValues =
+        ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, name)
+            put(MediaStore.Downloads.MIME_TYPE, mimeType)
+            put(MediaStore.Downloads.RELATIVE_PATH, RELATIVE_PATH)
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
 
     private const val TAG = "Downloads"
     private const val FALLBACK_NAME = "unison"

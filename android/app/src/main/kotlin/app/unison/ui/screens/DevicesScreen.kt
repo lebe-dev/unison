@@ -436,12 +436,13 @@ private fun ClipboardOffer(
 @Composable
 private fun InlineProtocolWarning(device: Local.Device) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 6.dp)
-            .clip(MaterialTheme.shapes.small)
-            .background(MaterialTheme.colorScheme.errorContainer)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.errorContainer)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
     ) {
         Text(
             text = stringResource(R.string.device_protocol_newer_summary, displayName(device)),

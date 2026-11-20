@@ -26,10 +26,11 @@ object DeviceNames {
         return trimmed.substring(0, end).trimEnd()
     }
 
-    private fun utf8Size(codePoint: Int): Int = when {
-        codePoint < 0x80 -> 1
-        codePoint < 0x800 -> 2
-        codePoint < 0x10000 -> 3
-        else -> 4
-    }
+    private fun utf8Size(codePoint: Int): Int =
+        when {
+            codePoint < 0x80 -> 1
+            codePoint < 0x800 -> 2
+            codePoint < 0x10000 -> 3
+            else -> 4
+        }
 }

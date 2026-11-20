@@ -1,16 +1,15 @@
 package app.unison.diagnostics
 
-import java.io.File
-import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
+import java.time.Instant
 
 class JournalFilesTest {
-
     @get:Rule
     val folder = TemporaryFolder()
 
@@ -108,16 +107,26 @@ class JournalFilesTest {
         assertEquals(emptyList<JournalRecord>(), JournalFiles.read(File(folder.root, "absent.log"), 2))
     }
 
-    private fun append(file: File, time: String, level: JournalLevel, message: String) {
+    private fun append(
+        file: File,
+        time: String,
+        level: JournalLevel,
+        message: String,
+    ) {
         file.appendText(JournalFormat.line(Instant.parse(time), level, message))
     }
 
-    private fun rotate(file: File, keep: Int) {
+    private fun rotate(
+        file: File,
+        keep: Int,
+    ) {
         File(file.path + ".2").delete()
         File(file.path + ".1").renameTo(File(file.path + ".2"))
         file.renameTo(File(file.path + ".1"))
     }
 
-    private fun line(index: Int, message: String): String =
-        JournalFormat.line(Instant.parse("2026-11-17T19:48:02.000Z").plusMillis(index.toLong()), JournalLevel.DEBUG, message)
+    private fun line(
+        index: Int,
+        message: String,
+    ): String = JournalFormat.line(Instant.parse("2026-11-17T19:48:02.000Z").plusMillis(index.toLong()), JournalLevel.DEBUG, message)
 }

@@ -5,9 +5,11 @@ import java.io.InputStream
 
 /** Reads content of a bounded size from a stream. */
 object BridgeBinary {
-
     /** Content of the stream, or null when it is larger than limit. */
-    fun read(input: InputStream, limit: Int): ByteArray? {
+    fun read(
+        input: InputStream,
+        limit: Int,
+    ): ByteArray? {
         val output = ByteArrayOutputStream()
         val chunk = ByteArray(CHUNK_BYTES)
         var total = 0

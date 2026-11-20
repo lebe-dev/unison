@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SubmitFailureTest {
-
     @Test
     fun pauseIsRecognized() {
         assertEquals(SubmitFailure.PAUSED, SubmitFailure.of(Exception("clip: synchronization is paused")))

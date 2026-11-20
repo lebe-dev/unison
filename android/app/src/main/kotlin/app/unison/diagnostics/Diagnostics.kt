@@ -78,7 +78,10 @@ object Diagnostics {
     }
 
     /** Grants or withdraws the consent and stores it for the next start. */
-    fun setConsent(context: Context, enabled: Boolean) {
+    fun setConsent(
+        context: Context,
+        enabled: Boolean,
+    ) {
         UnisonSettings.setSentryEnabled(context, enabled)
         allowed = enabled
     }
@@ -114,14 +117,15 @@ object Diagnostics {
     }
 
     /** Turns off the cookies, headers, query parameters and bodies of the automatic collection. */
-    private fun noDataCollection(): DataCollection = DataCollection().apply {
-        userInfo = false
-        filePaths = false
-        databaseQueryData = false
-        cookies = KeyValueCollectionBehavior.off()
-        urlQueryParams = KeyValueCollectionBehavior.off()
-        httpBodies = emptySet()
-        httpHeaders.request = KeyValueCollectionBehavior.off()
-        httpHeaders.response = KeyValueCollectionBehavior.off()
-    }
+    private fun noDataCollection(): DataCollection =
+        DataCollection().apply {
+            userInfo = false
+            filePaths = false
+            databaseQueryData = false
+            cookies = KeyValueCollectionBehavior.off()
+            urlQueryParams = KeyValueCollectionBehavior.off()
+            httpBodies = emptySet()
+            httpHeaders.request = KeyValueCollectionBehavior.off()
+            httpHeaders.response = KeyValueCollectionBehavior.off()
+        }
 }

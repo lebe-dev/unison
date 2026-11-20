@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DeviceNamesTest {
-
     @Test
     fun shortNameIsKept() {
         assertEquals("Pixel 9", DeviceNames.fit("Pixel 9"))

@@ -58,12 +58,14 @@ internal fun JournalSection(
 
     LaunchedEffect(enabled, display) {
         while (true) {
-            records = withContext(Dispatchers.IO) {
-                Journal.records(context, backups = false)
-                    .filter { display.shows(it.level) }
-                    .asReversed()
-                    .take(MAX_RECORDS)
-            }
+            records =
+                withContext(Dispatchers.IO) {
+                    Journal
+                        .records(context, backups = false)
+                        .filter { display.shows(it.level) }
+                        .asReversed()
+                        .take(MAX_RECORDS)
+                }
             delay(REFRESH_MS)
         }
     }
@@ -105,26 +107,29 @@ internal fun JournalSection(
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedButton(
             onClick = {
                 scope.launch {
                     try {
-                        val text = withContext(Dispatchers.IO) {
-                            JournalExport.text(
-                                context = context,
-                                status = state.status,
-                                settings = state.settings ?: Local.Settings.getDefaultInstance(),
-                                policy = policy,
-                                relay = state.relay ?: Local.Relay.getDefaultInstance(),
-                            )
-                        }
-                        val manager = clipboard
-                            ?: throw IllegalStateException("clipboard is not available")
+                        val text =
+                            withContext(Dispatchers.IO) {
+                                JournalExport.text(
+                                    context = context,
+                                    status = state.status,
+                                    settings = state.settings ?: Local.Settings.getDefaultInstance(),
+                                    policy = policy,
+                                    relay = state.relay ?: Local.Relay.getDefaultInstance(),
+                                )
+                            }
+                        val manager =
+                            clipboard
+                                ?: throw IllegalStateException("clipboard is not available")
                         manager.setPrimaryClip(
                             ClipData.newPlainText(clipLabel, text),
                         )
@@ -143,16 +148,18 @@ internal fun JournalSection(
             onClick = {
                 scope.launch {
                     try {
-                        val file = withContext(Dispatchers.IO) {
-                            val text = JournalExport.text(
-                                context = context,
-                                status = state.status,
-                                settings = state.settings ?: Local.Settings.getDefaultInstance(),
-                                policy = policy,
-                                relay = state.relay ?: Local.Relay.getDefaultInstance(),
-                            )
-                            JournalExport.write(context, text)
-                        }
+                        val file =
+                            withContext(Dispatchers.IO) {
+                                val text =
+                                    JournalExport.text(
+                                        context = context,
+                                        status = state.status,
+                                        settings = state.settings ?: Local.Settings.getDefaultInstance(),
+                                        policy = policy,
+                                        relay = state.relay ?: Local.Relay.getDefaultInstance(),
+                                    )
+                                JournalExport.write(context, text)
+                            }
                         context.startActivity(JournalExport.shareIntent(context, file))
                     } catch (e: Exception) {
                         Journal.warn("share of the application log failed", "error" to e.message)
@@ -176,10 +183,11 @@ internal fun JournalSection(
     } else {
         SelectionContainer {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp)
-                    .testTag(JOURNAL_LIST_TAG),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                        .testTag(JOURNAL_LIST_TAG),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 for (record in records) {

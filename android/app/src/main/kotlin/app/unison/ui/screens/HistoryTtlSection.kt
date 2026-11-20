@@ -79,11 +79,12 @@ private fun Lifetimes(
     onInvalid: (Boolean) -> Unit,
     onSave: (Local.Kind, Long) -> Unit,
 ) {
-    val rows = listOf(
-        Triple(Local.Kind.KIND_TEXT, R.string.history_ttl_text, ttl.text),
-        Triple(Local.Kind.KIND_IMAGE, R.string.history_ttl_image, ttl.image),
-        Triple(Local.Kind.KIND_FILES, R.string.history_ttl_files, ttl.files),
-    )
+    val rows =
+        listOf(
+            Triple(Local.Kind.KIND_TEXT, R.string.history_ttl_text, ttl.text),
+            Triple(Local.Kind.KIND_IMAGE, R.string.history_ttl_image, ttl.image),
+            Triple(Local.Kind.KIND_FILES, R.string.history_ttl_files, ttl.files),
+        )
     for ((kind, label, seconds) in rows) {
         var draft by rememberSaveable(seconds) { mutableStateOf(HistoryTtlText.format(seconds)) }
         val stored = HistoryTtlText.format(seconds)
@@ -99,9 +100,10 @@ private fun Lifetimes(
             OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
-                modifier = Modifier
-                    .width(120.dp)
-                    .testTag(ttlTag(kind)),
+                modifier =
+                    Modifier
+                        .width(120.dp)
+                        .testTag(ttlTag(kind)),
                 singleLine = true,
             )
             TextButton(
@@ -122,11 +124,12 @@ private fun Lifetimes(
 }
 
 /** Tag of the lifetime field of a kind. */
-internal fun ttlTag(kind: Local.Kind): String = when (kind) {
-    Local.Kind.KIND_IMAGE -> "settings.ttl.image"
-    Local.Kind.KIND_FILES -> "settings.ttl.files"
-    else -> "settings.ttl.text"
-}
+internal fun ttlTag(kind: Local.Kind): String =
+    when (kind) {
+        Local.Kind.KIND_IMAGE -> "settings.ttl.image"
+        Local.Kind.KIND_FILES -> "settings.ttl.files"
+        else -> "settings.ttl.text"
+    }
 
 /** Tag of the save button of a lifetime. */
 internal fun ttlSaveTag(kind: Local.Kind): String = ttlTag(kind) + ".save"

@@ -16,7 +16,6 @@ import unison.local.v1.Local
 
 /** Notifications about file offers that wait for an answer. */
 object RequestNotifications {
-
     /** Identifier of the result notification, reused for every answer. */
     const val RESULT_ID = 4
 
@@ -24,23 +23,28 @@ object RequestNotifications {
     fun idOf(requestId: String): Int = BASE_ID + (requestId.hashCode() and ID_MASK)
 
     /** Offer with the accept and decline actions. */
-    fun request(context: Context, request: Local.ShareRequest): Notification {
+    fun request(
+        context: Context,
+        request: Local.ShareRequest,
+    ): Notification {
         val files = request.filesList
         val size = HistoryText.formatSize(request.totalBytes, SizeUnits.of(context))
         val names = files.map { it.name }.filter { it.isNotEmpty() }
 
-        val builder = NotificationCompat.Builder(context, NotificationChannels.REQUESTS)
-            .setSmallIcon(R.drawable.ic_stat_unison)
-            .setContentTitle(request.deviceName.ifBlank { context.getString(R.string.app_name) })
-            .setContentText(context.resources.getQuantityString(R.plurals.request_files, files.size, files.size, size))
-            .setContentIntent(openApp(context))
-            .addAction(0, context.getString(R.string.action_decline), answer(context, request.id, accept = false))
-            .addAction(0, context.getString(R.string.action_accept), answer(context, request.id, accept = true))
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            // The service posts the offer again on every refresh; only the first post alerts.
-            .setOnlyAlertOnce(true)
-            .setShowWhen(false)
+        val builder =
+            NotificationCompat
+                .Builder(context, NotificationChannels.REQUESTS)
+                .setSmallIcon(R.drawable.ic_stat_unison)
+                .setContentTitle(request.deviceName.ifBlank { context.getString(R.string.app_name) })
+                .setContentText(context.resources.getQuantityString(R.plurals.request_files, files.size, files.size, size))
+                .setContentIntent(openApp(context))
+                .addAction(0, context.getString(R.string.action_decline), answer(context, request.id, accept = false))
+                .addAction(0, context.getString(R.string.action_accept), answer(context, request.id, accept = true))
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                // The service posts the offer again on every refresh; only the first post alerts.
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
 
         if (names.isNotEmpty()) {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(names.joinToString("\n")))
@@ -49,8 +53,12 @@ object RequestNotifications {
     }
 
     /** Outcome of an answered offer. */
-    fun result(context: Context, text: CharSequence): Notification =
-        NotificationCompat.Builder(context, NotificationChannels.REQUESTS)
+    fun result(
+        context: Context,
+        text: CharSequence,
+    ): Notification =
+        NotificationCompat
+            .Builder(context, NotificationChannels.REQUESTS)
             .setSmallIcon(R.drawable.ic_stat_unison)
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText(text)
@@ -62,12 +70,17 @@ object RequestNotifications {
             .build()
 
     /** Sends the answer of an offer to the service. */
-    private fun answer(context: Context, requestId: String, accept: Boolean): PendingIntent {
+    private fun answer(
+        context: Context,
+        requestId: String,
+        accept: Boolean,
+    ): PendingIntent {
         val action = if (accept) UnisonService.ACTION_ACCEPT_REQUEST else UnisonService.ACTION_DECLINE_REQUEST
         val code = idOf(requestId) + if (accept) 0 else REQUEST_CODE_STRIDE
-        val intent = Intent(context, UnisonService::class.java)
-            .setAction(action)
-            .putExtra(UnisonService.EXTRA_REQUEST_ID, requestId)
+        val intent =
+            Intent(context, UnisonService::class.java)
+                .setAction(action)
+                .putExtra(UnisonService.EXTRA_REQUEST_ID, requestId)
         return PendingIntent.getService(
             context,
             code,
@@ -77,13 +90,14 @@ object RequestNotifications {
     }
 
     /** Opens the requests screen from the notification body. */
-    private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(
-        context,
-        0,
-        Intent(context, MainActivity::class.java)
-            .putExtra(MainActivity.EXTRA_SCREEN, Destination.SCREEN_REQUESTS),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
+    private fun openApp(context: Context): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_SCREEN, Destination.SCREEN_REQUESTS),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
     private const val BASE_ID = 300
     private const val ID_MASK = 0xFFFF

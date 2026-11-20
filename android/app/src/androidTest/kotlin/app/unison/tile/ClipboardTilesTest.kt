@@ -3,7 +3,6 @@ package app.unison.tile
 import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Drawable
@@ -24,7 +23,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ClipboardTilesTest {
-
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test
@@ -50,10 +48,11 @@ class ClipboardTilesTest {
 
     @Test
     fun tilesCarryLabelsAndIcons() {
-        val labels = mapOf(
-            SendClipboardTile::class.java.name to R.string.send_clipboard,
-            PauseClipboardTile::class.java.name to R.string.tile_pause_clipboard,
-        )
+        val labels =
+            mapOf(
+                SendClipboardTile::class.java.name to R.string.send_clipboard,
+                PauseClipboardTile::class.java.name to R.string.tile_pause_clipboard,
+            )
         val packageManager = context.packageManager
         for (info in tiles()) {
             val service = info.serviceInfo

@@ -9,12 +9,14 @@ import app.unison.core.SubmitFailure
 import app.unison.core.mobile.Mobile
 import app.unison.diagnostics.Journal
 import app.unison.service.UnisonSettings
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Result of a send attempt, with the message to show to the user. */
-enum class SendOutcome(@StringRes val message: Int) {
+enum class SendOutcome(
+    @StringRes val message: Int,
+) {
     SENT(R.string.clipboard_sent),
     EMPTY(R.string.clipboard_empty),
     SENSITIVE(R.string.clipboard_sensitive),
@@ -30,17 +32,21 @@ object ClipboardSender {
 
     /** Reads the clipboard and sends it. The caller must be in the foreground. */
     suspend fun sendCurrent(context: Context): SendOutcome {
-        val draft = when (val read = ClipboardReader.read(context)) {
-            is ClipboardRead.Draft -> read.draft
-            ClipboardRead.Empty -> return SendOutcome.EMPTY
-            ClipboardRead.Sensitive -> return SendOutcome.SENSITIVE
-            ClipboardRead.Unsupported -> return SendOutcome.UNSUPPORTED
-        }
+        val draft =
+            when (val read = ClipboardReader.read(context)) {
+                is ClipboardRead.Draft -> read.draft
+                ClipboardRead.Empty -> return SendOutcome.EMPTY
+                ClipboardRead.Sensitive -> return SendOutcome.SENSITIVE
+                ClipboardRead.Unsupported -> return SendOutcome.UNSUPPORTED
+            }
         return send(context, draft)
     }
 
     /** Sends content that was read before. */
-    suspend fun send(context: Context, draft: ClipboardDraft): SendOutcome {
+    suspend fun send(
+        context: Context,
+        draft: ClipboardDraft,
+    ): SendOutcome {
         if (draft.isEmpty) {
             return SendOutcome.EMPTY
         }
@@ -70,6 +76,8 @@ object ClipboardSender {
     }
 
     /** True when the clipboard holds content that was not sent or applied before. */
-    fun isNew(context: Context, draft: ClipboardDraft): Boolean =
-        draft.contentHash() != UnisonSettings.lastClipHash(context)
+    fun isNew(
+        context: Context,
+        draft: ClipboardDraft,
+    ): Boolean = draft.contentHash() != UnisonSettings.lastClipHash(context)
 }

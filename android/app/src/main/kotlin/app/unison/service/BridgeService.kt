@@ -25,13 +25,14 @@ class BridgeService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        bridge = try {
-            UnisonBridge(this, CallerVerifier.of(this), MobileBridgeCore(this), scope)
-        } catch (e: Exception) {
-            Log.e(TAG, "the bridge did not start", e)
-            Diagnostics.capture(e)
-            null
-        }
+        bridge =
+            try {
+                UnisonBridge(this, CallerVerifier.of(this), MobileBridgeCore(this), scope)
+            } catch (e: Exception) {
+                Log.e(TAG, "the bridge did not start", e)
+                Diagnostics.capture(e)
+                null
+            }
     }
 
     override fun onBind(intent: Intent?): IBinder? = bridge?.asBinder()

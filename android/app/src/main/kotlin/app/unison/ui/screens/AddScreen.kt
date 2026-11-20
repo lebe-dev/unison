@@ -102,10 +102,11 @@ fun AddScreen(
         )
     } else {
         Column(
-            modifier = modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
         ) {
             if (onClose != null) {
                 IconButton(onClick = onClose, modifier = Modifier.padding(top = 8.dp)) {
@@ -126,9 +127,10 @@ fun AddScreen(
             OutlinedButton(
                 onClick = { scanning = true },
                 enabled = !state.scanning,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 56.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_scan),
@@ -200,10 +202,11 @@ private fun ClosedWindow(
     onOpenWindow: () -> Unit,
 ) {
     SectionTitle(text = stringResource(R.string.pairing_role))
-    val roles = listOf(
-        Local.Role.ROLE_PERSONAL to R.string.pairing_role_personal,
-        Local.Role.ROLE_FRIENDS to R.string.pairing_role_friends,
-    )
+    val roles =
+        listOf(
+            Local.Role.ROLE_PERSONAL to R.string.pairing_role_personal,
+            Local.Role.ROLE_FRIENDS to R.string.pairing_role_friends,
+        )
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         roles.forEachIndexed { index, (value, label) ->
             SegmentedButton(
@@ -217,13 +220,14 @@ private fun ClosedWindow(
     }
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = stringResource(
-            if (role == Local.Role.ROLE_FRIENDS) {
-                R.string.pairing_role_friends_hint
-            } else {
-                R.string.pairing_role_personal_hint
-            },
-        ),
+        text =
+            stringResource(
+                if (role == Local.Role.ROLE_FRIENDS) {
+                    R.string.pairing_role_friends_hint
+                } else {
+                    R.string.pairing_role_personal_hint
+                },
+            ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -231,9 +235,10 @@ private fun ClosedWindow(
     Button(
         onClick = onOpenWindow,
         enabled = !busy,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
     ) {
         Text(text = stringResource(R.string.pairing_open_window))
     }
@@ -247,7 +252,11 @@ private fun ClosedWindow(
 
 /** Role, remaining time and lifetime actions of the open window. */
 @Composable
-private fun OpenWindow(state: PairingState, onExtend: () -> Unit, onClose: () -> Unit) {
+private fun OpenWindow(
+    state: PairingState,
+    onExtend: () -> Unit,
+    onClose: () -> Unit,
+) {
     val window = state.window ?: return
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -270,17 +279,19 @@ private fun OpenWindow(state: PairingState, onExtend: () -> Unit, onClose: () ->
                     }
                 }
                 Text(
-                    text = stringResource(
-                        R.string.pairing_window_closes_in,
-                        rememberWindowRemaining(window.expiresAtUnixMs),
-                    ),
+                    text =
+                        stringResource(
+                            R.string.pairing_window_closes_in,
+                            rememberWindowRemaining(window.expiresAtUnixMs),
+                        ),
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = onExtend, enabled = !state.busy) {
@@ -344,9 +355,10 @@ private fun CandidateSection(
         quiet = true
     }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SectionTitle(
@@ -411,9 +423,10 @@ private fun CandidateRow(
         )
         FilledTonalButton(onClick = onPair, enabled = enabled && !dialing) {
             Text(
-                text = stringResource(
-                    if (dialing) R.string.pairing_dialing else R.string.pairing_pair,
-                ),
+                text =
+                    stringResource(
+                        if (dialing) R.string.pairing_dialing else R.string.pairing_pair,
+                    ),
             )
         }
     }
@@ -435,9 +448,10 @@ private fun ScanningCard(onCancel: () -> Unit) {
             Text(
                 text = stringResource(R.string.pairing_scan_waiting),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp),
             )
             TextButton(onClick = onCancel) {
                 Text(text = stringResource(R.string.action_cancel))
@@ -448,7 +462,10 @@ private fun ScanningCard(onCancel: () -> Unit) {
 
 /** Outcome of the last exchange. */
 @Composable
-private fun ResultCard(result: PairingResult, onDismiss: () -> Unit) {
+private fun ResultCard(
+    result: PairingResult,
+    onDismiss: () -> Unit,
+) {
     if (!result.paired && result.unreachable) {
         NetworkIssueCard(
             summary = stringResource(R.string.pairing_unreachable),
@@ -458,22 +475,25 @@ private fun ResultCard(result: PairingResult, onDismiss: () -> Unit) {
         )
         return
     }
-    val message = when {
-        result.paired && result.name.isNotEmpty() -> stringResource(R.string.pairing_paired, result.name)
-        result.paired -> stringResource(R.string.pairing_paired_generic)
-        result.rejected -> stringResource(R.string.pairing_rejected)
-        result.error.isNotEmpty() -> stringResource(R.string.pairing_failed_with, result.error)
-        else -> stringResource(R.string.pairing_failed)
-    }
+    val message =
+        when {
+            result.paired && result.name.isNotEmpty() -> stringResource(R.string.pairing_paired, result.name)
+            result.paired -> stringResource(R.string.pairing_paired_generic)
+            result.rejected -> stringResource(R.string.pairing_rejected)
+            result.error.isNotEmpty() -> stringResource(R.string.pairing_failed_with, result.error)
+            else -> stringResource(R.string.pairing_failed)
+        }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (result.paired) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.errorContainer
-            },
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (result.paired) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    },
+            ),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -493,12 +513,16 @@ private fun ResultCard(result: PairingResult, onDismiss: () -> Unit) {
 
 /** Failure of the last call with a way to hide it. */
 @Composable
-private fun FailureCard(message: String, onDismiss: () -> Unit) {
+private fun FailureCard(
+    message: String,
+    onDismiss: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -530,11 +554,12 @@ private fun ConfirmPairingDialog(
         onDismissRequest = onReject,
         title = {
             Text(
-                text = if (role == null) {
-                    stringResource(R.string.pairing_add_title_plain, name)
-                } else {
-                    stringResource(R.string.pairing_add_title, name, role)
-                },
+                text =
+                    if (role == null) {
+                        stringResource(R.string.pairing_add_title_plain, name)
+                    } else {
+                        stringResource(R.string.pairing_add_title, name, role)
+                    },
             )
         },
         text = { PairingRequestBody(request) },
@@ -567,12 +592,13 @@ private fun PairingLinkDialog(
         title = { Text(text = stringResource(R.string.pairing_link_title)) },
         text = {
             Text(
-                text = stringResource(
-                    when (link.role) {
-                        Local.Role.ROLE_FRIENDS -> R.string.pairing_link_body_friends
-                        else -> R.string.pairing_link_body_personal
-                    },
-                ),
+                text =
+                    stringResource(
+                        when (link.role) {
+                            Local.Role.ROLE_FRIENDS -> R.string.pairing_link_body_friends
+                            else -> R.string.pairing_link_body_personal
+                        },
+                    ),
             )
         },
         confirmButton = {

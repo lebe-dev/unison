@@ -45,12 +45,24 @@ class RequestNotificationsTest {
         assertTrue(RequestNotifications.RESULT_ID != RequestNotifications.idOf("one"))
     }
 
-    private fun request(): Local.ShareRequest = Local.ShareRequest.newBuilder()
-        .setId("request-id")
-        .setDeviceId("friend-id")
-        .setDeviceName("Friend")
-        .addFiles(Local.TransferFile.newBuilder().setName("notes.txt").setSize(1024).build())
-        .addFiles(Local.TransferFile.newBuilder().setName("plan.pdf").setSize(2048).build())
-        .setTotalBytes(3072)
-        .build()
+    private fun request(): Local.ShareRequest =
+        Local.ShareRequest
+            .newBuilder()
+            .setId("request-id")
+            .setDeviceId("friend-id")
+            .setDeviceName("Friend")
+            .addFiles(
+                Local.TransferFile
+                    .newBuilder()
+                    .setName("notes.txt")
+                    .setSize(1024)
+                    .build(),
+            ).addFiles(
+                Local.TransferFile
+                    .newBuilder()
+                    .setName("plan.pdf")
+                    .setSize(2048)
+                    .build(),
+            ).setTotalBytes(3072)
+            .build()
 }

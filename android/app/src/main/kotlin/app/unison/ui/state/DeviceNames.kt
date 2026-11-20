@@ -2,7 +2,6 @@ package app.unison.ui.state
 
 /** Validation of the device name the core accepts. */
 object DeviceNames {
-
     /** Longest accepted name in bytes. */
     const val MAX_BYTES = 128
 

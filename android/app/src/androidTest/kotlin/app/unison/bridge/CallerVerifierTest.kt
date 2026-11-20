@@ -12,7 +12,6 @@ import org.junit.runner.RunWith
 /** The bridge accepts this app only and refuses an app signed with another key. */
 @RunWith(AndroidJUnit4::class)
 class CallerVerifierTest {
-
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test

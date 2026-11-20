@@ -19,13 +19,17 @@ object ClipboardWriter {
     private const val TAG = "ClipboardWriter"
 
     /** Applies a serialized unison.mobile.v1.ClipPayload. */
-    fun write(context: Context, item: ByteArray) {
-        val payload = try {
-            Mobile.ClipPayload.parseFrom(item)
-        } catch (e: InvalidProtocolBufferException) {
-            Log.w(TAG, "payload does not decode: ${e.message}")
-            return
-        }
+    fun write(
+        context: Context,
+        item: ByteArray,
+    ) {
+        val payload =
+            try {
+                Mobile.ClipPayload.parseFrom(item)
+            } catch (e: InvalidProtocolBufferException) {
+                Log.w(TAG, "payload does not decode: ${e.message}")
+                return
+            }
 
         val itemId = payload.itemId
         val draft = ClipboardDraft.fromPayload(payload)
@@ -43,14 +47,19 @@ object ClipboardWriter {
     }
 
     /** Writes plain and HTML text into the clipboard. */
-    private fun writeText(context: Context, draft: ClipboardDraft, itemId: String) {
+    private fun writeText(
+        context: Context,
+        draft: ClipboardDraft,
+        itemId: String,
+    ) {
         val label = BridgeContract.CLIP_LABEL
         val plain = draft.text ?: ClipboardReader.plainTextOf(draft.html.orEmpty())
-        val clip = if (draft.html.isNullOrEmpty()) {
-            ClipData.newPlainText(label, plain)
-        } else {
-            ClipData.newHtmlText(label, plain, draft.html)
-        }
+        val clip =
+            if (draft.html.isNullOrEmpty()) {
+                ClipData.newPlainText(label, plain)
+            } else {
+                ClipData.newHtmlText(label, plain, draft.html)
+            }
         tag(clip, itemId)
 
         if (!apply(context, clip)) {
@@ -65,7 +74,11 @@ object ClipboardWriter {
      * get a temporary read grant from the clipboard service, so the image is
      * never stored in a shared collection.
      */
-    private fun writeImage(context: Context, part: Mobile.ClipPart, itemId: String) {
+    private fun writeImage(
+        context: Context,
+        part: Mobile.ClipPart,
+        itemId: String,
+    ) {
         val uri = ClipboardMedia.storeImage(context, part.mimeType, part.data.toByteArray())
         if (uri == null) {
             Log.w(TAG, "cannot store the image of ${part.mimeType}")
@@ -85,24 +98,32 @@ object ClipboardWriter {
      * Names the item in the clip description, so a keyboard can tell the write from a copy of
      * the user. Content that is not a recorded item stays untagged.
      */
-    private fun tag(clip: ClipData, itemId: String) {
+    private fun tag(
+        clip: ClipData,
+        itemId: String,
+    ) {
         if (itemId.isEmpty()) {
             return
         }
-        clip.description.extras = PersistableBundle().apply {
-            putString(BridgeContract.EXTRA_ITEM_ID, itemId)
-        }
+        clip.description.extras =
+            PersistableBundle().apply {
+                putString(BridgeContract.EXTRA_ITEM_ID, itemId)
+            }
     }
 
     /** Sets the primary clip, reporting whether it worked. */
-    private fun apply(context: Context, clip: ClipData): Boolean = try {
-        val manager = context.getSystemService(ClipboardManager::class.java)
-        manager?.setPrimaryClip(clip) ?: return false
-        true
-    } catch (e: Exception) {
-        Log.w(TAG, "clipboard write failed: ${e.message}")
-        false
-    }
+    private fun apply(
+        context: Context,
+        clip: ClipData,
+    ): Boolean =
+        try {
+            val manager = context.getSystemService(ClipboardManager::class.java)
+            manager?.setPrimaryClip(clip) ?: return false
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "clipboard write failed: ${e.message}")
+            false
+        }
 
     /** Image representation of a payload, or null when it carries no image. */
     private fun imagePart(payload: Mobile.ClipPayload): Mobile.ClipPart? {
@@ -111,7 +132,8 @@ object ClipboardWriter {
             return parts.first()
         }
         if (payload.mimeType.startsWith(MIME_IMAGE) && !payload.data.isEmpty) {
-            return Mobile.ClipPart.newBuilder()
+            return Mobile.ClipPart
+                .newBuilder()
                 .setMimeType(payload.mimeType)
                 .setData(payload.data)
                 .build()

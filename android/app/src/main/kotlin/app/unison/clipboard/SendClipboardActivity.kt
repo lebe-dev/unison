@@ -1,6 +1,5 @@
 package app.unison.clipboard
 
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -17,13 +16,14 @@ class SendClipboardActivity : ComponentActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var started = false
 
-    private val focusTimeout = Runnable {
-        if (started) {
-            return@Runnable
+    private val focusTimeout =
+        Runnable {
+            if (started) {
+                return@Runnable
+            }
+            started = true
+            finish()
         }
-        started = true
-        finish()
-    }
 
     override fun onResume() {
         super.onResume()

@@ -196,11 +196,16 @@ Friends, и передает каждый файл ядру через `SubmitFi
 | `just aar` | `android/core/core.aar` |
 | `just android-build` | отладочный APK |
 | `just deploy-android` | устанавливает APK по USB |
-| `just android-lint` | Android lint |
+| `just android-lint` | Android lint, ktlint и detekt |
+| `just android-check` | ktlint и detekt |
 | `just bridge-publish` | артефакт AIDL |
 
 Приложение нацелено на API 37, работает с API 29 и объявляет `ACCESS_LOCAL_NETWORK`, который нужен
 приложениям с target API 37, чтобы достать до локальной сети. `versionName` берется из `VERSION`.
+
+ktlint проверяет формат, а detekt - код источников Kotlin. Правила detekt лежат в
+`android/config/detekt/detekt.yml`, а `android/config/detekt/baseline.xml` хранит находки
+существующего кода.
 
 ## Отчеты об ошибках
 

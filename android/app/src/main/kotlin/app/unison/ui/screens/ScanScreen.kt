@@ -61,9 +61,10 @@ fun ScanScreen(
     val context = LocalContext.current
     var granted by remember { mutableStateOf(hasCameraPermission(context)) }
     var unavailable by remember { mutableStateOf(false) }
-    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        granted = it
-    }
+    val askPermission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            granted = it
+        }
 
     LaunchedEffect(Unit) {
         if (!granted) {
@@ -72,9 +73,10 @@ fun ScanScreen(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
     ) {
         ScreenTitle(title = stringResource(R.string.pairing_scan_title)) {
             TextButton(onClick = onClose) {
@@ -87,24 +89,28 @@ fun ScanScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         when {
-            !granted -> CameraCard(
-                title = stringResource(R.string.pairing_camera_title),
-                body = stringResource(R.string.pairing_camera_body),
-                action = stringResource(R.string.pairing_camera_allow),
-                onAction = { askPermission.launch(Manifest.permission.CAMERA) },
-            )
-            unavailable -> CameraCard(
-                title = stringResource(R.string.pairing_camera_title),
-                body = stringResource(R.string.pairing_camera_denied),
-            )
-            else -> CameraPreview(
-                onCode = onCode,
-                onUnavailable = { unavailable = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .clip(RoundedCornerShape(16.dp)),
-            )
+            !granted ->
+                CameraCard(
+                    title = stringResource(R.string.pairing_camera_title),
+                    body = stringResource(R.string.pairing_camera_body),
+                    action = stringResource(R.string.pairing_camera_allow),
+                    onAction = { askPermission.launch(Manifest.permission.CAMERA) },
+                )
+            unavailable ->
+                CameraCard(
+                    title = stringResource(R.string.pairing_camera_title),
+                    body = stringResource(R.string.pairing_camera_denied),
+                )
+            else ->
+                CameraPreview(
+                    onCode = onCode,
+                    onUnavailable = { unavailable = true },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp)),
+                )
         }
     }
 }
@@ -119,9 +125,10 @@ private fun CameraCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
@@ -145,9 +152,10 @@ private fun CameraPreview(
 ) {
     val context = LocalContext.current
     val owner = context as? LifecycleOwner
-    val previewView = remember {
-        PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
-    }
+    val previewView =
+        remember {
+            PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
+        }
     val reported = remember { AtomicBoolean(false) }
     val currentOnCode by rememberUpdatedState(onCode)
     val currentOnUnavailable by rememberUpdatedState(onUnavailable)
@@ -176,15 +184,19 @@ private fun CameraPreview(
                 }
                 val preview = Preview.Builder().build()
                 preview.setSurfaceProvider(previewView.surfaceProvider)
-                val barcode = BarcodeScanning.getClient(
-                    BarcodeScannerOptions.Builder()
-                        .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                        .build(),
-                )
+                val barcode =
+                    BarcodeScanning.getClient(
+                        BarcodeScannerOptions
+                            .Builder()
+                            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                            .build(),
+                    )
                 scanner = barcode
-                val analysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
+                val analysis =
+                    ImageAnalysis
+                        .Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
                 analysis.setAnalyzer(
                     executor,
                     MlKitAnalyzer(

@@ -1,36 +1,37 @@
 package app.unison.diagnostics
 
-import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 
 class JournalFormatTest {
-
     private val at = Instant.parse("2026-11-17T19:48:02.123Z")
 
     @Test
     fun lineCarriesTheTimeTheLevelTheMessageAndTheAttributes() {
-        val line = JournalFormat.line(
-            at = at,
-            level = JournalLevel.DEBUG,
-            message = "connected to the peer",
-            attrs = listOf("peer" to "3f2a", "attempt" to 2),
-        )
+        val line =
+            JournalFormat.line(
+                at = at,
+                level = JournalLevel.DEBUG,
+                message = "connected to the peer",
+                attrs = listOf("peer" to "3f2a", "attempt" to 2),
+            )
 
         assertEquals("2026-11-17T19:48:02.123Z DEBUG connected to the peer peer=3f2a attempt=2\n", line)
     }
 
     @Test
     fun attributesWithSpacesOrEqualsAreQuoted() {
-        val line = JournalFormat.line(
-            at = at,
-            level = JournalLevel.WARN,
-            message = "read failed",
-            attrs = listOf("note" to "two words", "pair" to "a=b"),
-        )
+        val line =
+            JournalFormat.line(
+                at = at,
+                level = JournalLevel.WARN,
+                message = "read failed",
+                attrs = listOf("note" to "two words", "pair" to "a=b"),
+            )
 
         assertEquals("2026-11-17T19:48:02.123Z WARN read failed note=\"two words\" pair=\"a=b\"\n", line)
     }
@@ -44,12 +45,13 @@ class JournalFormatTest {
 
     @Test
     fun pathInMessageAndAttributeIsReplaced() {
-        val line = JournalFormat.line(
-            at = at,
-            level = JournalLevel.WARN,
-            message = "cannot open /Users/alice/Library/Unison",
-            attrs = listOf("error" to "open /home/alice/unison.db: denied"),
-        )
+        val line =
+            JournalFormat.line(
+                at = at,
+                level = JournalLevel.WARN,
+                message = "cannot open /Users/alice/Library/Unison",
+                attrs = listOf("error" to "open /home/alice/unison.db: denied"),
+            )
 
         assertEquals(
             "2026-11-17T19:48:02.123Z WARN cannot open [path] " +

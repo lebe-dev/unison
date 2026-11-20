@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceNamesTest {
-
     @Test
     fun nameIsTrimmedBeforeValidation() {
         assertTrue(DeviceNames.valid("  Pixel  "))

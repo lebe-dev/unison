@@ -7,7 +7,9 @@ import android.text.Html
 /** What the local clipboard holds. */
 sealed interface ClipboardRead {
     /** Text content that can be sent. */
-    data class Draft(val draft: ClipboardDraft) : ClipboardRead
+    data class Draft(
+        val draft: ClipboardDraft,
+    ) : ClipboardRead
 
     /** Nothing to send. */
     data object Empty : ClipboardRead
@@ -28,8 +30,9 @@ object ClipboardReader {
     private const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE"
 
     fun read(context: Context): ClipboardRead {
-        val manager = context.getSystemService(ClipboardManager::class.java)
-            ?: return ClipboardRead.Empty
+        val manager =
+            context.getSystemService(ClipboardManager::class.java)
+                ?: return ClipboardRead.Empty
         if (!manager.hasPrimaryClip()) {
             return ClipboardRead.Empty
         }
@@ -52,6 +55,5 @@ object ClipboardReader {
     }
 
     /** Plain text of an HTML fragment. */
-    internal fun plainTextOf(html: String): String =
-        Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
+    internal fun plainTextOf(html: String): String = Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
 }

@@ -31,7 +31,6 @@ import app.unison.share.ReceiveNotifications
 import app.unison.share.TransferNotifications
 import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,6 +43,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import unison.local.v1.Local
+import kotlin.coroutines.cancellation.CancellationException
 import unison.mobile.v1.Mobile as MobileProto
 
 /** Keeps the core running in the foreground. */
@@ -93,7 +93,11 @@ class UnisonService : Service() {
         downloads = HistoryDownloads(this, client)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         Journal.debug("service command", "action" to intent?.action.orEmpty())
         if (intent?.action == ACTION_STOP) {
             stopSelf()
@@ -242,43 +246,47 @@ class UnisonService : Service() {
         if (eventsJob?.isActive == true) {
             return
         }
-        eventsJob = scope.launch {
-            coreEvents.events.collect(::handle)
-        }
+        eventsJob =
+            scope.launch {
+                coreEvents.events.collect(::handle)
+            }
     }
 
-    private fun startCoreBlocking(): Boolean = try {
-        val debug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-        val config = MobileProto.Config.newBuilder()
-            .setDataDir(filesDir.absolutePath)
-            .setDeviceName(UnisonSettings.deviceName(this))
-            .setDebugLog(debug)
-            .build()
-        // A core left by an earlier instance of the service would make the start fail and
-        // still call back into the platform of that instance.
-        stopCoreBlocking()
-        discovery.start()
-        Mobile.start(config.toByteArray(), CorePlatform(this, discovery, blobs))
-        coreStarted = true
-        // The service may have been destroyed while the core started; then nobody else stops it.
-        if (destroyed) {
-            Log.i(TAG, "core stopped right after the start, the service is gone")
-            Journal.warn("core stopped right after the start")
+    private fun startCoreBlocking(): Boolean =
+        try {
+            val debug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+            val config =
+                MobileProto.Config
+                    .newBuilder()
+                    .setDataDir(filesDir.absolutePath)
+                    .setDeviceName(UnisonSettings.deviceName(this))
+                    .setDebugLog(debug)
+                    .build()
+            // A core left by an earlier instance of the service would make the start fail and
+            // still call back into the platform of that instance.
             stopCoreBlocking()
+            discovery.start()
+            Mobile.start(config.toByteArray(), CorePlatform(this, discovery, blobs))
+            coreStarted = true
+            // The service may have been destroyed while the core started; then nobody else stops it.
+            if (destroyed) {
+                Log.i(TAG, "core stopped right after the start, the service is gone")
+                Journal.warn("core stopped right after the start")
+                stopCoreBlocking()
+                discovery.stop()
+                false
+            } else {
+                Log.i(TAG, "core started")
+                Journal.info("core started")
+                true
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "core start failed", e)
+            Journal.error("core start failed", "error" to e.message)
+            Diagnostics.capture(e)
             discovery.stop()
             false
-        } else {
-            Log.i(TAG, "core started")
-            Journal.info("core started")
-            true
         }
-    } catch (e: Exception) {
-        Log.e(TAG, "core start failed", e)
-        Journal.error("core start failed", "error" to e.message)
-        Diagnostics.capture(e)
-        discovery.stop()
-        false
-    }
 
     /** Stops the core of the process; does nothing when none runs. */
     private fun stopCoreBlocking() {
@@ -320,14 +328,15 @@ class UnisonService : Service() {
     @SuppressLint("MissingPermission")
     private fun notifyReceipt(event: Local.Event) {
         val transfer = event.transfer
-        val notification = when (receipts.next(event, System.currentTimeMillis())) {
-            IncomingFiles.Receipt.NONE -> return
-            IncomingFiles.Receipt.PROGRESS -> ReceiveNotifications.progress(this, transfer)
-            else -> {
-                Journal.info("incoming transfer ended", "state" to transfer.state.name)
-                ReceiveNotifications.result(this, transfer)
+        val notification =
+            when (receipts.next(event, System.currentTimeMillis())) {
+                IncomingFiles.Receipt.NONE -> return
+                IncomingFiles.Receipt.PROGRESS -> ReceiveNotifications.progress(this, transfer)
+                else -> {
+                    Journal.info("incoming transfer ended", "state" to transfer.state.name)
+                    ReceiveNotifications.result(this, transfer)
+                }
             }
-        }
         if (!NotificationSettings.load(this).transfers) {
             return
         }
@@ -340,44 +349,49 @@ class UnisonService : Service() {
         if (transfersJob?.isActive == true) {
             return
         }
-        transfersJob = scope.launch {
-            var sawActive = false
-            while (true) {
-                val transfers = listTransfers()
-                if (transfers == null) {
-                    failTransfers()
-                    return@launch
+        transfersJob =
+            scope.launch {
+                var sawActive = false
+                while (true) {
+                    val transfers = listTransfers()
+                    if (transfers == null) {
+                        failTransfers()
+                        return@launch
+                    }
+                    val active = TransferProgress.active(transfers)
+                    if (active.isEmpty()) {
+                        finishTransfers(transfers, fresh = !sawActive)
+                        return@launch
+                    }
+                    sawActive = true
+                    watchedTransfers += active.map { it.id }
+                    transferNames = TransferProgress.names(active)
+                    showTransfers(TransferNotifications.progress(this@UnisonService, active))
+                    delay(TRANSFERS_POLL_MS)
                 }
-                val active = TransferProgress.active(transfers)
-                if (active.isEmpty()) {
-                    finishTransfers(transfers, fresh = !sawActive)
-                    return@launch
-                }
-                sawActive = true
-                watchedTransfers += active.map { it.id }
-                transferNames = TransferProgress.names(active)
-                showTransfers(TransferNotifications.progress(this@UnisonService, active))
-                delay(TRANSFERS_POLL_MS)
             }
-        }
     }
 
     /** Running outgoing transfers, or null when the core does not answer. */
-    private suspend fun listTransfers(): List<Local.Transfer>? = try {
-        withContext(Dispatchers.IO) { client.listTransfers() }.transfersList
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.w(TAG, "cannot read the transfers: ${e.message}")
-        null
-    }
+    private suspend fun listTransfers(): List<Local.Transfer>? =
+        try {
+            withContext(Dispatchers.IO) { client.listTransfers() }.transfersList
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "cannot read the transfers: ${e.message}")
+            null
+        }
 
     /**
      * Shows the result of the transfers that just ended. A transfer can end
      * before the first poll, then the ones that started a moment ago are
      * reported once.
      */
-    private fun finishTransfers(transfers: List<Local.Transfer>, fresh: Boolean) {
+    private fun finishTransfers(
+        transfers: List<Local.Transfer>,
+        fresh: Boolean,
+    ) {
         val ended = transfers.filter { it.id in watchedTransfers }
         val reported = if (ended.isNotEmpty() || !fresh) ended else justStarted(transfers)
         if (reported.isEmpty()) {
@@ -388,11 +402,12 @@ class UnisonService : Service() {
             transferNames = TransferProgress.names(reported)
         }
         val failed = reported.any { it.state == Local.TransferState.TRANSFER_STATE_FAILED }
-        val message = when {
-            transfersCanceled -> getString(R.string.transfer_canceled)
-            failed -> getString(R.string.transfer_failed)
-            else -> getString(R.string.transfer_sent, namesText())
-        }
+        val message =
+            when {
+                transfersCanceled -> getString(R.string.transfer_canceled)
+                failed -> getString(R.string.transfer_failed)
+                else -> getString(R.string.transfer_sent, namesText())
+            }
         reportedTransfers += reported.map { it.id }
         if (reportedTransfers.size > REPORTED_LIMIT) {
             reportedTransfers.clear()
@@ -440,16 +455,18 @@ class UnisonService : Service() {
     }
 
     /** Names of the peers of the transfers, as the texts expect them. */
-    private fun namesText(): String = when {
-        transferNames.isEmpty() -> getString(R.string.app_name)
-        transferNames.size == 1 -> transferNames.first()
-        else -> resources.getQuantityString(
-            R.plurals.transfer_more_devices,
-            transferNames.size - 1,
-            transferNames.first(),
-            transferNames.size - 1,
-        )
-    }
+    private fun namesText(): String =
+        when {
+            transferNames.isEmpty() -> getString(R.string.app_name)
+            transferNames.size == 1 -> transferNames.first()
+            else ->
+                resources.getQuantityString(
+                    R.plurals.transfer_more_devices,
+                    transferNames.size - 1,
+                    transferNames.first(),
+                    transferNames.size - 1,
+                )
+        }
 
     @SuppressLint("MissingPermission")
     private fun showTransfers(notification: Notification) {
@@ -471,21 +488,25 @@ class UnisonService : Service() {
         }
     }
 
-    private suspend fun deviceName(deviceId: String): String = try {
-        withContext(Dispatchers.IO) { client.status() }
-            .devicesList
-            .firstOrNull { it.deviceId == deviceId }
-            ?.name
-            .orEmpty()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.w(TAG, "cannot read the name of $deviceId: ${e.message}")
-        ""
-    }
+    private suspend fun deviceName(deviceId: String): String =
+        try {
+            withContext(Dispatchers.IO) { client.status() }
+                .devicesList
+                .firstOrNull { it.deviceId == deviceId }
+                ?.name
+                .orEmpty()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "cannot read the name of $deviceId: ${e.message}")
+            ""
+        }
 
     @SuppressLint("MissingPermission")
-    private fun showPending(item: Local.ClipItem, device: String) {
+    private fun showPending(
+        item: Local.ClipItem,
+        device: String,
+    ) {
         if (!NotificationSettings.load(this).clipboard) {
             return
         }
@@ -506,7 +527,10 @@ class UnisonService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun showHeld(item: Local.ClipItem, device: String) {
+    private fun showHeld(
+        item: Local.ClipItem,
+        device: String,
+    ) {
         if (!NotificationSettings.load(this).confirmations) {
             return
         }
@@ -521,13 +545,14 @@ class UnisonService : Service() {
     private fun applyItem(itemId: String) {
         show(getString(R.string.clipboard_applying))
         scope.launch {
-            val applied = try {
-                withContext(Dispatchers.IO) { client.applyHistoryItem(itemId) }
-                true
-            } catch (e: Exception) {
-                Log.w(TAG, "apply of $itemId failed: ${e.message}")
-                false
-            }
+            val applied =
+                try {
+                    withContext(Dispatchers.IO) { client.applyHistoryItem(itemId) }
+                    true
+                } catch (e: Exception) {
+                    Log.w(TAG, "apply of $itemId failed: ${e.message}")
+                    false
+                }
             NotificationManagerCompat.from(this@UnisonService).cancel(HeldNotifications.idOf(itemId))
             if (applied) {
                 HeldItems.shared.remove(itemId)
@@ -557,19 +582,21 @@ class UnisonService : Service() {
             return
         }
         requestsDirty = false
-        requestsJob = scope.launch {
-            val requests = listRequests()
-            if (requests != null) {
-                showRequests(requests)
-                scheduleRequestsRefresh()
-            }
-        }.also { job ->
-            job.invokeOnCompletion { cause ->
-                if (cause == null && requestsDirty) {
-                    scope.launch { refreshRequests() }
+        requestsJob =
+            scope
+                .launch {
+                    val requests = listRequests()
+                    if (requests != null) {
+                        showRequests(requests)
+                        scheduleRequestsRefresh()
+                    }
+                }.also { job ->
+                    job.invokeOnCompletion { cause ->
+                        if (cause == null && requestsDirty) {
+                            scope.launch { refreshRequests() }
+                        }
+                    }
                 }
-            }
-        }
     }
 
     /** Shows the offers that wait and removes the notifications of the answered ones. */
@@ -591,21 +618,23 @@ class UnisonService : Service() {
         if (notifiedRequests.isEmpty()) {
             return
         }
-        requestsTimer = scope.launch {
-            delay(REQUESTS_REFRESH_MS)
-            refreshRequests()
-        }
+        requestsTimer =
+            scope.launch {
+                delay(REQUESTS_REFRESH_MS)
+                refreshRequests()
+            }
     }
 
     /** Offers of Friends that wait for an answer, or null when the core does not answer. */
-    private suspend fun listRequests(): List<Local.ShareRequest>? = try {
-        withContext(Dispatchers.IO) { client.requests() }.requestsList
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.w(TAG, "cannot read the requests: ${e.message}")
-        null
-    }
+    private suspend fun listRequests(): List<Local.ShareRequest>? =
+        try {
+            withContext(Dispatchers.IO) { client.requests() }.requestsList
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "cannot read the requests: ${e.message}")
+            null
+        }
 
     @SuppressLint("MissingPermission")
     private fun showRequest(request: Local.ShareRequest) {
@@ -620,17 +649,22 @@ class UnisonService : Service() {
     }
 
     /** Answers the offer of the notification action. */
-    private fun answerRequest(requestId: String, accept: Boolean) {
+    private fun answerRequest(
+        requestId: String,
+        accept: Boolean,
+    ) {
         show(getString(R.string.requests_answering))
         scope.launch {
-            val answered = try {
-                withContext(Dispatchers.IO) { client.decideRequest(requestId, accept) }
-                true
-            } catch (e: Exception) {
-                Log.w(TAG, "cannot answer the request: ${e.message}")
-                false
-            }
-            NotificationManagerCompat.from(this@UnisonService)
+            val answered =
+                try {
+                    withContext(Dispatchers.IO) { client.decideRequest(requestId, accept) }
+                    true
+                } catch (e: Exception) {
+                    Log.w(TAG, "cannot answer the request: ${e.message}")
+                    false
+                }
+            NotificationManagerCompat
+                .from(this@UnisonService)
                 .cancel(RequestNotifications.idOf(requestId))
             notifiedRequests -= requestId
             showRequestResult(answered, accept)
@@ -641,15 +675,19 @@ class UnisonService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun showRequestResult(answered: Boolean, accept: Boolean) {
+    private fun showRequestResult(
+        answered: Boolean,
+        accept: Boolean,
+    ) {
         if (!NotificationSettings.load(this).requests) {
             return
         }
-        val text = when {
-            !answered -> getString(R.string.requests_answer_failed)
-            accept -> getString(R.string.requests_accepted)
-            else -> getString(R.string.requests_declined)
-        }
+        val text =
+            when {
+                !answered -> getString(R.string.requests_answer_failed)
+                accept -> getString(R.string.requests_accepted)
+                else -> getString(R.string.requests_declined)
+            }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             RequestNotifications.RESULT_ID,
@@ -661,19 +699,23 @@ class UnisonService : Service() {
     private fun download(itemId: String) {
         show(getString(R.string.history_downloading))
         scope.launch {
-            val saved = try {
-                withContext(Dispatchers.IO) { downloads.save(itemId) }
-            } catch (e: Exception) {
-                Log.w(TAG, "download of $itemId failed: ${e.message}")
-                0
-            }
+            val saved =
+                try {
+                    withContext(Dispatchers.IO) { downloads.save(itemId) }
+                } catch (e: Exception) {
+                    Log.w(TAG, "download of $itemId failed: ${e.message}")
+                    0
+                }
             showResult(itemId, saved > 0)
             refreshStatus()
         }
     }
 
     @SuppressLint("MissingPermission")
-    private fun showResult(itemId: String, saved: Boolean) {
+    private fun showResult(
+        itemId: String,
+        saved: Boolean,
+    ) {
         NotificationManagerCompat.from(this).cancel(HistoryNotifications.idOf(itemId))
         if (!NotificationSettings.load(this).clipboard) {
             return
@@ -689,13 +731,14 @@ class UnisonService : Service() {
             return
         }
         statusJob?.cancel()
-        statusJob = scope.launch {
-            val text = statusText()
-            if (!coreRunning) {
-                return@launch
+        statusJob =
+            scope.launch {
+                val text = statusText()
+                if (!coreRunning) {
+                    return@launch
+                }
+                show(text)
             }
-            show(text)
-        }
     }
 
     /** Brings the status notification back after a file arrives. */
@@ -707,30 +750,31 @@ class UnisonService : Service() {
         refreshStatus()
     }
 
-    private suspend fun statusText(): CharSequence = try {
-        val status = withContext(Dispatchers.IO) { client.status() }
-        val online = status.devicesList.count { it.online }
-        Log.i(TAG, "core is up, device ${status.deviceId}")
-        if (!NotificationSettings.load(this).statusDetails) {
-            getString(R.string.service_status_short)
-        } else {
-            getString(
-                R.string.service_status,
-                status.deviceName,
-                resources.getQuantityString(R.plurals.service_peers_online, online, online),
-            )
+    private suspend fun statusText(): CharSequence =
+        try {
+            val status = withContext(Dispatchers.IO) { client.status() }
+            val online = status.devicesList.count { it.online }
+            Log.i(TAG, "core is up, device ${status.deviceId}")
+            if (!NotificationSettings.load(this).statusDetails) {
+                getString(R.string.service_status_short)
+            } else {
+                getString(
+                    R.string.service_status,
+                    status.deviceName,
+                    resources.getQuantityString(R.plurals.service_peers_online, online, online),
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: CoreException) {
+            Log.w(TAG, "status failed: ${e.message}")
+            Journal.warn("core status failed", "error" to e.message)
+            getString(R.string.service_failed)
+        } catch (e: Exception) {
+            Log.w(TAG, "status failed: ${e.message}")
+            Journal.warn("core status failed", "error" to e.message)
+            getString(R.string.service_failed)
         }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: CoreException) {
-        Log.w(TAG, "status failed: ${e.message}")
-        Journal.warn("core status failed", "error" to e.message)
-        getString(R.string.service_failed)
-    } catch (e: Exception) {
-        Log.w(TAG, "status failed: ${e.message}")
-        Journal.warn("core status failed", "error" to e.message)
-        getString(R.string.service_failed)
-    }
 
     @SuppressLint("MissingPermission")
     private fun show(text: CharSequence) {

@@ -7,7 +7,10 @@ import android.util.Log
 
 /** Starts the service after boot when the operating mode asks for it. */
 class BootReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) {
             return
         }

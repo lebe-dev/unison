@@ -6,7 +6,6 @@ import org.junit.Test
 import unison.local.v1.Local
 
 class PairingLinkTest {
-
     @Test
     fun viewOfPairingCodeIsAccepted() {
         val uri = "unison://pair?v=1&id=abc"

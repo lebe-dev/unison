@@ -87,12 +87,17 @@ fun HistoryScreen(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
     ) {
         val listState = rememberLazyListState()
-        val newest = history.items.firstOrNull()?.item?.id
+        val newest =
+            history.items
+                .firstOrNull()
+                ?.item
+                ?.id
         LaunchedEffect(newest) {
             // An entry that arrives while the list is at its top stays visible:
             // a keyed list would otherwise keep the older entry in place and
@@ -122,9 +127,10 @@ fun HistoryScreen(
 
         if (history.loading && !history.loaded) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -168,9 +174,10 @@ private fun Filters(
     onDeviceChange: (String) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         KINDS.forEach { kind ->
@@ -178,17 +185,18 @@ private fun Filters(
                 selected = kind.kind == history.kind,
                 onClick = { onKindChange(kind.kind) },
                 label = { Text(text = stringResource(kind.label)) },
-                leadingIcon = if (kind.kind == history.kind) {
-                    {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_check),
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize),
-                        )
-                    }
-                } else {
-                    null
-                },
+                leadingIcon =
+                    if (kind.kind == history.kind) {
+                        {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_check),
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                            )
+                        }
+                    } else {
+                        null
+                    },
             )
         }
         DeviceFilter(history = history, status = status, onChange = onDeviceChange)
@@ -204,8 +212,9 @@ private fun DeviceFilter(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val devices = remember(status, history.items) { devicesOf(status, history.items) }
-    val label = devices.firstOrNull { it.first == history.deviceId }?.second
-        ?: stringResource(R.string.history_all_devices)
+    val label =
+        devices.firstOrNull { it.first == history.deviceId }?.second
+            ?: stringResource(R.string.history_all_devices)
 
     Box {
         FilterChip(
@@ -256,11 +265,12 @@ private fun HistoryRow(
 ) {
     val item = entry.item
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(groupItemColor)
-            .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(groupItemColor)
+                .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 4.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             KindTile(kind = item.kind)
@@ -276,11 +286,12 @@ private fun HistoryRow(
                             text = stringResource(R.string.history_held),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .background(MaterialTheme.colorScheme.tertiaryContainer)
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            modifier =
+                                Modifier
+                                    .padding(start = 8.dp)
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
@@ -309,11 +320,12 @@ private fun HistoryRow(
 
                 val size = HistoryText.formatSize(HistoryText.size(item), sizeUnits())
                 Text(
-                    text = stringResource(
-                        if (entry.complete) R.string.history_item_detail else R.string.history_item_detail_incomplete,
-                        device,
-                        size,
-                    ),
+                    text =
+                        stringResource(
+                            if (entry.complete) R.string.history_item_detail else R.string.history_item_detail_incomplete,
+                            device,
+                            size,
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -350,16 +362,18 @@ private fun HistoryRow(
 private fun KindTile(kind: Local.Kind) {
     val colors = MaterialTheme.colorScheme
     when (kind) {
-        Local.Kind.KIND_IMAGE -> IconTile(
-            icon = R.drawable.ic_kind_image,
-            container = colors.tertiaryContainer,
-            content = colors.onTertiaryContainer,
-        )
-        Local.Kind.KIND_FILES -> IconTile(
-            icon = R.drawable.ic_kind_file,
-            container = colors.secondaryContainer,
-            content = colors.onSecondaryContainer,
-        )
+        Local.Kind.KIND_IMAGE ->
+            IconTile(
+                icon = R.drawable.ic_kind_image,
+                container = colors.tertiaryContainer,
+                content = colors.onTertiaryContainer,
+            )
+        Local.Kind.KIND_FILES ->
+            IconTile(
+                icon = R.drawable.ic_kind_file,
+                container = colors.secondaryContainer,
+                content = colors.onSecondaryContainer,
+            )
         else -> IconTile(icon = R.drawable.ic_kind_text)
     }
 }
@@ -368,9 +382,10 @@ private fun KindTile(kind: Local.Kind) {
 @Composable
 private fun EmptyHistory() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 48.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(bottom = 48.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -388,7 +403,10 @@ private fun EmptyHistory() {
 }
 
 /** Name of a device, shortened when the name is unknown. */
-private fun deviceName(status: Local.GetStatusResponse?, deviceId: String): String {
+private fun deviceName(
+    status: Local.GetStatusResponse?,
+    deviceId: String,
+): String {
     if (deviceId.isEmpty()) {
         return ""
     }
@@ -425,45 +443,52 @@ private fun devicesOf(
 
 /** Short preview of the item content. */
 @Composable
-private fun previewOf(item: Local.ClipItem): String = when (item.kind) {
-    Local.Kind.KIND_TEXT -> HistoryText.text(item)
-    Local.Kind.KIND_FILES -> {
-        val names = HistoryText.fileNames(item)
-        if (names.rest > 0) {
-            pluralStringResource(R.plurals.names_more, names.rest, names.shown, names.rest)
-        } else {
-            names.shown
+private fun previewOf(item: Local.ClipItem): String =
+    when (item.kind) {
+        Local.Kind.KIND_TEXT -> HistoryText.text(item)
+        Local.Kind.KIND_FILES -> {
+            val names = HistoryText.fileNames(item)
+            if (names.rest > 0) {
+                pluralStringResource(R.plurals.names_more, names.rest, names.shown, names.rest)
+            } else {
+                names.shown
+            }
         }
+        else -> ""
     }
-    else -> ""
-}
 
 /** Time of the item relative to now. */
 private fun relativeTime(unixMs: Long): String {
     if (unixMs <= 0) {
         return ""
     }
-    return DateUtils.getRelativeTimeSpanString(unixMs, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
+    return DateUtils
+        .getRelativeTimeSpanString(unixMs, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
         .toString()
 }
 
 /** Label of a content kind. */
-private fun kindLabel(kind: Local.Kind): Int = when (kind) {
-    Local.Kind.KIND_IMAGE -> R.string.kind_image
-    Local.Kind.KIND_FILES -> R.string.kind_files
-    else -> R.string.kind_text
-}
+private fun kindLabel(kind: Local.Kind): Int =
+    when (kind) {
+        Local.Kind.KIND_IMAGE -> R.string.kind_image
+        Local.Kind.KIND_FILES -> R.string.kind_files
+        else -> R.string.kind_text
+    }
 
 /** Filter rows with their labels. */
-private val KINDS = listOf(
-    Filter(Local.Kind.KIND_UNSPECIFIED, R.string.history_filter_all),
-    Filter(Local.Kind.KIND_TEXT, R.string.history_filter_text),
-    Filter(Local.Kind.KIND_IMAGE, R.string.history_filter_images),
-    Filter(Local.Kind.KIND_FILES, R.string.history_filter_files),
-)
+private val KINDS =
+    listOf(
+        Filter(Local.Kind.KIND_UNSPECIFIED, R.string.history_filter_all),
+        Filter(Local.Kind.KIND_TEXT, R.string.history_filter_text),
+        Filter(Local.Kind.KIND_IMAGE, R.string.history_filter_images),
+        Filter(Local.Kind.KIND_FILES, R.string.history_filter_files),
+    )
 
 /** One row of the kind filter. */
-private data class Filter(val kind: Local.Kind, val label: Int)
+private data class Filter(
+    val kind: Local.Kind,
+    val label: Int,
+)
 
 /** Characters of a device ID shown when the name is unknown. */
 private const val SHORT_ID_LENGTH = 8

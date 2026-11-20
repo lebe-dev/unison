@@ -16,7 +16,10 @@ object PairingLink {
     private const val ROLE_PARAM = "role"
 
     /** The pairing code of an intent that opens one, or null for any other intent. */
-    fun code(action: String?, data: String?): String? {
+    fun code(
+        action: String?,
+        data: String?,
+    ): String? {
         if (action != ACTION_VIEW || data == null) {
             return null
         }
@@ -29,9 +32,11 @@ object PairingLink {
     /** Role the device of the code proposes, unspecified when the code names none. */
     fun role(uri: String): Local.Role {
         val query = uri.substringAfter('?', missingDelimiterValue = "")
-        val value = query.split('&')
-            .firstOrNull { it.substringBefore('=') == ROLE_PARAM }
-            ?.substringAfter('=', missingDelimiterValue = "")
+        val value =
+            query
+                .split('&')
+                .firstOrNull { it.substringBefore('=') == ROLE_PARAM }
+                ?.substringAfter('=', missingDelimiterValue = "")
         return when (value) {
             "personal" -> Local.Role.ROLE_PERSONAL
             "friends" -> Local.Role.ROLE_FRIENDS

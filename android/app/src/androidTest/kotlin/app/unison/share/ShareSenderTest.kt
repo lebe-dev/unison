@@ -8,7 +8,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.clipboard.ClipboardDraft
 import app.unison.core.CoreStarter
 import app.unison.core.mobile.Mobile
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -17,11 +16,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import unison.mobile.v1.Mobile as MobileProto
 
 @RunWith(AndroidJUnit4::class)
 class ShareSenderTest {
-
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     /** The service and the core stay up for the whole class; the run ends the process. */
@@ -35,9 +34,10 @@ class ShareSenderTest {
     fun textIsSubmitted() {
         val content = ShareContent.Text(ClipboardDraft(text = "hello", html = null))
 
-        val outcome = runBlocking {
-            ShareSender.send(context, content, listOf(UNKNOWN_ID))
-        }
+        val outcome =
+            runBlocking {
+                ShareSender.send(context, content, listOf(UNKNOWN_ID))
+            }
 
         assertEquals(ShareOutcome.STARTED, outcome)
     }
@@ -46,9 +46,10 @@ class ShareSenderTest {
     fun emptyTextIsRefused() {
         val content = ShareContent.Text(ClipboardDraft(text = "", html = null))
 
-        val outcome = runBlocking {
-            ShareSender.send(context, content, listOf(UNKNOWN_ID))
-        }
+        val outcome =
+            runBlocking {
+                ShareSender.send(context, content, listOf(UNKNOWN_ID))
+            }
 
         assertEquals(ShareOutcome.NOTHING, outcome)
     }
@@ -57,9 +58,10 @@ class ShareSenderTest {
     fun filesNeedADevice() {
         val content = ShareContent.Files(listOf(file("send.bin", 1024)))
 
-        val outcome = runBlocking {
-            ShareSender.send(context, content, emptyList())
-        }
+        val outcome =
+            runBlocking {
+                ShareSender.send(context, content, emptyList())
+            }
 
         assertEquals(ShareOutcome.NO_DEVICES, outcome)
     }
@@ -67,35 +69,42 @@ class ShareSenderTest {
     @Test
     fun fileIsCopiedFromItsDescriptor() {
         val shared = file("stream.bin", MEBIBYTE)
-        val descriptor = runBlocking(Dispatchers.IO) {
-            context.contentResolver.openFileDescriptor(shared.uri, "r")
-        }
+        val descriptor =
+            runBlocking(Dispatchers.IO) {
+                context.contentResolver.openFileDescriptor(shared.uri, "r")
+            }
         assertNotNull(descriptor)
         val fd = descriptor!!.detachFd()
-        val meta = MobileProto.FilePayload.newBuilder()
-            .setFileName(shared.name)
-            .setMimeType(shared.mimeType)
-            .setSize(shared.size)
-            .addDeviceIds(UNKNOWN_ID)
-            .build()
+        val meta =
+            MobileProto.FilePayload
+                .newBuilder()
+                .setFileName(shared.name)
+                .setMimeType(shared.mimeType)
+                .setSize(shared.size)
+                .addDeviceIds(UNKNOWN_ID)
+                .build()
 
         // The core copies the whole descriptor before it offers the file, so
         // the missing peer is the only failure that can come out of this call.
-        val error = runBlocking(Dispatchers.IO) {
-            try {
-                Mobile.submitFile(meta.toByteArray(), fd.toLong())
-                null
-            } catch (e: Exception) {
-                e.message
+        val error =
+            runBlocking(Dispatchers.IO) {
+                try {
+                    Mobile.submitFile(meta.toByteArray(), fd.toLong())
+                    null
+                } catch (e: Exception) {
+                    e.message
+                }
             }
-        }
 
         assertNotNull("the core accepted a file without a peer", error)
         assertTrue("unexpected failure: $error", error!!.contains("peer", ignoreCase = true))
     }
 
     /** Puts a file into the cache and returns its provider metadata. */
-    private fun file(name: String, size: Int): SharedFile {
+    private fun file(
+        name: String,
+        size: Int,
+    ): SharedFile {
         val dir = File(context.cacheDir, "clipboard").apply { mkdirs() }
         val file = File(dir, name)
         file.outputStream().use { out ->

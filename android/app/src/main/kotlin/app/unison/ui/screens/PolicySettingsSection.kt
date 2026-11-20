@@ -2,7 +2,6 @@ package app.unison.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -79,9 +78,10 @@ fun PolicySection(
     )
     OutlinedButton(
         onClick = onReset,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
     ) {
         Text(text = stringResource(R.string.policy_reset))
     }
@@ -97,11 +97,12 @@ private fun BackgroundDataNotice() {
     var restricted by remember { mutableStateOf(BackgroundData.restricted(BackgroundData.status(context))) }
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                restricted = BackgroundData.restricted(BackgroundData.status(context))
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    restricted = BackgroundData.restricted(BackgroundData.status(context))
+                }
             }
-        }
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
@@ -117,9 +118,10 @@ private fun BackgroundDataNotice() {
     )
     OutlinedButton(
         onClick = { BackgroundData.openSettings(context) },
-        modifier = Modifier
-            .padding(top = 8.dp)
-            .testTag(BACKGROUND_DATA_TAG),
+        modifier =
+            Modifier
+                .padding(top = 8.dp)
+                .testTag(BACKGROUND_DATA_TAG),
     ) {
         Text(text = stringResource(R.string.policy_background_open))
     }
@@ -136,9 +138,10 @@ private fun ConditionRow(
     onRowChange: (PolicyRow) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -177,9 +180,10 @@ private fun CellRow(
     onMaxSize: (Long) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -199,7 +203,10 @@ private fun CellRow(
 
 /** Outcome of a cell. */
 @Composable
-private fun ModePicker(mode: PolicyMode, onMode: (PolicyMode) -> Unit) {
+private fun ModePicker(
+    mode: PolicyMode,
+    onMode: (PolicyMode) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         TextButton(onClick = { expanded = true }) {
@@ -221,7 +228,11 @@ private fun ModePicker(mode: PolicyMode, onMode: (PolicyMode) -> Unit) {
 
 /** Eager limit in megabytes, used only by the automatic outcome. */
 @Composable
-private fun SizeField(bytes: Long, enabled: Boolean, onBytes: (Long) -> Unit) {
+private fun SizeField(
+    bytes: Long,
+    enabled: Boolean,
+    onBytes: (Long) -> Unit,
+) {
     var draft by rememberSaveable(bytes) { mutableStateOf(PolicySize.toMegabytes(bytes).toString()) }
     OutlinedTextField(
         value = draft,
@@ -243,11 +254,15 @@ private fun SizeField(bytes: Long, enabled: Boolean, onBytes: (Long) -> Unit) {
 
 /** Limit of the items fetched over the relay. */
 @Composable
-private fun RelayLimit(bytes: Long, onBytes: (Long) -> Unit) {
+private fun RelayLimit(
+    bytes: Long,
+    onBytes: (Long) -> Unit,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -262,28 +277,30 @@ private fun RelayLimit(bytes: Long, onBytes: (Long) -> Unit) {
 
 /** Label of the row the core uses now, the offline row when there is no network. */
 @Composable
-private fun conditionLabel(condition: PolicyCondition?): String =
-    stringResource(condition?.label() ?: R.string.policy_condition_offline)
+private fun conditionLabel(condition: PolicyCondition?): String = stringResource(condition?.label() ?: R.string.policy_condition_offline)
 
-private fun PolicyCondition.label(): Int = when (this) {
-    PolicyCondition.UNMETERED -> R.string.policy_condition_unmetered
-    PolicyCondition.METERED -> R.string.policy_condition_metered
-    PolicyCondition.ROAMING -> R.string.policy_condition_roaming
-    PolicyCondition.DATA_SAVER -> R.string.policy_condition_data_saver
-}
+private fun PolicyCondition.label(): Int =
+    when (this) {
+        PolicyCondition.UNMETERED -> R.string.policy_condition_unmetered
+        PolicyCondition.METERED -> R.string.policy_condition_metered
+        PolicyCondition.ROAMING -> R.string.policy_condition_roaming
+        PolicyCondition.DATA_SAVER -> R.string.policy_condition_data_saver
+    }
 
-private fun PolicyKind.label(): Int = when (this) {
-    PolicyKind.TEXT -> R.string.kind_text
-    PolicyKind.IMAGE -> R.string.kind_image
-    PolicyKind.FILES -> R.string.kind_files
-}
+private fun PolicyKind.label(): Int =
+    when (this) {
+        PolicyKind.TEXT -> R.string.kind_text
+        PolicyKind.IMAGE -> R.string.kind_image
+        PolicyKind.FILES -> R.string.kind_files
+    }
 
-private fun PolicyMode.label(): Int = when (this) {
-    PolicyMode.REJECT -> R.string.policy_mode_reject
-    PolicyMode.METADATA -> R.string.policy_mode_metadata
-    PolicyMode.CONFIRM -> R.string.policy_mode_confirm
-    PolicyMode.AUTO -> R.string.policy_mode_auto
-}
+private fun PolicyMode.label(): Int =
+    when (this) {
+        PolicyMode.REJECT -> R.string.policy_mode_reject
+        PolicyMode.METADATA -> R.string.policy_mode_metadata
+        PolicyMode.CONFIRM -> R.string.policy_mode_confirm
+        PolicyMode.AUTO -> R.string.policy_mode_auto
+    }
 
 private const val MAX_DIGITS = 5
 private val SIZE_FIELD_WIDTH = 132.dp

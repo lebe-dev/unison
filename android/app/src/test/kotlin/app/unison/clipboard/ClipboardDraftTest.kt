@@ -10,7 +10,6 @@ import org.junit.Test
 import unison.mobile.v1.Mobile
 
 class ClipboardDraftTest {
-
     @Test
     fun payloadCarriesBothRepresentations() {
         val payload = ClipboardDraft(text = "hello", html = "<b>hello</b>").payload()
@@ -70,23 +69,27 @@ class ClipboardDraftTest {
 
     @Test
     fun draftFromPayloadFallsBackToTopFields() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .setMimeType(ClipboardDraft.MIME_TEXT_PLAIN)
-            .setData(ByteString.copyFromUtf8("top"))
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .setMimeType(ClipboardDraft.MIME_TEXT_PLAIN)
+                .setData(ByteString.copyFromUtf8("top"))
+                .build()
 
         assertEquals(ClipboardDraft(text = "top", html = null), ClipboardDraft.fromPayload(payload))
     }
 
     @Test
     fun draftFromPayloadWithoutTextIsNull() {
-        val payload = Mobile.ClipPayload.newBuilder()
-            .addParts(
-                Mobile.ClipPart.newBuilder()
-                    .setMimeType("image/png")
-                    .setData(ByteString.copyFrom(byteArrayOf(1))),
-            )
-            .build()
+        val payload =
+            Mobile.ClipPayload
+                .newBuilder()
+                .addParts(
+                    Mobile.ClipPart
+                        .newBuilder()
+                        .setMimeType("image/png")
+                        .setData(ByteString.copyFrom(byteArrayOf(1))),
+                ).build()
 
         assertNull(ClipboardDraft.fromPayload(payload))
         assertNull(ClipboardDraft.fromPayload(Mobile.ClipPayload.getDefaultInstance()))

@@ -1,16 +1,15 @@
 package app.unison.discovery
 
-import java.net.Inet6Address
-import java.net.InetAddress
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.Inet6Address
+import java.net.InetAddress
 import unison.mobile.v1.Mobile as MobileProto
 
 class ServiceTypesTest {
-
     @Test
     fun namesMapToTypes() {
         assertEquals("_unison._udp.", ServiceTypes.typeOf("main"))
@@ -21,7 +20,6 @@ class ServiceTypesTest {
 }
 
 class CandidatesTest {
-
     @Test
     fun recordsKeepPlainValues() {
         val records = Candidates.records(mapOf("v" to "1", "tag" to "abcdefghijklm"))
@@ -32,13 +30,14 @@ class CandidatesTest {
 
     @Test
     fun emptyAndOversizedRecordsAreDropped() {
-        val records = Candidates.records(
-            mapOf(
-                "" to "value",
-                "long" to "x".repeat(256),
-                "ok" to "value",
-            ),
-        )
+        val records =
+            Candidates.records(
+                mapOf(
+                    "" to "value",
+                    "long" to "x".repeat(256),
+                    "ok" to "value",
+                ),
+            )
 
         assertEquals(setOf("ok"), records.keys)
     }
@@ -46,14 +45,15 @@ class CandidatesTest {
     @Test
     fun recordsFitTheCombinedLimit() {
         val key = "k".repeat(10)
-        val records = Candidates.records(
-            mapOf(
-                key to "x".repeat(250),
-                "fits" to "x".repeat(250),
-                "a=b" to "value",
-                "ключ" to "value",
-            ),
-        )
+        val records =
+            Candidates.records(
+                mapOf(
+                    key to "x".repeat(250),
+                    "fits" to "x".repeat(250),
+                    "a=b" to "value",
+                    "ключ" to "value",
+                ),
+            )
 
         assertEquals(setOf("fits"), records.keys)
     }
@@ -72,12 +72,13 @@ class CandidatesTest {
 
     @Test
     fun attributesTravelToTheCore() {
-        val bytes = Candidates.proto(
-            mapOf(
-                "v" to "1".toByteArray(),
-                "tag" to "abcdefghijklm".toByteArray(),
-            ),
-        )
+        val bytes =
+            Candidates.proto(
+                mapOf(
+                    "v" to "1".toByteArray(),
+                    "tag" to "abcdefghijklm".toByteArray(),
+                ),
+            )
         val txt = MobileProto.CandidateTxt.parseFrom(bytes)
 
         assertEquals("1", txt.recordsMap.getValue("v"))
@@ -118,14 +119,15 @@ class CandidatesTest {
 
     @Test
     fun everyDialableAddressIsReported() {
-        val addresses = Candidates.addresses(
-            listOf(
-                Inet6Address.getByAddress(null, ipv6("2001:db8::7"), 0),
-                InetAddress.getByName("10.0.0.7"),
-                InetAddress.getByName("127.0.0.1"),
-                InetAddress.getByName("192.168.1.5"),
-            ),
-        )
+        val addresses =
+            Candidates.addresses(
+                listOf(
+                    Inet6Address.getByAddress(null, ipv6("2001:db8::7"), 0),
+                    InetAddress.getByName("10.0.0.7"),
+                    InetAddress.getByName("127.0.0.1"),
+                    InetAddress.getByName("192.168.1.5"),
+                ),
+            )
 
         assertEquals(3, addresses.size)
         assertEquals("10.0.0.7", addresses[0].hostAddress)
@@ -137,12 +139,13 @@ class CandidatesTest {
     fun linkLocalAddressIsSkippedNextToARoutableOne() {
         // The core resolves the zone of a link local address on every packet,
         // which costs a refused system call on Android, so it is the last resort.
-        val addresses = Candidates.addresses(
-            listOf(
-                Inet6Address.getByAddress(null, ipv6("fe80::1"), 2),
-                InetAddress.getByName("10.0.0.7"),
-            ),
-        )
+        val addresses =
+            Candidates.addresses(
+                listOf(
+                    Inet6Address.getByAddress(null, ipv6("fe80::1"), 2),
+                    InetAddress.getByName("10.0.0.7"),
+                ),
+            )
 
         assertEquals("10.0.0.7", addresses.single().hostAddress)
     }
@@ -158,10 +161,11 @@ class CandidatesTest {
     fun ownAddressIsSkipped() {
         // The record of an earlier run of this app may still sit in the system
         // cache under another instance name; its address is this device.
-        val addresses = Candidates.addresses(
-            listOf(InetAddress.getByName("192.168.1.5"), InetAddress.getByName("192.168.1.9")),
-            own = setOf(InetAddress.getByName("192.168.1.5")),
-        )
+        val addresses =
+            Candidates.addresses(
+                listOf(InetAddress.getByName("192.168.1.5"), InetAddress.getByName("192.168.1.9")),
+                own = setOf(InetAddress.getByName("192.168.1.5")),
+            )
 
         assertEquals("192.168.1.9", addresses.single().hostAddress)
     }
@@ -183,6 +187,5 @@ class CandidatesTest {
         assertEquals("192.168.1.5", host.single().hostAddress)
     }
 
-    private fun ipv6(literal: String): ByteArray =
-        InetAddress.getByName(literal).address
+    private fun ipv6(literal: String): ByteArray = InetAddress.getByName(literal).address
 }

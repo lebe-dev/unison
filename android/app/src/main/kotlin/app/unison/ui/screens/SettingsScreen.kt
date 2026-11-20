@@ -53,7 +53,10 @@ import app.unison.ui.state.CoreState
 import unison.local.v1.Local
 
 /** A page of the settings, opened from the index. */
-internal enum class SettingsPage(@StringRes val title: Int, @DrawableRes val icon: Int) {
+internal enum class SettingsPage(
+    @StringRes val title: Int,
+    @DrawableRes val icon: Int,
+) {
     DEVICE(R.string.settings_page_device, R.drawable.ic_device_phone),
     CLIPBOARD(R.string.settings_page_clipboard, R.drawable.ic_copy),
     FILES(R.string.settings_page_files, R.drawable.ic_kind_file),
@@ -65,14 +68,15 @@ internal enum class SettingsPage(@StringRes val title: Int, @DrawableRes val ico
 }
 
 /** Pages of the first group of the index; the rest sit in a group of their own. */
-private val MAIN_PAGES = listOf(
-    SettingsPage.DEVICE,
-    SettingsPage.CLIPBOARD,
-    SettingsPage.FILES,
-    SettingsPage.HISTORY,
-    SettingsPage.NOTIFICATIONS,
-    SettingsPage.NETWORK,
-)
+private val MAIN_PAGES =
+    listOf(
+        SettingsPage.DEVICE,
+        SettingsPage.CLIPBOARD,
+        SettingsPage.FILES,
+        SettingsPage.HISTORY,
+        SettingsPage.NOTIFICATIONS,
+        SettingsPage.NETWORK,
+    )
 
 /**
  * Index of the settings with a row per topic. A row opens the page of its
@@ -262,29 +266,32 @@ private fun SettingsIndex(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val summaries = mapOf(
-        SettingsPage.DEVICE to stringResource(
-            R.string.settings_summary_pair,
-            deviceName,
-            stringResource(operatingMode.label()),
-        ),
-        SettingsPage.CLIPBOARD to pauseLabel(state.status?.pause),
-        SettingsPage.FILES to (downloadsFolder ?: stringResource(R.string.settings_downloads_default)),
-        SettingsPage.HISTORY to stringResource(R.string.settings_page_history_summary),
-        SettingsPage.NOTIFICATIONS to stringResource(R.string.settings_page_notifications_summary),
-        SettingsPage.NETWORK to stringResource(R.string.settings_page_network_summary),
-        SettingsPage.ABOUT to (
-            state.status?.let { stringResource(R.string.core_version, it.version) }
-                ?: stringResource(R.string.settings_page_about_summary)
+    val summaries =
+        mapOf(
+            SettingsPage.DEVICE to
+                stringResource(
+                    R.string.settings_summary_pair,
+                    deviceName,
+                    stringResource(operatingMode.label()),
+                ),
+            SettingsPage.CLIPBOARD to pauseLabel(state.status?.pause),
+            SettingsPage.FILES to (downloadsFolder ?: stringResource(R.string.settings_downloads_default)),
+            SettingsPage.HISTORY to stringResource(R.string.settings_page_history_summary),
+            SettingsPage.NOTIFICATIONS to stringResource(R.string.settings_page_notifications_summary),
+            SettingsPage.NETWORK to stringResource(R.string.settings_page_network_summary),
+            SettingsPage.ABOUT to (
+                state.status?.let { stringResource(R.string.core_version, it.version) }
+                    ?: stringResource(R.string.settings_page_about_summary)
             ),
-        SettingsPage.JOURNAL to stringResource(R.string.settings_page_journal_summary),
-    )
+            SettingsPage.JOURNAL to stringResource(R.string.settings_page_journal_summary),
+        )
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
     ) {
         ScreenTitle(title = stringResource(R.string.nav_settings))
 
@@ -358,9 +365,10 @@ private fun SettingsPageFrame(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
     ) {
         MediumTopAppBar(
             title = { Text(text = stringResource(page.title)) },
@@ -374,17 +382,19 @@ private fun SettingsPageFrame(
             },
             // The scaffold of the app already keeps the content clear of the status bar.
             windowInsets = WindowInsets(0, 0, 0, 0),
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = screenColor,
-                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = screenColor,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
             scrollBehavior = scrollBehavior,
         )
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
         ) {
             content()
             Spacer(modifier = Modifier.height(24.dp))
@@ -397,7 +407,10 @@ internal fun settingsPageTag(page: SettingsPage): String = "settings.page.${page
 
 /** Confirmation flags of this device that the paired devices may change from their side. */
 @Composable
-private fun RemoteSettingsPermission(allowed: Boolean, onChange: (Boolean) -> Unit) {
+private fun RemoteSettingsPermission(
+    allowed: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
     SectionTitle(text = stringResource(R.string.settings_section_remote))
     SettingsSwitch(
         title = stringResource(R.string.settings_allow_remote),

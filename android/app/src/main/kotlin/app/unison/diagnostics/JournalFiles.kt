@@ -25,7 +25,12 @@ internal object JournalFiles {
 
     /** Appends one line, rotating the file first when it would grow past the limit. */
     @Synchronized
-    fun append(file: File, line: String, limit: Long, keep: Int) {
+    fun append(
+        file: File,
+        line: String,
+        limit: Long,
+        keep: Int,
+    ) {
         val directory = file.parentFile
         if (directory != null && !directory.isDirectory && !directory.mkdirs()) {
             throw IllegalStateException("cannot create the log directory")
@@ -38,7 +43,10 @@ internal object JournalFiles {
     }
 
     /** Records of one file and its rotated backups, oldest first. */
-    fun read(file: File, keep: Int): List<JournalRecord> {
+    fun read(
+        file: File,
+        keep: Int,
+    ): List<JournalRecord> {
         val records = mutableListOf<JournalRecord>()
         for (index in keep downTo 1) {
             records += parse(File(file.path + "." + index))
@@ -61,12 +69,16 @@ internal object JournalFiles {
         if (!file.isFile) {
             return emptyList()
         }
-        return file.readLines()
+        return file
+            .readLines()
             .mapNotNull(JournalFormat::parse)
     }
 
     /** Moves the file and its backups up by one and starts an empty file. */
-    private fun rotate(file: File, keep: Int) {
+    private fun rotate(
+        file: File,
+        keep: Int,
+    ) {
         File(file.path + "." + keep).delete()
         for (index in keep - 1 downTo 1) {
             val from = File(file.path + "." + index)

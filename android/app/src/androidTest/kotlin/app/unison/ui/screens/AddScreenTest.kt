@@ -14,17 +14,16 @@ import app.unison.ui.state.PairingRequest
 import app.unison.ui.state.PairingResult
 import app.unison.ui.state.PairingState
 import app.unison.ui.theme.UnisonTheme
-import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import unison.local.v1.Local
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class AddScreenTest {
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -44,15 +43,19 @@ class AddScreenTest {
         val expiresAt = System.currentTimeMillis() + WINDOW_MS
         setContent(
             PairingState(
-                window = Local.PairingWindow.newBuilder()
-                    .setOpen(true)
-                    .setAddr("192.168.1.5:41234")
-                    .setExpiresAtUnixMs(expiresAt)
-                    .build(),
-                qr = Local.PairingQr.newBuilder()
-                    .setUri(CODE)
-                    .setExpiresAtUnixMs(expiresAt)
-                    .build(),
+                window =
+                    Local.PairingWindow
+                        .newBuilder()
+                        .setOpen(true)
+                        .setAddr("192.168.1.5:41234")
+                        .setExpiresAtUnixMs(expiresAt)
+                        .build(),
+                qr =
+                    Local.PairingQr
+                        .newBuilder()
+                        .setUri(CODE)
+                        .setExpiresAtUnixMs(expiresAt)
+                        .build(),
             ),
         )
 
@@ -69,15 +72,22 @@ class AddScreenTest {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 AddScreen(
-                    state = PairingState(
-                        window = Local.PairingWindow.newBuilder()
-                            .setOpen(true)
-                            .setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS)
-                            .build(),
-                        candidates = listOf(
-                            Local.PairingCandidate.newBuilder().setAddr("192.168.1.7:41234").build(),
+                    state =
+                        PairingState(
+                            window =
+                                Local.PairingWindow
+                                    .newBuilder()
+                                    .setOpen(true)
+                                    .setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS)
+                                    .build(),
+                            candidates =
+                                listOf(
+                                    Local.PairingCandidate
+                                        .newBuilder()
+                                        .setAddr("192.168.1.7:41234")
+                                        .build(),
+                                ),
                         ),
-                    ),
                     onRoleChange = {},
                     onOpenWindow = {},
                     onExtendWindow = {},
@@ -135,7 +145,11 @@ class AddScreenTest {
         assertFalse(accepted.get())
     }
 
-    private fun setLinkContent(link: PairingLinkOffer, onAccept: () -> Unit, onDismiss: () -> Unit) {
+    private fun setLinkContent(
+        link: PairingLinkOffer,
+        onAccept: () -> Unit,
+        onDismiss: () -> Unit,
+    ) {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 AddScreen(
@@ -164,16 +178,18 @@ class AddScreenTest {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 AddScreen(
-                    state = PairingState(
-                        request = PairingRequest(
-                            deviceId = "abcd",
-                            name = "Mac",
-                            role = Local.Role.ROLE_PERSONAL,
-                            platform = Local.Platform.PLATFORM_MACOS,
-                            sas = null,
-                            method = Local.PairingMethod.PAIRING_METHOD_QR,
+                    state =
+                        PairingState(
+                            request =
+                                PairingRequest(
+                                    deviceId = "abcd",
+                                    name = "Mac",
+                                    role = Local.Role.ROLE_PERSONAL,
+                                    platform = Local.Platform.PLATFORM_MACOS,
+                                    sas = null,
+                                    method = Local.PairingMethod.PAIRING_METHOD_QR,
+                                ),
                         ),
-                    ),
                     onRoleChange = {},
                     onOpenWindow = {},
                     onExtendWindow = {},
@@ -189,9 +205,10 @@ class AddScreenTest {
             }
         }
 
-        compose.onNodeWithText(
-            testString(R.string.pairing_add_title, "Mac", testString(R.string.pairing_role_personal)),
-        ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testString(R.string.pairing_add_title, "Mac", testString(R.string.pairing_role_personal)),
+            ).assertIsDisplayed()
         compose.onNodeWithText(testString(R.string.pairing_add_body_qr)).assertIsDisplayed()
         compose.onNodeWithText(testString(R.string.pairing_confirm)).performClick()
 
@@ -203,20 +220,24 @@ class AddScreenTest {
         compose.setContent {
             UnisonTheme(dynamicColor = false) {
                 AddScreen(
-                    state = PairingState(
-                        request = PairingRequest(
-                            deviceId = "abcd",
-                            name = "Pixel",
-                            role = Local.Role.ROLE_FRIENDS,
-                            platform = Local.Platform.PLATFORM_ANDROID,
-                            sas = Local.Sas.newBuilder()
-                                .setDigits("123456")
-                                .addEmoji("\uD83D\uDC15")
-                                .addEmoji("\uD83C\uDF3F")
-                                .build(),
-                            method = Local.PairingMethod.PAIRING_METHOD_SAS,
+                    state =
+                        PairingState(
+                            request =
+                                PairingRequest(
+                                    deviceId = "abcd",
+                                    name = "Pixel",
+                                    role = Local.Role.ROLE_FRIENDS,
+                                    platform = Local.Platform.PLATFORM_ANDROID,
+                                    sas =
+                                        Local.Sas
+                                            .newBuilder()
+                                            .setDigits("123456")
+                                            .addEmoji("\uD83D\uDC15")
+                                            .addEmoji("\uD83C\uDF3F")
+                                            .build(),
+                                    method = Local.PairingMethod.PAIRING_METHOD_SAS,
+                                ),
                         ),
-                    ),
                     onRoleChange = {},
                     onOpenWindow = {},
                     onExtendWindow = {},
@@ -232,9 +253,10 @@ class AddScreenTest {
             }
         }
 
-        compose.onNodeWithText(
-            testString(R.string.pairing_add_title, "Pixel", testString(R.string.pairing_role_friends)),
-        ).assertIsDisplayed()
+        compose
+            .onNodeWithText(
+                testString(R.string.pairing_add_title, "Pixel", testString(R.string.pairing_role_friends)),
+            ).assertIsDisplayed()
         compose.onNodeWithText("123 456").assertIsDisplayed()
         compose.onNodeWithText("\uD83D\uDC15 \uD83C\uDF3F").assertIsDisplayed()
     }
