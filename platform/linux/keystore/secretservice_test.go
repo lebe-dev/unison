@@ -3,6 +3,7 @@ package keystore
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"log/slog"
 	"strings"
@@ -291,6 +292,23 @@ func TestSessionHidesDH(t *testing.T) {
 	}
 	if len(clientKey) != aesKeyLen {
 		t.Fatalf("key is %d bytes, want %d", len(clientKey), aesKeyLen)
+	}
+}
+
+// TestDHSharedKey checks the key derivation of the session against a vector
+// computed with HKDF-SHA256 without salt and info, as the specification says.
+func TestDHSharedKey(t *testing.T) {
+	secret := make([]byte, 128)
+	for i := range secret {
+		secret[i] = byte(i)
+	}
+	if got, want := hex.EncodeToString(dhKeyFromSecret(secret)), "d030a065c4f99245756b6fc30d00a294"; got != want {
+		t.Fatalf("key = %s, want %s", got, want)
+	}
+	padded := make([]byte, 128)
+	padded[127] = 1
+	if got, want := hex.EncodeToString(dhKeyFromSecret(padded)), "e9dd7e345fdb5e13c15dc2f3d9b6294f"; got != want {
+		t.Fatalf("key of a small secret = %s, want %s", got, want)
 	}
 }
 

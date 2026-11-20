@@ -248,7 +248,7 @@ func (k *fakeKeyring) createItem(path dbus.ObjectPath, args []any) ([]any, error
 	if !ok {
 		return nil, dbus.MakeFailedError(errors.New("fake keyring: the item is not a secret"))
 	}
-	secret, err := (&secretService{key: k.key}).unseal(value.Value)
+	secret, err := (&secretService{key: k.key}).unseal(value.Parameters, value.Value)
 	if err != nil {
 		return nil, dbus.MakeFailedError(err)
 	}
@@ -276,11 +276,11 @@ func (k *fakeKeyring) getSecret(path dbus.ObjectPath) ([]any, error) {
 	if !ok {
 		return nil, dbus.MakeFailedError(errors.New("fake keyring: no such item"))
 	}
-	value, err := (&secretService{key: k.key}).seal(item.secret)
+	iv, value, err := (&secretService{key: k.key}).seal(item.secret)
 	if err != nil {
 		return nil, dbus.MakeFailedError(err)
 	}
-	return []any{secretValue{Session: fakeSession, Parameters: []byte{}, Value: value, ContentType: secretContentType}}, nil
+	return []any{secretValue{Session: fakeSession, Parameters: iv, Value: value, ContentType: secretContentType}}, nil
 }
 
 // property answers a property read.

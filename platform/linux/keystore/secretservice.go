@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
@@ -197,7 +198,7 @@ func (s *secretService) load(ctx context.Context, service, name string) ([]byte,
 	if err := s.conn.Object(busName, items[0]).Call(ifaceItem+".GetSecret", 0, s.session).Store(&value); err != nil {
 		return nil, fmt.Errorf("keystore: load %q: %w", name, err)
 	}
-	secret, err := s.unseal(value.Value)
+	secret, err := s.unseal(value.Parameters, value.Value)
 	if err != nil {
 		return nil, fmt.Errorf("keystore: load %q: %w", name, err)
 	}
@@ -238,7 +239,7 @@ func (s *secretService) store(ctx context.Context, service, name string, secret 
 	if err := s.ensureUnlocked(ctx, collection, ifaceCollection); err != nil {
 		return err
 	}
-	value, err := s.seal(secret)
+	iv, value, err := s.seal(secret)
 	if err != nil {
 		return fmt.Errorf("keystore: store %q: %w", name, err)
 	}
@@ -246,7 +247,7 @@ func (s *secretService) store(ctx context.Context, service, name string, secret 
 		propLabel:      dbus.MakeVariant("Unison " + name),
 		propAttributes: dbus.MakeVariant(attributes(service, name)),
 	}
-	body := secretValue{Session: s.session, Parameters: []byte{}, Value: value, ContentType: secretContentType}
+	body := secretValue{Session: s.session, Parameters: iv, Value: value, ContentType: secretContentType}
 	var path, prompt dbus.ObjectPath
 	call := s.conn.Object(busName, collection).Call(ifaceCollection+".CreateItem", 0, properties, body, true)
 	if err := call.Store(&path, &prompt); err != nil {
@@ -447,23 +448,27 @@ func (s *secretService) dismiss(path dbus.ObjectPath) {
 }
 
 // seal encrypts the secret for the session.
-func (s *secretService) seal(secret []byte) ([]byte, error) {
+func (s *secretService) seal(secret []byte) (iv, value []byte, err error) {
 	if s.key == nil {
-		return secret, nil
+		return nil, secret, nil
 	}
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	iv = make([]byte, block.BlockSize())
+	if _, err := rand.Read(iv); err != nil {
+		return nil, nil, fmt.Errorf("keystore: generate the session iv: %w", err)
 	}
 	padded := pkcs7Pad(secret, block.BlockSize())
-	out := make([]byte, len(padded))
-	//nolint:gosec // The Secret Service session uses the CBC mode with a zero IV by protocol.
-	cipher.NewCBCEncrypter(block, make([]byte, block.BlockSize())).CryptBlocks(out, padded)
-	return out, nil
+	value = make([]byte, len(padded))
+	//nolint:gosec // The Secret Service session uses the CBC mode of the protocol.
+	cipher.NewCBCEncrypter(block, iv).CryptBlocks(value, padded)
+	return iv, value, nil
 }
 
 // unseal decrypts a secret of the session.
-func (s *secretService) unseal(value []byte) ([]byte, error) {
+func (s *secretService) unseal(iv, value []byte) ([]byte, error) {
 	if s.key == nil {
 		return value, nil
 	}
@@ -474,8 +479,16 @@ func (s *secretService) unseal(value []byte) ([]byte, error) {
 	if len(value) == 0 || len(value)%block.BlockSize() != 0 {
 		return nil, errors.New("keystore: the secret item holds no valid ciphertext")
 	}
+	// The service picks the iv of the value it returns and reports it next to
+	// the ciphertext; the empty one means the zero iv of the protocol.
+	if len(iv) == 0 {
+		iv = make([]byte, block.BlockSize())
+	}
+	if len(iv) != block.BlockSize() {
+		return nil, errors.New("keystore: the secret item holds an iv of a wrong size")
+	}
 	out := make([]byte, len(value))
-	cipher.NewCBCDecrypter(block, make([]byte, block.BlockSize())).CryptBlocks(out, value)
+	cipher.NewCBCDecrypter(block, iv).CryptBlocks(out, value)
 	return pkcs7Unpad(out, block.BlockSize())
 }
 
@@ -519,11 +532,19 @@ func dhKeyPair() (*big.Int, []byte, error) {
 // service.
 func dhSharedKey(private *big.Int, peer []byte) []byte {
 	shared := new(big.Int).Exp(new(big.Int).SetBytes(peer), private, dhPrime)
-	// The service hashes the shared secret padded to the length of the prime.
 	padded := make([]byte, dhPrime.BitLen()/8)
 	shared.FillBytes(padded)
-	sum := sha256.Sum256(padded)
-	return sum[:aesKeyLen]
+	return dhKeyFromSecret(padded)
+}
+
+// dhKeyFromSecret derives the key of the session from the shared secret with
+// HKDF-SHA256 without salt and info.
+func dhKeyFromSecret(secret []byte) []byte {
+	prk := hmac.New(sha256.New, make([]byte, sha256.Size))
+	prk.Write(secret)
+	expand := hmac.New(sha256.New, prk.Sum(nil))
+	expand.Write([]byte{0x01})
+	return expand.Sum(nil)[:aesKeyLen]
 }
 
 // pkcs7Pad pads data to the block size.
