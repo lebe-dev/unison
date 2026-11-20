@@ -29,5 +29,10 @@ func (x *X11) Write(context.Context, ports.Content) error {
 	return fmt.Errorf("clipboard: write: %w", ErrUnsupported)
 }
 
+// Read returns ErrUnsupported.
+func (x *X11) Read(context.Context) (Report, error) {
+	return Report{}, fmt.Errorf("clipboard: read: %w", ErrUnsupported)
+}
+
 // Close releases nothing outside Linux.
 func (x *X11) Close() error { return nil }

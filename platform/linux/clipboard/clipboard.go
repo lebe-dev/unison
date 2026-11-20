@@ -68,6 +68,23 @@ type X11Options struct {
 	ValueTimeout time.Duration
 	// Logger receives connection and transfer events. No content is logged.
 	Logger *slog.Logger
+	// OnReport receives every observed clipboard state with the targets the
+	// owner advertised. It runs on the watcher goroutine and must not block.
+	OnReport func(Report)
+}
+
+// Report is one observed clipboard state for diagnostics.
+type Report struct {
+	// Snapshot is the content of the state.
+	Snapshot ports.Snapshot
+	// Targets are the target names the selection owner advertised.
+	Targets []string
+	// Owner is the X window that owns the selection, zero when there is none.
+	Owner uint64
+	// OwnerIsUs reports whether the owning window belongs to this clipboard.
+	OwnerIsUs bool
+	// At is when the state was read.
+	At time.Time
 }
 
 // payload is the content the clipboard serves while it owns the selection.
