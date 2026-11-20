@@ -74,7 +74,7 @@ static void *uc_tiff_to_png(NSData *tiff, size_t *len) {
 		return NULL;
 	}
 	NSData *png = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
-	if (png == nil) {
+	if (png == nil || png.length == 0 || png.length > uc_max_image_bytes) {
 		return NULL;
 	}
 	void *buffer = uc_copy(png.bytes, png.length);
