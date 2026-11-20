@@ -2,9 +2,26 @@ package node
 
 import (
 	"testing"
+	"time"
 
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/protocol"
 )
+
+// TestLinkProtocolVersion checks that the version of the peer reaches the live
+// state of the link, which is what the local API reports.
+func TestLinkProtocolVersion(t *testing.T) {
+	link := newLink(model.DeviceID{1}, time.Unix(1_700_000_000, 0))
+	link.setProtocolVersion(protocol.Version + 1)
+
+	state := link.state()
+	if !state.ProtocolKnown || state.ProtocolVersion != protocol.Version+1 {
+		t.Fatalf("state = %+v, want protocol version %d", state, protocol.Version+1)
+	}
+	if state := newLink(model.DeviceID{2}, time.Now()).state(); state.ProtocolKnown {
+		t.Fatalf("state = %+v, want no protocol version", state)
+	}
+}
 
 // TestTakesOver checks which connection a link keeps when another one arrives.
 func TestTakesOver(t *testing.T) {

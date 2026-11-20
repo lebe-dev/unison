@@ -8,6 +8,7 @@ import (
 	"github.com/lebe-dev/unison/core/node"
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/protocol"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -63,6 +64,19 @@ func TestLocalEventFailureReason(t *testing.T) {
 	}
 	if got := localEventToProto(node.Event{Kind: node.EventPairingFailed, Err: pairing.ErrRejected}); got.GetFailureReason() != localv1.FailureReason_FAILURE_REASON_UNSPECIFIED {
 		t.Errorf("reason of a refusal = %v, want none", got.GetFailureReason())
+	}
+}
+
+// TestLocalEventProtocolVersion checks that the host learns which side has to
+// be updated.
+func TestLocalEventProtocolVersion(t *testing.T) {
+	event := localEventToProto(node.Event{
+		Kind:          node.EventPeerIncompatible,
+		Version:       protocol.Version + 1,
+		ProtocolNewer: true,
+	})
+	if event.GetProtocolVersion() != protocol.Version+1 || !event.GetProtocolNewer() {
+		t.Fatalf("event = %v, want a newer peer", event)
 	}
 }
 

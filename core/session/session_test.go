@@ -106,6 +106,26 @@ func TestIncompatibleVersion(t *testing.T) {
 	}
 }
 
+// TestIncompatibleVersionOlder checks that a peer with an older protocol
+// version is refused as well.
+func TestIncompatibleVersionOlder(t *testing.T) {
+	h := newHarness(t, model.RolePersonal, model.RolePersonal)
+	hello := &wirev1.Hello{ProtocolVersion: ProtocolVersion - 1, Name: "newer"}
+
+	server, closed := h.rawOpen(hello)
+
+	if err := <-closed; !errors.Is(err, ErrIncompatibleVersion) {
+		t.Fatalf("open error = %v, want ErrIncompatibleVersion", err)
+	}
+	event := waitEvent(t, server, EventPeerNeedsUpdate)
+	if event.Version != ProtocolVersion-1 {
+		t.Fatalf("event version = %d, want %d", event.Version, ProtocolVersion-1)
+	}
+	if code := waitCloseCode(t, h.clientConn.ControlStream()); code != CodeIncompatibleVersion {
+		t.Fatalf("close code = %#x, want %#x", code, CodeIncompatibleVersion)
+	}
+}
+
 // TestHelloRejectsInvalidName checks that a Hello with an unusable name ends the
 // session.
 func TestHelloRejectsInvalidName(t *testing.T) {
