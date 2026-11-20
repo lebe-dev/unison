@@ -19,6 +19,7 @@ fun platformLabel(platform: Local.Platform): String = when (platform) {
     Local.Platform.PLATFORM_MACOS -> stringResource(R.string.platform_macos)
     Local.Platform.PLATFORM_WINDOWS -> stringResource(R.string.platform_windows)
     Local.Platform.PLATFORM_ANDROID -> stringResource(R.string.platform_android)
+    Local.Platform.PLATFORM_LINUX -> stringResource(R.string.platform_linux)
     else -> stringResource(R.string.platform_unknown)
 }
 

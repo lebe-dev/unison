@@ -39,6 +39,7 @@ describe("platformLabel", () => {
     expect(platformLabel(Platform.MACOS)).toBe("macOS");
     expect(platformLabel(Platform.WINDOWS)).toBe("Windows");
     expect(platformLabel(Platform.ANDROID)).toBe("Android");
+    expect(platformLabel(Platform.LINUX)).toBe("Linux");
     expect(platformLabel(Platform.UNSPECIFIED)).toBe("Unknown system");
   });
 });
