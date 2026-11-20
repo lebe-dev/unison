@@ -3,9 +3,13 @@
 package keystore
 
 import (
+	"errors"
 	"os"
 	"syscall"
 )
+
+// errForeignOwner reports a secret file of another user.
+var errForeignOwner = errors.New("keystore: the secret file belongs to another user")
 
 // checkFile rejects a secret file that another user can read or that belongs to
 // another user.

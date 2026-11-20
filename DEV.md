@@ -87,8 +87,8 @@ just security-go          # vulnerabilities of the Go code with govulncheck
 just security-secrets     # secrets with Gitleaks
 just security-infra       # deployment files with Trivy
 just security-image       # relay image with Trivy
-just vet-windows          # vet and build everything for Windows from any host
-just vet-linux            # vet and build everything for Linux amd64 from any host
+just vet-windows          # lint and build everything for Windows from any host
+just vet-linux            # lint and build everything for Linux amd64 from any host
 just fmt                  # format the Go and Rust sources
 just fmt-rust             # format the Rust shell of the desktop app
 just tidy                 # update go.mod and go.sum
@@ -127,7 +127,9 @@ network access, because OSV-Scanner and Trivy download their databases, and the 
 the whole git history; `just security-image` builds the relay image before it scans it.
 
 Every recipe that builds the Rust shell runs `lint-rust` first: `desktop-dev`, `desktop-build` and
-the packaging recipes.
+the packaging recipes. In the same way, the Go recipes run `golangci-lint` first: `just build`,
+`just test`, `just e2e-build` and `just aar`, while `just vet-windows` and `just vet-linux` lint
+with the `GOOS` and `GOARCH` of their target so the platform files are covered.
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
 

@@ -1,5 +1,6 @@
 //go:build windows
 
+//nolint:gosec // The Win32 bindings pass pointers to syscall.SyscallN and to the clipboard memory.
 package clipboard
 
 import (

@@ -758,7 +758,7 @@ func (c *waylandConn) readValue(offer *dcOffer, mime string) ([]byte, bool) {
 		c.logger().Debug("could not request a clipboard value", "mime", mime, "error", err)
 		return nil, false
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 	value, err := readValue(context.Background(), pipeSource{file: reader, timeout: c.w.valueTimeout}, MaxValueBytes)
 	if err != nil {
 		c.logger().Debug("could not read a clipboard value", "mime", mime, "error", err)
@@ -880,7 +880,7 @@ func serveValue(values []waylandValue, mime string, fd int) {
 		closeReceivedFD(fd)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	for _, value := range values {
 		if value.mime != mime {
 			continue

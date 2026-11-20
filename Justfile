@@ -37,7 +37,7 @@ default:
     @just --list
 
 # Build the Go binaries for the host platform into bin/.
-build:
+build: lint-go
     go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/ ./cmd/...
 
 # Build unisond for the given OS and architecture.
@@ -71,7 +71,7 @@ stop-daemon dir=daemon_dir:
     packaging/macos/dev-daemon/stop.sh "{{dir}}"
 
 # Run the unit tests.
-test:
+test: lint-go
     go test ./...
 
 # Fuzz the parser of the pairing code.
@@ -195,7 +195,7 @@ test-share-large:
     go test -tags sharelarge -timeout 30m ./core/share/
 
 # Build the binaries of the end-to-end scenarios.
-e2e-build: build-unisond-host
+e2e-build: lint-go build-unisond-host
     go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/unison ./cmd/unison
     go build -trimpath -ldflags "{{debug_ldflags}}" -o bin/unison-relay ./cmd/unison-relay
 
@@ -203,14 +203,14 @@ e2e-build: build-unisond-host
 e2e *scenarios: e2e-build
     e2e/run.sh {{scenarios}}
 
-# Vet and build the Go sources for Windows from any host.
+# Lint and build the Go sources for Windows from any host.
 vet-windows:
-    GOOS=windows go vet ./...
+    GOOS=windows golangci-lint run
     GOOS=windows go build ./...
 
-# Vet and build the Go sources for Linux from any host.
+# Lint and build the Go sources for Linux amd64 from any host.
 vet-linux:
-    GOOS=linux GOARCH=amd64 go vet ./...
+    GOOS=linux GOARCH=amd64 golangci-lint run
     GOOS=linux GOARCH=amd64 go build ./...
 
 # Lint the Go sources, including the security checks of gosec and the format.
@@ -448,7 +448,7 @@ desktop-test:
     cd desktop && yarn test
 
 # Bind the Go core into an Android library that the app consumes.
-aar:
+aar: lint-go
     mkdir -p android/core bin
     go build -o bin/gobind golang.org/x/mobile/cmd/gobind
     PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=debug" -trimpath -o android/core/core.aar ./mobile

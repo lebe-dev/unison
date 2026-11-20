@@ -19,8 +19,6 @@ var (
 	errNotRegular = errors.New("keystore: the secret file is not a regular file")
 	// errWidePermissions reports a secret file other users can read.
 	errWidePermissions = errors.New("keystore: the secret file is readable by other users")
-	// errForeignOwner reports a secret file of another user.
-	errForeignOwner = errors.New("keystore: the secret file belongs to another user")
 )
 
 // fileStore keeps secrets as plain files below the keys directory. Nothing is

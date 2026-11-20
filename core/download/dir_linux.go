@@ -26,7 +26,7 @@ func downloadBase() string {
 // the session.
 func userDirsDownloadDir(home string) string {
 	path := filepath.Join(xdg.ConfigHome(home, os.Getenv("XDG_CONFIG_HOME")), "user-dirs.dirs")
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // The path is the user-dirs.dirs file of the session.
 	if err != nil {
 		return ""
 	}

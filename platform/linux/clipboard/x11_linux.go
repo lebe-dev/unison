@@ -173,7 +173,7 @@ func (x *X11) Write(ctx context.Context, content ports.Content) error {
 	x.state.ownedMu.Lock()
 	x.state.owned = &prepared
 	x.state.ownedMu.Unlock()
-	if err := own(conn, &prepared); err != nil {
+	if err := own(conn); err != nil {
 		x.state.ownedMu.Lock()
 		x.state.owned = nil
 		x.state.ownedMu.Unlock()
@@ -252,7 +252,7 @@ func (x *X11) install(conn *x11Conn) {
 	if owned == nil {
 		return
 	}
-	if err := own(conn, owned); err != nil {
+	if err := own(conn); err != nil {
 		x.logger.Warn("could not restore the clipboard selection", "error", err)
 	}
 }
@@ -521,7 +521,7 @@ func (c *x11Conn) observe(value uint32) {
 }
 
 // own takes the CLIPBOARD selection and verifies that the server accepted it.
-func own(conn *x11Conn, content *payload) error {
+func own(conn *x11Conn) error {
 	err := xproto.SetSelectionOwnerChecked(conn.conn, conn.win, conn.atoms.clipboard, xproto.TimeCurrentTime).Check()
 	if err != nil {
 		return err

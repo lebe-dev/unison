@@ -27,7 +27,7 @@ func (k *Keystore) Load(ctx context.Context, name string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	blob, err := os.ReadFile(path)
+	blob, err := os.ReadFile(path) //nolint:gosec // The path is built from a validated secret name.
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("keystore: load %q: %w", name, ports.ErrNotFound)
 	}
@@ -115,9 +115,11 @@ func takeBlob(blob windows.DataBlob) []byte {
 		return []byte{}
 	}
 	defer func() {
+		//nolint:gosec // The pointer is the blob DPAPI allocated and it is freed once.
 		_, _ = windows.LocalFree(windows.Handle(unsafe.Pointer(blob.Data)))
 	}()
 	out := make([]byte, blob.Size)
+	//nolint:gosec // The pointer and the size are the blob DPAPI allocated.
 	copy(out, unsafe.Slice(blob.Data, blob.Size))
 	return out
 }

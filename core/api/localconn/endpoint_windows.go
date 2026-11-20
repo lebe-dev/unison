@@ -71,12 +71,7 @@ func Dial(ctx context.Context, path string) (net.Conn, error) {
 
 // currentUserSID returns the SID of the user running the process.
 func currentUserSID() (string, error) {
-	token, err := windows.OpenCurrentProcessToken()
-	if err != nil {
-		return "", fmt.Errorf("localconn: open the process token: %w", err)
-	}
-	defer func() { _ = token.Close() }()
-
+	token := windows.GetCurrentProcessToken()
 	user, err := token.GetTokenUser()
 	if err != nil {
 		return "", fmt.Errorf("localconn: read the user of the process: %w", err)
