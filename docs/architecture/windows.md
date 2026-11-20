@@ -88,8 +88,8 @@ The hooks in `desktop/src-tauri/installer-hooks.nsh` do three things:
 | after the uninstall | removes `%LOCALAPPDATA%\Unison` when the app data option is set |
 
 - **Firewall.** A rule named `Unison daemon` allows `unisond.exe` on the private and domain
-  profiles, UDP only. The public profile stays closed, where the daemon neither listens nor
-  discovers. A reinstall deletes the old rule first.
+  profiles, UDP only. The public profile stays closed, so a device on a public network neither
+  reaches the daemon nor is seen by it. A reinstall deletes the old rule first.
 - **Startup entry.** `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Unison` starts
   `unisond.exe` at the login of the user that ran the installer, so a re-login starts the daemon
   without the app. The startup toggle of the settings writes and removes the same value, and the
@@ -112,8 +112,11 @@ and the app then starts the daemon as the user.
 - **Source.** `unisond.exe` next to the app, or `UNISON_DAEMON_BIN` for a development build. Without
   a source the app changes nothing and says why; the hidden mode also accepts
   `--daemon-source=<path>` for the path the app resolved.
-- **Directory.** `%ProgramFiles%\Unison`, the directory of the installer. An app that already runs
-  from there installs into its own directory; the app never installs into a user directory.
+- **Directory.** `%ProgramFiles%\Unison`, the directory of the default installation. An app that
+  already runs from there installs into its own directory, and an app the installer put elsewhere
+  still installs the daemon into `%ProgramFiles%\Unison` and starts it from there, since the
+  elevated process must not write into a directory the calling user chose. The app never installs
+  into a user directory.
 - **Elevation.** One prompt covers the copy, the entry and the rule. A prompt the user cancels
   changes nothing, and the window shows the reason in place.
 - **Daemon.** The daemon runs as the logged-in user, never as the elevated process, since it needs
