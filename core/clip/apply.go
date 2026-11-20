@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"lukechampine.com/blake3"
@@ -16,20 +15,8 @@ import (
 	"github.com/lebe-dev/unison/core/ports"
 )
 
-// Download limits.
-const (
-	// downloadsDirName is the directory of received files inside the user home.
-	downloadsDirName = "Unison"
-)
-
 // DefaultDownloadsDir returns the directory that receives incoming files.
-func DefaultDownloadsDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return ""
-	}
-	return filepath.Join(home, "Downloads", downloadsDirName)
-}
+func DefaultDownloadsDir() string { return download.DefaultDir() }
 
 // Apply handles an item announced by a peer. The item reaches the history and,
 // when the planner allows it, the local clipboard.

@@ -2,10 +2,9 @@ package share
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
 	"time"
 
+	"github.com/lebe-dev/unison/core/download"
 	"github.com/lebe-dev/unison/core/model"
 )
 
@@ -201,10 +200,4 @@ func totalBytes(files []File) uint64 {
 }
 
 // DefaultDownloadsDir returns the directory that receives shared files.
-func DefaultDownloadsDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return ""
-	}
-	return filepath.Join(home, "Downloads", "Unison")
-}
+func DefaultDownloadsDir() string { return download.DefaultDir() }

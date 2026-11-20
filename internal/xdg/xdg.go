@@ -13,3 +13,13 @@ func DataHome(home, dir string) string {
 	}
 	return filepath.Join(home, ".local", "share")
 }
+
+// ConfigHome returns the configuration directory of the user: dir when it is an
+// absolute path, home/.config otherwise. Empty and relative values are ignored,
+// as the specification demands.
+func ConfigHome(home, dir string) string {
+	if filepath.IsAbs(dir) {
+		return filepath.Clean(dir)
+	}
+	return filepath.Join(home, ".config")
+}
