@@ -21,6 +21,14 @@ func init() {
 	register("clipboard", runClipboard)
 }
 
+// probeClipboard is the part of a clipboard backend the probe uses.
+type probeClipboard interface {
+	Watch(context.Context) (<-chan ports.Snapshot, error)
+	Write(context.Context, ports.Content) error
+	Read(context.Context) (clipboard.Report, error)
+	Close() error
+}
+
 // runClipboard reports and writes the clipboard of the session. The content is
 // never printed: only targets, MIME types, sizes and hashes.
 func runClipboard(ctx context.Context, args []string) error {
@@ -43,15 +51,47 @@ func runClipboard(ctx context.Context, args []string) error {
 	default:
 		return fmt.Errorf("unknown clipboard mode %q", mode)
 	}
-	if errors.Is(err, clipboard.ErrNoDisplay) {
+	return clipboardError(err)
+}
+
+// clipboardError turns the errors of both backends into a readable line.
+func clipboardError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, clipboard.ErrNoDisplay):
 		return errors.New("DISPLAY is not set; run inside a graphical session")
+	case errors.Is(err, clipboard.ErrNoWaylandDisplay):
+		return errors.New("the Wayland compositor is not reachable; check WAYLAND_DISPLAY and XDG_RUNTIME_DIR")
+	case errors.Is(err, clipboard.ErrNoDataControl):
+		return errors.New("the compositor does not offer the data-control protocol; use --backend x11")
+	default:
+		return err
 	}
-	return err
+}
+
+// openClipboard returns the clipboard of the backend. The display comes from
+// the environment of the session.
+func openClipboard(backend string, onReport func(clipboard.Report)) (probeClipboard, error) {
+	switch backend {
+	case "", "x11":
+		return clipboard.NewX11(clipboard.X11Options{OnReport: onReport})
+	case "wayland":
+		return clipboard.NewWayland(clipboard.WaylandOptions{OnReport: onReport})
+	case "auto":
+		if wayland, err := clipboard.NewWayland(clipboard.WaylandOptions{OnReport: onReport}); err == nil {
+			return wayland, nil
+		}
+		return clipboard.NewX11(clipboard.X11Options{OnReport: onReport})
+	default:
+		return nil, fmt.Errorf("unknown backend %q, want x11, wayland or auto", backend)
+	}
 }
 
 // watchClipboard prints a report for every clipboard change.
 func watchClipboard(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("clipboard watch", flag.ExitOnError)
+	backend := flags.String("backend", "x11", "clipboard backend: x11, wayland or auto")
 	duration := flags.Duration("duration", 0, "stop after this long, run until interrupted when zero")
 	_ = flags.Parse(args)
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
@@ -61,7 +101,7 @@ func watchClipboard(ctx context.Context, args []string) error {
 		ctx, cancel = context.WithTimeout(ctx, *duration)
 		defer cancel()
 	}
-	clip, err := clipboard.NewX11(clipboard.X11Options{OnReport: printEvent})
+	clip, err := openClipboard(*backend, printEvent)
 	if err != nil {
 		return err
 	}
@@ -71,6 +111,7 @@ func watchClipboard(ctx context.Context, args []string) error {
 		return err
 	}
 	status("watching", "the clipboard, press Ctrl+C to stop")
+	status("backend", *backend)
 	for range snapshots {
 	}
 	return nil
@@ -79,8 +120,9 @@ func watchClipboard(ctx context.Context, args []string) error {
 // readClipboard prints the current clipboard state.
 func readClipboard(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("clipboard read", flag.ExitOnError)
+	backend := flags.String("backend", "x11", "clipboard backend: x11, wayland or auto")
 	_ = flags.Parse(args)
-	clip, err := clipboard.NewX11(clipboard.X11Options{})
+	clip, err := openClipboard(*backend, nil)
 	if err != nil {
 		return err
 	}
@@ -101,13 +143,14 @@ func readClipboard(ctx context.Context, args []string) error {
 // reports the result.
 func writeClipboard(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("clipboard write", flag.ExitOnError)
+	backend := flags.String("backend", "x11", "clipboard backend: x11, wayland or auto")
 	hold := flags.Duration("hold", 0, "keep the selection after the write for this long")
 	_ = flags.Parse(args)
 	text := strings.Join(flags.Args(), " ")
 	if text == "" {
-		return errors.New("usage: clipboard write [--hold 30s] <text>")
+		return errors.New("usage: clipboard write [--backend x11|wayland|auto] [--hold 30s] <text>")
 	}
-	clip, err := clipboard.NewX11(clipboard.X11Options{})
+	clip, err := openClipboard(*backend, nil)
 	if err != nil {
 		return err
 	}

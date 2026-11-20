@@ -101,7 +101,7 @@ journalctl --user -u unisond -f
 |-------|--------|
 | `system`, `auto` | бэкенд сеанса |
 | `x11` | выделение CLIPBOARD протокола X11, доступное в сеансе Wayland через XWayland |
-| `wayland` | протокол Wayland data-control, который пока недоступен |
+| `wayland` | протокол Wayland data-control, который предлагают KDE Plasma, wlroots и COSMIC |
 | `none` | без системного буфера обмена, для второго демона на одной машине |
 
 `auto` берет бэкенд Wayland data-control, когда сеанс его предлагает, и откатывается на X11 через

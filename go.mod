@@ -1,6 +1,6 @@
 module github.com/lebe-dev/unison
 
-go 1.27
+go 1.27.1
 
 tool (
 	connectrpc.com/connect/cmd/protoc-gen-connect-go
@@ -12,6 +12,7 @@ tool (
 require (
 	connectrpc.com/connect v1.21.1
 	github.com/Microsoft/go-winio v0.6.4
+	github.com/SpinningVinyl/go-wayland/wayland v1.0.1
 	github.com/coder/websocket v1.8.15
 	github.com/getsentry/sentry-go v0.50.0
 	github.com/godbus/dbus/v5 v5.2.4

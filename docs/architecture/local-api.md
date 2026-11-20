@@ -98,7 +98,7 @@ is started with one.
 |------|---------|
 | `system`, `auto` | the backend of the session |
 | `x11` | the X11 CLIPBOARD selection, which reaches a Wayland session through XWayland |
-| `wayland` | the Wayland data-control protocol, which is not available yet |
+| `wayland` | the Wayland data-control protocol of KDE Plasma, wlroots and COSMIC |
 | `none` | no system clipboard, for a second daemon on one machine |
 
 `auto` takes the Wayland data-control backend when the session offers it and falls back to X11

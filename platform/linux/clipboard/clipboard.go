@@ -1,19 +1,23 @@
-// Package clipboard implements the X11 CLIPBOARD selection as a ports.Clipboard.
+// Package clipboard implements the system CLIPBOARD selection as a
+// ports.Clipboard.
 //
-// The watcher subscribes to ownership changes of the CLIPBOARD selection through
-// the XFixes extension and reads text, HTML, images and copied files from the new
-// owner. Only CLIPBOARD is watched: PRIMARY is not synchronized. An image is
-// reported as PNG; BMP, TIFF and JPEG images are converted. A copied file travels
-// as its path, so a large file is never read here. Content tagged with the
-// password manager hint is reported as sensitive and its payload is never read.
+// Two backends reach the same selection. The X11 backend talks to the X server,
+// which is what a GNOME session offers, also through XWayland. The Wayland
+// backend uses the data-control protocol of the compositor, which KDE Plasma,
+// wlroots compositors and COSMIC offer and GNOME does not.
+//
+// The watcher reads text, HTML, images and copied files from the new owner.
+// Only CLIPBOARD is watched: PRIMARY is not synchronized. An image is reported
+// as PNG; BMP, TIFF and JPEG images are converted. A copied file travels as its
+// path, so a large file is never read here. Content tagged with the password
+// manager hint is reported as sensitive and its payload is never read.
 //
 // Write takes ownership of CLIPBOARD and answers selection requests while the
 // content is held in memory. Copied files are served as a Nautilus file list, an
 // RFC 2483 URI list and a plain text list of paths, which is what file managers
 // and terminals paste. Written content carries the marker target with the clip
 // item id, which lets the watcher and other clipboard consumers tell own writes
-// apart. The selection is served through XWayland as well, so the package works
-// in a GNOME Wayland session.
+// apart.
 //
 // The clipboard is reachable only on Linux. Elsewhere the operations return
 // ErrUnsupported.
@@ -53,9 +57,9 @@ var (
 	// ErrNoDisplay reports that DISPLAY is not set, so there is no X server to
 	// talk to.
 	ErrNoDisplay = errors.New("clipboard: DISPLAY is not set")
-	// ErrUnsupported reports that the X11 clipboard is unavailable on this
+	// ErrUnsupported reports that the system clipboard is unavailable on this
 	// platform.
-	ErrUnsupported = errors.New("clipboard: the X11 clipboard is available on Linux only")
+	ErrUnsupported = errors.New("clipboard: the system clipboard is available on Linux only")
 	// ErrUnsupportedContent reports content the clipboard cannot write.
 	ErrUnsupportedContent = errors.New("clipboard: unsupported content")
 )
@@ -83,9 +87,10 @@ type Report struct {
 	Snapshot ports.Snapshot
 	// Targets are the target names the selection owner advertised.
 	Targets []string
-	// Owner is the X window that owns the selection, zero when there is none.
+	// Owner identifies the owner of the selection: the X window, or the
+	// protocol object of the Wayland offer. It is zero when there is none.
 	Owner uint64
-	// OwnerIsUs reports whether the owning window belongs to this clipboard.
+	// OwnerIsUs reports whether the selection belongs to this application.
 	OwnerIsUs bool
 	// At is when the state was read.
 	At time.Time
