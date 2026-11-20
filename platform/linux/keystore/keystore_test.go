@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/godbus/dbus/v5"
+
 	"github.com/lebe-dev/unison/core/ports"
 )
 
@@ -48,6 +50,49 @@ func TestOpenWithoutServiceUsesFiles(t *testing.T) {
 	}
 	if k.Warning() == "" {
 		t.Fatal("the file backend reports no warning")
+	}
+}
+
+// TestOpenWithoutUsableCollectionUsesFiles picks files when the service is on
+// the bus but exports no collection that the secrets could go to, as an
+// autologin session with a locked login keyring does.
+func TestOpenWithoutUsableCollectionUsesFiles(t *testing.T) {
+	dir := t.TempDir()
+	ring := newFakeKeyring()
+	ring.absentCollections = map[dbus.ObjectPath]bool{
+		ring.defaultAlias: true,
+		ring.loginAlias:   true,
+	}
+	k, err := Open(dir, testService, Options{connect: fakeConnect(ring)})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if got := k.Backend(); got != BackendFile {
+		t.Fatalf("Backend() = %q, want %q", got, BackendFile)
+	}
+	if warning := k.Warning(); !strings.Contains(warning, "no usable collection") {
+		t.Fatalf("Warning() = %q, want the reason of the fallback", warning)
+	}
+	if err := k.Store(context.Background(), "test/secret", []byte("value")); err != nil {
+		t.Fatalf("Store: %v", err)
+	}
+	if ring.created != 0 {
+		t.Fatalf("the keyring got %d items, want none", ring.created)
+	}
+}
+
+// TestOpenRecordedSecretServiceWithoutCollection keeps the backend of a
+// directory whose keyring lost its collection instead of moving the keys.
+func TestOpenRecordedSecretServiceWithoutCollection(t *testing.T) {
+	dir := t.TempDir()
+	writeRecord(t, dir, BackendSecretService)
+	ring := newFakeKeyring()
+	ring.absentCollections = map[dbus.ObjectPath]bool{
+		ring.defaultAlias: true,
+		ring.loginAlias:   true,
+	}
+	if _, err := Open(dir, testService, Options{connect: fakeConnect(ring)}); !errors.Is(err, ErrKeyringUnavailable) {
+		t.Fatalf("Open = %v, want ErrKeyringUnavailable", err)
 	}
 }
 
