@@ -35,6 +35,14 @@ Every line starts with "ok", "FAIL", "skipped" or "note". The checks of the
 installed package print "skipped (no package installed)" while there is no
 package on the machine.
 
+The kit carries the user unit of the daemon in systemd/unisond.service. To run
+the daemon at login, copy it to the unit directory of the user and enable it:
+
+    mkdir -p ~/.config/systemd/user
+    cp systemd/unisond.service ~/.config/systemd/user/
+    systemctl --user daemon-reload
+    systemctl --user enable --now unisond
+
 3. Run the tests
 
     scripts/run-tests.sh

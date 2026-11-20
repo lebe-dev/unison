@@ -87,6 +87,9 @@ for script in run-tests.sh verify.sh collect.sh net-check.sh; do
     install -m 0755 "$root/packaging/linux/kit/$script" "$stage/scripts/$script"
 done
 
+install -d "$stage/systemd"
+install -m 0644 "$root/packaging/linux/systemd/unisond.service" "$stage/systemd/unisond.service"
+
 echo "linux-kit: building the command line binaries for linux/amd64"
 (
     cd "$root"
