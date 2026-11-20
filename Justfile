@@ -361,6 +361,76 @@ windows-kit: package-windows-cross
 linux-kit *args:
     packaging/linux/kit.sh {{args}}
 
+linux_user := env("LINUX_USER", "user")
+linux_host := env("LINUX_HOST", "")
+linux_dir := env("LINUX_DIR", "unison-kit")
+
+# Build the Linux test kit and copy it to the Linux test machine, sending only the changed files.
+deploy-linux *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{linux_host}}" ]; then
+        echo "deploy-linux: set LINUX_HOST in .env, for example ubuntu2204-test.tail712f59.ts.net" >&2
+        exit 1
+    fi
+    dir="{{linux_dir}}"
+    if [ -z "$dir" ]; then
+        echo "deploy-linux: LINUX_DIR is empty" >&2
+        exit 1
+    fi
+    just linux-kit {{args}}
+    target="{{linux_user}}@{{linux_host}}"
+    stage="packaging/linux/build/linux-kit"
+    echo "deploy-linux: syncing the kit to $target:~/$dir"
+    # rsync sends only the files that changed since the previous run, which
+    # matters on a slow link: the test binaries are about 460 MB on disk.
+    rsync -az --delete \
+        --exclude 'deb/' \
+        --exclude 'report/' \
+        --exclude 'data/' \
+        --exclude 'Unison-tests-*.tar.gz' \
+        --exclude 'Unison-collect-*.tar.gz' \
+        "$stage/" "$target:$dir/"
+    ssh "$target" "ls -l \"\$HOME/$dir\""
+    echo "deploy-linux: the kit is in ~/$dir on $target"
+    echo "deploy-linux: run scripts/run-tests.sh from the desktop session of the machine"
+
+# Open a shell on the Linux test machine.
+linux-ssh *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{linux_host}}" ]; then
+        echo "linux-ssh: set LINUX_HOST in .env, for example ubuntu2204-test.tail712f59.ts.net" >&2
+        exit 1
+    fi
+    exec ssh {{linux_user}}@{{linux_host}} {{args}}
+
+# Copy the test and collect archives of the Linux test machine into packaging/linux/build/reports.
+linux-fetch:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{linux_host}}" ]; then
+        echo "linux-fetch: set LINUX_HOST in .env, for example ubuntu2204-test.tail712f59.ts.net" >&2
+        exit 1
+    fi
+    target="{{linux_user}}@{{linux_host}}"
+    reports="packaging/linux/build/reports"
+    mkdir -p "$reports"
+    found=0
+    for pattern in 'Unison-tests-*.tar.gz' 'Unison-collect-*.tar.gz'; do
+        # The remote glob is expanded by the remote shell, so a machine without
+        # archives of one kind is not an error.
+        if ssh "$target" "ls ~/$pattern" >/dev/null 2>&1; then
+            scp "$target:$pattern" "$reports/"
+            found=1
+        fi
+    done
+    if [ "$found" -eq 0 ]; then
+        echo "linux-fetch: no archives on $target, run the scripts of the kit first" >&2
+        exit 1
+    fi
+    ls -l "$reports"
+
 # Check the Windows installer and the installed application.
 verify-windows *args:
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/windows/verify.ps1 {{args}}

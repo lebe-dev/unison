@@ -829,6 +829,26 @@ just linux-kit
 just linux-kit --with-deb
 ```
 
+`just deploy-linux` builds the kit and syncs `packaging/linux/build/linux-kit` into `~/unison-kit` on
+the Linux test machine. The machine and the user come from `.env`:
+
+```sh
+LINUX_HOST=ubuntu2204-test.tail712f59.ts.net
+LINUX_USER=user
+```
+
+`just deploy-linux --with-deb` passes the flag through to `linux-kit`, `just linux-ssh` opens a
+shell on the machine, and `just linux-fetch` copies `Unison-tests-*.tar.gz` and
+`Unison-collect-*.tar.gz` back into `packaging/linux/build/reports`. The tests themselves still run
+from the desktop session of the machine, because the clipboard and keyring tests need the display
+and the session bus.
+
+The deploy syncs the unpacked kit with `rsync` instead of copying the archive, so a second run sends
+only the test binaries that changed. The kit is about 460 MB on disk, and the machine sits behind a
+relay of the tailnet, so the first sync takes a while and every later one takes seconds. `report/`,
+`deb/`, `data/` and the archives of the machine survive a sync; files that the kit no longer has are
+removed.
+
 `linux-kit` writes `packaging/linux/build/Unison-<version>-linux-kit-<date>-<time>.tar.gz`; a second
 run in the same minute keeps the earlier archive with a numeric suffix. The archive holds:
 
