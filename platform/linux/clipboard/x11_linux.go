@@ -182,6 +182,8 @@ func (x *X11) Write(ctx context.Context, content ports.Content) error {
 	x.logger.Info("took ownership of the clipboard",
 		"plain_bytes", len(prepared.plain),
 		"html_bytes", len(prepared.html),
+		"png_bytes", len(prepared.png),
+		"files", len(prepared.files),
 		"has_item_id", prepared.itemID != "",
 	)
 	return nil
@@ -357,6 +359,12 @@ type atomSet struct {
 	textPlain        xproto.Atom
 	textPlainUTF8    xproto.Atom
 	textHTML         xproto.Atom
+	imagePNG         xproto.Atom
+	imageBMP         xproto.Atom
+	imageTIFF        xproto.Atom
+	imageJPEG        xproto.Atom
+	uriList          xproto.Atom
+	gnomeFiles       xproto.Atom
 	stringAtom       xproto.Atom
 	text             xproto.Atom
 	incr             xproto.Atom
@@ -443,6 +451,12 @@ func (c *x11Conn) internAtoms() error {
 		{atomTextPlain, &c.atoms.textPlain},
 		{atomTextPlainUTF8, &c.atoms.textPlainUTF8},
 		{atomTextHTML, &c.atoms.textHTML},
+		{MIMEImagePNG, &c.atoms.imagePNG},
+		{MIMEImageBMP, &c.atoms.imageBMP},
+		{MIMEImageTIFF, &c.atoms.imageTIFF},
+		{MIMEImageJPEG, &c.atoms.imageJPEG},
+		{MIMEURIList, &c.atoms.uriList},
+		{MIMEGNOMECopiedFiles, &c.atoms.gnomeFiles},
 		{atomSTRING, &c.atoms.stringAtom},
 		{atomTEXT, &c.atoms.text},
 		{atomINCR, &c.atoms.incr},
@@ -750,7 +764,7 @@ func (s *server) snapshot() (Report, bool) {
 		report.Snapshot = ports.Snapshot{Sensitive: true, OwnedByUs: owned}
 		return report, true
 	}
-	representations := make([]ports.Representation, 0, 2)
+	representations := make([]ports.Representation, 0, 3+maxFiles)
 	if target, latin1 := names.pickPlain(); target != "" {
 		if value, ok := s.readValueTarget(target, s.x.valueTimeout); ok && len(value) > 0 {
 			representations = append(representations, ports.Representation{
@@ -766,6 +780,28 @@ func (s *server) snapshot() (Report, bool) {
 				Data: decodeHTML(value),
 			})
 		}
+	}
+	imageBytes := 0
+	if target := names.pickImage(); target != "" {
+		if value, ok := s.readValueTarget(target, s.x.valueTimeout); ok && len(value) > 0 {
+			png, err := readImagePNG(target, value)
+			switch {
+			case err != nil:
+				s.x.logger.Debug("skipped a clipboard image", "target", target, "bytes", len(value), "error", err)
+			case len(png) > 0:
+				imageBytes = len(png)
+				representations = append(representations, ports.Representation{MIME: MIMEImagePNG, Data: png})
+			}
+		}
+	}
+	fileList := []string(nil)
+	if target := names.pickFiles(); target != "" {
+		if value, ok := s.readValueTarget(target, s.x.valueTimeout); ok && len(value) > 0 {
+			fileList = parseFileList(target, value)
+		}
+	}
+	for _, path := range fileList {
+		representations = append(representations, ports.Representation{MIME: MIMEUnisonFile, FilePath: path})
 	}
 	report.Snapshot = ports.Snapshot{
 		Content:   ports.Content{Representations: representations},
@@ -783,7 +819,8 @@ func (s *server) snapshot() (Report, bool) {
 			htmlBytes = len(representation.Data)
 		}
 	}
-	s.x.logger.Info("read the clipboard", "plain_bytes", plainBytes, "html_bytes", htmlBytes, "owned_by_us", owned)
+	s.x.logger.Info("read the clipboard", "plain_bytes", plainBytes, "html_bytes", htmlBytes,
+		"png_bytes", imageBytes, "files", len(fileList), "owned_by_us", owned)
 	return report, true
 }
 
@@ -798,6 +835,18 @@ func (s *server) readValueTarget(target string, timeout time.Duration) ([]byte, 
 		return nil, false
 	}
 	return read.data, true
+}
+
+// parseFileList returns the paths of the files listed by the target.
+func parseFileList(target string, payload []byte) []string {
+	switch target {
+	case MIMEGNOMECopiedFiles:
+		return filePaths(parseGNOMECopiedFiles(payload))
+	case MIMEURIList:
+		return filePaths(parseURIList(payload))
+	default:
+		return nil
+	}
 }
 
 // lookup returns the interned atom of a protocol name.
@@ -1012,25 +1061,54 @@ func (s *server) valueFor(content *payload, target atom) (atom, byte, []byte, bo
 	case atom(a.timestamp):
 		return atom(a.integer), 32, encodeUint32(s.conn.lastTi.Load()), true
 	case atom(a.utf8String), atom(a.textPlain), atom(a.textPlainUTF8):
-		if content.plain == nil {
+		plain := content.plainValue()
+		if plain == nil {
 			return 0, 0, nil, false
 		}
-		return target, 8, content.plain, true
+		return target, 8, plain, true
 	case atom(a.stringAtom), atom(a.text):
-		if content.plain == nil {
+		plain := content.plainValue()
+		if plain == nil {
 			return 0, 0, nil, false
 		}
-		return atom(a.stringAtom), 8, encodeLatin1(content.plain), true
+		return atom(a.stringAtom), 8, encodeLatin1(plain), true
 	case atom(a.textHTML):
 		if content.html == nil {
 			return 0, 0, nil, false
 		}
 		return target, 8, content.html, true
+	case atom(a.imagePNG):
+		if content.png == nil {
+			return 0, 0, nil, false
+		}
+		return target, 8, content.png, true
+	case atom(a.uriList):
+		if len(content.files) == 0 {
+			return 0, 0, nil, false
+		}
+		return target, 8, encodeURIList(content.files), true
+	case atom(a.gnomeFiles):
+		if len(content.files) == 0 {
+			return 0, 0, nil, false
+		}
+		return target, 8, encodeGNOMECopiedFiles(content.files), true
 	case atom(a.marker):
 		return atom(a.marker), 8, []byte(content.itemID), true
 	default:
 		return 0, 0, nil, false
 	}
+}
+
+// plainValue returns the plain text the clipboard serves. A file list is served
+// as newline separated paths for terminals.
+func (p *payload) plainValue() []byte {
+	if p.plain != nil {
+		return p.plain
+	}
+	if len(p.files) > 0 {
+		return encodePlainPaths(p.files)
+	}
+	return nil
 }
 
 // advertisedTargets lists the targets of the served content.
@@ -1042,7 +1120,7 @@ func (s *server) advertisedTargets(content *payload) []atom {
 		atom(a.multiple),
 		atom(a.marker),
 	}
-	if content.plain != nil {
+	if content.plainValue() != nil {
 		targets = append(targets,
 			atom(a.utf8String),
 			atom(a.textPlainUTF8),
@@ -1053,6 +1131,12 @@ func (s *server) advertisedTargets(content *payload) []atom {
 	}
 	if content.html != nil {
 		targets = append(targets, atom(a.textHTML))
+	}
+	if content.png != nil {
+		targets = append(targets, atom(a.imagePNG))
+	}
+	if len(content.files) > 0 {
+		targets = append(targets, atom(a.gnomeFiles), atom(a.uriList))
 	}
 	return targets
 }
@@ -1078,7 +1162,9 @@ func (s *server) handleMultiple(event xproto.SelectionRequestEvent, content *pay
 	for i := 0; i+1 < len(pairs); i += 2 {
 		property := pairs[i+1]
 		valueType, format, data, ok := s.valueFor(content, pairs[i])
-		if !ok || property == 0 {
+		if !ok || property == 0 || len(data) > incrThreshold {
+			// A value above the inline limit needs the INCR protocol, which
+			// MULTIPLE does not use; the requestor asks for it separately.
 			updated[i+1] = 0
 			continue
 		}

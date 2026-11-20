@@ -1,6 +1,7 @@
 package clipboard
 
 import (
+	"bytes"
 	"errors"
 	"testing"
 
@@ -67,14 +68,52 @@ func TestPayloadOf(t *testing.T) {
 	}
 }
 
+func TestPayloadOfImage(t *testing.T) {
+	png := encodeTestImage(t, MIMEImagePNG)
+	got, err := payloadOf(ports.Content{
+		ItemID:          "item-2",
+		Representations: []ports.Representation{{MIME: MIMEImagePNG, Data: png}},
+	})
+	if err != nil {
+		t.Fatalf("payloadOf: %v", err)
+	}
+	if !bytes.Equal(got.png, png) || got.itemID != "item-2" {
+		t.Fatalf("payloadOf() carries %d png bytes and item id %q", len(got.png), got.itemID)
+	}
+}
+
+func TestPayloadOfFilesWin(t *testing.T) {
+	dir := t.TempDir()
+	first := touch(t, dir, "a.txt")
+	second := touch(t, dir, "b.txt")
+	got, err := payloadOf(ports.Content{
+		Representations: []ports.Representation{
+			{MIME: MIMETextPlain, Data: []byte("text")},
+			{MIME: MIMEImagePNG, Data: encodeTestImage(t, MIMEImagePNG)},
+			{MIME: MIMEUnisonFile, FilePath: first},
+			{MIME: MIMEUnisonFile, FilePath: second},
+		},
+	})
+	if err != nil {
+		t.Fatalf("payloadOf: %v", err)
+	}
+	if len(got.files) != 2 || got.files[0] != first || got.files[1] != second {
+		t.Fatalf("payloadOf() files = %q, want %q", got.files, []string{first, second})
+	}
+	if got.plain != nil || got.html != nil || got.png != nil {
+		t.Fatal("payloadOf() kept text or an image next to files")
+	}
+}
+
 func TestPayloadOfRejectsUnsupported(t *testing.T) {
 	cases := []struct {
 		name    string
 		content ports.Content
 	}{
 		{name: "empty", content: ports.Content{}},
-		{name: "image", content: ports.Content{Representations: []ports.Representation{{MIME: "image/png", Data: []byte("png")}}}},
-		{name: "file", content: ports.Content{Representations: []ports.Representation{{MIME: MIMETextPlain, FilePath: "/tmp/a"}}}},
+		{name: "unknown mime", content: ports.Content{Representations: []ports.Representation{{MIME: "application/pdf", Data: []byte("pdf")}}}},
+		{name: "broken png", content: ports.Content{Representations: []ports.Representation{{MIME: MIMEImagePNG, Data: []byte("png")}}}},
+		{name: "relative file", content: ports.Content{Representations: []ports.Representation{{MIME: MIMEUnisonFile, FilePath: "a.txt"}}}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

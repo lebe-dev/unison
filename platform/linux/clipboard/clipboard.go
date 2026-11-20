@@ -1,15 +1,19 @@
 // Package clipboard implements the X11 CLIPBOARD selection as a ports.Clipboard.
 //
 // The watcher subscribes to ownership changes of the CLIPBOARD selection through
-// the XFixes extension and reads text and HTML from the new owner. Only
-// CLIPBOARD is watched: PRIMARY is not synchronized. Content tagged with the
+// the XFixes extension and reads text, HTML, images and copied files from the new
+// owner. Only CLIPBOARD is watched: PRIMARY is not synchronized. An image is
+// reported as PNG; BMP, TIFF and JPEG images are converted. A copied file travels
+// as its path, so a large file is never read here. Content tagged with the
 // password manager hint is reported as sensitive and its payload is never read.
 //
 // Write takes ownership of CLIPBOARD and answers selection requests while the
-// content is held in memory. Written content carries the marker target with the
-// clip item id, which lets the watcher and other clipboard consumers tell own
-// writes apart. The selection is served through XWayland as well, so the
-// package works in a GNOME Wayland session.
+// content is held in memory. Copied files are served as a Nautilus file list, an
+// RFC 2483 URI list and a plain text list of paths, which is what file managers
+// and terminals paste. Written content carries the marker target with the clip
+// item id, which lets the watcher and other clipboard consumers tell own writes
+// apart. The selection is served through XWayland as well, so the package works
+// in a GNOME Wayland session.
 //
 // The clipboard is reachable only on Linux. Elsewhere the operations return
 // ErrUnsupported.
@@ -88,30 +92,51 @@ type Report struct {
 }
 
 // payload is the content the clipboard serves while it owns the selection.
+// Copied files win over text and an image, because a file list carries the
+// selection the user made.
 type payload struct {
 	plain  []byte
 	html   []byte
+	png    []byte
+	files  []string
 	itemID string
 }
 
-// payloadOf splits content into the representations the clipboard serves. Images
-// and files are not part of this backend.
+// payloadOf splits content into the parts the clipboard serves. A
+// representation with a file path is a file, whatever its type.
 func payloadOf(content ports.Content) (payload, error) {
 	var result payload
 	for _, representation := range content.Representations {
 		switch {
 		case representation.FilePath != "":
-			return payload{}, fmt.Errorf("%w: file %q", ErrUnsupportedContent, representation.MIME)
+			result.files = append(result.files, representation.FilePath)
 		case representation.MIME == MIMETextPlain:
 			result.plain = representation.Data
 		case representation.MIME == MIMETextHTML:
 			result.html = representation.Data
+		case representation.MIME == MIMEImagePNG:
+			result.png = representation.Data
 		default:
 			return payload{}, fmt.Errorf("%w: mime %q", ErrUnsupportedContent, representation.MIME)
 		}
 	}
 	result.itemID = content.ItemID
-	if result.plain == nil && result.html == nil {
+
+	if len(result.files) > 0 {
+		files, err := checkedPaths(result.files)
+		if err != nil {
+			return payload{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
+		}
+		result.files = files
+		result.plain, result.html, result.png = nil, nil, nil
+		return result, nil
+	}
+	if result.png != nil {
+		if err := checkPNG(result.png); err != nil {
+			return payload{}, fmt.Errorf("%w: %w", ErrUnsupportedContent, err)
+		}
+	}
+	if result.plain == nil && result.html == nil && result.png == nil {
 		return payload{}, ErrUnsupportedContent
 	}
 	return result, nil
