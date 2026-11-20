@@ -17,6 +17,7 @@ enum Platform {
   PLATFORM_MACOS = 1;
   PLATFORM_WINDOWS = 2;
   PLATFORM_ANDROID = 3;
+  PLATFORM_LINUX = 4;
 }
 
 // Network path to a device.

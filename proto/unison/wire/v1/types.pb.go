@@ -79,6 +79,7 @@ const (
 	Platform_PLATFORM_MACOS       Platform = 1
 	Platform_PLATFORM_WINDOWS     Platform = 2
 	Platform_PLATFORM_ANDROID     Platform = 3
+	Platform_PLATFORM_LINUX       Platform = 4
 )
 
 // Enum value maps for Platform.
@@ -88,12 +89,14 @@ var (
 		1: "PLATFORM_MACOS",
 		2: "PLATFORM_WINDOWS",
 		3: "PLATFORM_ANDROID",
+		4: "PLATFORM_LINUX",
 	}
 	Platform_value = map[string]int32{
 		"PLATFORM_UNSPECIFIED": 0,
 		"PLATFORM_MACOS":       1,
 		"PLATFORM_WINDOWS":     2,
 		"PLATFORM_ANDROID":     3,
+		"PLATFORM_LINUX":       4,
 	}
 )
 
@@ -659,12 +662,13 @@ const file_unison_wire_v1_types_proto_rawDesc = "" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rROLE_PERSONAL\x10\x01\x12\x10\n" +
-	"\fROLE_FRIENDS\x10\x02*d\n" +
+	"\fROLE_FRIENDS\x10\x02*x\n" +
 	"\bPlatform\x12\x18\n" +
 	"\x14PLATFORM_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0ePLATFORM_MACOS\x10\x01\x12\x14\n" +
 	"\x10PLATFORM_WINDOWS\x10\x02\x12\x14\n" +
-	"\x10PLATFORM_ANDROID\x10\x03*K\n" +
+	"\x10PLATFORM_ANDROID\x10\x03\x12\x12\n" +
+	"\x0ePLATFORM_LINUX\x10\x04*K\n" +
 	"\x04Kind\x12\x14\n" +
 	"\x10KIND_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tKIND_TEXT\x10\x01\x12\x0e\n" +

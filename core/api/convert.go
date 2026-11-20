@@ -53,6 +53,8 @@ func platformToProto(p model.Platform) localv1.Platform {
 		return localv1.Platform_PLATFORM_WINDOWS
 	case model.PlatformAndroid:
 		return localv1.Platform_PLATFORM_ANDROID
+	case model.PlatformLinux:
+		return localv1.Platform_PLATFORM_LINUX
 	default:
 		return localv1.Platform_PLATFORM_UNSPECIFIED
 	}

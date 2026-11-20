@@ -64,6 +64,23 @@ func TestHelloExchange(t *testing.T) {
 	}
 }
 
+// TestHelloUnknownPlatform checks that a platform value from a newer peer is
+// read as unknown and does not end the session.
+func TestHelloUnknownPlatform(t *testing.T) {
+	h := newHarness(t, model.RolePersonal, model.RolePersonal)
+	hello := &wirev1.Hello{ProtocolVersion: ProtocolVersion, Name: "newer", Platform: wirev1.Platform(99)}
+
+	server, _ := h.rawOpen(hello)
+
+	waitEvent(t, server, EventOpened)
+	if got := server.PeerHello().Platform; got != model.PlatformUnknown {
+		t.Fatalf("peer platform = %s, want unknown", got)
+	}
+	if err := server.Err(); err != nil {
+		t.Fatalf("session error = %v, want no error", err)
+	}
+}
+
 // TestIncompatibleVersion checks that a peer with another protocol version is
 // asked to update and the session is closed.
 func TestIncompatibleVersion(t *testing.T) {

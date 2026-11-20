@@ -188,8 +188,14 @@ func (h *Harness) close() {
 	}
 }
 
-// NewNode starts a node named name and stops it when the test ends.
+// NewNode starts a node named name on macOS and stops it when the test ends.
 func (h *Harness) NewNode(name string) *Node {
+	return h.NewNodeWithPlatform(name, model.PlatformMacOS)
+}
+
+// NewNodeWithPlatform starts a node named name that announces platform and
+// stops it when the test ends.
+func (h *Harness) NewNodeWithPlatform(name string, platform model.Platform) *Node {
 	h.t.Helper()
 
 	clipboard := fake.NewClipboard()
@@ -197,7 +203,7 @@ func (h *Harness) NewNode(name string) *Node {
 	host, err := node.New(node.Config{
 		DataDir:        h.t.TempDir(),
 		Name:           name,
-		Platform:       model.PlatformMacOS,
+		Platform:       platform,
 		Keystore:       fake.NewKeystore(),
 		Clipboard:      clipboard,
 		Discovery:      h.bus.Discovery(),
@@ -222,7 +228,7 @@ func (h *Harness) NewNode(name string) *Node {
 		Node:      host,
 		harness:   h,
 		name:      name,
-		platform:  model.PlatformMacOS,
+		platform:  platform,
 		clipboard: clipboard,
 		sockets:   sockets,
 		sessions:  newSessionLog(),

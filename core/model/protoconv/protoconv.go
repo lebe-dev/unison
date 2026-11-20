@@ -64,6 +64,8 @@ func PlatformToProto(p model.Platform) wirev1.Platform {
 		return wirev1.Platform_PLATFORM_WINDOWS
 	case model.PlatformAndroid:
 		return wirev1.Platform_PLATFORM_ANDROID
+	case model.PlatformLinux:
+		return wirev1.Platform_PLATFORM_LINUX
 	default:
 		return wirev1.Platform_PLATFORM_UNSPECIFIED
 	}
@@ -78,6 +80,8 @@ func PlatformFromProto(p wirev1.Platform) model.Platform {
 		return model.PlatformWindows
 	case wirev1.Platform_PLATFORM_ANDROID:
 		return model.PlatformAndroid
+	case wirev1.Platform_PLATFORM_LINUX:
+		return model.PlatformLinux
 	default:
 		return model.PlatformUnknown
 	}
