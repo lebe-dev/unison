@@ -129,6 +129,16 @@ test-keychain:
     CGO_ENABLED=1 go test -c -tags keychaintest -o bin/keystore.test ./platform/darwin/keystore/
     ./bin/keystore.test -test.count=1
 
+# Run the Secret Service integration tests against the keyring of the session (Linux).
+test-keyring:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "$(uname -s)" != Linux ]]; then
+        echo "test-keyring runs on Linux only"
+        exit 0
+    fi
+    go test -count=1 -tags secretservicetest ./platform/linux/keystore/
+
 # Delete the Keychain items of the dev, test and per-directory hash services.
 keychain-reset:
     #!/usr/bin/env bash
