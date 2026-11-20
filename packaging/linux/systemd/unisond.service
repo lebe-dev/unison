@@ -1,0 +1,34 @@
+# User unit of the Unison daemon. The package installs it as
+# /usr/lib/systemd/user/unisond.service; to run it from a checkout, copy it to
+# ~/.config/systemd/user/ and enable it with:
+#
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now unisond
+#
+# The daemon starts with the graphical session, so the display and the session
+# bus are there. It keeps running in the manual mode when the display appears
+# later and reaches for it again by itself.
+[Unit]
+Description=Unison daemon
+Documentation=https://github.com/lebe-dev/unison
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/unisond
+Restart=on-failure
+RestartSec=5
+StandardError=journal
+
+# Hardening that keeps the clipboard, the session bus and the network working.
+# ProtectSystem=full keeps the system directories read only, while the data
+# directory and the download folder of the user stay writable; ProtectHome stays
+# off because both live in the home directory, and the download folder may have
+# a localized name or another location from user-dirs.dirs.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=graphical-session.target
