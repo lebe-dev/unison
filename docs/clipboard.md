@@ -10,10 +10,10 @@ How an item leaves a device:
 
 - **macOS** - the daemon watches the clipboard of the session. A copy is announced to the online
   Personal devices about a quarter of a second after it happened.
-- **Linux** - the daemon watches the clipboard of the X11 session. On GNOME Wayland the desktop
-  keeps one clipboard for native windows and for XWayland, so the same path works there; on KDE
-  Plasma and wlroots desktops the daemon can use the data-control protocol instead, which is not
-  implemented yet. Without a display, or with `--clipboard=none`, the daemon runs in the manual
+- **Linux** - the daemon watches the clipboard of the session: through the data-control protocol on
+  KDE Plasma, Sway, Hyprland and other wlroots desktops, and through X11 everywhere else. On GNOME
+  Wayland the desktop keeps one clipboard for native windows and for XWayland, so the X11 path
+  works there as well. Without a display, or with `--clipboard=none`, the daemon runs in the manual
   mode described below.
 - **Android** - the system does not let an app watch the clipboard in the background, so the phone
   sends when you ask: the quick settings tile `Send clipboard`, the `Send clipboard` action of the
