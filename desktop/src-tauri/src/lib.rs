@@ -334,6 +334,12 @@ pub fn run() {
             if let tauri::RunEvent::Opened { urls } = &event {
                 share::receive(app, urls);
             }
+            // A click on the Dock icon brings the window back, since closing it
+            // only hides it.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = &event {
+                tray::show_window(app);
+            }
             let _ = (app, event);
         });
 }
