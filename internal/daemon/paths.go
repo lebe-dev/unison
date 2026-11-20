@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/lebe-dev/unison/core/api/localconn"
 	"github.com/lebe-dev/unison/internal/xdg"
@@ -126,9 +127,15 @@ func pipePath(dataDir string) string {
 	return `\\.\pipe\unisond-` + shortHash(dataDir)
 }
 
-// samePath reports whether two paths name the same directory.
+// samePath reports whether two paths name the same directory. Windows compares
+// paths without the case, so another spelling of the default data directory
+// keeps the endpoint of the platform.
 func samePath(a, b string) bool {
-	return filepath.Clean(a) == filepath.Clean(b)
+	a, b = filepath.Clean(a), filepath.Clean(b)
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
 }
 
 // shortHash returns four bytes of the hash of a path, which tells the data
