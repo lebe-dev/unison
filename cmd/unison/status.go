@@ -80,7 +80,7 @@ func (a *app) writeStatus(status *localv1.GetStatusResponse) {
 		a.field("address", strings.Join(addrs, ", "))
 	}
 	a.field("network", networkText(status.GetNetwork()))
-	a.field("pause", pauseText(status.GetPause()))
+	a.field("pause", pauseStateText(status.GetPause()))
 	if search := status.GetFriendsDiscovery(); search.GetOn() {
 		a.field("friends", fmt.Sprintf("searching until %s", time.UnixMilli(search.GetUntilUnixMs()).Format("15:04")))
 	}

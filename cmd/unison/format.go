@@ -229,7 +229,8 @@ func countText(n int, singular, plural string) string {
 	return fmt.Sprintf("%d %s", n, plural)
 }
 
-// pauseText describes the state of the clipboard pause.
+// pauseText describes the state of the clipboard pause for the command that
+// changes it.
 func pauseText(pause *localv1.Pause) string {
 	if !pause.GetPaused() {
 		return "on"
@@ -238,6 +239,19 @@ func pauseText(pause *localv1.Pause) string {
 		return "paused until turned off"
 	}
 	return "paused until " + formatTime(pause.GetUntilUnixMs())
+}
+
+// pauseStateText describes the pause switch of the status: off while the
+// clipboard is synchronized.
+func pauseStateText(pause *localv1.Pause) string {
+	switch {
+	case !pause.GetPaused():
+		return "off"
+	case pause.GetIndefinite():
+		return "on"
+	default:
+		return "until " + formatTime(pause.GetUntilUnixMs())
+	}
 }
 
 // formatTime renders a time in unix milliseconds in the local zone. A time on

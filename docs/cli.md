@@ -37,7 +37,7 @@ address     192.168.1.24:60190
 network     online, unmetered
 clipboard   pasteboard
 keystore    keychain
-pause       on
+pause       off
 peers       2 online, 0 offline
 ```
 
@@ -46,7 +46,8 @@ peers       2 online, 0 offline
 of the clipboard and `note` explains why it is not synchronized in the background; on Linux the
 backend is `x11`, `wayland` or `none`, and the note names a missing display. `keystore` is the
 backend that keeps the secrets, and `warning` says that they are stored in files. `pause` is the
-pause state, `friends` appears while the search for Friends devices runs, and `relay` appears when
+pause switch: `off` while the clipboard is synchronized, `on` while it is paused until it is
+turned off and `until HH:MM` while it is paused for a while, `friends` appears while the search for Friends devices runs, and `relay` appears when
 the group uses a relay.
 
 ## devices
