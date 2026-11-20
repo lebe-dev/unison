@@ -5,6 +5,8 @@ package clipboard
 import (
 	"bytes"
 	"context"
+	"image"
+	"image/png"
 	"os"
 	"strings"
 	"sync"
@@ -23,6 +25,9 @@ type testAtoms struct {
 	targets    xproto.Atom
 	utf8String xproto.Atom
 	html       xproto.Atom
+	imagePNG   xproto.Atom
+	uriList    xproto.Atom
+	gnomeFiles xproto.Atom
 	atomType   xproto.Atom
 	hint       xproto.Atom
 	hintMIME   xproto.Atom
@@ -40,6 +45,8 @@ type rawClient struct {
 	mu      sync.Mutex
 	plain   []byte
 	html    []byte
+	png     []byte
+	files   []string
 	hint    bool
 	request []string
 }
@@ -68,6 +75,9 @@ func newRawClient(t *testing.T) *rawClient {
 		targets:    internAtom(t, conn, atomTARGETS),
 		utf8String: internAtom(t, conn, atomUTF8String),
 		html:       internAtom(t, conn, atomTextHTML),
+		imagePNG:   internAtom(t, conn, MIMEImagePNG),
+		uriList:    internAtom(t, conn, MIMEURIList),
+		gnomeFiles: internAtom(t, conn, MIMEGNOMECopiedFiles),
 		atomType:   internAtom(t, conn, atomATOMType),
 		hint:       internAtom(t, conn, PasswordManagerHint),
 		hintMIME:   internAtom(t, conn, PasswordManagerHintMIME),
@@ -90,8 +100,23 @@ func internAtom(t *testing.T, conn *xgb.Conn, name string) xproto.Atom {
 
 // own publishes the value and takes the selection.
 func (r *rawClient) own(plain, html []byte, hint bool) {
+	r.publish(plain, html, nil, nil, hint)
+}
+
+// ownImage publishes a PNG image and takes the selection.
+func (r *rawClient) ownImage(png []byte) {
+	r.publish(nil, nil, png, nil, false)
+}
+
+// ownFiles publishes a copied file list and takes the selection.
+func (r *rawClient) ownFiles(files []string) {
+	r.publish(nil, nil, nil, files, false)
+}
+
+// publish stores the value and takes the selection.
+func (r *rawClient) publish(plain, html, png []byte, files []string, hint bool) {
 	r.mu.Lock()
-	r.plain, r.html, r.hint = plain, html, hint
+	r.plain, r.html, r.png, r.files, r.hint = plain, html, png, files, hint
 	r.request = nil
 	r.mu.Unlock()
 	err := xproto.SetSelectionOwnerChecked(r.conn, r.win, r.atoms.clipboard, 0).Check()
@@ -130,7 +155,7 @@ func (r *rawClient) answer(event xproto.SelectionRequestEvent) {
 	}
 	r.mu.Lock()
 	r.request = append(r.request, r.name(event.Target))
-	plain, html, hint := r.plain, r.html, r.hint
+	plain, html, png, files, hint := r.plain, r.html, r.png, r.files, r.hint
 	r.mu.Unlock()
 
 	var (
@@ -145,6 +170,12 @@ func (r *rawClient) answer(event xproto.SelectionRequestEvent) {
 		if html != nil {
 			targets = append(targets, atom(r.atoms.html))
 		}
+		if png != nil {
+			targets = append(targets, atom(r.atoms.imagePNG))
+		}
+		if len(files) > 0 {
+			targets = append(targets, atom(r.atoms.gnomeFiles), atom(r.atoms.uriList))
+		}
 		if hint {
 			targets = append(targets, atom(r.atoms.hint), atom(r.atoms.hintMIME))
 		}
@@ -153,6 +184,12 @@ func (r *rawClient) answer(event xproto.SelectionRequestEvent) {
 		valueType, format, data = r.atoms.utf8String, 8, plain
 	case r.atoms.html:
 		valueType, format, data = r.atoms.html, 8, html
+	case r.atoms.imagePNG:
+		valueType, format, data = r.atoms.imagePNG, 8, png
+	case r.atoms.gnomeFiles:
+		valueType, format, data = r.atoms.gnomeFiles, 8, encodeGNOMECopiedFiles(files)
+	case r.atoms.uriList:
+		valueType, format, data = r.atoms.uriList, 8, encodeURIList(files)
 	case r.atoms.hint, r.atoms.hintMIME:
 		valueType, format, data = r.atoms.hint, 8, []byte("secret")
 	default:
@@ -386,4 +423,117 @@ func TestWatchHTMLUTF16(t *testing.T) {
 	if !ok || string(value) != "<b>hi</b>" {
 		t.Fatalf("html = %q (%v), want %q", value, ok, "<b>hi</b>")
 	}
+}
+
+// largeTestImage returns a PNG above the INCR threshold. The noise keeps the
+// encoder from shrinking it.
+func largeTestImage(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewNRGBA(image.Rect(0, 0, 400, 400))
+	state := uint32(1)
+	for i := range img.Pix {
+		state = state*1664525 + 1013904223
+		img.Pix[i] = byte(state >> 24)
+	}
+	var buffer bytes.Buffer
+	if err := png.Encode(&buffer, img); err != nil {
+		t.Fatalf("encode large png: %v", err)
+	}
+	return buffer.Bytes()
+}
+
+func TestWriteImageRoundTrip(t *testing.T) {
+	requireDisplay(t)
+	writer, err := NewX11(X11Options{})
+	if err != nil {
+		t.Fatalf("NewX11: %v", err)
+	}
+	t.Cleanup(func() { _ = writer.Close() })
+	watcher, snapshots := watch(t)
+	waitConnected(t, watcher)
+
+	png := largeTestImage(t)
+	if len(png) <= incrThreshold {
+		t.Fatalf("the test image of %d bytes does not exercise INCR", len(png))
+	}
+	if err := writer.Write(context.Background(), ports.Content{
+		ItemID:          "image-1",
+		Representations: []ports.Representation{{MIME: MIMEImagePNG, Data: png}},
+	}); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	snapshot := waitSnapshot(t, snapshots)
+	if !snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = false, want true for content with the marker")
+	}
+	got, ok := representation(snapshot, MIMEImagePNG)
+	if !ok {
+		t.Fatal("no image representation")
+	}
+	if !bytes.Equal(got, png) {
+		t.Fatalf("image of %d bytes does not match the written %d bytes", len(got), len(png))
+	}
+}
+
+func TestWriteFilesRoundTrip(t *testing.T) {
+	requireDisplay(t)
+	dir := t.TempDir()
+	first := touch(t, dir, "первый файл.txt")
+	second := touch(t, dir, "second.txt")
+
+	writer, err := NewX11(X11Options{})
+	if err != nil {
+		t.Fatalf("NewX11: %v", err)
+	}
+	t.Cleanup(func() { _ = writer.Close() })
+	watcher, snapshots := watch(t)
+	waitConnected(t, watcher)
+
+	if err := writer.Write(context.Background(), ports.Content{
+		ItemID: "files-1",
+		Representations: []ports.Representation{
+			{MIME: MIMEUnisonFile, FilePath: first},
+			{MIME: MIMEUnisonFile, FilePath: second},
+		},
+	}); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	snapshot := waitSnapshot(t, snapshots)
+	if !snapshot.OwnedByUs {
+		t.Fatal("OwnedByUs = false, want true for content with the marker")
+	}
+	assertPaths(t, filePathsOf(snapshot), []string{first, second})
+}
+
+func TestWatchImageAndFiles(t *testing.T) {
+	requireDisplay(t)
+	dir := t.TempDir()
+	first := touch(t, dir, "a.txt")
+
+	watcher, snapshots := watch(t)
+	waitConnected(t, watcher)
+
+	png := encodeTestImage(t, MIMEImagePNG)
+	client := newRawClient(t)
+	client.ownImage(png)
+	snapshot := waitSnapshot(t, snapshots)
+	got, ok := representation(snapshot, MIMEImagePNG)
+	if !ok || !bytes.Equal(got, png) {
+		t.Fatalf("image of %d bytes (%v), want the %d bytes of the owner", len(got), ok, len(png))
+	}
+
+	client.ownFiles([]string{first})
+	snapshot = waitSnapshot(t, snapshots)
+	assertPaths(t, filePathsOf(snapshot), []string{first})
+}
+
+// filePathsOf returns the paths of the file representations of a snapshot.
+func filePathsOf(snapshot ports.Snapshot) []string {
+	paths := make([]string, 0, len(snapshot.Content.Representations))
+	for _, item := range snapshot.Content.Representations {
+		if item.FilePath != "" {
+			paths = append(paths, item.FilePath)
+		}
+	}
+	return paths
 }
