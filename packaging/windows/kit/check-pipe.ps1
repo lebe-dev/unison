@@ -6,7 +6,9 @@ Checks that the pipes of the daemon refuse the current user.
 The daemon serves the local API on a named pipe that grants access to its own
 user only. Run this script as a second user of the machine: every pipe of Unison
 must refuse the connection with access denied. A pipe that accepts the
-connection is a failure, and the report of the run says who ran the script.
+connection is a failure, and the report of the run says who ran the script. The
+script checks the pipe of the default data directory and the pipes of the
+directories of their own.
 
 The script needs no sources and no Go: it connects to the pipe with .NET.
 
@@ -28,7 +30,7 @@ $user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 Write-Host "user  $user"
 
 $pipes = @(Get-ChildItem '\\.\pipe\' -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -like 'unison-*' })
+    Where-Object { $_.Name -like 'unison-*' -or $_.Name -like 'unisond-*' })
 if ($pipes.Count -eq 0) {
     Write-Host 'note  no Unison pipe is visible, start the daemon of another user first'
     exit 1
