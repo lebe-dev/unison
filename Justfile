@@ -349,6 +349,10 @@ package-windows *args:
 package-windows-cross:
     packaging/windows/package-cross.sh
 
+# Build the Linux package in a linux/amd64 Docker container.
+package-linux *args:
+    packaging/linux/package.sh {{args}}
+
 # Build the Windows installer and the test kit that runs on a Windows host.
 windows-kit: package-windows-cross
     packaging/windows/kit.sh
