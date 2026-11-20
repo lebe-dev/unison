@@ -2,9 +2,9 @@
 
 [Русский](desktop.ru.md) | English
 
-The desktop app is the macOS and Windows window of the daemon. It is a Tauri 2 shell with a Svelte 5
-frontend and never speaks to the daemon directly: every call goes through Rust, which opens the
-local endpoint and proxies the request.
+The desktop app is the desktop window of the daemon on macOS, Windows and Linux. It is a Tauri 2
+shell with a Svelte 5 frontend and never speaks to the daemon directly: every call goes through
+Rust, which opens the local endpoint and proxies the request.
 
 ```
 Svelte 5 frontend        stores, screens, i18n
@@ -78,7 +78,7 @@ a page that is gone does not keep a `WatchEvents` stream open.
 |--------|----------------|
 | `lib.rs` | the Tauri builder, the window, the command list |
 | `daemon.rs` | endpoint resolution and daemon supervision |
-| `agent.rs` | the login item: `SMAppService` on macOS, the `Run` key on Windows |
+| `agent.rs` | the login item: `SMAppService` on macOS, the `Run` key on Windows, the user unit on Linux |
 | `proxy.rs`, `streams.rs` | the local API bridge |
 | `tray.rs` | the tray icon, its menu and the file pickers |
 | `prompt.rs` | the frameless prompt window |
@@ -91,17 +91,21 @@ a page that is gone does not keep a `WatchEvents` stream open.
 ### Daemon supervision
 
 `daemon.rs` resolves the endpoint the same way as the Go client: `UNISON_LOCAL_API` first, then the
-default path of the platform.
+default path of the platform, which is `$XDG_DATA_HOME/unison` on Linux.
 
 1. probe the endpoint for up to 500 ms;
-2. when the login item is enabled, wait up to 3 seconds for launchd to start the daemon;
-3. otherwise start the bundled `unisond` next to the app, and wait up to 10 seconds for it to
+2. on Linux, ask the service manager to start the user unit with `systemctl --user start
+   unisond.service`, and wait up to 10 seconds for it to answer. A session without a service manager
+   falls back to the binary of the app;
+3. when the login item of macOS is enabled, wait up to 3 seconds for launchd to start the daemon;
+4. otherwise start the bundled `unisond` next to the app, and wait up to 10 seconds for it to
    answer, polling every 200 ms.
 
 The state is reported as `running`, `offline` or `failed` with a reason, and the frontend shows it.
-A daemon that the app started itself is stopped with `SIGTERM` when the login item takes over, so
-only one instance runs per data directory. In a debug build the binary is taken from `bin/unisond`,
-and `UNISON_DAEMON_BIN` overrides it.
+On Linux the reason of a failed start names `journalctl --user -u unisond -n 50`, where the journal
+of the unit holds the details. A daemon that the app started itself is stopped with `SIGTERM` when
+the login item takes over, so only one instance runs per data directory. In a debug build the binary
+is taken from `bin/unisond`, `UNISON_DAEMON_BIN` overrides it, and the unit is never used.
 
 ### Window and tray
 
@@ -113,6 +117,18 @@ recent clipboard items, a submenu that sends files to a device, `Open` and `Quit
 pushes the state with `set_tray_state`, so the tray and the window never disagree. A menu action is
 delivered to the frontend as a `tray-action` event.
 
+macOS and Windows open the menu on a click of the tray icon. Linux shows the icon through the
+status notifier host of the desktop, which a GNOME session provides with the AppIndicators
+extension; a click there opens the menu and never reaches the app, so every action is a menu item.
+The icon is the coloured icon of the app, because a monochrome glyph is invisible on a dark panel.
+When the session has no status notifier host, the app starts without the icon and closing the window
+quits it, so the window is never left running out of reach.
+
+Notifications come from the system notification server. Their buttons are registered before the
+first notification and report `accept`, `decline`, `apply`, `show-in-folder` and `open`. A desktop
+that shows no buttons reports a click on the notification itself as `tap`, and the app brings its
+window up, where the request waits.
+
 The prompt window is a second frameless webview of 360 by 150 pixels in the top right corner, above
 the other windows, without a taskbar entry. It asks whether to apply a clipboard item or to accept
 files, and can be put away with `Later`.
@@ -120,19 +136,20 @@ files, and can be put away with `Later`.
 ### Application log
 
 Settings > Application log turns on a log for support. The daemon marks it with `logs/journal.on` in
-the data directory (`~/Library/Application Support/Unison`); it writes `logs/journal.log`, and the
-shell writes `logs/app.log` next to it. Both files rotate and use the same line format: a UTC
-timestamp with milliseconds, the level, the message and attributes. The shell checks the marker for
-every record, so the toggle applies without a restart, and records only daemon start failures,
-failed shell commands, failed copies or shares and panics.
+the data directory of the platform, which is `~/Library/Application Support/Unison` on macOS,
+`%LOCALAPPDATA%\Unison` on Windows and `$XDG_DATA_HOME/unison` on Linux; it writes
+`logs/journal.log`, and the shell writes `logs/app.log` next to it. Both files rotate and use the
+same line format: a UTC timestamp with milliseconds, the level, the message and attributes. The
+shell checks the marker for every record, so the toggle applies without a restart, and records only
+daemon start failures, failed shell commands, failed copies or shares and panics.
 
 - The export is plain text named `unison-log-YYYYMMDD-HHMMSS.log`. Its header carries the app and
-  daemon versions, the macOS version, the device, the network condition, the addresses and every
-  setting without secrets; `downloads_dir` is always `[path]`.
+  daemon versions, the version of the system, the device, the network condition, the addresses and
+  every setting without secrets; `downloads_dir` is always `[path]`.
 - Copy and Share always include all levels, including DEBUG, while the page display level only
   changes what the window shows.
 - The file is written to the temporary directory and offered by the macOS share sheet. When the
-  sheet cannot be shown, the app asks where to save the file and reveals it in Finder.
+  sheet cannot be shown, the app asks where to save the file and reveals it in the file manager.
 
 ## Packaging
 
@@ -144,6 +161,10 @@ version comes from `VERSION` and is passed with `--config '{"version": ...}'` at
 |----------|---------------|--------|
 | macOS | `tauri.conf.json` | `.app` with the daemon and the LaunchAgent, then a signed and notarized DMG |
 | Windows | `tauri.windows.conf.json` | NSIS installer with the daemon as an external binary |
+| Linux | `tauri.linux.conf.json` | `.deb` with the daemon, the CLI and the user unit, built in a container of the target platform |
+
+The window of macOS has no title bar and the traffic lights sit over the sidebar. Windows and Linux
+keep the decoration of the desktop, so the window of Linux sets it in its own configuration file.
 
 The app declares only the hardened runtime entitlements `com.apple.security.network.client` and
 `com.apple.security.network.server`, and the Bonjour service types of the three mDNS services.
@@ -157,3 +178,6 @@ daemon, not by the shell, and the user starts a second daemon with its own data 
 opens the daemon of the source tree. `just desktop-build` writes the bundle to
 `desktop/src-tauri/target/release/bundle`, `just desktop-test` runs the component tests, and
 `just lint-desktop` runs ESLint, Prettier and `svelte-check`.
+
+The app of Linux needs WebKitGTK and the toolchain of the platform, so `just package-linux` builds
+it and the package in a linux/amd64 container on any host. The daemon and the CLI are cross built.

@@ -19,6 +19,7 @@ import {
   type PerformedAction,
 } from "./notify";
 import { requests } from "./requests.svelte";
+import { showWindow } from "./window";
 
 /** Notifications of the last minutes are remembered to keep repeated events
  * from showing the same message. */
@@ -128,6 +129,14 @@ class NotificationStore {
   #onAction(action: PerformedAction): void {
     const id = extraID(action.extra);
     switch (action.actionId) {
+      // A desktop may show no buttons for the notification, so the click on the
+      // notification itself brings the window with the waiting request back.
+      case "tap":
+      case "default":
+        void showWindow().catch((error: unknown) => {
+          console.warn("cannot show the window", error);
+        });
+        break;
       case "accept":
         if (id) {
           void requests.decide(id, true);

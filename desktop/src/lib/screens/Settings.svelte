@@ -91,6 +91,8 @@
         return "settings.loginHint.notRegistered";
       case "not_found":
         return "settings.loginHint.notFound";
+      case "unsupported":
+        return "settings.loginHint.unsupported";
       default:
         return "settings.loginHint.default";
     }
@@ -664,6 +666,14 @@
 
     <section class="section">
       <h3 class="section-title">{t("common.clipboard")}</h3>
+      {#if daemon.manualClipboard}
+        <p class="notice warn">
+          {t("settings.clipboardManual")}
+          {#if daemon.clipboardNote}
+            <span class="note">{daemon.clipboardNote}</span>
+          {/if}
+        </p>
+      {/if}
       <div class="list">
         <div class="form-row">
           <span class="label">{daemon.pauseText}</span>
@@ -681,6 +691,9 @@
           </div>
         </div>
       </div>
+      {#if daemon.manualClipboard}
+        <p class="section-footer">{t("settings.clipboardManualHint")}</p>
+      {/if}
     </section>
 
     {#if ttl}
@@ -815,6 +828,9 @@
 
     <section class="section">
       <h3 class="section-title">{t("settings.sectionPrivacy")}</h3>
+      {#if daemon.keystoreInFile}
+        <p class="notice warn">{t("settings.keystoreFile")}</p>
+      {/if}
       <div class="list">
         <label class="toggle form-row">
           <input
@@ -867,6 +883,13 @@
 
   .path {
     overflow-wrap: anywhere;
+  }
+
+  .note {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--secondary);
   }
 
   .short {

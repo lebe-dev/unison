@@ -4,6 +4,8 @@
 //! webview has to perform and picks the files of a send offer.
 
 use std::sync::Mutex;
+#[cfg(target_os = "linux")]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
@@ -109,6 +111,24 @@ const SEND_PREFIX: &str = "send:";
 /// Longest text of a menu item of the dynamic lists.
 const MENU_LABEL_LIMIT: usize = 48;
 
+/// WATCHER is the status notifier watcher of the session bus. A Linux desktop
+/// shows tray icons only while a host for them is registered there.
+#[cfg(target_os = "linux")]
+const WATCHER: &str = "org.kde.StatusNotifierWatcher";
+
+/// WATCHER_PATH is the object of the watcher.
+#[cfg(target_os = "linux")]
+const WATCHER_PATH: &str = "/StatusNotifierWatcher";
+
+/// WATCHER_TIMEOUT bounds the wait for the watcher, which a desktop may not run
+/// at all.
+#[cfg(target_os = "linux")]
+const WATCHER_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// TRAY_HOST keeps whether the desktop shows tray icons.
+#[cfg(target_os = "linux")]
+static TRAY_HOST: AtomicBool = AtomicBool::new(true);
+
 /// TrayAction is the payload of EVENT_TRAY_ACTION.
 #[derive(Clone, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -186,6 +206,17 @@ pub struct TrayMenu {
 
 /// install adds the tray icon with its menu.
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
+    detect_host();
+    let result = build(app);
+    if result.is_err() {
+        without_host();
+    }
+    result
+}
+
+/// build adds the tray icon of the app and keeps the items that follow the
+/// state.
+fn build(app: &AppHandle) -> tauri::Result<()> {
     let locale = Locale::detect();
     let labels = text(locale);
     let status = MenuItem::with_id(app, "status", labels.daemon_offline, false, None::<&str>)?;
@@ -268,6 +299,71 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// detect_host records whether the desktop shows tray icons. Only a Linux
+/// desktop without a status notifier host hides the icon; the menu is the only
+/// way to the app there, since a click on an indicator never reaches it.
+fn detect_host() {
+    #[cfg(target_os = "linux")]
+    TRAY_HOST.store(tray_host_present(), Ordering::Relaxed);
+}
+
+/// without_host records a desktop that shows no tray icon.
+fn without_host() {
+    #[cfg(target_os = "linux")]
+    TRAY_HOST.store(false, Ordering::Relaxed);
+}
+
+/// closes_with_window reports whether closing the window quits the app. A
+/// desktop without tray icons has no other way back to the window, so the app
+/// leaves with it.
+#[cfg(target_os = "linux")]
+pub fn closes_with_window() -> bool {
+    !TRAY_HOST.load(Ordering::Relaxed)
+}
+
+/// closes_with_window reports whether closing the window quits the app, which
+/// other desktops never do: the window stays in the tray until the app quits.
+#[cfg(not(target_os = "linux"))]
+pub fn closes_with_window() -> bool {
+    false
+}
+
+/// tray_host_present reports whether the desktop shows status icons. A desktop
+/// that does not answer within WATCHER_TIMEOUT counts as one without them, so
+/// the app never waits for a window the user cannot reach.
+#[cfg(target_os = "linux")]
+fn tray_host_present() -> bool {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = sender.send(watcher_host());
+    });
+    receiver.recv_timeout(WATCHER_TIMEOUT).unwrap_or(false)
+}
+
+/// watcher_host asks the status notifier watcher whether a host shows the
+/// icons. A watcher that does not answer the property but owns the name of the
+/// service counts as a host, so a desktop that shows the icon is never taken
+/// for one that does not.
+#[cfg(target_os = "linux")]
+fn watcher_host() -> bool {
+    let Ok(connection) = zbus::blocking::Connection::session() else {
+        return false;
+    };
+    let Ok(proxy) = zbus::blocking::Proxy::new(&connection, WATCHER, WATCHER_PATH, WATCHER) else {
+        return false;
+    };
+    if let Ok(registered) = proxy.get_property::<bool>("IsStatusNotifierHostRegistered") {
+        return registered;
+    }
+    let Ok(bus) = zbus::blocking::fdo::DBusProxy::new(&connection) else {
+        return false;
+    };
+    let Ok(name) = zbus::names::BusName::try_from(WATCHER) else {
+        return false;
+    };
+    bus.name_has_owner(name).unwrap_or(false)
+}
+
 /// tray_icon returns the image of the menu bar entry.
 ///
 /// The glyph is a template image: black shapes on a transparent background,
@@ -286,6 +382,10 @@ fn tray_icon(_app: &AppHandle) -> Option<Image<'static>> {
 }
 
 /// tray_icon returns the image of the tray entry.
+///
+/// A Linux desktop draws the icon of the app, like the Windows notification
+/// area: the monochrome glyph of the menu bar of macOS stays invisible on a
+/// dark panel, and the status icon extension does not tint it.
 #[cfg(not(target_os = "macos"))]
 fn tray_icon(app: &AppHandle) -> Option<Image<'static>> {
     let icon = app.default_window_icon()?;
@@ -421,14 +521,15 @@ fn emit(app: &AppHandle, action: TrayAction) {
     }
 }
 
-fn show_window(app: &AppHandle) {
+/// show_window brings the main window back from the tray or from a click on a
+/// notification, which the menu of a status icon reports.
+pub fn show_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
     }
 }
-
 /// fill_recent replaces the entries of the recent items menu.
 fn fill_recent(
     app: &AppHandle,

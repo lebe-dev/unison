@@ -201,6 +201,17 @@
         </div>
       {/if}
 
+      {#if daemon.manualClipboard}
+        <div class="banner" role="status">
+          <p>
+            {t("app.manualClipboardBanner")}
+            {#if daemon.clipboardNote}
+              <span class="note">{daemon.clipboardNote}</span>
+            {/if}
+          </p>
+        </div>
+      {/if}
+
       {#if daemon.connected && daemon.error}
         <p class="error">{daemon.error}</p>
       {/if}

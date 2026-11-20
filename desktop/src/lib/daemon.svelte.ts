@@ -97,6 +97,24 @@ class DaemonStore {
     return this.connected && (this.status?.localNetworkBlocked ?? false);
   }
 
+  /** manualClipboard reports a daemon that reads no clipboard, which is the
+   * manual mode of a desktop without a reachable display. */
+  get manualClipboard(): boolean {
+    return this.connected && this.status?.clipboardBackend === "none";
+  }
+
+  /** clipboardNote explains why the daemon reads no clipboard, absent when the
+   * daemon runs without a note. */
+  get clipboardNote(): string {
+    return this.status?.clipboardNote ?? "";
+  }
+
+  /** keystoreInFile reports secrets kept in plain files, because the system has
+   * no keyring the daemon can unlock. */
+  get keystoreInFile(): boolean {
+    return this.connected && this.status?.keystoreBackend === "file";
+  }
+
   get paused(): boolean {
     return this.status?.pause?.paused ?? false;
   }

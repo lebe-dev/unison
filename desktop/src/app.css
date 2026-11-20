@@ -380,6 +380,13 @@ main {
   flex: 1;
 }
 
+/* The reason of a banner sits on its own line, smaller than the message. */
+.banner .note {
+  display: block;
+  font-size: 12px;
+  color: var(--secondary);
+}
+
 .activity {
   flex: none;
 }
@@ -796,6 +803,11 @@ input[type="checkbox"] {
 .notice.error {
   color: var(--danger);
   background-color: var(--danger-soft);
+}
+
+.notice.warn {
+  color: var(--warn);
+  background-color: var(--warn-soft);
 }
 
 .error {

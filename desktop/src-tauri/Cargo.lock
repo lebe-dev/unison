@@ -4897,6 +4897,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tokio",
  "windows-sys 0.61.2",
+ "zbus 5.19.0",
 ]
 
 [[package]]

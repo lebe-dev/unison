@@ -47,6 +47,6 @@ describe("platform", () => {
   it("tags the document with the platform", () => {
     const root = document.createElement("html");
     markPlatform(root);
-    expect(["mac", "other"]).toContain(root.dataset.platform);
+    expect(["mac", "linux", "other"]).toContain(root.dataset.platform);
   });
 });

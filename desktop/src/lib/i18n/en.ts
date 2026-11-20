@@ -74,6 +74,8 @@ export const en = {
   "app.localNetworkBanner":
     "Unison has no access to the local network, so your devices cannot find this device.",
   "app.localNetworkHint": "Allow Unison in System Settings > Privacy & Security > Local Network.",
+  "app.manualClipboardBanner":
+    "Unison cannot read the clipboard of this desktop, so nothing is copied or applied automatically.",
   "app.openSettings": "Open Settings",
   "app.activity": "Activity",
   "app.noEvents": "No events yet.",
@@ -403,8 +405,15 @@ export const en = {
   "settings.loginHint.notRegistered":
     "The background service starts only while the app asks for it.",
   "settings.loginHint.notFound": "The system does not know the background service of this build.",
+  "settings.loginHint.unsupported":
+    "This desktop has no service manager the app can start the background service with.",
   "settings.loginHint.default": "Automatic startup is available in the packaged app.",
   "settings.daemonNotRunning": "The daemon is not running, so the settings are unavailable.",
+  "settings.clipboardManual": "Automatic clipboard sync is off on this desktop.",
+  "settings.clipboardManualHint":
+    "The daemon reads the clipboard only in a session it can reach. Send a clip from the other device, or copy it on both devices.",
+  "settings.keystoreFile":
+    "The keyring of this desktop is not available, so the keys of this device are kept in files that only your user can read. Install and unlock a keyring to protect them.",
   "settings.deviceName": "Device name",
   "settings.askClipboard": "Ask before applying the clipboard of new devices",
   "settings.askClipboardHint":

@@ -10,6 +10,10 @@ use serde::Serialize;
 #[cfg(target_os = "macos")]
 pub const PLIST_NAME: &str = "app.unison.unisond.plist";
 
+/// UNIT is the user unit that starts the daemon with the graphical session.
+#[cfg(target_os = "linux")]
+pub const UNIT: &str = "unisond.service";
+
 /// ACTION_ARG selects the login item action on the command line, so a packaged
 /// app can report and change the login item without opening a window.
 const ACTION_ARG: &str = "--login-item=";
@@ -59,7 +63,11 @@ pub fn status() -> LoginItemStatus {
     {
         platform::status()
     }
-    #[cfg(not(any(target_os = "macos", windows)))]
+    #[cfg(target_os = "linux")]
+    {
+        platform::status()
+    }
+    #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
     {
         LoginItemStatus::Unsupported
     }
@@ -81,7 +89,12 @@ pub fn set(enabled: bool) -> Result<LoginItemStatus, String> {
         platform::set(enabled)?;
         Ok(platform::status())
     }
-    #[cfg(not(any(target_os = "macos", windows)))]
+    #[cfg(target_os = "linux")]
+    {
+        platform::set(enabled)?;
+        Ok(platform::status())
+    }
+    #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
     {
         let _ = enabled;
         Ok(LoginItemStatus::Unsupported)
@@ -98,7 +111,8 @@ pub fn register_binary(binary: &std::path::Path) -> Result<(), String> {
 /// register_at_launch registers the login item on the first launch of the
 /// packaged app. It leaves a login item that the user has to approve alone. The
 /// autostart entry of Windows belongs to the installer, so the toggle of the
-/// settings keeps ownership of it.
+/// settings keeps ownership of it. On Linux the unit is enabled at login the
+/// same way as the login item of macOS.
 pub fn register_at_launch() -> Option<Result<LoginItemStatus, String>> {
     if cfg!(debug_assertions) || cfg!(windows) {
         return None;
@@ -249,6 +263,42 @@ mod tests {
     }
 
     #[test]
+    fn enabled_status_reads_the_unit_states() {
+        assert_eq!(enabled_status("enabled\n", false), LoginItemStatus::Enabled);
+        assert_eq!(
+            enabled_status("enabled-runtime\n", false),
+            LoginItemStatus::Enabled
+        );
+        assert_eq!(
+            enabled_status("disabled\n", true),
+            LoginItemStatus::NotRegistered,
+            "a disabled unit exits with a failure"
+        );
+        assert_eq!(
+            enabled_status("not-found\n", true),
+            LoginItemStatus::NotFound
+        );
+        assert_eq!(
+            enabled_status("masked\n", true),
+            LoginItemStatus::NotRegistered
+        );
+    }
+
+    #[test]
+    fn enabled_status_needs_a_service_manager() {
+        assert_eq!(
+            enabled_status("", true),
+            LoginItemStatus::Unsupported,
+            "a manager that cannot be reached has no login item"
+        );
+        assert_eq!(enabled_status("", false), LoginItemStatus::NotFound);
+        assert_eq!(
+            enabled_status("some other answer", false),
+            LoginItemStatus::NotRegistered
+        );
+    }
+
+    #[test]
     fn status_names_match_the_window_and_the_command_line() {
         let names: Vec<(String, &str)> = ALL
             .iter()
@@ -372,6 +422,68 @@ mod platform {
         description
             .map(|text| text.to_string())
             .unwrap_or_else(|| "the login item could not be changed".to_string())
+    }
+}
+
+/// enabled_status maps the output of `systemctl --user is-enabled` to the state
+/// of the login item. The command exits with a failure for a unit that is not
+/// enabled, so the state comes from its output alone. A manager that cannot be
+/// reached prints nothing.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn enabled_status(output: &str, failed: bool) -> LoginItemStatus {
+    match output.trim() {
+        "" => {
+            if failed {
+                LoginItemStatus::Unsupported
+            } else {
+                LoginItemStatus::NotFound
+            }
+        }
+        "not-found" => LoginItemStatus::NotFound,
+        "enabled" | "enabled-runtime" => LoginItemStatus::Enabled,
+        _ => LoginItemStatus::NotRegistered,
+    }
+}
+
+/// platform reports and changes the user unit of the daemon through the service
+/// manager of the session.
+#[cfg(target_os = "linux")]
+mod platform {
+    use std::process::{Command, Stdio};
+
+    use super::{LoginItemStatus, UNIT, enabled_status};
+
+    /// status reads whether the unit starts at login.
+    pub fn status() -> LoginItemStatus {
+        let output = Command::new("systemctl")
+            .args(["--user", "is-enabled", UNIT])
+            .stdin(Stdio::null())
+            .output();
+        match output {
+            Ok(output) => enabled_status(
+                &String::from_utf8_lossy(&output.stdout),
+                !output.status.success(),
+            ),
+            Err(_) => LoginItemStatus::Unsupported,
+        }
+    }
+
+    /// set enables or disables the unit of the daemon.
+    pub fn set(enabled: bool) -> Result<(), String> {
+        let action = if enabled { "enable" } else { "disable" };
+        let output = Command::new("systemctl")
+            .args(["--user", action, UNIT])
+            .stdin(Stdio::null())
+            .output()
+            .map_err(|err| format!("cannot run systemctl: {err}"))?;
+        if output.status.success() {
+            return Ok(());
+        }
+        let details = String::from_utf8_lossy(&output.stderr);
+        Err(format!(
+            "systemctl --user {action} {UNIT} failed: {}",
+            details.trim()
+        ))
     }
 }
 

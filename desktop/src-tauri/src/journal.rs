@@ -296,7 +296,13 @@ fn os_name() -> String {
             .filter(|version| !version.is_empty());
         os_label(version.as_deref())
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
+    {
+        let release = fs::read_to_string("/etc/os-release").ok();
+        os_release_label(release.as_deref().unwrap_or_default())
+            .unwrap_or_else(|| "Linux".to_string())
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
         std::env::consts::OS.to_string()
     }
@@ -309,6 +315,17 @@ fn os_label(version: Option<&str>) -> String {
         Some(version) => format!("macOS {version}"),
         None => "macOS".to_string(),
     }
+}
+
+/// os_release_label returns the pretty name of the distribution from the
+/// content of `/etc/os-release`.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn os_release_label(release: &str) -> Option<String> {
+    release
+        .lines()
+        .find_map(|line| line.strip_prefix("PRETTY_NAME="))
+        .map(|value| value.trim().trim_matches('"').to_string())
+        .filter(|value| !value.is_empty())
 }
 
 /// journal_shell_info reports the version of the app and of the system.
@@ -522,6 +539,18 @@ mod tests {
     fn labels_the_system() {
         assert_eq!(os_label(Some("14.5")), "macOS 14.5");
         assert_eq!(os_label(None), "macOS");
+    }
+
+    #[test]
+    fn reads_the_pretty_name_of_the_distribution() {
+        let release = "NAME=\"Ubuntu\"\nPRETTY_NAME=\"Ubuntu 24.04.1 LTS\"\nID=ubuntu\n";
+        assert_eq!(
+            os_release_label(release),
+            Some("Ubuntu 24.04.1 LTS".to_string())
+        );
+        assert_eq!(os_release_label("ID=ubuntu\n"), None);
+        assert_eq!(os_release_label("PRETTY_NAME=\"\"\n"), None);
+        assert_eq!(os_release_label(""), None);
     }
 
     #[test]
