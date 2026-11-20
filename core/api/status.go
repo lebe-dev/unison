@@ -95,6 +95,10 @@ func (s *Service) GetStatus(ctx context.Context, _ *connect.Request[localv1.GetS
 		DeviceName: s.name,
 		Running:    s.running(),
 	}
+	if s.clipStatus != nil {
+		status.ClipboardBackend, status.ClipboardNote = s.clipStatus()
+	}
+	status.KeystoreBackend = s.keystore
 	if !status.Running {
 		return connect.NewResponse(status), nil
 	}

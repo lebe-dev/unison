@@ -16199,6 +16199,72 @@ java.lang.String defaultValue) {
      * @return The localNetworkBlocked.
      */
     boolean getLocalNetworkBlocked();
+
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     * @return The clipboardBackend.
+     */
+    java.lang.String getClipboardBackend();
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     * @return The bytes for clipboardBackend.
+     */
+    com.google.protobuf.ByteString
+        getClipboardBackendBytes();
+
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     * @return The clipboardNote.
+     */
+    java.lang.String getClipboardNote();
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     * @return The bytes for clipboardNote.
+     */
+    com.google.protobuf.ByteString
+        getClipboardNoteBytes();
+
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     * @return The keystoreBackend.
+     */
+    java.lang.String getKeystoreBackend();
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     * @return The bytes for keystoreBackend.
+     */
+    com.google.protobuf.ByteString
+        getKeystoreBackendBytes();
   }
   /**
    * Protobuf type {@code unison.local.v1.GetStatusResponse}
@@ -16214,6 +16280,9 @@ java.lang.String defaultValue) {
       deviceName_ = "";
       devices_ = emptyProtobufList();
       addrs_ = emptyProtobufList();
+      clipboardBackend_ = "";
+      clipboardNote_ = "";
+      keystoreBackend_ = "";
     }
     private int bitField0_;
     public static final int VERSION_FIELD_NUMBER = 1;
@@ -16853,6 +16922,222 @@ java.lang.String defaultValue) {
     private void clearLocalNetworkBlocked() {
 
       localNetworkBlocked_ = false;
+    }
+
+    public static final int CLIPBOARD_BACKEND_FIELD_NUMBER = 11;
+    private java.lang.String clipboardBackend_;
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     * @return The clipboardBackend.
+     */
+    @java.lang.Override
+    public java.lang.String getClipboardBackend() {
+      return clipboardBackend_;
+    }
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     * @return The bytes for clipboardBackend.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getClipboardBackendBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(clipboardBackend_);
+    }
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     * @param value The clipboardBackend to set.
+     */
+    private void setClipboardBackend(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      clipboardBackend_ = value;
+    }
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     */
+    private void clearClipboardBackend() {
+
+      clipboardBackend_ = getDefaultInstance().getClipboardBackend();
+    }
+    /**
+     * <pre>
+     * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+     * on macOS and win32 on Windows.
+     * </pre>
+     *
+     * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+     * @param value The bytes for clipboardBackend to set.
+     */
+    private void setClipboardBackendBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      clipboardBackend_ = value.toStringUtf8();
+
+    }
+
+    public static final int CLIPBOARD_NOTE_FIELD_NUMBER = 12;
+    private java.lang.String clipboardNote_;
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     * @return The clipboardNote.
+     */
+    @java.lang.Override
+    public java.lang.String getClipboardNote() {
+      return clipboardNote_;
+    }
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     * @return The bytes for clipboardNote.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getClipboardNoteBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(clipboardNote_);
+    }
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     * @param value The clipboardNote to set.
+     */
+    private void setClipboardNote(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      clipboardNote_ = value;
+    }
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     */
+    private void clearClipboardNote() {
+
+      clipboardNote_ = getDefaultInstance().getClipboardNote();
+    }
+    /**
+     * <pre>
+     * Why the clipboard is not synchronized in the background, in English. Empty
+     * while the clipboard works.
+     * </pre>
+     *
+     * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+     * @param value The bytes for clipboardNote to set.
+     */
+    private void setClipboardNoteBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      clipboardNote_ = value.toStringUtf8();
+
+    }
+
+    public static final int KEYSTORE_BACKEND_FIELD_NUMBER = 13;
+    private java.lang.String keystoreBackend_;
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     * @return The keystoreBackend.
+     */
+    @java.lang.Override
+    public java.lang.String getKeystoreBackend() {
+      return keystoreBackend_;
+    }
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     * @return The bytes for keystoreBackend.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getKeystoreBackendBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(keystoreBackend_);
+    }
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     * @param value The keystoreBackend to set.
+     */
+    private void setKeystoreBackend(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      keystoreBackend_ = value;
+    }
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     */
+    private void clearKeystoreBackend() {
+
+      keystoreBackend_ = getDefaultInstance().getKeystoreBackend();
+    }
+    /**
+     * <pre>
+     * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+     * keychain on macOS and dpapi on Windows.
+     * </pre>
+     *
+     * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+     * @param value The bytes for keystoreBackend to set.
+     */
+    private void setKeystoreBackendBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      keystoreBackend_ = value.toStringUtf8();
+
     }
 
     public static unison.local.v1.Local.GetStatusResponse parseFrom(
@@ -17612,6 +17897,228 @@ java.lang.String defaultValue) {
         return this;
       }
 
+      /**
+       * <pre>
+       * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+       * on macOS and win32 on Windows.
+       * </pre>
+       *
+       * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+       * @return The clipboardBackend.
+       */
+      @java.lang.Override
+      public java.lang.String getClipboardBackend() {
+        return instance.getClipboardBackend();
+      }
+      /**
+       * <pre>
+       * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+       * on macOS and win32 on Windows.
+       * </pre>
+       *
+       * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+       * @return The bytes for clipboardBackend.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getClipboardBackendBytes() {
+        return instance.getClipboardBackendBytes();
+      }
+      /**
+       * <pre>
+       * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+       * on macOS and win32 on Windows.
+       * </pre>
+       *
+       * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+       * @param value The clipboardBackend to set.
+       * @return This builder for chaining.
+       */
+      public Builder setClipboardBackend(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setClipboardBackend(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+       * on macOS and win32 on Windows.
+       * </pre>
+       *
+       * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearClipboardBackend() {
+        copyOnWrite();
+        instance.clearClipboardBackend();
+        return this;
+      }
+      /**
+       * <pre>
+       * The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+       * on macOS and win32 on Windows.
+       * </pre>
+       *
+       * <code>string clipboard_backend = 11 [json_name = "clipboardBackend"];</code>
+       * @param value The bytes for clipboardBackend to set.
+       * @return This builder for chaining.
+       */
+      public Builder setClipboardBackendBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setClipboardBackendBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Why the clipboard is not synchronized in the background, in English. Empty
+       * while the clipboard works.
+       * </pre>
+       *
+       * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+       * @return The clipboardNote.
+       */
+      @java.lang.Override
+      public java.lang.String getClipboardNote() {
+        return instance.getClipboardNote();
+      }
+      /**
+       * <pre>
+       * Why the clipboard is not synchronized in the background, in English. Empty
+       * while the clipboard works.
+       * </pre>
+       *
+       * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+       * @return The bytes for clipboardNote.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getClipboardNoteBytes() {
+        return instance.getClipboardNoteBytes();
+      }
+      /**
+       * <pre>
+       * Why the clipboard is not synchronized in the background, in English. Empty
+       * while the clipboard works.
+       * </pre>
+       *
+       * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+       * @param value The clipboardNote to set.
+       * @return This builder for chaining.
+       */
+      public Builder setClipboardNote(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setClipboardNote(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Why the clipboard is not synchronized in the background, in English. Empty
+       * while the clipboard works.
+       * </pre>
+       *
+       * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearClipboardNote() {
+        copyOnWrite();
+        instance.clearClipboardNote();
+        return this;
+      }
+      /**
+       * <pre>
+       * Why the clipboard is not synchronized in the background, in English. Empty
+       * while the clipboard works.
+       * </pre>
+       *
+       * <code>string clipboard_note = 12 [json_name = "clipboardNote"];</code>
+       * @param value The bytes for clipboardNote to set.
+       * @return This builder for chaining.
+       */
+      public Builder setClipboardNoteBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setClipboardNoteBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+       * keychain on macOS and dpapi on Windows.
+       * </pre>
+       *
+       * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+       * @return The keystoreBackend.
+       */
+      @java.lang.Override
+      public java.lang.String getKeystoreBackend() {
+        return instance.getKeystoreBackend();
+      }
+      /**
+       * <pre>
+       * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+       * keychain on macOS and dpapi on Windows.
+       * </pre>
+       *
+       * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+       * @return The bytes for keystoreBackend.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getKeystoreBackendBytes() {
+        return instance.getKeystoreBackendBytes();
+      }
+      /**
+       * <pre>
+       * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+       * keychain on macOS and dpapi on Windows.
+       * </pre>
+       *
+       * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+       * @param value The keystoreBackend to set.
+       * @return This builder for chaining.
+       */
+      public Builder setKeystoreBackend(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setKeystoreBackend(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+       * keychain on macOS and dpapi on Windows.
+       * </pre>
+       *
+       * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearKeystoreBackend() {
+        copyOnWrite();
+        instance.clearKeystoreBackend();
+        return this;
+      }
+      /**
+       * <pre>
+       * The keystore the daemon keeps secrets in: secret-service or file on Linux,
+       * keychain on macOS and dpapi on Windows.
+       * </pre>
+       *
+       * <code>string keystore_backend = 13 [json_name = "keystoreBackend"];</code>
+       * @param value The bytes for keystoreBackend to set.
+       * @return This builder for chaining.
+       */
+      public Builder setKeystoreBackendBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setKeystoreBackendBytes(value);
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.GetStatusResponse)
     }
     @java.lang.Override
@@ -17640,11 +18147,14 @@ java.lang.String defaultValue) {
               "friendsDiscovery_",
               "addrs_",
               "localNetworkBlocked_",
+              "clipboardBackend_",
+              "clipboardNote_",
+              "keystoreBackend_",
             };
             java.lang.String info =
-                "\u0000\n\u0000\u0001\u0001\n\n\u0000\u0002\u0000\u0001\u0208\u0002\u0208\u0003\u0208" +
+                "\u0000\r\u0000\u0001\u0001\r\r\u0000\u0002\u0000\u0001\u0208\u0002\u0208\u0003\u0208" +
                 "\u0004\u0007\u0005\u1009\u0000\u0006\u001b\u0007\u1009\u0001\b\u1009\u0002\t\u021a" +
-                "\n\u0007";
+                "\n\u0007\u000b\u0208\f\u0208\r\u0208";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {

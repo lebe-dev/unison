@@ -47,6 +47,12 @@ type Options struct {
 	// LocalNetworkBlocked reports that the system refuses the sends of the
 	// daemon to the local network. The access is reported as granted when nil.
 	LocalNetworkBlocked func() bool
+	// ClipboardStatus reports the clipboard backend and the reason of the
+	// manual mode. Nothing is reported when nil.
+	ClipboardStatus func() (backend, note string)
+	// KeystoreBackend names the keystore of the daemon. Nothing is reported
+	// when empty.
+	KeystoreBackend string
 	// Journal is the application log the user can turn on and share. The
 	// setting reports that the log is off when nil.
 	Journal *journal.Store
@@ -60,6 +66,8 @@ type Service struct {
 	localClip  LocalClip
 	clock      ports.Clock
 	lanBlocked func() bool
+	clipStatus func() (string, string)
+	keystore   string
 	journal    *journal.Store
 }
 
@@ -89,6 +97,8 @@ func New(n *node.Node, opts Options) (*Service, error) {
 		localClip:  opts.LocalClip,
 		clock:      clock,
 		lanBlocked: opts.LocalNetworkBlocked,
+		clipStatus: opts.ClipboardStatus,
+		keystore:   opts.KeystoreBackend,
 		journal:    opts.Journal,
 	}, nil
 }

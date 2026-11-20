@@ -26,3 +26,24 @@ func TestDataHome(t *testing.T) {
 		})
 	}
 }
+
+// TestConfigHome checks that only an absolute override replaces the default.
+func TestConfigHome(t *testing.T) {
+	cases := []struct {
+		name string
+		dir  string
+		want string
+	}{
+		{name: "absolute", dir: "/data/config", want: "/data/config"},
+		{name: "trailing slash", dir: "/data/config/", want: "/data/config"},
+		{name: "empty", dir: "", want: "/home/user/.config"},
+		{name: "relative", dir: "config", want: "/home/user/.config"},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			if got := xdg.ConfigHome("/home/user", test.dir); got != test.want {
+				t.Fatalf("config home is %q, want %q", got, test.want)
+			}
+		})
+	}
+}

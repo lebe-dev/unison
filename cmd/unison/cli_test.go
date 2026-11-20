@@ -27,7 +27,27 @@ func TestStatus(t *testing.T) {
 		t.Fatalf("status exited with %d, stderr %q", code, stderr)
 	}
 	fingerprint := fingerprintOf(device.DeviceID().String())
-	for _, want := range []string{testVersion + " running", device.name, fingerprint, "online", "clipboard"} {
+	for _, want := range []string{testVersion + " running", device.name, fingerprint, "online", "pause"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("status does not report %q:\n%s", want, stdout)
+		}
+	}
+}
+
+// TestStatusBackends checks the clipboard and keystore of the status.
+func TestStatusBackends(t *testing.T) {
+	network, bus := newNetwork(t)
+	device := newDevice(t, network, bus, 125, api.Options{
+		ClipboardStatus: func() (string, string) { return "x11", "DISPLAY is not set" },
+		KeystoreBackend: "file",
+	})
+	device.start(t)
+
+	code, stdout, stderr := runCommand(t, "", "--endpoint", device.endpoint, "status")
+	if code != exitOK {
+		t.Fatalf("status exited with %d, stderr %q", code, stderr)
+	}
+	for _, want := range []string{"x11", "DISPLAY is not set", "keystore    file", "secrets are stored in files"} {
 		if !strings.Contains(stdout, want) {
 			t.Errorf("status does not report %q:\n%s", want, stdout)
 		}

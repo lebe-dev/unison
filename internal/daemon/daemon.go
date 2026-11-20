@@ -178,6 +178,9 @@ func Run(ctx context.Context, opts Options) error {
 	if err := n.Start(ctx); err != nil {
 		return fmt.Errorf("daemon: start the node: %w", err)
 	}
+	// The unit may start before the session provides a display, so the daemon
+	// keeps reaching for it while it runs.
+	go retryClipboard(ctx, opts.Clipboard, log)
 	key.use(n.Trust().DiscoveryKey)
 	key.useKeys(n.Trust().DiscoveryKeys)
 	key.useFriends(n.Trust().FriendsDiscoveryKeys)
@@ -309,6 +312,8 @@ func serve(ctx context.Context, n *node.Node, opts Options, name string, lanBloc
 		LocalClip:           n.Clip(),
 		LocalNetworkBlocked: lanBlocked,
 		Journal:             appLog,
+		ClipboardStatus:     func() (string, string) { return clipboardStatus(opts.Clipboard) },
+		KeystoreBackend:     keystoreBackend(opts.Keystore),
 	})
 	if err != nil {
 		return nil, err
@@ -355,10 +360,11 @@ func endpointAlive(ctx context.Context, endpoint string) bool {
 
 // clipboardMode names the clipboard in the log.
 func clipboardMode(clip ports.Clipboard) string {
-	if _, ok := clip.(noClipboard); ok {
-		return "none"
+	backend, _ := clipboardStatus(clip)
+	if backend == "" {
+		return ClipboardSystem
 	}
-	return "system"
+	return backend
 }
 
 // startupWarner reports a condition of a platform adapter that the user has to

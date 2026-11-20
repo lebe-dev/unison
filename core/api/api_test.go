@@ -73,6 +73,32 @@ func TestGetStatusLocalNetworkBlocked(t *testing.T) {
 	}
 }
 
+// TestGetStatusBackends checks the clipboard and keystore of the status.
+func TestGetStatusBackends(t *testing.T) {
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 175)
+	client := newClient(t, n.Node, api.Options{
+		Version:         "1.2.3",
+		DeviceName:      "workstation",
+		ClipboardStatus: func() (string, string) { return "x11", "DISPLAY is not set" },
+		KeystoreBackend: "file",
+	})
+
+	response, err := client.GetStatus(callTimeout(t), connect.NewRequest(&localv1.GetStatusRequest{}))
+	if err != nil {
+		t.Fatalf("get status: %v", err)
+	}
+	status := response.Msg
+	if status.GetClipboardBackend() != "x11" {
+		t.Errorf("clipboard backend is %q, want x11", status.GetClipboardBackend())
+	}
+	if status.GetClipboardNote() != "DISPLAY is not set" {
+		t.Errorf("clipboard note is %q", status.GetClipboardNote())
+	}
+	if status.GetKeystoreBackend() != "file" {
+		t.Errorf("keystore backend is %q, want file", status.GetKeystoreBackend())
+	}
+}
+
 // TestGetStatusNotRunning checks that a node that has not started still answers.
 func TestGetStatusNotRunning(t *testing.T) {
 	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 200)

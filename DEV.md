@@ -392,7 +392,9 @@ shows up in the log. A device that the trust store does not accept is refused du
 handshake and leaves no session: the refused device reports the handshake error on its side.
 
 `--clipboard=none` starts a daemon without the system clipboard, which is what a second daemon on
-one machine needs: two daemons would otherwise read and write the same pasteboard. The default
+one machine needs: two daemons would otherwise read and write the same pasteboard. On Linux
+`--clipboard` takes `system`, `auto`, `x11`, `wayland` and `none`: `auto` follows the session, and
+the daemon keeps running in the manual mode without a display until one appears. The default
 data directory keeps its keys in the `app.unison` Keychain service and any other data directory
 keeps them in a service named after the directory, so a second instance never reaches the keys of
 the first one; on Windows the keys live below the data directory. Two instances on one machine are
