@@ -13,6 +13,7 @@ packaging/linux/build/
 packaging/macos/build/
 packaging/windows/build/
 desktop/src-tauri/binaries/
+release/
 
 /unison
 /bin/

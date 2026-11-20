@@ -3,10 +3,12 @@
 #
 # The daemon is a Go cross build, the app is a Rust cross build through
 # cargo-xwin and the NSIS installer comes from makensis, which Homebrew ships.
+# UNISON_VERSION overrides the version of the artifacts, the VERSION file is used
+# when it is unset.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-version="$(tr -d '[:space:]' < "$root/VERSION")"
+version="${UNISON_VERSION:-$(tr -d '[:space:]' < "$root/VERSION")}"
 target="x86_64-pc-windows-msvc"
 sidecars="$root/desktop/src-tauri/binaries"
 build="$root/packaging/windows/build"

@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -38,8 +40,22 @@ fun buildValue(name: String): String {
 /** BuildConfig string literal. */
 fun quoted(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
-val appVersion = rootProject.file("../VERSION").readText().trim()
+/** Absolute path, or a path relative to the repository root. */
+fun repositoryFile(path: String): File {
+    val file = File(path)
+    return if (file.isAbsolute) file else rootProject.file("../$path")
+}
+
+/** Version of the build, from UNISON_VERSION when it is set. */
+val appVersion = System.getenv("UNISON_VERSION")?.trim()?.takeIf { it.isNotEmpty() }
+    ?: rootProject.file("../VERSION").readText().trim()
 val sentryDsn = buildValue("SENTRY_DSN")
+
+/** Keystore of the release APK; without it the release build stays unsigned. */
+val releaseKeystore = buildValue("UNISON_ANDROID_KEYSTORE")
+val releaseStorePassword = buildValue("UNISON_ANDROID_STORE_PASSWORD")
+val releaseKeyAlias = buildValue("UNISON_ANDROID_KEY_ALIAS")
+val releaseKeyPassword = buildValue("UNISON_ANDROID_KEY_PASSWORD")
 
 android {
     namespace = "app.unison"
@@ -59,11 +75,25 @@ android {
         buildConfigField("String", "RELEASE", quoted("unison@$appVersion"))
     }
 
+    signingConfigs {
+        if (releaseKeystore.isNotEmpty()) {
+            create("release") {
+                storeFile = repositoryFile(releaseKeystore)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("String", "ENVIRONMENT", quoted("debug"))
         }
         release {
+            if (releaseKeystore.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             buildConfigField("String", "ENVIRONMENT", quoted("release"))
         }
     }

@@ -115,6 +115,11 @@ just package-windows      # Windows installer with the daemon, run on Windows
 just verify-windows       # check the installer and the installed Windows app
 just package-windows-cross # Windows installer built on macOS
 just package-linux        # Linux package in a linux/amd64 Docker container
+just release-macos        # macOS disk image and command line archive into release/
+just release-windows      # Windows installer and command line archive into release/
+just release-linux        # Linux package and command line archive into release/
+just release-android      # Android release APK into release/
+just release-all          # every artifact of every platform into release/
 just windows-kit          # Windows installer and the test kit for a Windows host
 just clean                # remove bin/
 ```
@@ -130,6 +135,38 @@ Every recipe that builds the Rust shell runs `lint-rust` first: `desktop-dev`, `
 the packaging recipes. In the same way, the Go recipes run `golangci-lint` first: `just build`,
 `just test`, `just e2e-build` and `just aar`, while `just vet-windows` and `just vet-linux` lint
 with the `GOOS` and `GOARCH` of their target so the platform files are covered.
+
+## Releases
+
+The `release-*` recipes build the distribution artifacts into `release/` and put the version of
+the `VERSION` file into their names:
+
+| Recipe | Artifacts |
+|--------|-----------|
+| `just release-macos` | `unison-v<version>-macos.dmg`, `unison-v<version>-macos-cli.tar.gz` |
+| `just release-windows` | `unison-v<version>-windows.exe`, `unison-v<version>-windows-cli.zip` |
+| `just release-linux` | `unison-v<version>-linux.deb`, `unison-v<version>-linux-cli.tar.gz` |
+| `just release-android` | `unison-v<version>-android.apk` |
+
+The disk image, the installer and the package hold the app with its daemon. The command line
+archives hold `unison`, the client, and `unisond`, the daemon, for a machine without the app; the
+macOS archive is universal.
+
+Every platform has a `-desktop` and a `-cli` recipe for one of its artifacts, for example
+`just release-windows-desktop` and `just release-windows-cli`. The `-dev` recipes build the
+artifacts of the current commit and add its short hash to the version, so a development build
+lands in `release/unison-v<version>-<hash>-macos.dmg` next to the release one. `just release-all`
+builds every artifact of every platform, which needs macOS, Docker and the Android SDK.
+
+`just release-macos 1.2.3` and the other recipes take the version as their first argument and pass
+it as `UNISON_VERSION` to the packaging scripts and to Gradle. The `-desktop` artifacts reuse
+`package-macos`, `package-windows` or `package-windows-cross` and `package-linux`, so the signing
+and notarization variables of those scripts apply as well.
+
+The Android release APK is signed when `UNISON_ANDROID_KEYSTORE`, `UNISON_ANDROID_STORE_PASSWORD`,
+`UNISON_ANDROID_KEY_ALIAS` and `UNISON_ANDROID_KEY_PASSWORD` are set in `.env` or the environment.
+A relative keystore path is resolved against the repository root. Without the keystore Gradle
+writes an unsigned APK and the recipe warns about it.
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
 

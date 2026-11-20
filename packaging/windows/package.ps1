@@ -12,6 +12,7 @@ the user that runs it and allows the daemon in the Windows Firewall on the
 private and domain networks.
 
 Environment:
+  UNISON_VERSION                  version of the artifacts, the VERSION file when unset
   UNISON_WINDOWS_CERT_THUMBPRINT  thumbprint of an Authenticode certificate
   UNISON_WINDOWS_TIMESTAMP_URL    timestamp server, http://timestamp.digicert.com by default
 
@@ -33,7 +34,11 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$version = (Get-Content -Raw (Join-Path $root 'VERSION')).Trim()
+$version = if ($env:UNISON_VERSION) {
+    $env:UNISON_VERSION.Trim()
+} else {
+    (Get-Content -Raw (Join-Path $root 'VERSION')).Trim()
+}
 $sidecars = Join-Path $root 'desktop/src-tauri/binaries'
 $build = Join-Path $root 'packaging/windows/build'
 

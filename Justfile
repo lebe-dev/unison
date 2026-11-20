@@ -11,6 +11,14 @@ sentry_ldflags := "-X github.com/lebe-dev/unison/internal/observability.buildDSN
 debug_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=debug"
 release_ldflags := ldflags + " " + sentry_ldflags + " -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
 
+# Version stamped into the artifacts of release/, and the version of a dev build,
+# which adds the short commit hash.
+release_version := version
+release_dev_version := version + "-" + `git rev-parse --short HEAD`
+
+# Every distribution artifact is written here.
+release_dir := "release"
+
 # Binaries are pure Go so every target can be cross-compiled without a C toolchain.
 export CGO_ENABLED := "0"
 
@@ -361,6 +369,200 @@ package-windows-cross: lint-rust
 package-linux *args: lint-rust
     packaging/linux/package.sh {{args}}
 
+# Build the macOS disk image and the command line archive into release/.
+release-macos ver=release_version *args:
+    just release-macos-desktop "{{ver}}" {{args}}
+    just release-macos-cli "{{ver}}"
+
+# Build the macOS disk image into release/.
+release-macos-desktop ver=release_version *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    UNISON_VERSION="{{ver}}" just --justfile "$root/Justfile" package-macos {{args}}
+    mkdir -p "$root/{{release_dir}}"
+    cp "$root/packaging/macos/build/Unison-{{ver}}.dmg" "$root/{{release_dir}}/unison-v{{ver}}-macos.dmg"
+    echo "release: $root/{{release_dir}}/unison-v{{ver}}-macos.dmg"
+
+# Build the macOS command line archive into release/.
+release-macos-cli ver=release_version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    out="$root/{{release_dir}}"
+    stage="$(mktemp -d)"
+    trap 'rm -rf "$stage"' EXIT
+    mkdir -p "$stage/unison" "$out"
+    ldflags="-s -w -X main.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
+    cd "$root"
+    for arch in arm64 amd64; do
+        cc=clang
+        if [ "$arch" = amd64 ]; then
+            cc="clang -arch x86_64"
+        fi
+        echo "release: building the command line tools for darwin/$arch"
+        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="$cc" go build -trimpath -ldflags "$ldflags" -o "$stage/unison-$arch" ./cmd/unison
+        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="$cc" go build -trimpath -ldflags "$ldflags" -o "$stage/unisond-$arch" ./cmd/unisond
+    done
+    lipo -create -output "$stage/unison/unison" "$stage/unison-arm64" "$stage/unison-amd64"
+    lipo -create -output "$stage/unison/unisond" "$stage/unisond-arm64" "$stage/unisond-amd64"
+    rm -f "$stage"/unison-arm64 "$stage"/unison-amd64 "$stage"/unisond-arm64 "$stage"/unisond-amd64
+    chmod 0755 "$stage/unison/unison" "$stage/unison/unisond"
+    cat >"$stage/unison/README.txt" <<'EOF'
+    Unison {{ver}} command line tools for macOS.
+
+      unison    the command line client of the daemon
+      unisond   the daemon
+
+    Copy both files into a directory of PATH, for example /usr/local/bin.
+    EOF
+    tar -czf "$out/unison-v{{ver}}-macos-cli.tar.gz" -C "$stage" unison
+    echo "release: $out/unison-v{{ver}}-macos-cli.tar.gz"
+
+# Build the macOS artifacts of the current commit into release/.
+release-macos-dev *args:
+    just release-macos "{{release_dev_version}}" {{args}}
+
+# Build the Windows installer and the command line archive into release/.
+release-windows ver=release_version *args:
+    just release-windows-desktop "{{ver}}" {{args}}
+    just release-windows-cli "{{ver}}"
+
+# Build the Windows installer into release/.
+release-windows-desktop ver=release_version *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    case "$(uname -s)" in
+        MINGW* | MSYS* | CYGWIN*)
+            UNISON_VERSION="{{ver}}" just --justfile "$root/Justfile" package-windows {{args}}
+            ;;
+        *)
+            UNISON_VERSION="{{ver}}" just --justfile "$root/Justfile" package-windows-cross
+            ;;
+    esac
+    mkdir -p "$root/{{release_dir}}"
+    cp "$root/packaging/windows/build/Unison-{{ver}}-setup.exe" "$root/{{release_dir}}/unison-v{{ver}}-windows.exe"
+    echo "release: $root/{{release_dir}}/unison-v{{ver}}-windows.exe"
+
+# Build the Windows command line archive into release/.
+release-windows-cli ver=release_version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    out="$root/{{release_dir}}"
+    stage="$(mktemp -d)"
+    trap 'rm -rf "$stage"' EXIT
+    mkdir -p "$stage/unison" "$out"
+    ldflags="-s -w -X main.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
+    cd "$root"
+    for name in unison unisond; do
+        echo "release: building $name for windows/amd64"
+        GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$ldflags" -o "$stage/unison/$name.exe" ./cmd/$name
+    done
+    cat >"$stage/unison/README.txt" <<'EOF'
+    Unison {{ver}} command line tools for Windows.
+
+      unison.exe    the command line client of the daemon
+      unisond.exe   the daemon
+
+    Copy both files into a directory of PATH.
+    EOF
+    archive="$out/unison-v{{ver}}-windows-cli.zip"
+    if command -v zip >/dev/null 2>&1; then
+        (cd "$stage" && zip -qr "$archive" unison)
+    else
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path (Join-Path '$stage' 'unison') -DestinationPath '$archive' -Force"
+    fi
+    echo "release: $archive"
+
+# Build the Windows artifacts of the current commit into release/.
+release-windows-dev *args:
+    just release-windows "{{release_dev_version}}" {{args}}
+
+# Build the Linux package and the command line archive into release/.
+release-linux ver=release_version *args:
+    just release-linux-desktop "{{ver}}" {{args}}
+    just release-linux-cli "{{ver}}"
+
+# Build the Linux package into release/.
+release-linux-desktop ver=release_version *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    UNISON_VERSION="{{ver}}" just --justfile "$root/Justfile" package-linux {{args}}
+    mkdir -p "$root/{{release_dir}}"
+    cp "$root/packaging/linux/build/Unison_{{ver}}_amd64.deb" "$root/{{release_dir}}/unison-v{{ver}}-linux.deb"
+    echo "release: $root/{{release_dir}}/unison-v{{ver}}-linux.deb"
+
+# Build the Linux command line archive into release/.
+release-linux-cli ver=release_version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    out="$root/{{release_dir}}"
+    stage="$(mktemp -d)"
+    trap 'rm -rf "$stage"' EXIT
+    mkdir -p "$stage/unison" "$out"
+    ldflags="-s -w -X main.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
+    cd "$root"
+    for name in unison unisond; do
+        echo "release: building $name for linux/amd64"
+        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$ldflags" -o "$stage/unison/$name" ./cmd/$name
+    done
+    chmod 0755 "$stage/unison/unison" "$stage/unison/unisond"
+    cat >"$stage/unison/README.txt" <<'EOF'
+    Unison {{ver}} command line tools for Linux.
+
+      unison    the command line client of the daemon
+      unisond   the daemon
+
+    Copy both files into a directory of PATH, for example /usr/local/bin.
+    EOF
+    tar -czf "$out/unison-v{{ver}}-linux-cli.tar.gz" -C "$stage" unison
+    echo "release: $out/unison-v{{ver}}-linux-cli.tar.gz"
+
+# Build the Linux artifacts of the current commit into release/.
+release-linux-dev *args:
+    just release-linux "{{release_dev_version}}" {{args}}
+
+# Build the Android release APK into release/.
+release-android ver=release_version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    just --justfile "$root/Justfile" aar "{{ver}}" release
+    UNISON_VERSION="{{ver}}" "$root/android/gradlew" -p "$root/android" assembleRelease
+    apk_dir="$root/android/app/build/outputs/apk/release"
+    apk="$(ls -t "$apk_dir"/*.apk 2>/dev/null | head -n 1 || true)"
+    if [ -z "$apk" ]; then
+        echo "release: no APK in $apk_dir" >&2
+        exit 1
+    fi
+    mkdir -p "$root/{{release_dir}}"
+    target="$root/{{release_dir}}/unison-v{{ver}}-android.apk"
+    cp "$apk" "$target"
+    if [[ "$apk" == *unsigned.apk ]]; then
+        echo "release: $target is unsigned, set UNISON_ANDROID_KEYSTORE, UNISON_ANDROID_STORE_PASSWORD," >&2
+        echo "release: UNISON_ANDROID_KEY_ALIAS and UNISON_ANDROID_KEY_PASSWORD to sign it" >&2
+    fi
+    echo "release: $target"
+
+# Build the Android release APK of the current commit into release/.
+release-android-dev:
+    just release-android "{{release_dev_version}}"
+
+# Build every artifact of every platform into release/.
+release-all ver=release_version:
+    just release-macos "{{ver}}"
+    just release-windows "{{ver}}"
+    just release-linux "{{ver}}"
+    just release-android "{{ver}}"
+
+# Build every artifact of the current commit into release/.
+release-all-dev:
+    just release-all "{{release_dev_version}}"
+
 # Build the Windows installer and the test kit that runs on a Windows host.
 windows-kit: package-windows-cross
     packaging/windows/kit.sh
@@ -448,10 +650,10 @@ desktop-test:
     cd desktop && yarn test
 
 # Bind the Go core into an Android library that the app consumes.
-aar: lint-go
+aar ver=version env="debug": lint-go
     mkdir -p android/core bin
     go build -o bin/gobind golang.org/x/mobile/cmd/gobind
-    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{version}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=debug" -trimpath -o android/core/core.aar ./mobile
+    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment={{env}}" -trimpath -o android/core/core.aar ./mobile
     rm -f android/core/core-sources.jar
 
 # Build the Android debug APK.

@@ -2,6 +2,7 @@
 # Builds the macOS app with the bundled daemon, signs it and notarizes it.
 #
 # Environment:
+#   UNISON_VERSION               version of the artifacts, the VERSION file when unset
 #   UNISON_MACOS_SIGN_IDENTITY   codesigning identity, ad-hoc when unset
 #   UNISON_MACOS_APPLE_ID        Apple ID of the notarization account
 #   UNISON_MACOS_APPLE_PASSWORD  app-specific password of that account
@@ -14,7 +15,7 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-version=$(tr -d '[:space:]' <"$root/VERSION")
+version="${UNISON_VERSION:-$(tr -d '[:space:]' <"$root/VERSION")}"
 build="$root/packaging/macos/build"
 
 # The DSN comes from the environment or from the .env file of the repository.
@@ -33,7 +34,7 @@ notarize=1
 create_dmg=1
 
 usage() {
-    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,/^$/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
 }
 
 while [[ $# -gt 0 ]]; do

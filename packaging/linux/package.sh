@@ -6,11 +6,14 @@
 # on the host. The result is packaging/linux/build/Unison_<version>_amd64.deb.
 #
 # Usage: package.sh [--rebuild-image] [--no-cache]
+#
+# UNISON_VERSION overrides the version of the package, the VERSION file is used
+# when it is unset.
 
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-version="$(tr -d '[:space:]' < "$root/VERSION")"
+version="${UNISON_VERSION:-$(tr -d '[:space:]' < "$root/VERSION")}"
 build="$root/packaging/linux/build"
 image_dir="$root/packaging/linux/build-image"
 sidecars="$root/desktop/src-tauri/binaries"
