@@ -31,7 +31,7 @@ func NewClipboard(mode string) (ports.Clipboard, error) {
 	case ClipboardNone:
 		return NoClipboard(), nil
 	default:
-		return nil, fmt.Errorf("clipboard: %q is available on Linux only, use %s or %s", mode, ClipboardSystem, ClipboardNone)
+		return nil, fmt.Errorf("clipboard: %q is not available on Windows, use %s or %s", mode, ClipboardSystem, ClipboardNone)
 	}
 }
 
