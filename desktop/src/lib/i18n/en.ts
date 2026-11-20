@@ -49,6 +49,7 @@ export const en = {
   "common.theDevicePrepositional": "the device",
   "common.aDevice": "A device",
   "common.aDeviceLower": "a device",
+  "common.thisComputer": "This computer",
   "common.thisDevice": "This device",
   "common.thisMac": "This Mac",
   "common.thisPC": "This PC",

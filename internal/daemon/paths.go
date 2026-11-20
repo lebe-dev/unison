@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"github.com/lebe-dev/unison/core/api/localconn"
+	"github.com/lebe-dev/unison/internal/xdg"
 )
 
 // Names of the files and directories the daemon owns inside a data directory.
@@ -55,6 +56,12 @@ func DefaultDataDir() (string, error) {
 			return "", errors.New("daemon: LOCALAPPDATA is not set")
 		}
 		return filepath.Join(root, "Unison"), nil
+	case "linux":
+		home, err := homeDir()
+		if err != nil {
+			return "", err
+		}
+		return linuxDataDir(home, os.Getenv("XDG_DATA_HOME")), nil
 	default:
 		home, err := homeDir()
 		if err != nil {
@@ -62,6 +69,12 @@ func DefaultDataDir() (string, error) {
 		}
 		return filepath.Join(home, ".local", "share", "unison"), nil
 	}
+}
+
+// linuxDataDir returns the data directory on Linux: the XDG data home when the
+// environment names an absolute one, the default data home otherwise.
+func linuxDataDir(home, xdgDataHome string) string {
+	return filepath.Join(xdg.DataHome(home, xdgDataHome), "unison")
 }
 
 // homeDir returns the home directory of the current user.

@@ -138,6 +138,10 @@ public final class Local {
      * <code>PLATFORM_ANDROID = 3;</code>
      */
     PLATFORM_ANDROID(3),
+    /**
+     * <code>PLATFORM_LINUX = 4;</code>
+     */
+    PLATFORM_LINUX(4),
     UNRECOGNIZED(-1),
     ;
 
@@ -157,6 +161,10 @@ public final class Local {
      * <code>PLATFORM_ANDROID = 3;</code>
      */
     public static final int PLATFORM_ANDROID_VALUE = 3;
+    /**
+     * <code>PLATFORM_LINUX = 4;</code>
+     */
+    public static final int PLATFORM_LINUX_VALUE = 4;
 
 
     @java.lang.Override
@@ -183,6 +191,7 @@ public final class Local {
         case 1: return PLATFORM_MACOS;
         case 2: return PLATFORM_WINDOWS;
         case 3: return PLATFORM_ANDROID;
+        case 4: return PLATFORM_LINUX;
         default: return null;
       }
     }

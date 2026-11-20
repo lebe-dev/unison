@@ -20,6 +20,7 @@ const PLATFORM_LABELS: Record<number, string> = {
   [Platform.MACOS]: "macOS",
   [Platform.WINDOWS]: "Windows",
   [Platform.ANDROID]: "Android",
+  [Platform.LINUX]: "Linux",
 };
 
 const PATH_LABELS: Record<number, MessageKey> = {

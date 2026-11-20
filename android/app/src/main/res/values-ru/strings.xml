@@ -104,6 +104,7 @@
     <string name="platform_macos">macOS</string>
     <string name="platform_windows">Windows</string>
     <string name="platform_android">Android</string>
+    <string name="platform_linux">Linux</string>
     <string name="platform_unknown">Неизвестная платформа</string>
     <string name="network_offline">Не в сети</string>
     <string name="network_wifi">Wi-Fi</string>

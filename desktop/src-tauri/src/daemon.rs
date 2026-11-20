@@ -1,7 +1,7 @@
 //! Discovery and startup of the daemon.
 
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
@@ -356,7 +356,7 @@ fn start(binary: &PathBuf) -> Result<u32, String> {
 fn platform_endpoint() -> Result<String, String> {
     #[cfg(unix)]
     {
-        unix_endpoint(std::env::var_os("HOME"))
+        unix_endpoint(std::env::var_os("HOME"), std::env::var_os("XDG_DATA_HOME"))
     }
     #[cfg(windows)]
     {
@@ -369,7 +369,7 @@ fn platform_endpoint() -> Result<String, String> {
 pub fn data_dir() -> Result<PathBuf, String> {
     #[cfg(unix)]
     {
-        unix_data_dir(std::env::var_os("HOME"))
+        unix_data_dir(std::env::var_os("HOME"), std::env::var_os("XDG_DATA_HOME"))
     }
     #[cfg(windows)]
     {
@@ -381,24 +381,54 @@ pub fn data_dir() -> Result<PathBuf, String> {
 }
 
 /// unix_data_dir returns the data directory under the given home directory.
+/// On Linux the XDG data home wins when it is an absolute path.
 #[cfg(unix)]
-fn unix_data_dir(home: Option<OsString>) -> Result<PathBuf, String> {
+#[cfg_attr(not(target_os = "linux"), allow(unused_variables))]
+fn unix_data_dir(
+    home: Option<OsString>,
+    xdg_data_home: Option<OsString>,
+) -> Result<PathBuf, String> {
     let home = home
         .filter(|home| !home.is_empty())
         .ok_or_else(|| "the home directory is not set".to_string())?;
     let mut dir = PathBuf::from(home);
     #[cfg(target_os = "macos")]
-    dir.push("Library/Application Support/Unison");
-    #[cfg(not(target_os = "macos"))]
-    dir.push(".local/share/unison");
+    {
+        dir.push("Library/Application Support");
+        dir.push("Unison");
+    }
+    #[cfg(target_os = "linux")]
+    {
+        dir.push(linux_data_root(xdg_data_home));
+        dir.push("unison");
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        dir.push(".local/share");
+        dir.push("unison");
+    }
     Ok(dir)
+}
+
+/// linux_data_root returns the data root of the daemon on Linux: the XDG data
+/// home when it is an absolute path, the default data home otherwise.
+#[cfg(unix)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn linux_data_root(xdg_data_home: Option<OsString>) -> PathBuf {
+    match xdg_data_home {
+        Some(xdg) if Path::new(&xdg).is_absolute() => PathBuf::from(xdg),
+        _ => PathBuf::from(".local/share"),
+    }
 }
 
 /// unix_endpoint returns the socket of the daemon in the data directory under
 /// the given home directory.
 #[cfg(unix)]
-fn unix_endpoint(home: Option<OsString>) -> Result<String, String> {
-    let mut dir = unix_data_dir(home)?;
+fn unix_endpoint(
+    home: Option<OsString>,
+    xdg_data_home: Option<OsString>,
+) -> Result<String, String> {
+    let mut dir = unix_data_dir(home, xdg_data_home)?;
     dir.push("unisond.sock");
     Ok(dir.to_string_lossy().into_owned())
 }
@@ -879,7 +909,7 @@ mod tests {
 
     #[test]
     fn unix_endpoint_lives_in_the_data_directory() {
-        let endpoint = unix_endpoint(Some("/Users/someone".into())).expect("endpoint");
+        let endpoint = unix_endpoint(Some("/Users/someone".into()), None).expect("endpoint");
         #[cfg(target_os = "macos")]
         assert_eq!(
             endpoint,
@@ -891,10 +921,40 @@ mod tests {
 
     #[test]
     fn unix_endpoint_needs_a_home_directory() {
-        assert!(unix_endpoint(None).is_err());
+        assert!(unix_endpoint(None, None).is_err());
         assert!(
-            unix_endpoint(Some(OsString::new())).is_err(),
+            unix_endpoint(Some(OsString::new()), None).is_err(),
             "an empty home turned into a relative endpoint"
+        );
+    }
+
+    #[test]
+    fn linux_data_root_follows_the_xdg_data_home() {
+        assert_eq!(
+            linux_data_root(Some("/data".into())),
+            PathBuf::from("/data")
+        );
+    }
+
+    #[test]
+    fn linux_data_root_ignores_a_relative_xdg_data_home() {
+        for xdg in [None, Some(OsString::new()), Some("data".into())] {
+            assert_eq!(
+                linux_data_root(xdg),
+                PathBuf::from(".local/share"),
+                "a relative or empty data home moved the data root"
+            );
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn unix_data_dir_ignores_the_xdg_data_home() {
+        let dir =
+            unix_data_dir(Some("/Users/someone".into()), Some("/data".into())).expect("data dir");
+        assert_eq!(
+            dir,
+            PathBuf::from("/Users/someone/Library/Application Support/Unison")
         );
     }
 

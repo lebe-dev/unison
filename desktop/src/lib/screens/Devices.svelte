@@ -51,6 +51,8 @@
         return "phone";
       case Platform.WINDOWS:
         return "desktop";
+      case Platform.LINUX:
+        return "laptop";
       default:
         return "laptop";
     }

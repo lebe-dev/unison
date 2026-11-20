@@ -33,6 +33,7 @@ export const ru: { [K in MessageKey]: Message } = {
   "common.theDevicePrepositional": "устройстве",
   "common.aDevice": "Устройство",
   "common.aDeviceLower": "устройство",
+  "common.thisComputer": "Этот компьютер",
   "common.thisDevice": "Это устройство",
   "common.thisMac": "Этот Mac",
   "common.thisPC": "Этот компьютер",

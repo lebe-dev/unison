@@ -1,4 +1,4 @@
-//go:build !darwin && !windows
+//go:build !darwin && !windows && !linux
 
 package daemon
 
@@ -13,7 +13,7 @@ import (
 const Platform = model.PlatformUnknown
 
 // errUnsupported reports a platform the daemon does not run on.
-var errUnsupported = errors.New("daemon: the keystore and the clipboard are available on macOS and Windows only")
+var errUnsupported = errors.New("daemon: the keystore and the clipboard are available on macOS, Windows and Linux only")
 
 // NewKeystore always fails on this platform.
 func NewKeystore(string) (ports.Keystore, error) { return nil, errUnsupported }

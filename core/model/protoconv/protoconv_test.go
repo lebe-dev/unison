@@ -45,6 +45,7 @@ func TestEnumConversions(t *testing.T) {
 		model.PlatformMacOS:   wirev1.Platform_PLATFORM_MACOS,
 		model.PlatformWindows: wirev1.Platform_PLATFORM_WINDOWS,
 		model.PlatformAndroid: wirev1.Platform_PLATFORM_ANDROID,
+		model.PlatformLinux:   wirev1.Platform_PLATFORM_LINUX,
 	}
 	for domain, proto := range platforms {
 		if got := PlatformToProto(domain); got != proto {

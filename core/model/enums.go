@@ -38,6 +38,8 @@ const (
 	PlatformWindows
 	// PlatformAndroid is Android.
 	PlatformAndroid
+	// PlatformLinux is Linux.
+	PlatformLinux
 )
 
 // String returns the lower case name of the platform.
@@ -49,6 +51,8 @@ func (p Platform) String() string {
 		return "windows"
 	case PlatformAndroid:
 		return "android"
+	case PlatformLinux:
+		return "linux"
 	default:
 		return "unknown"
 	}

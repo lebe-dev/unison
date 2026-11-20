@@ -190,7 +190,7 @@ func (i Introduction) validate() error {
 	if i.IssuedAt.IsZero() {
 		return fmt.Errorf("%w: introduction without a time", ErrInvalidPeer)
 	}
-	if i.Platform > model.PlatformAndroid {
+	if i.Platform > model.PlatformLinux {
 		return fmt.Errorf("%w: unknown platform %d", ErrInvalidPeer, i.Platform)
 	}
 	return validateName(i.SubjectName)

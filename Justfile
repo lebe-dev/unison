@@ -49,6 +49,7 @@ build-unisond-all:
     just build-unisond darwin arm64
     just build-unisond darwin amd64
     just build-unisond windows amd64
+    just build-unisond linux amd64
 
 # Build unisond for the host with the Keychain and pasteboard of the platform. On
 # macOS it is the bundle bin/unisond.app, so the daemon holds its own permissions.
@@ -187,6 +188,11 @@ vet-windows:
     GOOS=windows go vet ./...
     GOOS=windows go build ./...
 
+# Vet and build the Go sources for Linux from any host.
+vet-linux:
+    GOOS=linux GOARCH=amd64 go vet ./...
+    GOOS=linux GOARCH=amd64 go build ./...
+
 # Lint the Go sources, including the security checks of gosec and the format.
 lint-go:
     golangci-lint run
@@ -297,7 +303,7 @@ security-image: relay-image
 security: security-deps security-go security-secrets security-infra security-image
 
 # Check the code before committing.
-check: lint test
+check: lint test vet-linux
 
 # Run the desktop app with hot reload.
 desktop-dev:
