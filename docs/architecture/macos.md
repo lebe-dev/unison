@@ -27,19 +27,18 @@ is built with `CGO_ENABLED=1`.
 - the service identifies the application and the account is the secret name;
 - items are readable after the first unlock of the login session, never leave the device and are not
   synced to iCloud;
-- the keystore is opened once, the default keychain of the process or the login keychain of the
-  user, and the keychain is named in every query, so the API never looks for a keychain of its own
-  and never raises a dialog that asks for one.
+- the keychain is resolved on the first use, the default keychain of the process or the login
+  keychain of the user, and the keychain is named in every query, so the API never looks for a
+  keychain of its own and never raises a dialog that asks for one.
 
 | Service | Data directory |
 |---------|----------------|
 | `app.unison` | the default data directory |
-| `app.unison.dev.<slug>` | any other data directory |
-| `app.unison.dev.<slug>-<hash>` | a directory whose name had to be sanitized |
+| `app.unison.dev.<slug>-<hash>` | any other data directory |
 
-The slug is lower case letters, digits and single dashes, cut to 24 characters, and the hash tells
-apart directories that share a slug. A directory always maps to the same name, so repeated runs edit
-the same items instead of adding new ones under a new name.
+The slug is lower case letters, digits and single dashes, cut to 24 characters, and the hash of the
+path keeps two directories with the same name apart. A directory always maps to the same name, so
+repeated runs edit the same items instead of adding new ones under a new name.
 
 Without cgo the operations return `ErrUnsupported`; a build that cannot open a keychain returns
 `ErrNoKeychain` and the daemon exits with that error. The integration tests use the fixed services

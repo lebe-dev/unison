@@ -28,14 +28,15 @@ func TestKeychainServiceOfDefaultDataDir(t *testing.T) {
 // its own.
 func TestKeychainServiceOfDataDir(t *testing.T) {
 	cases := []struct{ name, dir, want string }{
-		{"separator", "/tmp/Unison-2", "app.unison.dev.unison-2"},
-		{"lower case", "/tmp/unisond2", "app.unison.dev.unisond2"},
-		{"upper case", "/tmp/Work", "app.unison.dev.work"},
+		{"separator", "/tmp/Unison-2", "app.unison.dev.unison-2-"},
+		{"lower case", "/tmp/unisond2", "app.unison.dev.unisond2-"},
+		{"upper case", "/tmp/Work", "app.unison.dev.work-"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := keychainService(tc.dir); got != tc.want {
-				t.Errorf("keychainService(%q) = %q, want %q", tc.dir, got, tc.want)
+			got := keychainService(tc.dir)
+			if !strings.HasPrefix(got, tc.want) {
+				t.Errorf("keychainService(%q) = %q, want the prefix %q", tc.dir, got, tc.want)
 			}
 		})
 	}
@@ -55,7 +56,7 @@ func TestKeychainServiceIsStable(t *testing.T) {
 }
 
 // TestKeychainServiceOfSanitizedNames checks that a name which needs sanitizing
-// carries a suffix of its path, so two such directories stay apart.
+// keeps its directory apart from every other one.
 func TestKeychainServiceOfSanitizedNames(t *testing.T) {
 	first := keychainService("/tmp/a/my dir")
 	if !strings.HasPrefix(first, "app.unison.dev.my-dir-") {
@@ -70,32 +71,22 @@ func TestKeychainServiceOfSanitizedNames(t *testing.T) {
 	}
 }
 
+// TestKeychainServiceOfSameNamedDirectories checks that two data directories
+// with the same name keep their keys apart.
+func TestKeychainServiceOfSameNamedDirectories(t *testing.T) {
+	first := keychainService("/tmp/a/work")
+	second := keychainService("/tmp/b/work")
+	if first == second {
+		t.Fatalf("two data directories share the service %q", first)
+	}
+}
+
 // TestKeychainServiceWithoutName checks a data directory that has no usable
 // name.
 func TestKeychainServiceWithoutName(t *testing.T) {
 	got := keychainService("/")
 	if !strings.HasPrefix(got, "app.unison.dev.dir-") {
 		t.Errorf("keychainService(%q) = %q", "/", got)
-	}
-}
-
-// TestServiceSlug checks the label of a directory name.
-func TestServiceSlug(t *testing.T) {
-	cases := []struct{ name, in, want string }{
-		{"separator", "Unison-2", "unison-2"},
-		{"spaces", "My Data Dir", "my-data-dir"},
-		{"punctuation", "app.unison (v2)", "app-unison-v2"},
-		{"leading and trailing separators", "--x--", "x"},
-		{"only separators", "!!!", ""},
-		{"long", strings.Repeat("a", 40), strings.Repeat("a", serviceSlugLimit)},
-		{"cut at a separator", strings.Repeat("a", 23) + "-b", strings.Repeat("a", 23)},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := serviceSlug(tc.in); got != tc.want {
-				t.Errorf("serviceSlug(%q) = %q, want %q", tc.in, got, tc.want)
-			}
-		})
 	}
 }
 

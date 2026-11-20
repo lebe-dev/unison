@@ -10,10 +10,11 @@ import (
 	"strconv"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/keystorename"
 )
 
 // DefaultService is the Keychain service Unison secrets are stored under.
-const DefaultService = "app.unison"
+const DefaultService = keystorename.DefaultService
 
 // ErrUnsupported reports that the Keychain is unavailable because the binary
 // was built without cgo.

@@ -6,11 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/keystorename"
 	"github.com/lebe-dev/unison/platform/darwin/clipboard"
 	"github.com/lebe-dev/unison/platform/darwin/keystore"
 )
@@ -90,48 +89,11 @@ func (c *policyClipboard) StartupWarning(context.Context) string {
 
 // keychainService returns the Keychain service of a data directory. The default
 // data directory uses the shared service, every other directory a name of its
-// own, so two daemons on one machine keep separate keys. A directory always
-// maps to the same name, so repeated runs edit the same items.
+// own, so two daemons on one machine keep separate keys.
 func keychainService(dataDir string) string {
 	def, err := DefaultDataDir()
-	if err == nil && samePath(dataDir, def) {
-		return keystore.DefaultService
+	if err != nil {
+		def = ""
 	}
-	base := filepath.Base(filepath.Clean(dataDir))
-	slug := serviceSlug(base)
-	if slug == "" {
-		slug = "dir"
-	}
-	// A name the slug had to change may share the slug with another directory,
-	// so the path tells them apart.
-	if slug != strings.ToLower(base) {
-		return keystore.DefaultService + ".dev." + slug + "-" + shortHash(dataDir)
-	}
-	return keystore.DefaultService + ".dev." + slug
-}
-
-// serviceSlugLimit caps the readable part of a service name.
-const serviceSlugLimit = 24
-
-// serviceSlug turns a directory name into a Keychain service label of lower
-// case letters, digits and single dashes.
-func serviceSlug(name string) string {
-	var b strings.Builder
-	separator := false
-	for _, r := range strings.ToLower(name) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			b.WriteRune(r)
-			separator = false
-			continue
-		}
-		if b.Len() > 0 && !separator {
-			b.WriteByte('-')
-			separator = true
-		}
-	}
-	slug := strings.TrimRight(b.String(), "-")
-	if len(slug) > serviceSlugLimit {
-		slug = strings.TrimRight(slug[:serviceSlugLimit], "-")
-	}
-	return slug
+	return keystorename.Service(dataDir, def)
 }

@@ -336,43 +336,15 @@ func writeRecord(t *testing.T, dir string, backend Backend) {
 	}
 }
 
-// TestServiceNames checks the service names of the data directories.
+// TestServiceNames checks that the service of a data directory comes from the
+// shared naming rule.
 func TestServiceNames(t *testing.T) {
-	tests := []struct {
-		name       string
-		dataDir    string
-		defaultDir string
-		want       string
-	}{
-		{name: "default", dataDir: "/home/u/.local/share/unison", defaultDir: "/home/u/.local/share/unison", want: "app.unison"},
-		{name: "trailing slash", dataDir: "/home/u/.local/share/unison/", defaultDir: "/home/u/.local/share/unison", want: "app.unison"},
-		{name: "second daemon", dataDir: "/home/u/.local/share/unison-2", defaultDir: "/home/u/.local/share/unison", want: "app.unison.dev.unison-2"},
-		{name: "spaces", dataDir: "/home/u/my dir", defaultDir: "/home/u/.local/share/unison", want: "app.unison.dev.my-dir-" + shortHash("/home/u/my dir")},
-		{name: "empty slug", dataDir: "/tmp/---", defaultDir: "/x", want: "app.unison.dev.dir-" + shortHash("/tmp/---")},
-		{name: "long name", dataDir: "/tmp/" + strings.Repeat("a", serviceSlugLimit+4), defaultDir: "/x", want: "app.unison.dev." + strings.Repeat("a", serviceSlugLimit) + "-" + shortHash("/tmp/"+strings.Repeat("a", serviceSlugLimit+4))},
+	if got, want := Service("/home/u/.local/share/unison", "/home/u/.local/share/unison"), "app.unison"; got != want {
+		t.Fatalf("Service = %q, want %q", got, want)
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if got := Service(test.dataDir, test.defaultDir); got != test.want {
-				t.Fatalf("Service(%q) = %q, want %q", test.dataDir, got, test.want)
-			}
-		})
-	}
-}
-
-// TestServiceNamesTellDirectoriesApart checks that two directories whose slugs
-// collide get different names.
-func TestServiceNamesTellDirectoriesApart(t *testing.T) {
-	first := Service("/tmp/my dir", "/x")
-	second := Service("/tmp/my-dir", "/x")
+	first := Service("/home/u/.local/share/unison-2", "/home/u/.local/share/unison")
+	second := Service("/home/u/.local/share/unison-3", "/home/u/.local/share/unison")
 	if first == second {
 		t.Fatalf("both directories map to %q", first)
-	}
-}
-
-// TestServiceWithoutDefaultDirectory names a directory without a default.
-func TestServiceWithoutDefaultDirectory(t *testing.T) {
-	if got, want := Service("/home/u/.local/share/unison", ""), "app.unison.dev.unison"; got != want {
-		t.Fatalf("Service = %q, want %q", got, want)
 	}
 }

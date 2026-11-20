@@ -17,10 +17,11 @@ import (
 	"time"
 
 	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/internal/keystorename"
 )
 
 // DefaultService is the service name Unison secrets are stored under.
-const DefaultService = "app.unison"
+const DefaultService = keystorename.DefaultService
 
 // DefaultPromptTimeout bounds the wait for a system prompt such as unlocking
 // the keyring.
