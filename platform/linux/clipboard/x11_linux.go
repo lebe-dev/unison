@@ -54,6 +54,7 @@ type X11 struct {
 	targetsTimeout time.Duration
 	valueTimeout   time.Duration
 	logger         *slog.Logger
+	onReport       func(Report)
 	state          *x11State
 }
 
@@ -88,6 +89,7 @@ func newX11(opts X11Options) (*X11, error) {
 		targetsTimeout: targetsTimeout,
 		valueTimeout:   valueTimeout,
 		logger:         logger,
+		onReport:       opts.OnReport,
 	}, nil
 }
 
@@ -100,6 +102,9 @@ type x11State struct {
 	connectMu sync.Mutex
 	connMu    sync.Mutex
 	conn      *x11Conn
+
+	serverMu sync.Mutex
+	server   *server
 
 	ownedMu sync.Mutex
 	owned   *payload
@@ -568,6 +573,16 @@ func (x *X11) serve(ctx context.Context, conn *x11Conn) {
 		props:     make(chan xproto.PropertyNotifyEvent, 64),
 		transfers: make(map[incrKey]*incrTransfer),
 	}
+	x.state.serverMu.Lock()
+	x.state.server = s
+	x.state.serverMu.Unlock()
+	defer func() {
+		x.state.serverMu.Lock()
+		if x.state.server == s {
+			x.state.server = nil
+		}
+		x.state.serverMu.Unlock()
+	}()
 	done := make(chan struct{})
 	defer close(done)
 	go func() {
@@ -658,31 +673,82 @@ func (s *server) readSnapshot() {
 	}
 }
 
-// readCurrent publishes the content of the current owner.
+// Read returns the state of the clipboard now. The report is empty when the
+// clipboard has no owner or advertises no readable targets.
+func (x *X11) Read(ctx context.Context) (Report, error) {
+	ctx, cancel := context.WithTimeout(ctx, writeConnectTimeout)
+	defer cancel()
+	s, err := x.currentServer(ctx)
+	if err != nil {
+		return Report{}, fmt.Errorf("clipboard: read: %w", err)
+	}
+	s.readMu.Lock()
+	defer s.readMu.Unlock()
+	report, _ := s.snapshot()
+	return report, nil
+}
+
+// currentServer returns the event loop of the current connection, waiting for
+// one to start.
+func (x *X11) currentServer(ctx context.Context) (*server, error) {
+	x.start()
+	for {
+		x.state.serverMu.Lock()
+		s := x.state.server
+		x.state.serverMu.Unlock()
+		if s != nil {
+			return s, nil
+		}
+		if !sleep(ctx, 20*time.Millisecond) {
+			return nil, ctx.Err()
+		}
+	}
+}
+
+// readCurrent publishes the content of the current owner and reports it to the
+// observer.
 func (s *server) readCurrent() {
+	report, ok := s.snapshot()
+	if !ok {
+		return
+	}
+	s.x.publish(report.Snapshot)
+	if s.x.onReport != nil {
+		s.x.onReport(report)
+	}
+}
+
+// snapshot reads the state of the current owner. It reports false when the
+// clipboard has nothing the backend reads, but the report still carries the
+// advertised targets.
+func (s *server) snapshot() (Report, bool) {
 	conn := s.conn
+	report := Report{At: time.Now()}
 	owner, err := await(s.ctx, func() (*xproto.GetSelectionOwnerReply, error) {
 		return xproto.GetSelectionOwner(conn.conn, conn.atoms.clipboard).Reply()
 	})
 	if err != nil || owner.Owner == 0 {
-		return
+		return report, false
 	}
-	owned := owner.Owner == conn.win
+	report.Owner = uint64(owner.Owner)
+	report.OwnerIsUs = owner.Owner == conn.win
+	owned := report.OwnerIsUs
 	targets, ok := s.convert(atom(conn.atoms.targets), s.x.targetsTimeout)
 	if !ok || targets.format != 32 {
-		return
+		return report, false
 	}
 	names := make(targetList, 0, len(targets.data)/4)
 	for _, value := range parseAtomList(targets.data) {
 		names = append(names, conn.name(value))
 	}
+	report.Targets = names
 	if names.has(MarkerTarget) {
 		owned = true
 	}
 	if Sensitive(names) {
 		s.x.logger.Info("skipped a sensitive clipboard value", "targets", len(names))
-		s.x.publish(ports.Snapshot{Sensitive: true, OwnedByUs: owned})
-		return
+		report.Snapshot = ports.Snapshot{Sensitive: true, OwnedByUs: owned}
+		return report, true
 	}
 	representations := make([]ports.Representation, 0, 2)
 	if target, latin1 := names.pickPlain(); target != "" {
@@ -701,8 +767,12 @@ func (s *server) readCurrent() {
 			})
 		}
 	}
+	report.Snapshot = ports.Snapshot{
+		Content:   ports.Content{Representations: representations},
+		OwnedByUs: owned,
+	}
 	if len(representations) == 0 {
-		return
+		return report, false
 	}
 	plainBytes, htmlBytes := 0, 0
 	for _, representation := range representations {
@@ -714,10 +784,7 @@ func (s *server) readCurrent() {
 		}
 	}
 	s.x.logger.Info("read the clipboard", "plain_bytes", plainBytes, "html_bytes", htmlBytes, "owned_by_us", owned)
-	s.x.publish(ports.Snapshot{
-		Content:   ports.Content{Representations: representations},
-		OwnedByUs: owned,
-	})
+	return report, true
 }
 
 // readValueTarget reads one target with its own timeout.
