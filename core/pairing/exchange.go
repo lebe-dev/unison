@@ -515,7 +515,7 @@ func (w *Window) awaitDecisions(ctx context.Context, reader *frameReader, stream
 		case decision := <-answers:
 			remote = true
 			if decision.err != nil {
-				return fmt.Errorf("pairing: read decision: %w", decision.err)
+				return decisionError(decision.err)
 			}
 			if !decision.accepted {
 				return ErrRejected
@@ -525,6 +525,18 @@ func (w *Window) awaitDecisions(ctx context.Context, reader *frameReader, stream
 		}
 	}
 	return nil
+}
+
+// decisionError describes a failed read of the decision of the other device. A
+// device that closes the connection without a decision is a common case: the
+// user closed its window or the pairing was cancelled there.
+func decisionError(err error) error {
+	var streamErr *quic.StreamError
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
+		(errors.As(err, &streamErr) && streamErr.ErrorCode == 0) {
+		return errors.New("pairing: the other device closed the connection before the decision")
+	}
+	return fmt.Errorf("pairing: read decision: %w", err)
 }
 
 // accept exchanges the group data of the pair and writes the peer to the trust
