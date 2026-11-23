@@ -27,9 +27,17 @@ to approve the login item in System Settings > General > Login Items.
 | Log file | `~/Library/Application Support/Unison/logs/unisond.log` |
 | Keys | the login Keychain, under the service `app.unison` |
 
-A release build is signed with a Developer ID and notarized, so it opens like any other app. An
-unsigned build has to be allowed in System Settings > Privacy & Security, and it cannot reach the
-login Keychain from inside the app, so the window reports `Daemon offline`.
+Unison is maintained by a solo developer and is not signed with a paid Apple Developer ID ($99/year)
+or notarized by Apple. Because of that, macOS Gatekeeper blocks a disk image downloaded from the
+internet. After dragging `Unison` into `Applications`, remove the quarantine attribute once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Unison.app
+```
+
+You can also allow the app in System Settings > Privacy & Security, or build it from source. An
+unsigned ad-hoc build cannot reach the login Keychain from inside the app, so the window reports
+`Daemon offline`.
 
 ### Remove the app
 

@@ -154,3 +154,15 @@ session can read it, and on macOS anything in the session can call the daemon th
 socket. On Android the node runs inside the app and has no socket, but the clipboard is still
 readable by the session. Unison protects the path between devices, not a device that is already
 compromised.
+
+### Why does macOS block Unison when I try to open it?
+
+Unison is built by a solo developer who does not pay Apple $99/year for a Developer ID certificate
+and notarization. Because of that, macOS Gatekeeper blocks builds downloaded from the internet.
+After copying `Unison.app` to `/Applications`, remove the quarantine attribute once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Unison.app
+```
+
+If you prefer not to clear quarantine on a prebuilt binary, you can build the app from source.

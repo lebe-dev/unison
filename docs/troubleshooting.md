@@ -1,5 +1,15 @@
 # Troubleshooting
 
+## macOS refuses to open Unison
+
+Unison is developed by a solo developer and is not signed with a paid Apple Developer ID ($99/year)
+or notarized by Apple, so Gatekeeper blocks builds downloaded from the internet. After copying
+`Unison.app` to `/Applications`, clear the quarantine attribute once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Unison.app
+```
+
 ## The devices do not find each other
 
 - Both devices have to be in the same network. A guest network, a network with client isolation and
