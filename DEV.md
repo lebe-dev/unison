@@ -144,8 +144,8 @@ the `VERSION` file into their names:
 | Recipe | Artifacts |
 |--------|-----------|
 | `just release-macos` | `unison-v<version>-macos.dmg`, `unison-v<version>-macos-cli.tar.gz` |
-| `just release-windows` | `unison-v<version>-windows.exe`, `unison-v<version>-windows-cli.zip` |
-| `just release-linux` | `unison-v<version>-linux.deb`, `unison-v<version>-linux-cli.tar.gz` |
+| `just release-windows` | `unison-v<version>-windows.exe`, `unison-v<version>-windows-<arch>-cli.zip` |
+| `just release-linux` | `unison-v<version>-linux.deb`, `unison-v<version>-linux-<arch>-cli.tar.gz` |
 | `just release-android` | `unison-v<version>-android.apk` |
 
 The disk image, the installer and the package hold the app with its daemon. The command line

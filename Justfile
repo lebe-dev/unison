@@ -455,28 +455,34 @@ release-windows-cli ver=release_version:
     out="$root/{{release_dir}}"
     stage="$(mktemp -d)"
     trap 'rm -rf "$stage"' EXIT
-    mkdir -p "$stage/unison" "$out"
+    mkdir -p "$out"
     ldflags="-s -w -X main.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
     cd "$root"
-    for name in unison unisond; do
-        echo "release: building $name for windows/amd64"
-        GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$ldflags" -o "$stage/unison/$name.exe" ./cmd/$name
-    done
-    cat >"$stage/unison/README.txt" <<'EOF'
-    Unison {{ver}} command line tools for Windows.
+    # Pure Go binaries without cgo, so they depend on no DLL outside the system.
+    for arch in amd64 arm64; do
+        dir="$stage/$arch/unison"
+        mkdir -p "$dir"
+        for name in unison unisond; do
+            echo "release: building $name for windows/$arch"
+            GOOS=windows GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags "$ldflags" -o "$dir/$name.exe" ./cmd/$name
+        done
+        cat >"$dir/README.txt" <<EOF
+    Unison {{ver}} command line tools for Windows $arch.
 
       unison.exe    the command line client of the daemon
       unisond.exe   the daemon
 
     Copy both files into a directory of PATH.
     EOF
-    archive="$out/unison-v{{ver}}-windows-cli.zip"
-    if command -v zip >/dev/null 2>&1; then
-        (cd "$stage" && zip -qr "$archive" unison)
-    else
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path (Join-Path '$stage' 'unison') -DestinationPath '$archive' -Force"
-    fi
-    echo "release: $archive"
+        archive="$out/unison-v{{ver}}-windows-$arch-cli.zip"
+        rm -f "$archive"
+        if command -v zip >/dev/null 2>&1; then
+            (cd "$stage/$arch" && zip -qr "$archive" unison)
+        else
+            powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path (Join-Path '$stage/$arch' 'unison') -DestinationPath '$archive' -Force"
+        fi
+        echo "release: $archive"
+    done
 
 # Build the Windows artifacts of the current commit into release/.
 release-windows-dev *args:
@@ -505,24 +511,29 @@ release-linux-cli ver=release_version:
     out="$root/{{release_dir}}"
     stage="$(mktemp -d)"
     trap 'rm -rf "$stage"' EXIT
-    mkdir -p "$stage/unison" "$out"
+    mkdir -p "$out"
     ldflags="-s -w -X main.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment=release"
     cd "$root"
-    for name in unison unisond; do
-        echo "release: building $name for linux/amd64"
-        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$ldflags" -o "$stage/unison/$name" ./cmd/$name
-    done
-    chmod 0755 "$stage/unison/unison" "$stage/unison/unisond"
-    cat >"$stage/unison/README.txt" <<'EOF'
-    Unison {{ver}} command line tools for Linux.
+    # Pure Go binaries without cgo are statically linked and run on any distribution.
+    for arch in amd64 arm64; do
+        dir="$stage/$arch/unison"
+        mkdir -p "$dir"
+        for name in unison unisond; do
+            echo "release: building $name for linux/$arch"
+            GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -ldflags "$ldflags" -o "$dir/$name" ./cmd/$name
+        done
+        chmod 0755 "$dir/unison" "$dir/unisond"
+        cat >"$dir/README.txt" <<EOF
+    Unison {{ver}} command line tools for Linux $arch.
 
       unison    the command line client of the daemon
       unisond   the daemon
 
-    Copy both files into a directory of PATH, for example /usr/local/bin.
+    Both are statically linked. Copy them into a directory of PATH, for example /usr/local/bin.
     EOF
-    tar -czf "$out/unison-v{{ver}}-linux-cli.tar.gz" -C "$stage" unison
-    echo "release: $out/unison-v{{ver}}-linux-cli.tar.gz"
+        tar -czf "$out/unison-v{{ver}}-linux-$arch-cli.tar.gz" -C "$stage/$arch" unison
+        echo "release: $out/unison-v{{ver}}-linux-$arch-cli.tar.gz"
+    done
 
 # Build the Linux artifacts of the current commit into release/.
 release-linux-dev *args:
@@ -556,7 +567,7 @@ release-android-dev:
 
 # Build every artifact of every platform into release/.
 release-all ver=release_version:
-    just release-macos "{{ver}}"
+    just release-macos "{{ver}}" --universal
     just release-windows "{{ver}}"
     just release-linux "{{ver}}"
     just release-android "{{ver}}"
