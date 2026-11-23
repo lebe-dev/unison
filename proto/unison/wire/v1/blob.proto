@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/types.proto";
+
+// Availability of a blob on a peer.
+message HaveBlob {
+  // BLAKE3 hash of the blob, 32 bytes.
+  bytes hash = 1;
+}
+
+// Answer to a blob availability query.
+message HaveBlobResp {
+  // BLAKE3 hash of the blob, 32 bytes.
+  bytes hash = 1;
+  bool have = 2;
+  // Number of chunks the peer stores.
+  uint32 chunks = 3;
+}
+
+// Request for a chunk range of a blob.
+message BlobRequest {
+  // BLAKE3 hash of the blob, 32 bytes.
+  bytes hash = 1;
+  uint32 from_chunk = 2;
+  // Inclusive bound, zero means the last chunk.
+  uint32 to_chunk = 3;
+  // Send only the hash tree, without chunks.
+  bool tree_only = 4;
+}
+
+// Hash tree of a blob. A receiver needs it to verify every chunk against the
+// hash of the whole content.
+message BlobTree {
+  // BLAKE3 hash of the blob, 32 bytes.
+  bytes hash = 1;
+  // Plaintext size in bytes.
+  uint64 size = 2;
+  // Number of chunks.
+  uint32 chunks = 3;
+  // Outboard Bao tree with a length prefix.
+  bytes tree = 4;
+}
+
+// Frame of a blob request stream. The tree comes first, then the requested
+// chunks in ascending index order.
+message BlobReply {
+  oneof body {
+    BlobTree tree = 1;
+    BlobChunk chunk = 2;
+    BlobError error = 3;
+  }
+}
+
+// Reason a peer cannot serve a blob request.
+enum BlobStatus {
+  BLOB_STATUS_UNSPECIFIED = 0;
+  // The peer may not fetch the blob.
+  BLOB_STATUS_DENIED = 1;
+  // The peer does not store the blob.
+  BLOB_STATUS_MISSING = 2;
+  // The peer stores the blob but cannot serve it now.
+  BLOB_STATUS_UNAVAILABLE = 3;
+}
+
+// Refusal of a blob request. It is the only frame of the answer.
+message BlobError {
+  BlobStatus status = 1;
+}
+
+// One chunk of a blob payload.
+message BlobChunk {
+  uint32 index = 1;
+  bytes data = 2;
+  // BLAKE3 hash of the chunk, 32 bytes.
+  bytes chunk_hash = 3;
+}
+
+// Offer to transfer files.
+message ShareOffer {
+  string transfer_id = 1;
+  repeated FileMeta files = 2;
+}
+
+// Answer to a share offer.
+message ShareDecision {
+  string transfer_id = 1;
+  bool accepted = 2;
+}
+
+// Cancellation of a share transfer. Either side may send it.
+message ShareCancel {
+  string transfer_id = 1;
+}
+
+// Final outcome of a share transfer, sent by the receiver.
+message ShareResult {
+  string transfer_id = 1;
+  bool ok = 2;
+  // Failure in plain English. It never carries file content.
+  string error = 3;
+}

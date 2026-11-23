@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/types.proto";
+
+// Signed introduction of a personal device by a trusted issuer.
+message Introduction {
+  // Ed25519 identity public key of the introduced device, 32 bytes.
+  bytes subject_ed25519 = 1;
+  // ML-DSA-65 identity public key of the introduced device.
+  bytes subject_mldsa = 2;
+  Role role = 3;
+  // Device ID of the issuer, 32 bytes.
+  bytes issuer = 4;
+  // Signing time, unix milliseconds.
+  int64 ts_unix_ms = 5;
+  bytes ed25519_sig = 6;
+  bytes mldsa_sig = 7;
+  // Display name of the introduced device known to the issuer.
+  string subject_name = 8;
+  Platform platform = 9;
+}
+
+// One known introduction in the digest of a device.
+message IntroductionHead {
+  // Device ID of the introduced device, 32 bytes.
+  bytes subject = 1;
+  // Signing time of the introduction, unix milliseconds.
+  int64 ts_unix_ms = 2;
+}
+
+// One known revocation in the digest of a device.
+message RevocationHead {
+  // Device ID of the revoked device, 32 bytes.
+  bytes subject = 1;
+  // Signing time of the revocation, unix milliseconds.
+  int64 ts_unix_ms = 2;
+}
+
+// Digest of the trust state of a device, exchanged on every session between
+// personal devices.
+message GossipDigest {
+  repeated IntroductionHead introductions = 1;
+  // Change time of the discovery key, unix milliseconds.
+  int64 discovery_ts_unix_ms = 2;
+  // Change time of the relay settings, unix milliseconds.
+  int64 relay_ts_unix_ms = 3;
+  // Set when the digest answers another digest, so the peer does not answer it
+  // back.
+  bool reply = 4;
+  repeated RevocationHead revocations = 5;
+}
+
+// Data of the personal group shared over a session. The receiver keeps the
+// parts that are newer than the stored ones.
+message GossipRecords {
+  repeated Introduction introductions = 1;
+  GroupData group = 2;
+  repeated Revocation revocations = 3;
+}
+
+// State of the personal group that the devices share.
+message GroupData {
+  // Key of the discovery tag, 32 bytes.
+  bytes discovery_key = 1;
+  // Change time of the discovery key, unix milliseconds.
+  int64 discovery_ts_unix_ms = 2;
+  string relay_url = 3;
+  bytes relay_token = 4;
+  // Change time of the relay settings, unix milliseconds.
+  int64 relay_ts_unix_ms = 5;
+}
+
+// Signed revocation of a peer.
+message Revocation {
+  // Device ID of the revoked device, 32 bytes.
+  bytes subject = 1;
+  // Device ID of the issuer, 32 bytes.
+  bytes issuer = 2;
+  // Signing time, unix milliseconds.
+  int64 ts_unix_ms = 3;
+  bytes ed25519_sig = 4;
+  bytes mldsa_sig = 5;
+}
+
+// Signed request of the issuer that the target device asks its user before it
+// takes what the issuer sends in the scope.
+message SetPeerPolicy {
+  // Device ID of the target device, 32 bytes.
+  bytes target = 1;
+  bool require_confirmation = 2;
+  // Signing time, unix milliseconds.
+  int64 ts_unix_ms = 3;
+  bytes ed25519_sig = 4;
+  bytes mldsa_sig = 5;
+  // Content the flag covers.
+  ConfirmationScope scope = 6;
+}

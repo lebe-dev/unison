@@ -1,0 +1,1008 @@
+package node
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net"
+	"net/netip"
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/lebe-dev/unison/core/blob"
+	"github.com/lebe-dev/unison/core/blob/transfer"
+	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/gossip"
+	"github.com/lebe-dev/unison/core/history"
+	"github.com/lebe-dev/unison/core/identity"
+	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/pairing"
+	"github.com/lebe-dev/unison/core/policy"
+	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/relay"
+	"github.com/lebe-dev/unison/core/session"
+	"github.com/lebe-dev/unison/core/share"
+	"github.com/lebe-dev/unison/core/store"
+	"github.com/lebe-dev/unison/core/transport"
+	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
+)
+
+// Connection management defaults.
+const (
+	// DefaultDialTimeout bounds one connection attempt.
+	DefaultDialTimeout = 10 * time.Second
+	// DefaultReconnectDelay is the first delay between connection attempts to a
+	// peer.
+	DefaultReconnectDelay = time.Second
+	// DefaultReconnectMaxDelay caps the delay between connection attempts.
+	DefaultReconnectMaxDelay = 30 * time.Second
+	// DefaultEventBuffer is the event queue of one subscriber.
+	DefaultEventBuffer = 64
+	// DefaultRelayDelay is how long a peer stays off the local network before
+	// the node opens the relay path.
+	DefaultRelayDelay = 3 * time.Second
+	// DefaultRelayGrace is how long a relay session survives an interrupted
+	// relay connection. A shorter outage is absorbed, a longer one ends the
+	// session so it is opened again.
+	DefaultRelayGrace = 15 * time.Second
+	// maxCandidates bounds the cached discovery candidates.
+	maxCandidates = 64
+	// candidateTTL is how long a discovered address stays usable.
+	candidateTTL = 10 * time.Minute
+	// maxAddrLength bounds one address taken from discovery.
+	maxAddrLength = 255
+)
+
+// Errors reported by the node.
+var (
+	// ErrStarted reports a second call to Start.
+	ErrStarted = errors.New("node: already started")
+	// ErrStopped reports a node that is not running.
+	ErrStopped = errors.New("node: not running")
+	// ErrPairingOpen reports a second pairing window.
+	ErrPairingOpen = errors.New("node: pairing window is already open")
+	// ErrPairingClosed reports a pairing action without an open window.
+	ErrPairingClosed = errors.New("node: pairing window is closed")
+	// ErrPeerOffline reports a call that needs a session with a peer.
+	ErrPeerOffline = errors.New("node: peer is offline")
+)
+
+// ListenPacketFunc binds the packet connection of one socket. port is the port
+// of the main listener and zero asks for an ephemeral port.
+type ListenPacketFunc func(ctx context.Context, port int) (net.PacketConn, error)
+
+// Limits tunes the connection manager.
+type Limits struct {
+	// DialTimeout bounds one connection attempt. DefaultDialTimeout is used
+	// when zero.
+	DialTimeout time.Duration
+	// ReconnectDelay is the first delay between connection attempts to a peer.
+	// It doubles with every failed attempt up to ReconnectMaxDelay.
+	// DefaultReconnectDelay is used when zero.
+	ReconnectDelay time.Duration
+	// ReconnectMaxDelay caps the delay between connection attempts.
+	// DefaultReconnectMaxDelay is used when zero.
+	ReconnectMaxDelay time.Duration
+	// OfflineRetryMaxDelay caps the delay between connection attempts to a
+	// peer that is offline. Discovery, a network change and the peer itself
+	// bring it back sooner, so a phone can retry rarely. ReconnectMaxDelay is
+	// used when zero or shorter.
+	OfflineRetryMaxDelay time.Duration
+	// EventBuffer is the event queue of one subscriber. DefaultEventBuffer is
+	// used when zero.
+	EventBuffer int
+	// RelayDelay is how long the node tries the local network before it opens
+	// the relay path to a peer. DefaultRelayDelay is used when zero.
+	RelayDelay time.Duration
+	// RelayGrace is how long a relay session survives an interrupted relay
+	// connection. DefaultRelayGrace is used when zero.
+	RelayGrace time.Duration
+}
+
+// withDefaults fills the zero fields with the package defaults.
+func (l Limits) withDefaults() Limits {
+	if l.DialTimeout <= 0 {
+		l.DialTimeout = DefaultDialTimeout
+	}
+	if l.ReconnectDelay <= 0 {
+		l.ReconnectDelay = DefaultReconnectDelay
+	}
+	if l.ReconnectMaxDelay <= 0 {
+		l.ReconnectMaxDelay = DefaultReconnectMaxDelay
+	}
+	if l.ReconnectMaxDelay < l.ReconnectDelay {
+		l.ReconnectMaxDelay = l.ReconnectDelay
+	}
+	if l.OfflineRetryMaxDelay < l.ReconnectMaxDelay {
+		l.OfflineRetryMaxDelay = l.ReconnectMaxDelay
+	}
+	if l.EventBuffer <= 0 {
+		l.EventBuffer = DefaultEventBuffer
+	}
+	if l.RelayDelay <= 0 {
+		l.RelayDelay = DefaultRelayDelay
+	}
+	if l.RelayGrace <= 0 {
+		l.RelayGrace = DefaultRelayGrace
+	}
+	return l
+}
+
+// Config describes a node. The platform ports are supplied by the caller, the
+// rest is owned by the node.
+type Config struct {
+	// DataDir is the directory of the database and other node data.
+	DataDir string
+	// Name is the device name announced to peers.
+	Name string
+	// Platform is the operating system of this device.
+	Platform model.Platform
+	// Capabilities are the optional features announced in the handshake.
+	Capabilities []string
+	// Keystore keeps the identity secrets and the data encryption key.
+	Keystore ports.Keystore
+	// Clipboard is the local clipboard.
+	Clipboard ports.Clipboard
+	// Discovery announces this device and finds the devices of the local
+	// network.
+	Discovery ports.Discovery
+	// Clock is the time source of the node. The system clock is used when nil.
+	Clock ports.Clock
+	// Logger receives node events. Nothing is logged when nil.
+	Logger *slog.Logger
+	// Limits tunes the connection manager.
+	Limits Limits
+	// Transport tunes the QUIC connections.
+	Transport transport.Config
+	// BlobLimit is the size limit of the blob store in bytes. The package
+	// default is used when zero and the stored setting overrides it.
+	BlobLimit int64
+	// ShareSink receives the files a peer shares. The downloads directory is
+	// used when nil.
+	ShareSink share.Sink
+	// ShareDownloads is the directory of received shared files. The stored
+	// setting and then the user downloads directory are used when empty.
+	ShareDownloads string
+	// SharePendingTTL is how long an offer of a Friends device waits for a
+	// decision. The package default is used when zero.
+	SharePendingTTL time.Duration
+	// ListenPacket binds the packet connections. A UDP socket is bound when
+	// nil.
+	ListenPacket ListenPacketFunc
+	// Relay tunes the relay client. The address and the token come from the
+	// group settings; the other fields keep their defaults when zero.
+	Relay relay.Config
+}
+
+// SessionHook registers handlers on a new session. Hooks run before the
+// handshake, while the session still accepts handlers.
+type SessionHook func(ctx context.Context, sess *session.Session) error
+
+// state is the lifecycle state of a Node.
+type state uint8
+
+// Node lifecycle states.
+const (
+	stateNew state = iota
+	stateRunning
+	stateStopped
+)
+
+// candidate is one discovered address of the local network.
+type candidate struct {
+	seen time.Time
+	// owner is the device that answered on the address, zero until a
+	// handshake there succeeds.
+	owner model.DeviceID
+}
+
+// Node is a running device. Create it with New, start it with Start and release
+// it with Stop.
+type Node struct {
+	cfg    Config
+	limits Limits
+	clock  ports.Clock
+	log    *slog.Logger
+
+	identity *identity.Identity
+	db       *store.Store
+	trust    *trust.Store
+	clip     *clip.Pipeline
+	policy   *policy.Decider
+	blobs    *blob.Store
+	history  *history.Store
+
+	blobService *transfer.Service
+	fetcher     *transfer.Fetcher
+
+	share *share.Service
+
+	gossip *gossip.Service
+
+	// main carries the listener and the dialer on one socket, so a peer that
+	// accepted a connection learns an address it can dial back.
+	main     *transport.Shared
+	listener *transport.Listener
+	dialer   *transport.Dialer
+
+	// relayMu guards the relay client of the stored settings.
+	relayMu     sync.Mutex
+	relay       *relay.Dialer
+	relayConfig relay.Config
+	relayCancel context.CancelFunc
+	// relayOn reports stored relay settings of the group.
+	relayOn atomic.Bool
+	// relayWake is closed and replaced to wake every link that waits for the
+	// relay. relayMu guards it.
+	relayWake chan struct{}
+
+	events *eventBus
+
+	// incoming carries the announced clipboard items to the worker that
+	// applies them.
+	incoming chan clipJob
+
+	mu         sync.Mutex
+	state      state
+	name       string
+	ctx        context.Context
+	cancel     context.CancelFunc
+	links      map[model.DeviceID]*link
+	candidates map[string]candidate
+	probing    map[string]struct{}
+	hooks      []SessionHook
+	pairing    *pairingWindow
+	network    model.NetworkState
+
+	// friendsMu guards the temporary friends discovery mode.
+	friendsMu     sync.Mutex
+	friendsUntil  time.Time
+	friendsCancel context.CancelFunc
+	// friendsSig wakes the friends loop when the mode changes.
+	friendsSig chan struct{}
+	refusals   refusals
+
+	// addrMu serializes the read-modify-write cycles on the cached addresses.
+	addrMu sync.Mutex
+
+	// life serializes Start and Stop.
+	life sync.Mutex
+
+	wg       sync.WaitGroup
+	stopOnce sync.Once
+	stopErr  error
+}
+
+// New validates the configuration and returns a node that is not started yet.
+func New(cfg Config) (*Node, error) {
+	switch {
+	case cfg.DataDir == "":
+		return nil, errors.New("node: data directory is required")
+	case cfg.Name == "":
+		return nil, errors.New("node: device name is required")
+	case cfg.Platform == model.PlatformUnknown:
+		return nil, errors.New("node: platform is required")
+	case cfg.Keystore == nil:
+		return nil, errors.New("node: keystore is required")
+	case cfg.Clipboard == nil:
+		return nil, errors.New("node: clipboard is required")
+	case cfg.Discovery == nil:
+		return nil, errors.New("node: discovery is required")
+	}
+
+	clock := cfg.Clock
+	if clock == nil {
+		clock = ports.SystemClock
+	}
+	log := cfg.Logger
+	if log == nil {
+		log = slog.New(slog.DiscardHandler)
+	}
+	listen := cfg.ListenPacket
+	if listen == nil {
+		listen = listenUDP
+	}
+	cfg.ListenPacket = listen
+	cfg.Capabilities = append([]string(nil), cfg.Capabilities...)
+	limits := cfg.Limits.withDefaults()
+
+	n := &Node{
+		cfg:        cfg,
+		name:       cfg.Name,
+		limits:     limits,
+		clock:      clock,
+		log:        log,
+		events:     newEventBus(limits.EventBuffer, log),
+		incoming:   make(chan clipJob, clipQueueSize),
+		links:      make(map[model.DeviceID]*link),
+		probing:    make(map[string]struct{}),
+		candidates: make(map[string]candidate),
+		relayWake:  make(chan struct{}),
+		friendsSig: make(chan struct{}, 1),
+		// A device that has not reported its network is treated as online:
+		// the desktop daemon has no network monitor of its own.
+		network: model.NetworkState{Online: true},
+	}
+	n.hooks = []SessionHook{
+		n.installClip, n.installTransfer, n.installHistory, n.installGossip,
+		n.installPolicy, n.installRevocation, n.installShare,
+	}
+	return n, nil
+}
+
+// Start opens the node: it opens the database and the identity, binds the
+// sockets, announces the device, starts the clipboard pipeline and connects to
+// every paired device. The context bounds the startup only, the node runs until
+// Stop.
+func (n *Node) Start(ctx context.Context) error {
+	n.life.Lock()
+	defer n.life.Unlock()
+
+	n.mu.Lock()
+	switch n.state {
+	case stateRunning:
+		n.mu.Unlock()
+		return ErrStarted
+	case stateStopped:
+		n.mu.Unlock()
+		return ErrStopped
+	}
+	n.state = stateRunning
+	n.ctx, n.cancel = context.WithCancel(context.Background())
+	n.mu.Unlock()
+
+	if err := n.open(ctx); err != nil {
+		_ = n.stop(context.Background())
+		return err
+	}
+	n.run()
+	return nil
+}
+
+// Stop ends every session, withdraws the announcements and closes the database.
+// It is safe to call more than once.
+func (n *Node) Stop(ctx context.Context) error {
+	n.life.Lock()
+	defer n.life.Unlock()
+	return n.stop(ctx)
+}
+
+// Subscribe returns a subscriber for the node events. Close it to release the
+// queue.
+func (n *Node) Subscribe() *Subscriber {
+	return n.events.subscribe()
+}
+
+// publish delivers one event to the subscribers.
+func (n *Node) publish(event Event) {
+	n.events.publish(event)
+}
+
+// AddSessionHook registers a hook that prepares every new session. The
+// registration of handlers belongs here: it has to happen before the handshake.
+func (n *Node) AddSessionHook(hook SessionHook) error {
+	if hook == nil {
+		return errors.New("node: nil session hook")
+	}
+	n.mu.Lock()
+	n.hooks = append(n.hooks, hook)
+	n.mu.Unlock()
+	return nil
+}
+
+// DeviceID returns the device ID of this node. It is the zero value before
+// Start.
+func (n *Node) DeviceID() model.DeviceID {
+	if n.identity == nil {
+		return model.DeviceID{}
+	}
+	return n.identity.DeviceID()
+}
+
+// Identity returns the identity of this node. It is nil before Start.
+func (n *Node) Identity() *identity.Identity {
+	return n.identity
+}
+
+// Addr returns the address of the main listener. It is nil before Start.
+func (n *Node) Addr() net.Addr {
+	if n.listener == nil {
+		return nil
+	}
+	return n.listener.Addr()
+}
+
+// ListenAddrs returns the addresses of the main listener that a peer can reach.
+// A listener bound to a specific address is returned as is; a wildcard listener
+// is replaced by the addresses of the local interfaces.
+func (n *Node) ListenAddrs() []string {
+	addr := n.Addr()
+	if addr == nil {
+		return nil
+	}
+	if parsed, err := netip.ParseAddrPort(addr.String()); err == nil && !parsed.Addr().IsUnspecified() {
+		return []string{parsed.String()}
+	}
+	addrs, err := pairing.LocalAddresses(portOf(addr))
+	if err != nil || len(addrs) == 0 {
+		// An interface list may be unavailable, for example in a mobile app.
+		return []string{addr.String()}
+	}
+	return addrs
+}
+
+// Store returns the database of the node. It is nil before Start.
+func (n *Node) Store() *store.Store {
+	return n.db
+}
+
+// Trust returns the trust store of the node. It is nil before Start.
+func (n *Node) Trust() *trust.Store {
+	return n.trust
+}
+
+// Clip returns the clipboard pipeline of the node. It is nil before Start.
+func (n *Node) Clip() *clip.Pipeline {
+	return n.clip
+}
+
+// Network returns the last network state reported to the node.
+func (n *Node) Network() model.NetworkState {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.network
+}
+
+// AddPeer stores a paired device and connects to it.
+func (n *Node) AddPeer(ctx context.Context, peer trust.Peer) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if err := n.trust.Add(ctx, peer); err != nil {
+		return err
+	}
+	n.startLink(peer).retry()
+	n.probeCandidates(n.ctx)
+	return nil
+}
+
+// SetPeerAddress stores a manually entered address of a paired device and tries
+// to connect to it.
+func (n *Node) SetPeerAddress(ctx context.Context, id model.DeviceID, addr string) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if addr == "" {
+		return errors.New("node: empty peer address")
+	}
+	if len(addr) > maxAddrLength {
+		return errors.New("node: peer address is too long")
+	}
+	peer, err := n.trust.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := n.rememberAddr(ctx, id, addr, true); err != nil {
+		return err
+	}
+	n.startLink(peer).retry()
+	n.probeCandidates(n.ctx)
+	return nil
+}
+
+// RetryPeer tries to reach a paired device now: it forgets the delay of the
+// failed attempts, announces this device again and dials every known address.
+// Every paired device is retried when id is zero.
+func (n *Node) RetryPeer(ctx context.Context, id model.DeviceID) error {
+	if err := n.usable(); err != nil {
+		return err
+	}
+	if !id.IsZero() {
+		peer, err := n.trust.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if peer.Revoked {
+			return trust.ErrPeerRevoked
+		}
+		n.startLink(peer).retry()
+	} else {
+		for _, l := range n.linkList() {
+			l.retry()
+		}
+	}
+	// The dials outlive the request that asked for them, so they follow the
+	// node rather than ctx.
+	n.advertise(n.ctx)
+	n.probeCandidates(n.ctx)
+	return nil
+}
+
+// Peers returns the live state of every paired device, in the order the devices
+// were added.
+func (n *Node) Peers(ctx context.Context) ([]model.PeerState, error) {
+	if err := n.usable(); err != nil {
+		return nil, err
+	}
+	peers, err := n.trust.List(ctx, trust.ListFilter{})
+	if err != nil {
+		return nil, err
+	}
+	states := make([]model.PeerState, 0, len(peers))
+	for _, peer := range peers {
+		states = append(states, n.peerState(peer.DeviceID()))
+	}
+	return states, nil
+}
+
+// Peer returns the live state of one paired device.
+func (n *Node) Peer(ctx context.Context, id model.DeviceID) (model.PeerState, error) {
+	if err := n.usable(); err != nil {
+		return model.PeerState{}, err
+	}
+	if _, err := n.trust.Get(ctx, id); err != nil {
+		return model.PeerState{}, err
+	}
+	return n.peerState(id), nil
+}
+
+// NetworkChanged reports the network conditions of the device. The node
+// announces itself again and retries every peer that is offline or waitlisted.
+func (n *Node) NetworkChanged(state model.NetworkState) {
+	n.mu.Lock()
+	n.network = state
+	running := n.state == stateRunning
+	ctx := n.ctx
+	n.mu.Unlock()
+
+	if !running || ctx.Err() != nil {
+		n.log.Debug("network change ignored", "online", state.Online)
+		return
+	}
+	if !state.Online {
+		n.log.Debug("network is offline")
+		return
+	}
+
+	n.advertise(ctx)
+	if n.friendsOn() {
+		n.announceFriends(ctx)
+	}
+	n.relayNetworkChanged()
+	n.wakeRelay()
+	for _, l := range n.linkList() {
+		l.retry()
+	}
+	n.probeCandidates(ctx)
+}
+
+// open creates the resources of the node.
+func (n *Node) open(ctx context.Context) error {
+	migrations, err := migrationSet()
+	if err != nil {
+		return err
+	}
+	db, err := store.Open(ctx, store.Options{
+		Dir:        n.cfg.DataDir,
+		Keystore:   n.cfg.Keystore,
+		Migrations: migrations,
+	})
+	if err != nil {
+		return err
+	}
+	n.db = db
+
+	id, err := identity.LoadOrCreate(ctx, n.cfg.Keystore)
+	if err != nil {
+		return err
+	}
+	n.identity = id
+
+	trustStore, err := trust.Open(db)
+	if err != nil {
+		return err
+	}
+	n.trust = trustStore
+
+	gossipService, err := gossip.New(n.ctx, gossip.Config{
+		Store:                 trustStore,
+		Local:                 id.DeviceID(),
+		Logger:                n.log,
+		OnPeersChanged:        n.gossipPeersChanged,
+		OnDiscoveryKeyChanged: n.gossipGroupChanged,
+		OnRelayChanged:        n.gossipRelayChanged,
+		OnPeerRevoked:         n.handleRevokedPeer,
+		OnSelfRevoked:         n.handleSelfRevoked,
+	})
+	if err != nil {
+		return err
+	}
+	n.gossip = gossipService
+
+	group, err := trustStore.GroupData(ctx)
+	if err != nil {
+		return err
+	}
+	n.relayOn.Store(!group.Relay.Empty())
+
+	port, err := transport.MainPort(ctx, db.Settings())
+	if err != nil {
+		return err
+	}
+	if err := n.listenMain(ctx, port); err != nil {
+		return err
+	}
+
+	if err := n.openBlobs(db); err != nil {
+		return err
+	}
+	if err := n.openShare(db); err != nil {
+		return err
+	}
+	decider, err := n.openPolicy(ctx, db)
+	if err != nil {
+		return err
+	}
+	n.policy = decider
+
+	ttls, err := history.LoadTTLs(ctx, db.Settings())
+	if err != nil {
+		n.log.Warn("reading the history lifetimes failed, using the defaults", "error", err)
+	}
+	hist, err := n.openHistory(db, id.DeviceID())
+	if err != nil {
+		return err
+	}
+
+	stripTracking, err := db.Settings().GetBool(ctx, SettingStripTracking, DefaultStripTracking)
+	if err != nil {
+		n.log.Warn("reading the URL tracking setting failed, using the default", "error", err)
+		stripTracking = DefaultStripTracking
+	}
+
+	pipeline, err := clip.New(clip.Options{
+		Clipboard: n.cfg.Clipboard,
+		Store:     db,
+		Origin:    id.DeviceID(),
+		Announcer: n,
+		Planner:   policyPlanner{decider: decider},
+		History:   hist,
+		Payloads:  blobPayloads{blobs: n.blobs},
+		Fetch:     clip.FetchFunc(n.fetchPayload),
+		Events:    n,
+		Clock:     n.clock,
+		Logger:    n.log,
+		TTLs:      clip.TTLs{Text: ttls.Text, Image: ttls.Image, Files: ttls.Files},
+		// The setting is on for a device that never changed it.
+		StripTracking: stripTracking,
+	})
+	if err != nil {
+		return err
+	}
+	n.clip = pipeline
+	return nil
+}
+
+// migrationSet collects the schema migrations of the packages the node owns.
+func migrationSet() ([]store.Migration, error) {
+	trustMigrations, err := trust.Migrations()
+	if err != nil {
+		return nil, err
+	}
+	clipMigrations, err := clip.Migrations()
+	if err != nil {
+		return nil, err
+	}
+	blobMigrations, err := blob.Migrations()
+	if err != nil {
+		return nil, err
+	}
+	historyMigrations, err := history.Migrations()
+	if err != nil {
+		return nil, err
+	}
+
+	migrations := make([]store.Migration, 0,
+		len(trustMigrations)+len(clipMigrations)+len(blobMigrations)+len(historyMigrations))
+	migrations = append(migrations, trustMigrations...)
+	migrations = append(migrations, clipMigrations...)
+	migrations = append(migrations, blobMigrations...)
+	return append(migrations, historyMigrations...), nil
+}
+
+// listenMain binds the main socket and starts the listener and the dialer on
+// it. Outgoing connections leave from the listener port, so the peer can dial
+// the address it saw, and one socket serves every connection of the node.
+func (n *Node) listenMain(ctx context.Context, port int) error {
+	pc, err := n.cfg.ListenPacket(ctx, port)
+	if err != nil {
+		return err
+	}
+	shared, err := transport.NewShared(pc)
+	if err != nil {
+		_ = pc.Close()
+		return err
+	}
+	verifier := peerVerifier{trust: n.trust, friendsOn: n.friendsOn}
+	listener, err := shared.Listener(n.identity, verifier, n.cfg.Transport)
+	if err != nil {
+		_ = shared.Close()
+		return err
+	}
+	dialer, err := shared.Dialer(n.identity, verifier, n.cfg.Transport)
+	if err != nil {
+		_ = listener.Close()
+		_ = shared.Close()
+		return err
+	}
+	n.main = shared
+	n.listener = listener
+	n.dialer = dialer
+	return nil
+}
+
+// run starts the goroutines of the node.
+func (n *Node) run() {
+	ctx := n.ctx
+	n.loadFriendsMode(ctx)
+	n.spawn(func() { n.acceptLoop(ctx) })
+	n.spawn(func() { n.browseLoop(ctx) })
+	n.spawn(func() { n.clipRun(ctx) })
+	n.spawn(func() { n.clipIncoming(ctx) })
+	n.spawn(func() { n.historyRun(ctx) })
+	n.spawn(func() { n.friendsLoop(ctx) })
+
+	n.advertise(ctx)
+	for _, peer := range n.pairedPeers(ctx) {
+		n.startLink(peer)
+	}
+}
+
+// spawn runs fn on a goroutine that Stop waits for.
+func (n *Node) spawn(fn func()) {
+	n.wg.Add(1)
+	go func() {
+		defer n.wg.Done()
+		defer observability.Recover()
+		fn()
+	}()
+}
+
+// loadFriendsMode reads the stored friends discovery state before the node
+// accepts connections.
+func (n *Node) loadFriendsMode(ctx context.Context) {
+	until, err := n.trust.FriendsDiscoveryUntil(ctx)
+	if err != nil {
+		n.log.Warn("reading the friends discovery mode failed", "error", err)
+		return
+	}
+	if n.clock.Now().Before(until) {
+		n.setFriendsUntil(until)
+	}
+}
+
+// clipRun keeps the clipboard pipeline running until the node stops.
+func (n *Node) clipRun(ctx context.Context) {
+	if err := n.clip.Run(ctx); err != nil && ctx.Err() == nil {
+		n.log.Error("clipboard pipeline stopped", "error", err)
+	}
+}
+
+// advertise announces the main listener on the local network.
+func (n *Node) advertise(ctx context.Context) {
+	if n.listener == nil {
+		return
+	}
+	port := portOf(n.listener.Addr())
+	if port == 0 {
+		n.log.Warn("main listener has no port to announce")
+		return
+	}
+	if err := n.cfg.Discovery.Advertise(ctx, ports.ServiceMain, port, nil); err != nil {
+		n.log.Warn("announcing the device failed", "error", err)
+	}
+}
+
+// pairedPeers returns the devices the node keeps a link for.
+func (n *Node) pairedPeers(ctx context.Context) []trust.Peer {
+	peers, err := n.trust.List(ctx, trust.ListFilter{})
+	if err != nil {
+		n.log.Warn("listing paired devices failed", "error", err)
+		return nil
+	}
+	return peers
+}
+
+// startLink returns the link of the peer, creating it when it is missing. The
+// link loop of a new link runs until the node stops.
+func (n *Node) startLink(peer trust.Peer) *link {
+	id := peer.DeviceID()
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	l, ok := n.links[id]
+	if !ok {
+		l = newLink(id, n.clock.Now())
+		n.links[id] = l
+		if n.state == stateRunning && n.ctx != nil {
+			ctx := n.ctx
+			n.spawn(func() { n.runLink(ctx, l) })
+		}
+	}
+	l.setPeer(peer)
+	return l
+}
+
+// lookup returns the link of the peer, or nil when the node has none.
+func (n *Node) lookup(id model.DeviceID) *link {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return n.links[id]
+}
+
+// linkList returns a snapshot of the links.
+func (n *Node) linkList() []*link {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	links := make([]*link, 0, len(n.links))
+	for _, l := range n.links {
+		links = append(links, l)
+	}
+	return links
+}
+
+// peerState returns the live state of one device.
+func (n *Node) peerState(id model.DeviceID) model.PeerState {
+	l := n.lookup(id)
+	if l == nil {
+		return model.PeerState{DeviceID: id}
+	}
+	return l.state()
+}
+
+// usable reports whether the node is running.
+func (n *Node) usable() error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.state != stateRunning {
+		return ErrStopped
+	}
+	return nil
+}
+
+// installClip registers the clipboard handler on a new session.
+func (n *Node) installClip(_ context.Context, sess *session.Session) error {
+	return sess.Handle(session.KindClipAnnounce, n.clipHandler(sess))
+}
+
+// installGossip registers the trust handlers on a new session.
+func (n *Node) installGossip(_ context.Context, sess *session.Session) error {
+	if n.gossip == nil {
+		return errors.New("node: gossip is not ready")
+	}
+	return n.gossip.Register(sess)
+}
+
+// gossipPeersChanged connects to the devices an introduction added.
+func (n *Node) gossipPeersChanged(ctx context.Context) {
+	for _, peer := range n.pairedPeers(ctx) {
+		n.startLink(peer).retry()
+	}
+	n.probeCandidates(n.ctx)
+}
+
+// gossipGroupChanged announces the device again and refreshes the relay after
+// the group data changed.
+func (n *Node) gossipGroupChanged(context.Context) {
+	n.mu.Lock()
+	running := n.state == stateRunning && n.ctx != nil
+	runCtx := n.ctx
+	n.mu.Unlock()
+	if !running {
+		return
+	}
+	n.advertise(runCtx)
+	n.relaySettingsChanged(runCtx)
+}
+
+// gossipRelayChanged refreshes the relay client after the relay settings of the
+// group changed.
+func (n *Node) gossipRelayChanged(context.Context) {
+	n.mu.Lock()
+	running := n.state == stateRunning && n.ctx != nil
+	runCtx := n.ctx
+	n.mu.Unlock()
+	if !running {
+		return
+	}
+	n.relaySettingsChanged(runCtx)
+}
+
+// stop ends the node once.
+func (n *Node) stop(ctx context.Context) error {
+	n.stopOnce.Do(func() {
+		n.mu.Lock()
+		wasNew := n.state == stateNew
+		n.state = stateStopped
+		cancel := n.cancel
+		n.mu.Unlock()
+		if wasNew {
+			return
+		}
+		n.stopErr = n.shutdown(ctx, cancel)
+	})
+	return n.stopErr
+}
+
+// shutdown releases the resources of the node.
+func (n *Node) shutdown(ctx context.Context, cancel context.CancelFunc) error {
+	if cancel != nil {
+		cancel()
+	}
+	if err := n.ClosePairing(); err != nil {
+		n.log.Warn("closing the pairing window failed", "error", err)
+	}
+	n.relayMu.Lock()
+	n.closeRelayLocked()
+	n.relayMu.Unlock()
+
+	if n.gossip != nil {
+		n.gossip.Close()
+	}
+	if n.share != nil {
+		n.share.Close()
+	}
+	n.closeSessions()
+
+	if n.listener != nil {
+		_ = n.listener.Close()
+	}
+	if n.dialer != nil {
+		_ = n.dialer.Close()
+	}
+	if n.main != nil {
+		_ = n.main.Close()
+	}
+	if err := n.wait(ctx); err != nil {
+		return err
+	}
+	if n.cfg.Discovery != nil {
+		if err := n.cfg.Discovery.Stop(); err != nil {
+			n.log.Warn("stopping discovery failed", "error", err)
+		}
+	}
+	if n.db != nil {
+		return n.db.Close()
+	}
+	return nil
+}
+
+// closeSessions ends the sessions of every link.
+func (n *Node) closeSessions() {
+	for _, l := range n.linkList() {
+		l.close()
+	}
+}
+
+// wait waits until the goroutines of the node end or ctx expires.
+func (n *Node) wait(ctx context.Context) error {
+	done := make(chan struct{})
+	go func() {
+		n.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// listenUDP binds a real UDP socket for the given port.
+func listenUDP(_ context.Context, port int) (net.PacketConn, error) {
+	return net.ListenPacket("udp", net.JoinHostPort("", strconv.Itoa(port)))
+}

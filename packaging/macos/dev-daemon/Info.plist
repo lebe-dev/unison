@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- Bundle of the development daemon. As an app of its own the daemon holds its
+     own local network permission instead of the one of the terminal. -->
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>app.unison.unisond.dev</string>
+  <key>CFBundleName</key>
+  <string>unisond (dev)</string>
+  <key>CFBundleExecutable</key>
+  <string>unisond</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>LSBackgroundOnly</key>
+  <true/>
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_unison._udp</string>
+    <string>_unison-pair._udp</string>
+    <string>_unison-friends._udp</string>
+  </array>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>The development daemon of Unison finds your other devices on the local network.</string>
+</dict>
+</plist>

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "publisher": "Unison",
+    "targets": ["nsis"],
+    "externalBin": ["binaries/unisond"],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "./installer-hooks.nsh",
+        "languages": ["English", "Russian"]
+      }
+    }
+  }
+}

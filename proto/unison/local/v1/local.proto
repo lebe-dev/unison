@@ -1,0 +1,1070 @@
+syntax = "proto3";
+
+package unison.local.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/local/v1;localv1";
+
+// Role of a paired device.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_PERSONAL = 1;
+  ROLE_FRIENDS = 2;
+}
+
+// Operating system of a device.
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_MACOS = 1;
+  PLATFORM_WINDOWS = 2;
+  PLATFORM_ANDROID = 3;
+  PLATFORM_LINUX = 4;
+}
+
+// Network path to a device.
+enum Path {
+  PATH_UNSPECIFIED = 0;
+  PATH_LAN = 1;
+  PATH_RELAY = 2;
+}
+
+// Content kind of a clip item.
+enum Kind {
+  KIND_UNSPECIFIED = 0;
+  KIND_TEXT = 1;
+  KIND_IMAGE = 2;
+  KIND_FILES = 3;
+}
+
+// Where a clip item was captured.
+enum Source {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_CLIPBOARD = 1;
+  SOURCE_SHARE = 2;
+  SOURCE_CLI = 3;
+}
+
+// Kind of a daemon event.
+enum EventKind {
+  EVENT_KIND_UNSPECIFIED = 0;
+  // A session with a paired device is open.
+  EVENT_KIND_PEER_ONLINE = 1;
+  // The session with a paired device ended.
+  EVENT_KIND_PEER_OFFLINE = 2;
+  // A clipboard item was captured or applied.
+  EVENT_KIND_CLIPBOARD = 3;
+  // A peer speaks another protocol version and has to be updated.
+  EVENT_KIND_PEER_INCOMPATIBLE = 4;
+  // A device that is open for pairing was discovered.
+  EVENT_KIND_PAIRING_CANDIDATE = 5;
+  // A device asked to pair. The SAS is ready and the user decides.
+  EVENT_KIND_PAIRING_REQUEST = 6;
+  // A pairing exchange completed.
+  EVENT_KIND_PAIRING_PAIRED = 7;
+  // A pairing exchange ended without a new device.
+  EVENT_KIND_PAIRING_FAILED = 8;
+  // The pairing window closed.
+  EVENT_KIND_PAIRING_CLOSED = 9;
+  // A clipboard item is kept in the history until the user downloads it.
+  EVENT_KIND_CLIP_DOWNLOAD = 10;
+  // A clipboard item waits for the user to apply it.
+  EVENT_KIND_CLIP_APPLY = 11;
+  // A file transfer changed its state or made progress.
+  EVENT_KIND_TRANSFER = 12;
+  // The history changed: an entry was recorded, deleted or expired.
+  EVENT_KIND_HISTORY = 13;
+  // The confirmation flags of a paired device changed, on this device or on
+  // that one.
+  EVENT_KIND_DEVICE_UPDATED = 14;
+  // An offline paired device stopped answering on its known addresses. The
+  // error field lists the addresses and the failures.
+  EVENT_KIND_PEER_UNREACHABLE = 15;
+}
+
+// Why an operation failed, so a client can show a short message in plain
+// words and keep the error text for the technical details.
+enum FailureReason {
+  FAILURE_REASON_UNSPECIFIED = 0;
+  // The other device did not answer on any address: it is turned off, or the
+  // network keeps the two devices apart.
+  FAILURE_REASON_UNREACHABLE = 1;
+}
+
+// Content a confirmation flag covers.
+enum ConfirmationScope {
+  CONFIRMATION_SCOPE_UNSPECIFIED = 0;
+  // Clipboard items.
+  CONFIRMATION_SCOPE_CLIPBOARD = 1;
+  // File transfers.
+  CONFIRMATION_SCOPE_FILES = 2;
+}
+
+// Device that asks its user before it takes the items of the other one.
+enum ConfirmationSide {
+  CONFIRMATION_SIDE_UNSPECIFIED = 0;
+  // This device asks before it takes what the paired device sends.
+  CONFIRMATION_SIDE_LOCAL = 1;
+  // The paired device asks before it takes what this device sends.
+  CONFIRMATION_SIDE_PEER = 2;
+}
+
+// Pause mode requested by the client.
+enum PauseMode {
+  PAUSE_MODE_UNSPECIFIED = 0;
+  // Resume the clipboard synchronization.
+  PAUSE_MODE_OFF = 1;
+  // Pause until the client resumes it.
+  PAUSE_MODE_INDEFINITE = 2;
+  // Pause until until_unix_ms.
+  PAUSE_MODE_UNTIL = 3;
+}
+
+// Direction of a file transfer.
+enum TransferDirection {
+  TRANSFER_DIRECTION_UNSPECIFIED = 0;
+  TRANSFER_DIRECTION_OUTGOING = 1;
+  TRANSFER_DIRECTION_INCOMING = 2;
+}
+
+// State of a file transfer.
+enum TransferState {
+  TRANSFER_STATE_UNSPECIFIED = 0;
+  // An incoming offer waits for AcceptTransfer or RejectTransfer.
+  TRANSFER_STATE_PENDING = 1;
+  // An outgoing offer is sent and the peer has not answered yet.
+  TRANSFER_STATE_OFFERED = 2;
+  TRANSFER_STATE_TRANSFERRING = 3;
+  TRANSFER_STATE_DONE = 4;
+  TRANSFER_STATE_DECLINED = 5;
+  TRANSFER_STATE_CANCELED = 6;
+  TRANSFER_STATE_FAILED = 7;
+}
+
+// How a pairing exchange was started.
+enum PairingMethod {
+  PAIRING_METHOD_UNSPECIFIED = 0;
+  // Both devices compare a short authentication string.
+  PAIRING_METHOD_SAS = 1;
+  // One device scanned the code of the other one, so only that other device
+  // asks its user.
+  PAIRING_METHOD_QR = 2;
+}
+
+// Local API of the daemon, served over a unix socket or a named pipe.
+service UnisonService {
+  // Version and runtime state of the daemon.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  // Daemon events as they happen. The stream ends when the client disconnects
+  // or the daemon stops.
+  rpc WatchEvents(WatchEventsRequest) returns (stream WatchEventsResponse);
+
+  // Paired devices.
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc RenameDevice(RenameDeviceRequest) returns (RenameDeviceResponse);
+  rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
+  rpc SetDeviceConfirmation(SetDeviceConfirmationRequest) returns (SetDeviceConfirmationResponse);
+  // Permission of a paired device to change the confirmation flags of this
+  // device remotely.
+  rpc SetDeviceRemoteSettings(SetDeviceRemoteSettingsRequest) returns (SetDeviceRemoteSettingsResponse);
+  // Address of a paired device, entered by the user. It is tried before the
+  // discovered and cached ones, for networks where discovery does not work.
+  rpc SetPeerAddress(SetPeerAddressRequest) returns (SetPeerAddressResponse);
+  // Try a paired device again now: the daemon announces this device once more,
+  // forgets the delay of the failed attempts and dials every known address. An
+  // empty device id retries every paired device.
+  rpc RetryDevice(RetryDeviceRequest) returns (RetryDeviceResponse);
+
+  // Pairing window and the short authentication string of an exchange.
+  rpc OpenPairingWindow(OpenPairingWindowRequest) returns (OpenPairingWindowResponse);
+  rpc ExtendPairingWindow(ExtendPairingWindowRequest) returns (ExtendPairingWindowResponse);
+  rpc ClosePairingWindow(ClosePairingWindowRequest) returns (ClosePairingWindowResponse);
+  rpc ListPairingCandidates(ListPairingCandidatesRequest) returns (ListPairingCandidatesResponse);
+  rpc StartSas(StartSasRequest) returns (StartSasResponse);
+  rpc ConfirmSas(ConfirmSasRequest) returns (ConfirmSasResponse);
+  rpc RejectSas(RejectSasRequest) returns (RejectSasResponse);
+  // Pairing code of the open window, for the device that shows it.
+  rpc GetPairingQr(GetPairingQrRequest) returns (GetPairingQrResponse);
+  // Pair with the device of a pairing code, for the device that scans it.
+  rpc ScanPairingQr(ScanPairingQrRequest) returns (ScanPairingQrResponse);
+
+  // Clipboard.
+  rpc GetClip(GetClipRequest) returns (GetClipResponse);
+  // Copy local text to the clipboard and announce it to the peers.
+  rpc SetClip(SetClipRequest) returns (SetClipResponse);
+
+  // History of clip items.
+  rpc ListHistory(ListHistoryRequest) returns (ListHistoryResponse);
+  rpc GetHistoryItem(GetHistoryItemRequest) returns (GetHistoryItemResponse);
+  // A scaled down copy of the image of an item, decoded by the daemon. The
+  // payload must be stored on this device.
+  rpc GetHistoryThumbnail(GetHistoryThumbnailRequest) returns (GetHistoryThumbnailResponse);
+  rpc DeleteHistoryItem(DeleteHistoryItemRequest) returns (DeleteHistoryItemResponse);
+  // Removes every live item of the history. The tombstones reach the other
+  // Personal devices, so the items disappear there too.
+  rpc ClearHistory(ClearHistoryRequest) returns (ClearHistoryResponse);
+  // Download the payloads of an item. They are written to path when it is set.
+  rpc FetchHistoryItem(FetchHistoryItemRequest) returns (FetchHistoryItemResponse);
+  // Copy an item back to the local clipboard.
+  rpc CopyHistoryItem(CopyHistoryItemRequest) returns (CopyHistoryItemResponse);
+  // Apply an item that waits for confirmation to the local clipboard.
+  rpc ApplyHistoryItem(ApplyHistoryItemRequest) returns (ApplyHistoryItemResponse);
+
+  // File transfers with the paired devices.
+  rpc SendFiles(SendFilesRequest) returns (SendFilesResponse);
+  rpc ListTransfers(ListTransfersRequest) returns (ListTransfersResponse);
+  rpc CancelTransfer(CancelTransferRequest) returns (CancelTransferResponse);
+  // Accept an incoming offer that waits for a decision.
+  rpc AcceptTransfer(AcceptTransferRequest) returns (AcceptTransferResponse);
+  // Reject an incoming offer that waits for a decision.
+  rpc RejectTransfer(RejectTransferRequest) returns (RejectTransferResponse);
+
+  // Temporary search for Friends devices. Both devices of a pair turn it on
+  // for the devices to find each other.
+  rpc SetFriendsDiscovery(SetFriendsDiscoveryRequest) returns (SetFriendsDiscoveryResponse);
+
+  // Incoming file transfer requests that wait for a decision.
+  rpc ListRequests(ListRequestsRequest) returns (ListRequestsResponse);
+  // Accept or decline a request and tell the sender.
+  rpc DecideRequest(DecideRequestRequest) returns (DecideRequestResponse);
+
+  // Pause of the clipboard synchronization.
+  rpc GetPause(GetPauseRequest) returns (GetPauseResponse);
+  rpc SetPause(SetPauseRequest) returns (SetPauseResponse);
+
+  // Settings of the daemon.
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
+  rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
+
+  // Relay access of the Personal group and the state of its client.
+  rpc GetRelay(GetRelayRequest) returns (GetRelayResponse);
+  // Store the relay access of the group. The other Personal devices receive it
+  // with the group data.
+  rpc SetRelay(SetRelayRequest) returns (SetRelayResponse);
+  // Turn the relay off for the whole group.
+  rpc RelayOff(RelayOffRequest) returns (RelayOffResponse);
+  // Check that a relay accepts this device over each transport. Nothing is
+  // stored, so an address and a token can be checked before they are saved.
+  rpc TestRelay(TestRelayRequest) returns (TestRelayResponse);
+}
+
+// Network conditions of the local device.
+message NetworkState {
+  bool online = 1;
+  bool wifi = 2;
+  bool cellular = 3;
+  bool metered = 4;
+  bool roaming = 5;
+  bool vpn = 6;
+  bool data_saver = 7;
+}
+
+// A paired device.
+message Device {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  string name = 2;
+  Role role = 3;
+  Platform platform = 4;
+  bool online = 5;
+  Path path = 6;
+  // This device asks before it applies a clipboard item of the device.
+  bool require_confirmation = 7;
+  bool revoked = 8;
+  // Time the device was added, unix milliseconds.
+  int64 added_at_unix_ms = 9;
+  // Time the device was last reachable, unix milliseconds.
+  int64 last_seen_at_unix_ms = 10;
+  // The device asks before it applies a clipboard item of this device, as it
+  // reported last.
+  bool peer_require_confirmation = 11;
+  // Device that introduced this one to the group, in lowercase hex. Empty for
+  // a device that was paired directly.
+  string introduced_by = 13;
+  // This device asks before it accepts a file transfer of the device.
+  bool require_file_confirmation = 14;
+  // The device asks before it accepts a file transfer of this device, as it
+  // reported last.
+  bool peer_require_file_confirmation = 15;
+  // The device is offline and did not answer on any of its known addresses at
+  // the last attempt: it is turned off, or the network keeps the two devices
+  // apart.
+  bool unreachable = 16;
+  // Time the device stopped answering, unix milliseconds.
+  int64 unreachable_since_unix_ms = 17;
+  // Addresses of the last attempt and why each one failed, one per line. It
+  // is meant for the technical details of the UI.
+  string unreachable_detail = 18;
+  // The user allows the device to change the confirmation flags of this device
+  // remotely. The switch in the settings of this device can turn the permission
+  // off for every device.
+  bool allow_remote_settings = 19;
+  // Protocol version the device announced at its last handshake.
+  uint32 protocol_version = 20;
+  // The device speaks a newer protocol version than this device, so this client
+  // has to be updated.
+  bool protocol_newer = 21;
+}
+
+// State of the clipboard pause.
+// Temporary search for Friends devices.
+message FriendsDiscovery {
+  // The device looks for Friends devices.
+  bool on = 1;
+  // End of the search, unix milliseconds. Zero when it is off.
+  int64 until_unix_ms = 2;
+}
+
+message Pause {
+  bool paused = 1;
+  // The pause has no deadline and lasts until it is turned off.
+  bool indefinite = 2;
+  // Deadline of a pause, unix milliseconds. Zero for an indefinite pause.
+  int64 until_unix_ms = 3;
+}
+
+// One representation of a clip item payload.
+message Representation {
+  string mime_type = 1;
+  // Payload size in bytes.
+  uint64 size = 2;
+  // BLAKE3 hash of the payload in lowercase hex, 32 bytes.
+  string blake3 = 3;
+  // Payload itself, set only for small payloads.
+  bytes inline_bytes = 4;
+  // File name, set for file representations.
+  string file_name = 5;
+  // File modification time, unix milliseconds.
+  int64 mtime_unix_ms = 6;
+}
+
+// A clipboard history entry.
+message ClipItem {
+  // UUID of the item.
+  string id = 1;
+  // Device ID of the origin device in lowercase hex.
+  string origin = 2;
+  // Monotonic per-origin counter.
+  uint64 seq = 3;
+  // Capture time, unix milliseconds.
+  int64 created_at_unix_ms = 4;
+  // Expiry time set by the origin device, unix milliseconds.
+  int64 expires_at_unix_ms = 5;
+  Kind kind = 6;
+  repeated Representation representations = 7;
+  Source source = 8;
+  // Tombstone of a manual deletion.
+  bool deleted = 9;
+}
+
+// Short authentication string of a pairing exchange.
+message Sas {
+  // Six decimal digits.
+  string digits = 1;
+  // Four emoji.
+  repeated string emoji = 2;
+}
+
+// An event of the daemon. The fields that apply depend on kind.
+message Event {
+  EventKind kind = 1;
+  // Device ID of the device the event is about, lowercase hex.
+  string device_id = 2;
+  string name = 3;
+  Role role = 4;
+  Platform platform = 5;
+  Path path = 6;
+  // The clipboard item was captured on this device instead of arriving from a
+  // peer.
+  bool local = 7;
+  // Clipboard item, set on EVENT_KIND_CLIPBOARD.
+  ClipItem item = 8;
+  // Address of a pairing candidate, set on EVENT_KIND_PAIRING_CANDIDATE.
+  string addr = 9;
+  // Set on the pairing events that show a SAS.
+  Sas sas = 10;
+  // Protocol version of the peer, set on EVENT_KIND_PEER_INCOMPATIBLE.
+  uint32 protocol_version = 11;
+  // Failure in plain English when the event reports one.
+  string error = 12;
+  // Time of the event, unix milliseconds.
+  int64 at_unix_ms = 13;
+  // File transfer, set on EVENT_KIND_TRANSFER.
+  Transfer transfer = 14;
+  // How the pairing exchange of the event was started.
+  PairingMethod pairing_method = 15;
+  // Why the operation of the event failed, set together with error when the
+  // reason is known.
+  FailureReason failure_reason = 16;
+  // The peer speaks a newer protocol version than this device, so this client
+  // has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
+  bool protocol_newer = 17;
+}
+
+// State of the pairing window.
+message PairingWindow {
+  bool open = 1;
+  // Address the window listens on, host:port.
+  string addr = 2;
+  // Time the window closes, unix milliseconds.
+  int64 expires_at_unix_ms = 3;
+}
+
+// Code of a pairing window. It carries a one time token, so a client must not
+// store it or put it into a log.
+message PairingQr {
+  // Text of the code.
+  string uri = 1;
+  // Time the window closes, unix milliseconds.
+  int64 expires_at_unix_ms = 2;
+}
+
+// A device that is open for pairing.
+message PairingCandidate {
+  // Address to pass to StartSas, host:port.
+  string addr = 1;
+  // Service metadata of the candidate.
+  map<string, string> txt = 2;
+  // Time the candidate was discovered, unix milliseconds.
+  int64 first_seen_unix_ms = 3;
+}
+
+// Outcome of one policy cell for an item that arrives without an explicit
+// request.
+enum PolicyAction {
+  POLICY_ACTION_UNSPECIFIED = 0;
+  // The item is dropped and not recorded.
+  POLICY_ACTION_REJECT = 1;
+  // The item is recorded and fetched on request.
+  POLICY_ACTION_METADATA = 2;
+  // The item is recorded and applied after a confirmation.
+  POLICY_ACTION_CONFIRM = 3;
+  // The item is applied without asking.
+  POLICY_ACTION_AUTO = 4;
+}
+
+// Policy of one content kind under one network condition.
+message PolicyCell {
+  // Outcome for the item.
+  optional PolicyAction action = 1;
+  // Largest item fetched eagerly, in bytes.
+  optional int64 max_size_bytes = 2;
+}
+
+// Policy of one network condition.
+message PolicyRow {
+  PolicyCell text = 1;
+  PolicyCell image = 2;
+  PolicyCell files = 3;
+  // Whether the relay path may be used.
+  optional bool relay = 4;
+}
+
+// Settings of the daemon.
+message Settings {
+  // Device name announced to peers. Applied at the next start.
+  string device_name = 1;
+  // This device asks before it applies a clipboard item of any device.
+  bool require_confirmation = 2;
+  // Blob store limit in bytes.
+  int64 blob_max_size_bytes = 3;
+  // Directory that receives shared files.
+  string downloads_dir = 4;
+  // Policy of an online network without restrictions.
+  PolicyRow unmetered = 5;
+  // Policy of a network billed by volume.
+  PolicyRow metered = 6;
+  // Policy of a roaming network.
+  PolicyRow roaming = 7;
+  // Policy of a network with the system data saver on.
+  PolicyRow data_saver = 8;
+  // Largest item fetched eagerly over the relay, in bytes.
+  int64 relay_max_size_bytes = 9;
+  // Lifetime of a text item of the history, in seconds.
+  int64 history_ttl_text_seconds = 10;
+  // Lifetime of an image item of the history, in seconds.
+  int64 history_ttl_image_seconds = 11;
+  // Lifetime of a file item of the history, in seconds.
+  int64 history_ttl_files_seconds = 12;
+  // This device asks before it accepts a file transfer of any device.
+  bool require_file_confirmation = 13;
+  // The user allows the app and the daemon to send errors to the developer.
+  bool sentry_enabled = 14;
+  // Text items lose the advertising parameters of the URLs in them, such as
+  // utm_source or fbclid, before they are stored and announced.
+  bool strip_tracking = 15;
+  // The user turned on the application log. It records at debug level until the
+  // user turns it off again.
+  bool journal_enabled = 16;
+  // The user allows every paired device to change the confirmation flags of
+  // this device remotely.
+  bool allow_remote_settings = 17;
+}
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  string version = 1;
+  // Device ID in lowercase hex.
+  string device_id = 2;
+  string device_name = 3;
+  bool running = 4;
+  NetworkState network = 5;
+  // Paired devices with their live connection state.
+  repeated Device devices = 6;
+  Pause pause = 7;
+  FriendsDiscovery friends_discovery = 8;
+  // Addresses of the main listener that a peer can reach, host:port.
+  repeated string addrs = 9;
+  // The system refuses the sends of the daemon to the local network, so the
+  // device is neither found nor finds the others. On macOS the daemon lacks the
+  // local network permission.
+  bool local_network_blocked = 10;
+  // The clipboard the daemon reads: x11, wayland or none on Linux, pasteboard
+  // on macOS and win32 on Windows.
+  string clipboard_backend = 11;
+  // Why the clipboard is not synchronized in the background, in English. Empty
+  // while the clipboard works.
+  string clipboard_note = 12;
+  // The keystore the daemon keeps secrets in: secret-service or file on Linux,
+  // keychain on macOS and dpapi on Windows.
+  string keystore_backend = 13;
+  // Protocol version of this daemon.
+  uint32 protocol_version = 14;
+}
+
+message WatchEventsRequest {}
+
+message WatchEventsResponse {
+  Event event = 1;
+}
+
+message ListDevicesRequest {
+  bool include_revoked = 1;
+}
+
+message ListDevicesResponse {
+  repeated Device devices = 1;
+}
+
+message RenameDeviceRequest {
+  // Device ID in lowercase hex. The ID of this device renames this device.
+  string device_id = 1;
+  string name = 2;
+}
+
+message RenameDeviceResponse {
+  // The device with its new name.
+  Device device = 1;
+}
+
+message RevokeDeviceRequest {
+  // Device ID in lowercase hex. The ID of this device leaves the group.
+  string device_id = 1;
+}
+
+message RevokeDeviceResponse {}
+
+message SetDeviceConfirmationRequest {
+  // Device ID in lowercase hex. Empty when self is set.
+  string device_id = 1;
+  bool require = 2;
+  // Change the flag of this device for every paired device. The side is not
+  // used then.
+  bool self = 3;
+  // Content the flag covers.
+  ConfirmationScope scope = 4;
+  // Device that asks. The flag of the paired device is changed over the
+  // session with it, so the device has to be online.
+  ConfirmationSide side = 5;
+}
+
+message SetDeviceConfirmationResponse {}
+
+message SetDeviceRemoteSettingsRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  // The device may change the confirmation flags of this device remotely.
+  bool allow = 2;
+}
+
+message SetDeviceRemoteSettingsResponse {}
+
+message SetPeerAddressRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  // Address of the device, host:port. An IPv6 host is written in brackets.
+  string addr = 2;
+}
+
+message SetPeerAddressResponse {
+  // The device with its state after the address was stored.
+  Device device = 1;
+}
+
+message SetFriendsDiscoveryRequest {
+  // On turns the search on and extends a running one, off turns it off.
+  bool on = 1;
+}
+
+message SetFriendsDiscoveryResponse {
+  // The search after the change.
+  FriendsDiscovery friends_discovery = 1;
+}
+
+message OpenPairingWindowRequest {
+  Role role = 1;
+}
+
+message OpenPairingWindowResponse {
+  PairingWindow window = 1;
+}
+
+message ExtendPairingWindowRequest {}
+
+message ExtendPairingWindowResponse {
+  PairingWindow window = 1;
+}
+
+message ClosePairingWindowRequest {}
+
+message ClosePairingWindowResponse {}
+
+message ListPairingCandidatesRequest {}
+
+message ListPairingCandidatesResponse {
+  repeated PairingCandidate candidates = 1;
+}
+
+message StartSasRequest {
+  // Address of the candidate, host:port.
+  string addr = 1;
+}
+
+message StartSasResponse {}
+
+message ConfirmSasRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+}
+
+message ConfirmSasResponse {}
+
+message RejectSasRequest {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+}
+
+message RejectSasResponse {}
+
+message GetPairingQrRequest {
+  // Addresses of this device to put into the code, host:port. A device that
+  // cannot list its own interfaces passes the addresses its platform reports.
+  repeated string addrs = 1;
+}
+
+message GetPairingQrResponse {
+  // Code of the open window, absent when no window is open.
+  PairingQr qr = 1;
+}
+
+message ScanPairingQrRequest {
+  // Text of the code.
+  string uri = 1;
+}
+
+message ScanPairingQrResponse {}
+
+message GetClipRequest {}
+
+message GetClipResponse {
+  // Most recent item, absent when the history is empty.
+  ClipItem item = 1;
+}
+
+message SetClipRequest {
+  string text = 1;
+}
+
+message SetClipResponse {
+  // Item created for the text.
+  ClipItem item = 1;
+}
+
+// A history entry with the state of its payloads.
+message HistoryItem {
+  ClipItem item = 1;
+  // Every payload of the item is stored on this device.
+  bool complete = 2;
+}
+
+message ListHistoryRequest {
+  // Only items of this kind. KIND_UNSPECIFIED lists every kind.
+  Kind kind = 1;
+  // Only items captured by this device, lowercase hex. Empty lists every
+  // device.
+  string device_id = 2;
+  // Maximum number of items. Zero uses the default, the server caps it.
+  uint32 limit = 3;
+}
+
+message ListHistoryResponse {
+  repeated HistoryItem items = 1;
+}
+
+message GetHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message GetHistoryItemResponse {
+  HistoryItem item = 1;
+}
+
+message GetHistoryThumbnailRequest {
+  // UUID of the item.
+  string id = 1;
+  // Longer side of the thumbnail in pixels. Zero uses the default, the server
+  // caps it. A smaller image keeps its size.
+  uint32 max_side = 2;
+}
+
+message GetHistoryThumbnailResponse {
+  uint32 width = 1;
+  uint32 height = 2;
+  // Rows of non-premultiplied RGBA pixels, four bytes per pixel.
+  bytes rgba = 3;
+}
+
+message DeleteHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message DeleteHistoryItemResponse {}
+
+message ClearHistoryRequest {}
+
+message ClearHistoryResponse {
+  // Number of removed entries.
+  uint64 removed = 1;
+}
+
+message FetchHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+  // Where the payloads are written. Empty downloads them only.
+  string path = 2;
+}
+
+message FetchHistoryItemResponse {
+  HistoryItem item = 1;
+  // Paths of the written payloads.
+  repeated string files = 2;
+}
+
+message CopyHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message CopyHistoryItemResponse {}
+
+message ApplyHistoryItemRequest {
+  // UUID of the item.
+  string id = 1;
+}
+
+message ApplyHistoryItemResponse {}
+
+// One file of a transfer.
+message TransferFile {
+  string name = 1;
+  // File size in bytes.
+  uint64 size = 2;
+  // BLAKE3 hash of the file in lowercase hex.
+  string blake3 = 3;
+  // File modification time, unix milliseconds.
+  int64 mtime_unix_ms = 4;
+  string mime_type = 5;
+}
+
+// One file transfer with a paired device.
+message Transfer {
+  string id = 1;
+  TransferDirection direction = 2;
+  // Device ID of the peer in lowercase hex.
+  string device_id = 3;
+  string device_name = 4;
+  TransferState state = 5;
+  repeated TransferFile files = 6;
+  // Bytes transferred so far.
+  uint64 bytes = 7;
+  // Size of all files in bytes.
+  uint64 total_bytes = 8;
+  // Paths of the saved files of a finished incoming transfer.
+  repeated string paths = 9;
+  // Failure in plain English.
+  string error = 10;
+  // Time the transfer started, unix milliseconds.
+  int64 created_at_unix_ms = 11;
+}
+
+message SendFilesRequest {
+  // Absolute paths of the files.
+  repeated string paths = 1;
+  // Receivers, device IDs in lowercase hex. At least one.
+  repeated string device_ids = 2;
+}
+
+message SendFilesResponse {
+  repeated Transfer transfers = 1;
+}
+
+message ListTransfersRequest {}
+
+message ListTransfersResponse {
+  repeated Transfer transfers = 1;
+}
+
+message CancelTransferRequest {
+  // Transfer ID.
+  string id = 1;
+}
+
+message CancelTransferResponse {}
+
+message AcceptTransferRequest {
+  // Transfer ID.
+  string id = 1;
+}
+
+message AcceptTransferResponse {}
+
+message RejectTransferRequest {
+  // Transfer ID.
+  string id = 1;
+}
+
+message RejectTransferResponse {}
+
+// An incoming file transfer request of a Friends device. Nothing is written to
+// the disk until it is accepted.
+message ShareRequest {
+  // Transfer ID.
+  string id = 1;
+  // Device ID of the sender in lowercase hex.
+  string device_id = 2;
+  string device_name = 3;
+  repeated TransferFile files = 4;
+  // Size of all files in bytes.
+  uint64 total_bytes = 5;
+  // Time the request arrived, unix milliseconds.
+  int64 created_at_unix_ms = 6;
+  // Time the request stops waiting for a decision, unix milliseconds.
+  int64 expires_at_unix_ms = 7;
+}
+
+message ListRequestsRequest {}
+
+message ListRequestsResponse {
+  repeated ShareRequest requests = 1;
+}
+
+message DecideRequestRequest {
+  // Transfer ID.
+  string id = 1;
+  // Accept the files or decline the request.
+  bool accept = 2;
+}
+
+message DecideRequestResponse {
+  // The request after the decision.
+  ShareRequest request = 1;
+}
+
+message GetPauseRequest {}
+
+message GetPauseResponse {
+  Pause pause = 1;
+}
+
+message SetPauseRequest {
+  PauseMode mode = 1;
+  // Deadline of PAUSE_MODE_UNTIL, unix milliseconds.
+  int64 until_unix_ms = 2;
+}
+
+message SetPauseResponse {
+  Pause pause = 1;
+}
+
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  Settings settings = 1;
+}
+
+message UpdateSettingsRequest {
+  optional string device_name = 1;
+  optional bool require_confirmation = 2;
+  optional int64 blob_max_size_bytes = 3;
+  optional string downloads_dir = 4;
+  // Policy rows to change. A missing row, cell or field keeps the stored
+  // value.
+  PolicyRow unmetered = 5;
+  PolicyRow metered = 6;
+  PolicyRow roaming = 7;
+  PolicyRow data_saver = 8;
+  optional int64 relay_max_size_bytes = 9;
+  // Remove the stored policy overrides and return to the defaults. Rows given
+  // in the same request are stored on top of the defaults.
+  bool reset_policy = 10;
+  // Lifetime of a text item of the history, in seconds.
+  optional int64 history_ttl_text_seconds = 11;
+  // Lifetime of an image item of the history, in seconds.
+  optional int64 history_ttl_image_seconds = 12;
+  // Lifetime of a file item of the history, in seconds.
+  optional int64 history_ttl_files_seconds = 13;
+  // Remove the stored history lifetimes and return to the defaults. Lifetimes
+  // given in the same request are stored on top of the defaults.
+  bool reset_history_ttl = 14;
+  optional bool require_file_confirmation = 15;
+  // The user allows the app and the daemon to send errors to the developer.
+  optional bool sentry_enabled = 16;
+  // Text items lose the advertising parameters of the URLs in them.
+  optional bool strip_tracking = 17;
+  // The user turns the application log on or off.
+  optional bool journal_enabled = 18;
+  // The user allows every paired device to change the confirmation flags of
+  // this device remotely.
+  optional bool allow_remote_settings = 19;
+}
+
+message UpdateSettingsResponse {
+  Settings settings = 1;
+}
+
+// Transport of the connection to the relay.
+enum RelayTransport {
+  RELAY_TRANSPORT_UNSPECIFIED = 0;
+  // No connection.
+  RELAY_TRANSPORT_NONE = 1;
+  // QUIC over UDP.
+  RELAY_TRANSPORT_QUIC = 2;
+  // WebSocket over TLS.
+  RELAY_TRANSPORT_WSS = 3;
+}
+
+// Relay access of the Personal group and the state of the client.
+message Relay {
+  // Address of the relay, host:port or https://host:port. Empty when the relay
+  // is off.
+  string url = 1;
+  // An access token is stored on this device. The token itself is never
+  // returned.
+  bool token_set = 2;
+  // The client is registered on the relay.
+  bool connected = 3;
+  RelayTransport transport = 4;
+  // Time the settings last changed, unix milliseconds.
+  int64 changed_at_unix_ms = 5;
+  // Files travel over the relay only when the user asks for them.
+  bool files_on_request = 6;
+  // Protocol version the relay announced at the last registration.
+  uint32 protocol_version = 7;
+  // The relay speaks a newer protocol version than this device, so this client
+  // has to be updated.
+  bool protocol_newer = 8;
+}
+
+message GetRelayRequest {}
+
+message GetRelayResponse {
+  Relay relay = 1;
+}
+
+message SetRelayRequest {
+  // Address of the relay, host:port or https://host:port.
+  string url = 1;
+  // Access token of the group. The stored token is kept when the field is
+  // absent.
+  optional string token = 2;
+  // Change the rule for files over the relay. The stored rule is kept when the
+  // field is absent.
+  optional bool files_on_request = 3;
+}
+
+message SetRelayResponse {
+  Relay relay = 1;
+}
+
+message RelayOffRequest {}
+
+message RelayOffResponse {
+  Relay relay = 1;
+}
+
+// Reason a relay check of one transport failed.
+enum RelayCheckFailure {
+  RELAY_CHECK_FAILURE_UNSPECIFIED = 0;
+  // The device registered on the relay.
+  RELAY_CHECK_FAILURE_NONE = 1;
+  // The host name does not resolve.
+  RELAY_CHECK_FAILURE_ADDRESS = 2;
+  // No answer in time: the host is down, a firewall drops the packets or the
+  // network blocks UDP.
+  RELAY_CHECK_FAILURE_TIMEOUT = 3;
+  // The host refused the connection: nothing listens on the port.
+  RELAY_CHECK_FAILURE_REFUSED = 4;
+  // The TLS certificate is not trusted or does not match the host.
+  RELAY_CHECK_FAILURE_CERTIFICATE = 5;
+  // The server answers but is not a relay, or a proxy does not forward the
+  // relay path.
+  RELAY_CHECK_FAILURE_NOT_RELAY = 6;
+  // The relay is full or shutting down, or the proxy in front of it gets no
+  // answer from it.
+  RELAY_CHECK_FAILURE_UNAVAILABLE = 7;
+  // The relay does not know the access token.
+  RELAY_CHECK_FAILURE_UNAUTHORIZED = 8;
+  // The token used up its traffic quota.
+  RELAY_CHECK_FAILURE_QUOTA_EXCEEDED = 9;
+  // The datagrams of the relay are too small for the packets of a device.
+  RELAY_CHECK_FAILURE_DATAGRAMS_TOO_SMALL = 10;
+  // Any other error, described by the detail.
+  RELAY_CHECK_FAILURE_OTHER = 11;
+}
+
+// Outcome of a relay check of one transport.
+message RelayCheck {
+  RelayTransport transport = 1;
+  // The device registered on the relay over this transport.
+  bool ok = 2;
+  RelayCheckFailure failure = 3;
+  // Time to connect and register, in milliseconds. Zero when the check failed.
+  int64 latency_ms = 4;
+  // Technical description of the error, for the advanced user. Empty on
+  // success.
+  string detail = 5;
+}
+
+message TestRelayRequest {
+  // Address of the relay, host:port or https://host:port. The stored address
+  // is checked when empty.
+  string url = 1;
+  // Access token of the group. The stored token is used when the field is
+  // absent.
+  optional string token = 2;
+}
+
+message TestRelayResponse {
+  // QUIC over UDP, the primary transport.
+  RelayCheck quic = 1;
+  // WebSocket over TLS, the fallback.
+  RelayCheck websocket = 2;
+}
+
+message RetryDeviceRequest {
+  // Device ID in lowercase hex. Every paired device is retried when empty.
+  string device_id = 1;
+}
+
+message RetryDeviceResponse {}

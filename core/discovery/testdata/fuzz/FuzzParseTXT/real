@@ -1,0 +1,2 @@
+go test fuzz v1
+string("v=1\x00tag=7e5lkpce2i5cc\x00name=workstation")

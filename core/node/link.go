@@ -1,0 +1,1209 @@
+package node
+
+import (
+	"bytes"
+	"context"
+	"crypto/tls"
+	"errors"
+	"fmt"
+	"net"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/lebe-dev/unison/core/discovery"
+	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/ports"
+	"github.com/lebe-dev/unison/core/protocol"
+	"github.com/lebe-dev/unison/core/session"
+	"github.com/lebe-dev/unison/core/transport"
+	"github.com/lebe-dev/unison/core/trust"
+)
+
+// backoffFactor multiplies the reconnect delay after a failed attempt.
+const backoffFactor = 2
+
+// acceptRetryDelay keeps a failing accept loop from spinning.
+const acceptRetryDelay = 50 * time.Millisecond
+
+// errSuperseded reports a connection that a concurrent connection replaced.
+var errSuperseded = errors.New("node: connection superseded")
+
+// taggedDiscovery is a discovery that reports whether a candidate carries the
+// group tag. A platform discovery that decides membership itself, or a test
+// bus, does not implement it and its candidates are dialed as they are.
+type taggedDiscovery interface {
+	BrowseCandidates(ctx context.Context, service ports.Service) (<-chan discovery.Candidate, error)
+}
+
+// link is the connection state of one paired device.
+type link struct {
+	id model.DeviceID
+
+	mu       sync.Mutex
+	peer     trust.Peer
+	conn     *transport.Conn
+	sess     *session.Session
+	online   bool
+	path     model.Path
+	incoming bool
+	upgrade  bool
+	stopped  bool
+	gen      uint64
+	dialing  bool
+	attempts int
+	// migrations counts the attempts to move a relay connection to the local
+	// network since the relay session opened or the network changed.
+	migrations int
+	blocked    bool
+	// offline is when the link lost its connection, zero while it has one.
+	offline time.Time
+	// unreachable is when the peer stopped answering on its known addresses,
+	// zero while it answers or no address is known.
+	unreachable time.Time
+	// unreachableDetail lists the failures of the last attempt.
+	unreachableDetail string
+	// protocolVersion is the version the peer announced at its last Hello.
+	protocolVersion uint32
+	// protocolKnown reports that the peer announced a protocol version.
+	protocolKnown bool
+	// relay stops the relay goroutine of the link.
+	relay context.CancelFunc
+	kick  chan struct{}
+}
+
+// newLink creates an offline link.
+func newLink(id model.DeviceID, now time.Time) *link {
+	return &link{id: id, offline: now, kick: make(chan struct{}, 1)}
+}
+
+// setPeer applies the peer record.
+func (l *link) setPeer(peer trust.Peer) {
+	l.mu.Lock()
+	l.peer = peer
+	l.mu.Unlock()
+}
+
+// setProtocolVersion records the version the peer announced at its last Hello.
+func (l *link) setProtocolVersion(version uint32) {
+	l.mu.Lock()
+	l.protocolVersion = version
+	l.protocolKnown = true
+	l.mu.Unlock()
+}
+
+// state returns the live state of the link.
+func (l *link) state() model.PeerState {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	state := model.PeerState{DeviceID: l.id}
+	state.ProtocolVersion = l.protocolVersion
+	state.ProtocolKnown = l.protocolKnown
+	if l.online {
+		state.Online = true
+		state.Path = l.path
+		return state
+	}
+	if !l.unreachable.IsZero() {
+		state.Unreachable = true
+		state.UnreachableSince = l.unreachable
+		state.UnreachableDetail = l.unreachableDetail
+	}
+	return state
+}
+
+// status returns whether the link is online and whether the peer cannot be
+// reached at all, which is the case for another protocol version.
+func (l *link) status() (online, blocked bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.online, l.blocked
+}
+
+// role returns the role of the peer record.
+func (l *link) role() model.Role {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.peer.Role
+}
+
+// clipTarget returns the session to announce clipboard items on and the peer
+// record, or ok false when the peer may not receive them.
+func (l *link) clipTarget() (sess *session.Session, peer trust.Peer, ok bool) {
+	sess, peer, ok = l.onlineSession()
+	if !ok || !peer.Allowed(trust.ActionReceiveClipAnnounce) {
+		return nil, trust.Peer{}, false
+	}
+	return sess, peer, true
+}
+
+// onlineSession returns the live session of the link and its peer record.
+func (l *link) onlineSession() (sess *session.Session, peer trust.Peer, ok bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if !l.online || l.sess == nil {
+		return nil, trust.Peer{}, false
+	}
+	return l.sess, l.peer, true
+}
+
+// close ends the session or the connection of the link.
+func (l *link) close() {
+	l.mu.Lock()
+	sess := l.sess
+	conn := l.conn
+	l.mu.Unlock()
+
+	if sess != nil {
+		sess.Close()
+		return
+	}
+	if conn != nil {
+		_ = conn.Close()
+	}
+}
+
+// stop ends the session or the connection of the link and tells its loop to
+// quit. A stopped link is not reachable again.
+func (l *link) stop() {
+	l.mu.Lock()
+	l.stopped = true
+	sess := l.sess
+	conn := l.conn
+	l.sess = nil
+	l.conn = nil
+	l.online = false
+	l.incoming = false
+	l.mu.Unlock()
+
+	l.wake()
+	if sess != nil {
+		sess.Close()
+		return
+	}
+	if conn != nil {
+		_ = conn.Close()
+	}
+}
+
+// isStopped reports whether the link stopped.
+func (l *link) isStopped() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.stopped
+}
+
+// needsUpgrade reports whether the link should replace its connection with one
+// the local device initiates.
+func (l *link) needsUpgrade() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.online && l.upgrade
+}
+
+// pathIs reports whether the live connection uses the path.
+func (l *link) pathIs(path model.Path) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.online && l.path == path
+}
+
+// offlineAt returns when the link lost its connection.
+func (l *link) offlineAt() time.Time {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.offline
+}
+
+// markOffline records the start of an outage. The first mark wins, so failed
+// attempts do not delay the relay path.
+func (l *link) markOffline(now time.Time) {
+	l.mu.Lock()
+	if l.offline.IsZero() {
+		l.offline = now
+	}
+	l.mu.Unlock()
+}
+
+// relayWanted reports whether the link still needs the relay path.
+func (l *link) relayWanted() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return !l.stopped && (!l.online || l.path == model.PathRelay)
+}
+
+// beginRelay reserves the relay goroutine of the link.
+func (l *link) beginRelay(cancel context.CancelFunc) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.relay != nil || l.stopped {
+		return false
+	}
+	l.relay = cancel
+	return true
+}
+
+// endRelay releases the relay reservation and stops the goroutine.
+func (l *link) endRelay() {
+	l.mu.Lock()
+	cancel := l.relay
+	l.relay = nil
+	l.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+}
+
+// setReachability records the outcome of a connection attempt that did not
+// open a session. An attempt in which every address stayed silent marks the
+// peer unreachable; one in which a device answered, or no address was known,
+// clears the mark. It reports whether the peer just became unreachable.
+func (l *link) setReachability(now time.Time, silent bool, detail string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if !silent || l.online {
+		l.unreachable = time.Time{}
+		l.unreachableDetail = ""
+		return false
+	}
+	l.unreachableDetail = detail
+	if !l.unreachable.IsZero() {
+		return false
+	}
+	l.unreachable = now
+	return true
+}
+
+// dialPurpose is why a link opens a connection.
+type dialPurpose uint8
+
+// Reasons to open a connection.
+const (
+	// dialConnect establishes a missing connection.
+	dialConnect dialPurpose = iota
+	// dialUpgrade replaces a connection the other device initiated.
+	dialUpgrade
+	// dialMigrate replaces a relay connection with a local network one.
+	dialMigrate
+)
+
+// beginDial reserves the link for one outgoing attempt. A link that already has
+// a connection, or is opening one, is left alone unless the attempt replaces a
+// connection that has to give way.
+func (l *link) beginDial(purpose dialPurpose) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.dialing || l.stopped {
+		return false
+	}
+	switch purpose {
+	case dialUpgrade:
+		if !l.online || l.path != model.PathLAN || !l.upgrade {
+			return false
+		}
+	case dialMigrate:
+		if !l.online || l.path != model.PathRelay {
+			return false
+		}
+	default:
+		if l.online || l.conn != nil {
+			return false
+		}
+	}
+	l.dialing = true
+	return true
+}
+
+// endDial releases the reservation of beginDial.
+func (l *link) endDial() {
+	l.mu.Lock()
+	l.dialing = false
+	l.mu.Unlock()
+}
+
+// takeConnection installs conn as the connection of the link and closes the
+// previous one. It reports the generation and the path of the new connection,
+// whether the link was online before and the path of the previous connection. A
+// connection that does not win over the current one is refused.
+func (l *link) takeConnection(local model.DeviceID, conn *transport.Conn, incoming bool, path model.Path) (gen uint64, wasOnline bool, previous model.Path, err error) {
+	l.mu.Lock()
+	if l.conn != nil && !takesOver(local, l.id, incoming, l.incoming, l.path, path) {
+		l.mu.Unlock()
+		return 0, false, model.PathUnknown, errSuperseded
+	}
+	previousSession := l.sess
+	previousConn := l.conn
+	wasOnline = l.online
+	previous = l.path
+
+	l.gen++
+	gen = l.gen
+	l.conn = conn
+	l.sess = nil
+	l.path = path
+	l.incoming = incoming
+	l.mu.Unlock()
+
+	if previousSession != nil {
+		previousSession.Close()
+	} else if previousConn != nil {
+		_ = previousConn.Close()
+	}
+	return gen, wasOnline, previous, nil
+}
+
+// drop clears the connection of the generation after a failed handshake and
+// reports whether the generation was still the current one.
+func (l *link) drop(gen uint64) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.gen != gen {
+		return false
+	}
+	l.conn = nil
+	l.sess = nil
+	l.online = false
+	l.incoming = false
+	return true
+}
+
+// block marks a peer that cannot be reached until the next network change.
+func (l *link) block() {
+	l.mu.Lock()
+	l.blocked = true
+	l.mu.Unlock()
+}
+
+// retry clears the backoff and wakes the link loop.
+func (l *link) retry() {
+	l.mu.Lock()
+	l.attempts = 0
+	l.migrations = 0
+	l.blocked = false
+	l.mu.Unlock()
+	l.wake()
+}
+
+// wake tells the link loop to look at the link again.
+func (l *link) wake() {
+	select {
+	case l.kick <- struct{}{}:
+	default:
+	}
+}
+
+// wait waits for the delay, a wake-up or the end of the node. A zero delay
+// waits for the wake-up only.
+func (l *link) wait(ctx context.Context, delay time.Duration) bool {
+	var timer <-chan time.Time
+	if delay > 0 {
+		timer = time.After(delay)
+	}
+	select {
+	case <-ctx.Done():
+		return false
+	case <-l.kick:
+		return true
+	case <-timer:
+		return true
+	}
+}
+
+// nextDelay returns the delay before the next attempt and counts the attempt.
+func (l *link) nextDelay(first, limit time.Duration) time.Duration {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delay := backoff(l.attempts, first, limit)
+	l.attempts++
+	return delay
+}
+
+// nextMigrateDelay returns the delay before the next search for the peer in the
+// local network while it is online over the relay, and counts the search. A
+// network change resets it, and discovery dials a peer that appears at once, so
+// the search only has to catch what both miss.
+func (l *link) nextMigrateDelay(first, limit time.Duration) time.Duration {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delay := backoff(l.migrations, first, limit)
+	l.migrations++
+	return delay
+}
+
+// backoff returns the delay after the given number of attempts: first doubled
+// for every attempt, capped at limit.
+func backoff(attempts int, first, limit time.Duration) time.Duration {
+	delay := first
+	for range attempts {
+		if delay >= limit {
+			break
+		}
+		delay *= backoffFactor
+	}
+	return min(delay, limit)
+}
+
+// takesOver reports whether a new connection replaces the current one of the
+// link. A local network connection always wins over a relay one, and both
+// devices of a simultaneous dial settle on the connection the device with the
+// lower device ID initiated. A connection in the direction of the current one
+// replaces nothing: the two are the same connection the rule already picked.
+func takesOver(local, peer model.DeviceID, incoming, currentIncoming bool, current, next model.Path) bool {
+	if current != next {
+		return next == model.PathLAN
+	}
+	if incoming == currentIncoming {
+		return false
+	}
+	if incoming {
+		return bytes.Compare(peer[:], local[:]) < 0
+	}
+	return bytes.Compare(local[:], peer[:]) < 0
+}
+
+// pathOf returns the path a connection uses. A relay packet connection reports
+// its own network name.
+func pathOf(addr net.Addr) model.Path {
+	if addr != nil && addr.Network() == "relay" {
+		return model.PathRelay
+	}
+	return model.PathLAN
+}
+
+// shouldUpgrade reports whether the local device has to replace a connection
+// with its own one: it is the device with the lower device ID, but the other
+// device initiated the connection.
+func shouldUpgrade(local, peer model.DeviceID, incoming bool) bool {
+	return incoming && bytes.Compare(local[:], peer[:]) < 0
+}
+
+// acceptLoop serves the incoming connections until the node stops.
+func (n *Node) acceptLoop(ctx context.Context) {
+	for {
+		conn, err := n.listener.Accept(ctx)
+		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
+				return
+			}
+			if errors.Is(err, transport.ErrPeerRejected) {
+				n.countRefusal()
+				continue
+			}
+			n.log.Warn("accepting a connection failed", "error", err)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(acceptRetryDelay):
+			}
+			continue
+		}
+		incoming := conn
+		n.spawn(func() {
+			if _, err := n.attach(ctx, incoming, true); err != nil && !errors.Is(err, errSuperseded) && ctx.Err() == nil {
+				n.log.Debug("incoming connection dropped", "error", err)
+			}
+		})
+	}
+}
+
+// browseLoop dials the devices discovery reports. Only a candidate that carries
+// the group tag is dialed when discovery decides the match itself. A candidate
+// without the tag is dialed and remembered only while a paired device is
+// offline: a device that has no discovery key announces without a tag, and the
+// handshake still tells whether it is a paired one. While every paired device
+// is online, such a candidate is most likely a device of another group, and
+// keeping it would make every later reconnect dial it.
+func (n *Node) browseLoop(ctx context.Context) {
+	if tagged, ok := n.cfg.Discovery.(taggedDiscovery); ok {
+		candidates, err := tagged.BrowseCandidates(ctx, ports.ServiceMain)
+		if err != nil {
+			n.log.Warn("browsing for devices failed", "error", err)
+			return
+		}
+		consumeCandidates(ctx, candidates, func(candidate discovery.Candidate) {
+			if !candidate.Matched && !n.needsPeers() {
+				return
+			}
+			n.rememberCandidate(candidate.Addr)
+			n.probe(ctx, candidate.Addr)
+		})
+		return
+	}
+
+	candidates, err := n.cfg.Discovery.Browse(ctx, ports.ServiceMain)
+	if err != nil {
+		n.log.Warn("browsing for devices failed", "error", err)
+		return
+	}
+	consumeCandidates(ctx, candidates, func(candidate ports.Candidate) {
+		n.rememberCandidate(candidate.Addr)
+		n.probe(ctx, candidate.Addr)
+	})
+}
+
+// consumeCandidates calls fn for every candidate until ctx ends or the channel
+// closes.
+func consumeCandidates[T any](ctx context.Context, candidates <-chan T, fn func(T)) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case candidate, ok := <-candidates:
+			if !ok {
+				return
+			}
+			fn(candidate)
+		}
+	}
+}
+
+// rememberCandidate caches a discovered address for the next reconnect. A new
+// announcement clears the device that answered there before: the address may
+// belong to another device now.
+func (n *Node) rememberCandidate(addr string) {
+	if addr == "" || len(addr) > maxAddrLength {
+		return
+	}
+	if _, _, err := net.SplitHostPort(addr); err != nil {
+		return
+	}
+
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if _, ok := n.candidates[addr]; !ok && len(n.candidates) >= maxCandidates {
+		n.evictCandidateLocked()
+	}
+	n.candidates[addr] = candidate{seen: n.clock.Now()}
+}
+
+// evictCandidateLocked drops the oldest cached candidate. The caller must hold
+// n.mu.
+func (n *Node) evictCandidateLocked() {
+	oldest := ""
+	var seen time.Time
+	for addr, candidate := range n.candidates {
+		if oldest == "" || candidate.seen.Before(seen) {
+			oldest, seen = addr, candidate.seen
+		}
+	}
+	delete(n.candidates, oldest)
+}
+
+// probeCandidates dials every cached candidate. The handshake tells which
+// device answers.
+func (n *Node) probeCandidates(ctx context.Context) {
+	for _, addr := range n.candidateAddrs(model.DeviceID{}) {
+		n.probe(ctx, addr)
+	}
+}
+
+// candidateAddrs returns the cached addresses that did not expire, without the
+// ones of a device other than peer that is online in the local network: a dial
+// there would only find that device again. A zero peer skips the addresses of
+// every such device.
+func (n *Node) candidateAddrs(peer model.DeviceID) []string {
+	now := n.clock.Now()
+
+	n.mu.Lock()
+	addrs := make([]string, 0, len(n.candidates))
+	owners := make([]model.DeviceID, 0, len(n.candidates))
+	for addr, candidate := range n.candidates {
+		if now.Sub(candidate.seen) > candidateTTL {
+			delete(n.candidates, addr)
+			continue
+		}
+		addrs = append(addrs, addr)
+		owners = append(owners, candidate.owner)
+	}
+	n.mu.Unlock()
+
+	kept := addrs[:0]
+	for i, addr := range addrs {
+		if owner := owners[i]; owner != peer && n.onlineInLAN(owner) {
+			continue
+		}
+		kept = append(kept, addr)
+	}
+	return kept
+}
+
+// onlineInLAN reports whether the device has a session in the local network.
+func (n *Node) onlineInLAN(id model.DeviceID) bool {
+	if id.IsZero() {
+		return false
+	}
+	l := n.lookup(id)
+	return l != nil && l.pathIs(model.PathLAN)
+}
+
+// noteCandidateOwner records the device that answered on a cached candidate.
+func (n *Node) noteCandidateOwner(addr string, id model.DeviceID) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if candidate, ok := n.candidates[addr]; ok {
+		candidate.owner = id
+		n.candidates[addr] = candidate
+	}
+}
+
+// probe dials one discovered address when a peer is missing. A device that is
+// not trusted is refused during the handshake.
+func (n *Node) probe(ctx context.Context, addr string) {
+	n.probeAddr(ctx, addr, true)
+}
+
+// probeQuiet dials one discovered address without writing it to the log.
+func (n *Node) probeQuiet(ctx context.Context, addr string) {
+	n.probeAddr(ctx, addr, false)
+}
+
+// probeAddr dials one discovered address. A refusal during the handshake is
+// counted, other failures are logged with the address when logAddr is set.
+func (n *Node) probeAddr(ctx context.Context, addr string, logAddr bool) {
+	if ctx.Err() != nil || !n.needsPeers() {
+		return
+	}
+
+	n.mu.Lock()
+	owner := n.candidates[addr].owner
+	n.mu.Unlock()
+	if n.onlineInLAN(owner) {
+		return
+	}
+
+	n.mu.Lock()
+	if _, busy := n.probing[addr]; busy {
+		n.mu.Unlock()
+		return
+	}
+	n.probing[addr] = struct{}{}
+	n.mu.Unlock()
+
+	n.spawn(func() {
+		defer func() {
+			n.mu.Lock()
+			delete(n.probing, addr)
+			n.mu.Unlock()
+		}()
+
+		conn, err := n.dial(ctx, addr)
+		if err != nil {
+			if errors.Is(err, transport.ErrPeerRejected) {
+				n.countRefusal()
+				return
+			}
+			if logAddr {
+				n.log.Debug("discovered address did not answer", "addr", addr, "error", err)
+			}
+			return
+		}
+		n.noteCandidateOwner(addr, conn.Peer().DeviceID())
+		if _, err := n.attach(ctx, conn, false); err != nil && !errors.Is(err, errSuperseded) {
+			if logAddr {
+				n.log.Debug("discovered device refused", "addr", addr, "error", err)
+			}
+		}
+	})
+}
+
+// dialAllowed reports whether the link may open a connection. A Friends device
+// is reachable only while the local device looks for friends.
+func (n *Node) dialAllowed(l *link) bool {
+	return l.role() != model.RoleFriends || n.friendsOn()
+}
+
+// needsPeers reports whether a peer is worth dialing: it is offline, or it is
+// online over the relay and may be reachable in the local network.
+func (n *Node) needsPeers() bool {
+	for _, l := range n.linkList() {
+		if online, blocked := l.status(); !blocked && (!online || l.pathIs(model.PathRelay)) {
+			return true
+		}
+	}
+	return false
+}
+
+// runLink keeps the link of one peer connected until the node stops. The local
+// network has priority: a relay connection is replaced as soon as the peer
+// answers on the local network, and it is opened only after the peer stayed
+// away for the relay delay.
+func (n *Node) runLink(ctx context.Context, l *link) {
+	for {
+		if ctx.Err() != nil || l.isStopped() {
+			return
+		}
+		online, blocked := l.status()
+		if online {
+			if l.pathIs(model.PathRelay) {
+				// Keep looking for the local network while the peer is
+				// reachable over the relay.
+				n.tryDial(ctx, l, dialMigrate)
+				if !l.wait(ctx, l.nextMigrateDelay(n.limits.ReconnectDelay, n.limits.ReconnectMaxDelay)) {
+					return
+				}
+				continue
+			}
+			l.endRelay()
+			if l.needsUpgrade() {
+				n.tryDial(ctx, l, dialUpgrade)
+				if !l.needsUpgrade() {
+					continue
+				}
+				if !l.wait(ctx, l.nextDelay(n.limits.ReconnectDelay, n.limits.ReconnectMaxDelay)) {
+					return
+				}
+				continue
+			}
+			if !l.wait(ctx, 0) {
+				return
+			}
+			continue
+		}
+		if blocked {
+			l.endRelay()
+			if !l.wait(ctx, 0) {
+				return
+			}
+			continue
+		}
+		if !n.dialAllowed(l) {
+			l.endRelay()
+			if !l.wait(ctx, 0) {
+				return
+			}
+			continue
+		}
+		l.markOffline(n.clock.Now())
+		n.tryDial(ctx, l, dialConnect)
+		if online, _ := l.status(); online {
+			continue
+		}
+		if n.relayDue(l) {
+			n.startRelay(ctx, l)
+		}
+		if !l.wait(ctx, l.nextDelay(n.limits.ReconnectDelay, n.limits.OfflineRetryMaxDelay)) {
+			return
+		}
+	}
+}
+
+// tryDial connects to the peer through one of the known addresses: the cached
+// ones first, then the addresses discovery reported. The purpose decides
+// whether the attempt replaces a live connection.
+func (n *Node) tryDial(ctx context.Context, l *link, purpose dialPurpose) {
+	if !l.beginDial(purpose) {
+		return
+	}
+	defer l.endDial()
+
+	// Only the cached addresses belong to this peer; a discovered address may
+	// be any device of the group, so its failure says nothing about the peer.
+	cached := n.peerAddrs(ctx, l.id)
+	var failures []error
+	silent := len(cached) > 0
+	for _, addr := range n.dialAddrs(ctx, l.id) {
+		if ctx.Err() != nil {
+			return
+		}
+		// The peer may have connected on its own while an earlier address timed
+		// out; another connection would only replace that one.
+		if online, _ := l.status(); online && purpose == dialConnect {
+			return
+		}
+		conn, err := n.dial(ctx, addr)
+		if err != nil {
+			n.log.Debug("connecting to the peer failed", "peer", l.id, "addr", addr, "error", err)
+			if slices.Contains(cached, addr) {
+				failures = append(failures, fmt.Errorf("%s: %w", addr, err))
+				silent = silent && transport.IsUnreachable(err)
+			}
+			continue
+		}
+		n.noteCandidateOwner(addr, conn.Peer().DeviceID())
+		answered := conn.Peer().DeviceID() == l.id
+		if _, err := n.attach(ctx, conn, false); err != nil {
+			if !errors.Is(err, errSuperseded) {
+				n.log.Debug("peer connection refused", "peer", l.id, "addr", addr, "error", err)
+			}
+			if answered {
+				silent = false
+			}
+			continue
+		}
+		if answered {
+			return
+		}
+	}
+	if purpose != dialConnect || ctx.Err() != nil {
+		return
+	}
+	n.noteReachability(l, silent, failures)
+}
+
+// noteReachability records the outcome of a failed connection attempt and
+// reports a peer that just stopped answering.
+func (n *Node) noteReachability(l *link, silent bool, failures []error) {
+	lines := make([]string, 0, len(failures))
+	for _, failure := range failures {
+		lines = append(lines, failure.Error())
+	}
+	detail := strings.Join(lines, "\n")
+	if !l.setReachability(n.clock.Now(), silent, detail) {
+		return
+	}
+	l.mu.Lock()
+	peer := l.peer
+	l.mu.Unlock()
+	n.log.Info("peer does not answer on its known addresses", "peer", l.id, "addresses", len(failures))
+	n.publish(Event{
+		Kind:     EventPeerUnreachable,
+		Peer:     l.id,
+		Name:     peer.Name,
+		Role:     peer.Role,
+		Platform: peer.Platform,
+		Err:      errors.New(detail),
+	})
+}
+
+// dialAddrs returns the addresses to try for the peer: its cached addresses and
+// the discovered candidates.
+func (n *Node) dialAddrs(ctx context.Context, id model.DeviceID) []string {
+	cached := n.peerAddrs(ctx, id)
+	candidates := n.candidateAddrs(id)
+	addrs := make([]string, 0, len(cached)+len(candidates))
+	for _, addr := range append(cached, candidates...) {
+		if slices.Contains(addrs, addr) {
+			continue
+		}
+		addrs = append(addrs, addr)
+	}
+	return addrs
+}
+
+// attach binds a connection to the link of its peer and opens the session. A
+// connection of the device with the lower device ID wins a simultaneous dial,
+// and a local network connection wins over a relay one.
+func (n *Node) attach(ctx context.Context, conn *transport.Conn, incoming bool) (*session.Session, error) {
+	if conn == nil {
+		return nil, errors.New("node: nil connection")
+	}
+	peer, err := n.trust.Get(ctx, conn.Peer().DeviceID())
+	if err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("node: peer lookup: %w", err)
+	}
+	if peer.Revoked {
+		_ = conn.Close()
+		return nil, trust.ErrPeerRevoked
+	}
+
+	local := n.identity.DeviceID()
+	path := pathOf(conn.RemoteAddr())
+	l := n.startLink(peer)
+	gen, wasOnline, previousPath, err := l.takeConnection(local, conn, incoming, path)
+	if err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+
+	sess, err := n.openSession(ctx, conn)
+	if err != nil {
+		current := l.drop(gen)
+		_ = conn.Close()
+		if current {
+			// The link loop may wait for a wake-up only, as it does while the
+			// peer is online, so it has to learn that the peer is gone.
+			l.markOffline(n.clock.Now())
+			l.wake()
+		}
+		if current && wasOnline {
+			n.peerOffline(l, peer, err)
+		}
+		if errors.Is(err, session.ErrIncompatibleVersion) {
+			if current {
+				l.block()
+			}
+			version := uint32(0)
+			if sess != nil {
+				version = sess.PeerHello().Version
+				l.setProtocolVersion(version)
+			}
+			newer := protocol.Compare(version) == protocol.PeerNewer
+			n.publish(Event{
+				Kind:          EventPeerIncompatible,
+				Peer:          l.id,
+				Name:          peer.Name,
+				Version:       version,
+				ProtocolNewer: newer,
+				Err:           err,
+			})
+			if newer {
+				n.log.Warn("peer runs a newer protocol version, this device needs an update",
+					"peer", l.id, "version", version, "local_version", protocol.Version)
+			} else {
+				n.log.Warn("peer runs an older protocol version and needs an update",
+					"peer", l.id, "version", version, "local_version", protocol.Version)
+			}
+		}
+		return sess, err
+	}
+
+	l.mu.Lock()
+	if l.gen != gen {
+		l.mu.Unlock()
+		sess.Close()
+		return nil, errSuperseded
+	}
+	l.sess = sess
+	l.protocolVersion = sess.PeerHello().Version
+	l.protocolKnown = true
+	l.online = true
+	l.path = path
+	l.attempts = 0
+	l.migrations = 0
+	l.blocked = false
+	l.offline = time.Time{}
+	l.unreachable = time.Time{}
+	l.unreachableDetail = ""
+	upgrade := shouldUpgrade(local, l.id, incoming)
+	l.upgrade = upgrade
+	l.mu.Unlock()
+
+	// A relay connection has no address of the peer, so only a local network
+	// connection adds a hint to the cache.
+	if path == model.PathLAN {
+		n.recordAddr(ctx, peer.DeviceID(), addrOf(conn.RemoteAddr()), incoming)
+	}
+	if err := n.trust.TouchSeen(ctx, l.id, n.clock.Now()); err != nil {
+		n.log.Debug("recording the peer as seen failed", "peer", l.id, "error", err)
+	}
+	n.startHistorySync(sess)
+	n.spawn(func() { n.announcePolicy(n.ctx, sess) })
+	if !wasOnline || previousPath != path {
+		n.publish(Event{Kind: EventPeerOnline, Peer: l.id, Name: peer.Name, Role: peer.Role, Platform: peer.Platform, Path: path})
+		state := conn.ConnectionState().TLS
+		n.log.Info("peer online",
+			"peer", l.id,
+			"role", peer.Role.String(),
+			"path", path.String(),
+			"incoming", incoming,
+			"tls", tls.VersionName(state.Version),
+			"key_exchange", state.CurveID.String(),
+		)
+	}
+	if upgrade {
+		l.wake()
+	}
+	if n.gossip != nil {
+		n.gossip.Opened(sess)
+	}
+	n.spawn(func() { n.watchSession(l, sess, gen) })
+	return sess, nil
+}
+
+// watchSession waits for the session to end and marks the peer offline.
+func (n *Node) watchSession(l *link, sess *session.Session, gen uint64) {
+	<-sess.Done()
+	err := sess.Err()
+
+	l.mu.Lock()
+	if l.gen != gen {
+		l.mu.Unlock()
+		return
+	}
+	l.sess = nil
+	l.conn = nil
+	l.online = false
+	l.incoming = false
+	l.offline = n.clock.Now()
+	peer := l.peer
+	l.mu.Unlock()
+
+	n.peerOffline(l, peer, err)
+	l.wake()
+	n.probeCandidates(n.ctx)
+}
+
+// peerOffline reports a peer that ended its session.
+func (n *Node) peerOffline(l *link, peer trust.Peer, err error) {
+	n.publish(Event{Kind: EventPeerOffline, Peer: l.id, Name: peer.Name, Role: peer.Role, Platform: peer.Platform, Err: err})
+	if err != nil {
+		n.log.Info("peer offline", "peer", l.id, "error", err)
+		return
+	}
+	n.log.Info("peer offline", "peer", l.id)
+}
+
+// openSession creates the session, lets the hooks register their handlers and
+// runs the handshake.
+func (n *Node) openSession(ctx context.Context, conn *transport.Conn) (*session.Session, error) {
+	sess, err := session.New(conn, session.Config{
+		Name:         n.Name(),
+		Platform:     n.cfg.Platform,
+		Capabilities: n.cfg.Capabilities,
+		Trust:        n.announcedTrust(),
+		Clock:        n.clock,
+		Logger:       n.log,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, hook := range n.sessionHooks() {
+		if err := hook(ctx, sess); err != nil {
+			return sess, fmt.Errorf("node: session hook: %w", err)
+		}
+	}
+	if err := sess.Open(ctx); err != nil {
+		return sess, err
+	}
+	return sess, nil
+}
+
+// sessionHooks returns a snapshot of the session hooks.
+func (n *Node) sessionHooks() []SessionHook {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return slices.Clone(n.hooks)
+}
+
+// recordAddr caches the address the peer was reached with. An address the peer
+// connected from is an ephemeral port, so it is only a hint for a new host.
+func (n *Node) recordAddr(ctx context.Context, id model.DeviceID, addr string, incoming bool) {
+	if addr == "" {
+		return
+	}
+	if err := n.rememberAddr(ctx, id, addr, !incoming); err != nil {
+		n.log.Debug("recording the peer address failed", "peer", id, "error", err)
+	}
+}
+
+// rememberAddr adds addr to the cached addresses of the peer, as a dialed
+// address when front is set. The read and the write are serialized, so two
+// connections of the same peer do not drop each other's address.
+func (n *Node) rememberAddr(ctx context.Context, id model.DeviceID, addr string, front bool) error {
+	n.addrMu.Lock()
+	defer n.addrMu.Unlock()
+
+	peer, err := n.trust.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	addrs := cacheAddr(peer.LastAddrs, addr, front)
+	if slices.Equal(addrs, peer.LastAddrs) {
+		return nil
+	}
+	return n.trust.UpdateAddrs(ctx, id, addrs)
+}
+
+// peerAddrs returns the cached addresses of the peer.
+func (n *Node) peerAddrs(ctx context.Context, id model.DeviceID) []string {
+	peer, err := n.trust.Get(ctx, id)
+	if err != nil {
+		n.log.Debug("reading the peer addresses failed", "peer", id, "error", err)
+		return nil
+	}
+	return peer.LastAddrs
+}
+
+// dial opens an authenticated connection to addr.
+func (n *Node) dial(ctx context.Context, addr string) (*transport.Conn, error) {
+	target, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("node: address %q: %w", addr, err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, n.limits.DialTimeout)
+	defer cancel()
+	return n.dialer.Dial(ctx, target)
+}
+
+// prependAddr returns addrs with addr first, without duplicates.
+func prependAddr(addrs []string, addr string) []string {
+	kept := make([]string, 0, len(addrs)+1)
+	kept = append(kept, addr)
+	for _, known := range addrs {
+		if known == addr {
+			continue
+		}
+		kept = append(kept, known)
+	}
+	return kept
+}
+
+// cacheAddr returns the cached addresses after a connection with addr. A dialed
+// address replaces the other ports of its host. The address of an incoming
+// connection is the dialer socket of the peer, which takes no connections, so
+// it is only kept as a hint for a host the cache does not know yet.
+func cacheAddr(addrs []string, addr string, dialed bool) []string {
+	if dialed {
+		return replaceAddr(addrs, addr)
+	}
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return appendAddr(addrs, addr)
+	}
+	for _, known := range addrs {
+		if knownHost, _, err := net.SplitHostPort(known); err == nil && knownHost == host {
+			return addrs
+		}
+	}
+	return appendAddr(addrs, addr)
+}
+
+// replaceAddr returns addrs with addr first and without the other ports of its
+// host. A device listens on one port per address, so another port of the same
+// host is left from an earlier run and would only hold up the next dial.
+func replaceAddr(addrs []string, addr string) []string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return prependAddr(addrs, addr)
+	}
+	kept := make([]string, 0, len(addrs)+1)
+	kept = append(kept, addr)
+	for _, known := range addrs {
+		if known == addr {
+			continue
+		}
+		if knownHost, _, err := net.SplitHostPort(known); err == nil && knownHost == host {
+			continue
+		}
+		kept = append(kept, known)
+	}
+	return kept
+}
+
+// appendAddr returns addrs with addr last, without duplicates.
+func appendAddr(addrs []string, addr string) []string {
+	if slices.Contains(addrs, addr) {
+		return addrs
+	}
+	kept := make([]string, 0, len(addrs)+1)
+	kept = append(kept, addrs...)
+	return append(kept, addr)
+}
+
+// addrOf returns the text form of addr.
+func addrOf(addr net.Addr) string {
+	if addr == nil {
+		return ""
+	}
+	return addr.String()
+}
+
+// portOf returns the port of addr, or zero when it has none.
+func portOf(addr net.Addr) int {
+	if addr == nil {
+		return 0
+	}
+	_, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return 0
+	}
+	value, err := strconv.Atoi(port)
+	if err != nil {
+		return 0
+	}
+	return value
+}

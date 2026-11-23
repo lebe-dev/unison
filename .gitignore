@@ -1,9 +1,33 @@
+.env
 *.md
+.DS_Store
 
 !README.md
 !DEV.md
 !docs/**/*.md
+!deploy/**/README.md
+!**/*.ru.md
+
+deploy/relay/secrets/
+
+packaging/linux/build/
+packaging/macos/build/
+packaging/windows/build/
+desktop/src-tauri/binaries/
+release/
 
 /unison
+/bin/
 
 tasks/
+
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+android/core/*.aar

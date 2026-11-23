@@ -9,6 +9,7 @@ linters:
     - bodyclose
     - errorlint
     - gocritic
+    - gosec
     - misspell
     - nilerr
     - predeclared
@@ -16,6 +17,24 @@ linters:
     - unconvert
     - unparam
     - wastedassign
+  exclusions:
+    paths:
+      - desktop/node_modules
+      - desktop/src-tauri/target
+    rules:
+      # Tests read temporary files and accept the certificates they generate.
+      - path: _test\.go
+        linters:
+          - gosec
+      # vnet is a test double that drops packets with a seeded generator.
+      - path: core/transport/vnet/
+        linters:
+          - gosec
+  settings:
+    gosec:
+      excludes:
+        # Conversions are checked next to the parser that reads the bytes.
+        - G115
 
 formatters:
   enable:

@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/blob.proto";
+import "unison/wire/v1/clip.proto";
+import "unison/wire/v1/trust.proto";
+import "unison/wire/v1/types.proto";
+
+// Kind of a data stream.
+enum StreamKind {
+  STREAM_KIND_UNSPECIFIED = 0;
+  STREAM_KIND_TRANSFER = 1;
+  STREAM_KIND_REQUEST = 2;
+}
+
+// First frame of a transfer or request stream.
+message StreamHeader {
+  StreamKind kind = 1;
+  string transfer_id = 2;
+  // BLAKE3 hash of the blob, 32 bytes.
+  bytes hash = 3;
+  // Total number of chunks.
+  uint32 chunks = 4;
+  // File being transferred.
+  FileMeta file = 5;
+  // Payload type of the stream, chosen by the handler packages, for example
+  // "blob.request". It selects the handler that serves the stream.
+  string payload_type = 6;
+}
+
+// Session handshake, first message on the control stream.
+message Hello {
+  uint32 protocol_version = 1;
+  repeated string capabilities = 2;
+  string name = 3;
+  Platform platform = 4;
+  // The confirmation flags travel in PeerPolicy after the handshake, when the
+  // peer is known.
+  reserved 5;
+  reserved "self_policy";
+}
+
+// Hybrid signature over the transcript up to this message.
+message AuthProof {
+  bytes mldsa_sig = 1;
+}
+
+// Envelope of every control stream message.
+message ControlMessage {
+  oneof body {
+    Hello hello = 1;
+    AuthProof auth_proof = 2;
+    ClipAnnounce clip_announce = 3;
+    HistorySync history_sync = 4;
+    HistoryBatch history_batch = 5;
+    HaveBlob have_blob = 6;
+    HaveBlobResp have_blob_resp = 7;
+    ShareOffer share_offer = 8;
+    ShareDecision share_decision = 9;
+    Introduction introduction = 10;
+    Revocation revocation = 11;
+    SetPeerPolicy set_peer_policy = 12;
+    GossipDigest gossip_digest = 13;
+    GossipRecords gossip_records = 14;
+    ShareCancel share_cancel = 15;
+    ShareResult share_result = 16;
+    // Confirmation flags of the sender for the receiver, sent when a session
+    // opens and whenever they change.
+    PeerPolicy peer_policy = 17;
+  }
+}

@@ -1,0 +1,26 @@
+# Static analysis of the Android Kotlin sources. The rules follow the code of
+# the app: a Compose screen is a long function with many parameters, and UI
+# dimensions are literals rather than constants.
+complexity:
+  LongMethod:
+    threshold: 150
+  LongParameterList:
+    functionThreshold: 12
+    constructorThreshold: 10
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    thresholdInFiles: 30
+    thresholdInClasses: 70
+  LargeClass:
+    threshold: 1000
+naming:
+  FunctionNaming:
+    # Composables are capitalised by convention.
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+style:
+  MaxLineLength:
+    maxLineLength: 140
+  MagicNumber:
+    excludes: ['**/test/**', '**/androidTest/**', '**/*.kts', '**/ui/**']
+  ReturnCount:
+    max: 6

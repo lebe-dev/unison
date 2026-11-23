@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("Version:1.0\r\nStartHTML:0000000105\r\nEndHTML:0000000186\r\nStartFragment:0000000139\r\nEndFragment:0000000152\r\n<html><body>\r\n<!--StartFragment--><b>copied</b><!--EndFragment-->\r\n</body></html>")

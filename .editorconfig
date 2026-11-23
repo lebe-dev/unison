@@ -11,6 +11,10 @@ indent_size = 2
 [*.go]
 indent_style = tab
 
+[*.{kt,kts}]
+indent_size = 4
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
 [Justfile]
 indent_size = 4
 

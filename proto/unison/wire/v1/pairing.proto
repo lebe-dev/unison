@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/types.proto";
+import "unison/wire/v1/trust.proto";
+
+// Sent by the device that starts a pairing exchange to the pairing listener.
+message PairRequest {
+  // One time token from the QR code, 16 bytes. Empty in the SAS flow.
+  bytes token = 1;
+  // Ed25519 identity public key, 32 bytes.
+  bytes ed25519_pub = 2;
+  // ML-DSA-65 identity public key.
+  bytes mldsa_pub = 3;
+  string device_name = 4;
+  Platform platform = 5;
+  // Signatures of the request. The QR flow signs with the token, the SAS flow
+  // authenticates the exchange with the short authentication string.
+  bytes ed25519_sig = 6;
+  bytes mldsa_sig = 7;
+  // Role the initiating device proposes for the pair. The other side confirms
+  // it, both devices store the same role.
+  Role role = 8;
+}
+
+// Sent by the device that accepted a pairing connection, in reply to
+// PairRequest. It is authenticated by the SAS, not by a signature.
+message PairResponse {
+  // Ed25519 identity public key, 32 bytes.
+  bytes ed25519_pub = 1;
+  // ML-DSA-65 identity public key.
+  bytes mldsa_pub = 2;
+  string device_name = 3;
+  Platform platform = 4;
+  // Role the accepting device will store for the initiator.
+  Role role = 5;
+}
+
+// Sent by both devices in the SAS flow once their user compared the short
+// authentication string. No secret leaves a device before both sides accepted.
+message PairDecision {
+  bool accepted = 1;
+}
+
+// Sent by the device that accepted a pairing connection after both devices
+// confirmed. It carries the group data of the pair.
+message PairAccept {
+  // Ed25519 identity public key, 32 bytes.
+  bytes ed25519_pub = 1;
+  // ML-DSA-65 identity public key.
+  bytes mldsa_pub = 2;
+  string device_name = 3;
+  // Role assigned by the accepting device.
+  Role role = 4;
+  // Known personal peers of the accepting device.
+  repeated Introduction introductions = 5;
+  bytes ed25519_sig = 6;
+  bytes mldsa_sig = 7;
+  // Key of the Personal group of the accepting device, 32 bytes. Set for the
+  // Personal role only.
+  bytes discovery_key = 8;
+  // Relay rendezvous key of the pair, 32 bytes, derived from the session
+  // exporter by both devices.
+  bytes rendezvous_key = 9;
+  Platform platform = 10;
+}
