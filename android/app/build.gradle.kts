@@ -1,3 +1,4 @@
+import org.gradle.api.GradleException
 import java.io.File
 
 plugins {
@@ -46,17 +47,53 @@ fun repositoryFile(path: String): File {
     return if (file.isAbsolute) file else rootProject.file("../$path")
 }
 
+/** Numeric versionCode derived from semver (major * 10000 + minor * 100 + patch). */
+fun computeVersionCode(version: String): Int {
+    val override = buildValue("UNISON_ANDROID_VERSION_CODE")
+    if (override.isNotEmpty()) {
+        val parsed =
+            override.toIntOrNull()
+                ?: error("UNISON_ANDROID_VERSION_CODE must be a positive integer, got '$override'")
+        require(parsed > 0) { "UNISON_ANDROID_VERSION_CODE must be > 0, got $parsed" }
+        return parsed
+    }
+    val match =
+        Regex("""^(\d+)\.(\d+)\.(\d+)""").find(version)
+            ?: error("Cannot derive Android versionCode from version '$version'")
+    val major = match.groupValues[1].toInt()
+    val minor = match.groupValues[2].toInt()
+    val patch = match.groupValues[3].toInt()
+    return major * 10_000 + minor * 100 + patch
+}
+
 /** Version of the build, from UNISON_VERSION when it is set. */
 val appVersion =
     System.getenv("UNISON_VERSION")?.trim()?.takeIf { it.isNotEmpty() }
         ?: rootProject.file("../VERSION").readText().trim()
+val appVersionCode = computeVersionCode(appVersion)
 val sentryDsn = buildValue("SENTRY_DSN")
 
-/** Keystore of the release APK; without it the release build stays unsigned. */
+/** Keystore of the release APK; release builds fail when it is not configured. */
 val releaseKeystore = buildValue("UNISON_ANDROID_KEYSTORE")
 val releaseStorePassword = buildValue("UNISON_ANDROID_STORE_PASSWORD")
 val releaseKeyAlias = buildValue("UNISON_ANDROID_KEY_ALIAS")
 val releaseKeyPassword = buildValue("UNISON_ANDROID_KEY_PASSWORD")
+val releaseSigningInputs =
+    listOf(releaseKeystore, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+val hasReleaseSigning = releaseSigningInputs.all { it.isNotEmpty() }
+val hasPartialReleaseSigning = releaseSigningInputs.any { it.isNotEmpty() } && !hasReleaseSigning
+val releaseKeystoreFile = if (releaseKeystore.isNotEmpty()) repositoryFile(releaseKeystore) else null
+
+if (hasPartialReleaseSigning) {
+    error(
+        "Incomplete Android release signing configuration: set all of " +
+            "UNISON_ANDROID_KEYSTORE, UNISON_ANDROID_STORE_PASSWORD, " +
+            "UNISON_ANDROID_KEY_ALIAS, and UNISON_ANDROID_KEY_PASSWORD",
+    )
+}
+if (hasReleaseSigning && releaseKeystoreFile?.isFile != true) {
+    error("Android release keystore not found at ${releaseKeystoreFile?.absolutePath}")
+}
 
 android {
     namespace = "app.unison"
@@ -67,9 +104,13 @@ android {
         applicationId = "app.unison"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
+        versionCode = appVersionCode
         versionName = appVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
 
         // An empty DSN disables reporting in that build.
         buildConfigField("String", "SENTRY_DSN", quoted(sentryDsn))
@@ -77,9 +118,9 @@ android {
     }
 
     signingConfigs {
-        if (releaseKeystore.isNotEmpty()) {
+        if (hasReleaseSigning) {
             create("release") {
-                storeFile = repositoryFile(releaseKeystore)
+                storeFile = releaseKeystoreFile
                 storePassword = releaseStorePassword
                 keyAlias = releaseKeyAlias
                 keyPassword = releaseKeyPassword
@@ -92,7 +133,13 @@ android {
             buildConfigField("String", "ENVIRONMENT", quoted("debug"))
         }
         release {
-            if (releaseKeystore.isNotEmpty()) {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
             buildConfigField("String", "ENVIRONMENT", quoted("release"))
@@ -108,10 +155,30 @@ android {
         localeFilters += listOf("en", "ru")
     }
 
+    packaging {
+        resources {
+            excludes +=
+                setOf(
+                    "DebugProbesKt.bin",
+                    "META-INF/*.version",
+                )
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+val requestedReleaseTask =
+    gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }
+if (requestedReleaseTask && !hasReleaseSigning) {
+    throw GradleException(
+        "Android release signing is not configured. Set UNISON_ANDROID_KEYSTORE, " +
+            "UNISON_ANDROID_STORE_PASSWORD, UNISON_ANDROID_KEY_ALIAS, and " +
+            "UNISON_ANDROID_KEY_PASSWORD.",
+    )
 }
 
 dependencies {

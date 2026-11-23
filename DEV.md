@@ -163,10 +163,10 @@ it as `UNISON_VERSION` to the packaging scripts and to Gradle. The `-desktop` ar
 `package-macos`, `package-windows` or `package-windows-cross` and `package-linux`, so the signing
 and notarization variables of those scripts apply as well.
 
-The Android release APK is signed when `UNISON_ANDROID_KEYSTORE`, `UNISON_ANDROID_STORE_PASSWORD`,
-`UNISON_ANDROID_KEY_ALIAS` and `UNISON_ANDROID_KEY_PASSWORD` are set in `.env` or the environment.
-A relative keystore path is resolved against the repository root. Without the keystore Gradle
-writes an unsigned APK and the recipe warns about it.
+The Android release APK requires `UNISON_ANDROID_KEYSTORE`, `UNISON_ANDROID_STORE_PASSWORD`,
+`UNISON_ANDROID_KEY_ALIAS` and `UNISON_ANDROID_KEY_PASSWORD` to be set in `.env` or the environment.
+A relative keystore path is resolved against the repository root. Without a signing configuration
+`assembleRelease` and `just release-android` fail.
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
 
