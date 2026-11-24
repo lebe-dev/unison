@@ -130,6 +130,62 @@ describe("dashboard tabs", () => {
 
     expect(screen.getByRole("tab", { name: "Files" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("button", { name: /report\.pdf/ })).toBeTruthy();
+    expect(screen.getAllByText("report.pdf")).toHaveLength(1);
+    expect(screen.getByText("2.0 KB")).toBeTruthy();
+    expect(screen.getByText("Not downloaded")).toBeTruthy();
+  });
+
+  it("runs copy, download and actions menu directly from a file row", async () => {
+    mocks.fetchHistoryItem.mockResolvedValue({ files: ["/tmp/report.pdf"] });
+    render(Dashboard);
+    await screen.findByRole("button", { name: "Image - 128 B" });
+    await fireEvent.click(screen.getByRole("tab", { name: "Files" }));
+
+    await fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(mocks.copyHistoryItem).toHaveBeenCalledWith({ id: "files-1" });
+
+    await fireEvent.click(screen.getByRole("button", { name: "Download" }));
+    expect(mocks.fetchHistoryItem).toHaveBeenCalledWith({ id: "files-1", path: "" });
+
+    await fireEvent.click(screen.getByRole("button", { name: "Item actions" }));
+    expect(screen.getByRole("menu")).toBeTruthy();
+  });
+
+  it("shows origin device and file list for multi-file items", async () => {
+    mocks.daemon.devices = [{ deviceId: "peer-1", name: "Pixel 9", online: true, revoked: false }];
+    mocks.listHistory.mockImplementation((request: { kind: Kind }) => {
+      if (request.kind === Kind.FILES) {
+        return Promise.resolve(
+          create(ListHistoryResponseSchema, {
+            items: [
+              create(HistoryItemSchema, {
+                complete: true,
+                item: create(ClipItemSchema, {
+                  id: "files-multi",
+                  kind: Kind.FILES,
+                  origin: "peer-1",
+                  createdAtUnixMs: 1_700_000_000_000n,
+                  representations: [
+                    { mimeType: "application/x-unison-file", fileName: "a.jpg", size: 1024n },
+                    { mimeType: "application/x-unison-file", fileName: "b.pdf", size: 2048n },
+                  ],
+                }),
+              }),
+            ],
+          }),
+        );
+      }
+      return Promise.resolve(create(ListHistoryResponseSchema, {}));
+    });
+
+    render(Dashboard);
+    await fireEvent.click(await screen.findByRole("tab", { name: "Files" }));
+
+    expect(await screen.findByText("a.jpg and 1 more")).toBeTruthy();
+    expect(screen.getByText("2 files")).toBeTruthy();
+    expect(screen.getByText("3.0 KB")).toBeTruthy();
+    expect(screen.getByText("Pixel 9")).toBeTruthy();
+    expect(screen.getByText("a.jpg, b.pdf")).toBeTruthy();
   });
 
   it("moves between the tabs with the arrow keys", async () => {

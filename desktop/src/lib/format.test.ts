@@ -11,6 +11,8 @@ import {
   TransferState,
 } from "./api/gen/unison/local/v1/local_pb";
 import {
+  fileCategory,
+  fileExtension,
   formatBytes,
   formatTime,
   historyTitle,
@@ -138,6 +140,29 @@ describe("transfer labels", () => {
     expect(transferStateLabel(TransferState.DONE)).toBe("Done");
     expect(transferDirectionLabel(TransferDirection.INCOMING)).toBe("Received");
     expect(transferDirectionLabel(TransferDirection.OUTGOING)).toBe("Sent");
+  });
+});
+
+describe("fileExtension", () => {
+  it("returns short uppercase extensions and ignores invalid ones", () => {
+    expect(fileExtension("photo.jpg")).toBe("JPG");
+    expect(fileExtension("docs/report.PDF")).toBe("PDF");
+    expect(fileExtension("archive.tar.gz")).toBe("GZ");
+    expect(fileExtension("README")).toBe("");
+    expect(fileExtension(".env")).toBe("");
+    expect(fileExtension("notes.markdown")).toBe("");
+  });
+});
+
+describe("fileCategory", () => {
+  it("classifies files by extension and falls back to MIME type", () => {
+    expect(fileCategory("photo.jpg")).toBe("image");
+    expect(fileCategory("report.pdf")).toBe("document");
+    expect(fileCategory("bundle.zip")).toBe("archive");
+    expect(fileCategory("clip.mp4")).toBe("media");
+    expect(fileCategory("main.go")).toBe("code");
+    expect(fileCategory("blob", "image/png")).toBe("image");
+    expect(fileCategory("blob", "application/octet-stream")).toBe("other");
   });
 });
 

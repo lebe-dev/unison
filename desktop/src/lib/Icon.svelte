@@ -19,6 +19,9 @@
     | "close"
     | "refresh"
     | "upload"
+    | "download"
+    | "copy"
+    | "more"
     | "shield"
     | "clock";
 </script>
@@ -108,6 +111,18 @@
   {:else if name === "upload"}
     <path d="M8 11V3M4.5 6.5 8 3l3.5 3.5" />
     <path d="M2.5 10.5v2.5h11v-2.5" />
+  {:else if name === "download"}
+    <path d="M8 3v8M4.5 7.5 8 11l3.5-3.5" />
+    <path d="M2.5 10.5v2.5h11v-2.5" />
+  {:else if name === "copy"}
+    <rect x="5.5" y="5.5" width="8" height="8" rx="1.2" />
+    <path
+      d="M10.5 5.5V3.7a1.2 1.2 0 0 0-1.2-1.2H3.7a1.2 1.2 0 0 0-1.2 1.2v5.6a1.2 1.2 0 0 0 1.2 1.2h1.8"
+    />
+  {:else if name === "more"}
+    <circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12.5" cy="8" r="1" fill="currentColor" stroke="none" />
   {:else if name === "shield"}
     <path d="M8 1.8 13.5 4v4c0 3.2-2.3 5.4-5.5 6.2C4.8 13.4 2.5 11.2 2.5 8V4z" />
     <path d="m5.8 8 1.6 1.6L10.4 6.5" />

@@ -354,6 +354,7 @@ export const ru: { [K in MessageKey]: Message } = {
   "dashboard.daemonNotRunning": "Демон не запущен, поэтому недавние элементы недоступны.",
   "dashboard.loadFailed": "Не удалось загрузить недавние элементы.",
   "dashboard.copyFailed": "Не удалось скопировать элемент.",
+  "dashboard.downloading": "Скачивание...",
   "dashboard.downloadFailed": "Не удалось скачать элемент.",
   "dashboard.dragFailed": "Не удалось перетащить элемент.",
   "dashboard.dragHint": "Перетащите элемент из окна, чтобы передать его другому приложению.",

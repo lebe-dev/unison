@@ -7,6 +7,10 @@
   import { canDragOut, crossedDragThreshold, stageItem, startStagedDrag } from "../dragOut";
   import { errorText } from "../errors";
   import {
+    fileCategory,
+    fileExtension,
+    fileNames,
+    filesCountText,
     formatBytes,
     formatDateTime,
     historyTitle,
@@ -391,6 +395,60 @@
   function fileLabel(name: string): string {
     return name || t("common.item");
   }
+
+  function originName(origin: string): string {
+    if (!origin) {
+      return "";
+    }
+    if (daemon.deviceID && origin === daemon.deviceID) {
+      return t("common.thisDevice");
+    }
+    const device = daemon.devices.find((candidate) => candidate.deviceId === origin);
+    return device?.name || shortDeviceID(origin);
+  }
+
+  /** fileMetaParts builds the concise metadata segments of a file item. */
+  function fileMetaParts(item: HistoryItem): string[] {
+    const info = item.item;
+    if (!info) {
+      return [];
+    }
+    const parts: string[] = [];
+    if (info.representations.length > 1) {
+      parts.push(filesCountText(info.representations.length));
+    }
+    const size = itemSize(info);
+    if (size > 0) {
+      parts.push(formatBytes(size));
+    }
+    const origin = originName(info.origin);
+    if (origin) {
+      parts.push(origin);
+    }
+    const when = formatDateTime(info.createdAtUnixMs);
+    if (when) {
+      parts.push(when);
+    }
+    return parts;
+  }
+
+  /** openMenuAtButton anchors the item context menu below a trigger button. */
+  function openMenuAtButton(event: MouseEvent, item: HistoryItem): void {
+    event.stopPropagation();
+    if (!item.item) {
+      return;
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const area = document.documentElement;
+    menu = {
+      item,
+      x: Math.max(8, Math.min(rect.right - MENU_WIDTH, area.clientWidth - MENU_WIDTH - 8)),
+      y: Math.max(8, Math.min(rect.bottom + 4, area.clientHeight - MENU_HEIGHT - 8)),
+      step: "actions",
+    };
+    menuBusy = false;
+    void tick().then(focusMenu);
+  }
 </script>
 
 <UpdateBanner />
@@ -447,7 +505,7 @@
       id="dashboard-panel-{active}"
       role="tabpanel"
       aria-labelledby="dashboard-tab-{active}"
-      class="panel"
+      class="tab-panel"
     >
       {#if dashboard.loading.includes(active) && items.length === 0}
         <div class="state">
@@ -496,31 +554,89 @@
           {/each}
         </div>
       {:else if active === "files"}
-        <ul class="cards">
+        <ul class="file-list">
           {#each items as item, index (item.item?.id ?? index)}
             {@const info = item.item}
             {#if info}
-              <li>
+              {@const multi = info.representations.length > 1}
+              {@const firstRep = info.representations[0]}
+              {@const badgeExt = multi ? "" : fileExtension(firstRep?.fileName ?? "")}
+              {@const badgeCategory = multi
+                ? "bundle"
+                : fileCategory(firstRep?.fileName ?? "", firstRep?.mimeType ?? "")}
+              {@const metaParts = fileMetaParts(item)}
+              {@const isDownloading = dashboard.downloading.includes(info.id)}
+              <li
+                class="file-item"
+                class:pending={!item.complete}
+                oncontextmenu={(event) => openMenu(event, item)}
+              >
                 <button
-                  class="card"
+                  class="file-main"
                   type="button"
                   onclick={(event) => handleClick(event, item)}
-                  oncontextmenu={(event) => openMenu(event, item)}
                   onpointerdown={(event) => handlePointerDown(event, item, "files")}
                   onpointermove={handlePointerMove}
                   onpointerup={handlePointerEnd}
                   onpointercancel={handlePointerEnd}
                 >
-                  <span class="card-title">{historyTitle(info)}</span>
-                  <span class="rows">
-                    {#each info.representations as rep, repIndex (repIndex)}
-                      <span class="row">
-                        <span class="name">{fileLabel(rep.fileName)}</span>
-                        <span class="meta">{formatBytes(rep.size)}</span>
+                  <span class="file-badge {badgeCategory}" aria-hidden="true">
+                    {#if multi}
+                      <Icon name="file" size={16} />
+                      <span class="file-badge-count">{info.representations.length}</span>
+                    {:else if badgeExt}
+                      <span class="file-badge-ext">{badgeExt}</span>
+                    {:else}
+                      <Icon name="file" size={18} />
+                    {/if}
+                  </span>
+                  <span class="file-info">
+                    <span class="file-heading">
+                      <span class="file-name">{historyTitle(info)}</span>
+                      {#if !item.complete}
+                        <span class="badge confirm">{t("history.notDownloaded")}</span>
+                      {/if}
+                    </span>
+                    {#if metaParts.length > 0}
+                      <span class="file-meta">
+                        {#each metaParts as part, partIndex (partIndex)}
+                          {#if partIndex > 0}
+                            <span class="file-meta-sep" aria-hidden="true">·</span>
+                          {/if}
+                          <span>{part}</span>
+                        {/each}
                       </span>
-                    {/each}
+                    {/if}
+                    {#if multi}
+                      <span class="file-sublist">{fileNames(info).join(", ")}</span>
+                    {/if}
                   </span>
                 </button>
+                <div class="file-actions">
+                  <button
+                    class="button small"
+                    type="button"
+                    onclick={() => void dashboard.copy(info.id)}
+                  >
+                    {t("common.copy")}
+                  </button>
+                  <button
+                    class="button small"
+                    type="button"
+                    disabled={isDownloading}
+                    onclick={() => void dashboard.download(info.id, Kind.FILES)}
+                  >
+                    {isDownloading ? t("dashboard.downloading") : t("common.download")}
+                  </button>
+                  <button
+                    class="icon-button file-more"
+                    type="button"
+                    aria-label={t("dashboard.menuAria")}
+                    onclick={(event) => openMenuAtButton(event, item)}
+                  >
+                    <Icon name="more" size={15} />
+                  </button>
+                </div>
               </li>
             {/if}
           {/each}
@@ -691,14 +807,39 @@
         {:else if info.kind === Kind.TEXT}
           <pre class="text">{textContent(info)}</pre>
         {:else}
-          <ul class="preview-files">
-            {#each info.representations as rep, index (index)}
-              <li class="row">
-                <span class="name">{fileLabel(rep.fileName)}</span>
-                <span class="meta">{formatBytes(rep.size)}</span>
-              </li>
-            {/each}
-          </ul>
+          {@const previewMeta = fileMetaParts(preview)}
+          <div class="preview-files-wrap">
+            {#if previewMeta.length > 0 || !preview.complete}
+              <div class="preview-meta">
+                {#each previewMeta as part, partIndex (partIndex)}
+                  {#if partIndex > 0}
+                    <span class="file-meta-sep" aria-hidden="true">·</span>
+                  {/if}
+                  <span>{part}</span>
+                {/each}
+                {#if !preview.complete}
+                  <span class="badge confirm">{t("history.notDownloaded")}</span>
+                {/if}
+              </div>
+            {/if}
+            <ul class="preview-files">
+              {#each info.representations as rep, index (index)}
+                {@const repExt = fileExtension(rep.fileName)}
+                {@const repCat = fileCategory(rep.fileName, rep.mimeType)}
+                <li class="preview-file-row">
+                  <span class="file-badge small {repCat}" aria-hidden="true">
+                    {#if repExt}
+                      <span class="file-badge-ext">{repExt}</span>
+                    {:else}
+                      <Icon name="file" size={14} />
+                    {/if}
+                  </span>
+                  <span class="preview-file-name">{fileLabel(rep.fileName)}</span>
+                  <span class="meta tabular">{formatBytes(rep.size)}</span>
+                </li>
+              {/each}
+            </ul>
+          </div>
         {/if}
         <figcaption>
           <span class="preview-title">{historyTitle(info)}</span>
@@ -799,7 +940,7 @@
     outline-offset: 0;
   }
 
-  .panel {
+  .tab-panel {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -846,6 +987,198 @@
     text-align: center;
   }
 
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: 10px;
+    background-color: var(--surface);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-right: 12px;
+  }
+
+  .file-item + .file-item {
+    border-top: 1px solid var(--separator);
+  }
+
+  .file-item:hover {
+    background-color: var(--hover);
+  }
+
+  .file-item.pending .file-name {
+    color: var(--secondary);
+  }
+
+  .file-main {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px 0 10px 12px;
+    border: 0;
+    color: var(--foreground);
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: default;
+    user-select: none;
+  }
+
+  .file-main:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    outline-offset: -3px;
+  }
+
+  .file-badge {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    color: var(--secondary);
+    background-color: var(--surface-soft);
+  }
+
+  .file-badge.small {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .file-badge.image {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+  }
+
+  .file-badge.document {
+    color: var(--danger);
+    background-color: var(--danger-soft);
+  }
+
+  .file-badge.archive {
+    color: var(--warn);
+    background-color: var(--warn-soft);
+  }
+
+  .file-badge.media {
+    color: #9b6dff;
+    background-color: color-mix(in srgb, #9b6dff 15%, transparent);
+  }
+
+  .file-badge.code {
+    color: var(--online-text);
+    background-color: color-mix(in srgb, var(--online) 14%, transparent);
+  }
+
+  .file-badge.bundle {
+    color: var(--accent);
+    background-color: var(--accent-soft);
+  }
+
+  .file-badge-ext {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+  }
+
+  .file-badge.small .file-badge-ext {
+    font-size: 9px;
+  }
+
+  .file-badge-count {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    color: var(--accent-text);
+    background-color: var(--accent);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .file-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .file-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .file-name {
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-meta {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .file-meta-sep {
+    opacity: 0.6;
+  }
+
+  .file-sublist {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--secondary);
+    font-size: 11px;
+    opacity: 0.85;
+  }
+
+  .file-actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .file-more {
+    width: 24px;
+    height: 22px;
+  }
+
   .cards {
     display: flex;
     flex-direction: column;
@@ -886,31 +1219,12 @@
     outline-offset: -3px;
   }
 
-  .card-title {
-    overflow: hidden;
-    font-weight: 500;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .rows {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
   .row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
     min-width: 0;
-  }
-
-  .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .meta {
@@ -994,16 +1308,52 @@
     overflow-wrap: anywhere;
   }
 
+  .preview-files-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(70vw, 500px);
+  }
+
+  .preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
   .preview-files {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    width: min(70vw, 480px);
+    gap: 2px;
+    max-height: 55vh;
     margin: 0;
-    padding: 8px;
+    padding: 6px;
+    overflow-y: auto;
     list-style: none;
     border-radius: 8px;
     background-color: var(--surface-soft);
+  }
+
+  .preview-file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+  }
+
+  .preview-file-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 
   figcaption {

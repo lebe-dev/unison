@@ -357,6 +357,7 @@ export const en = {
   "dashboard.daemonNotRunning": "The daemon is not running, so the recent items are unavailable.",
   "dashboard.loadFailed": "The recent items could not be loaded.",
   "dashboard.copyFailed": "The item could not be copied.",
+  "dashboard.downloading": "Downloading...",
   "dashboard.downloadFailed": "The item could not be downloaded.",
   "dashboard.dragFailed": "The item could not be dragged out.",
   "dashboard.dragHint": "Drag an item out of the window to hand it to another app.",
