@@ -36,6 +36,13 @@
     type HistoryTTL,
     type TTLKind,
   } from "../ttl";
+  import { appSectionOf, desktopSectionOf } from "../settingsFile";
+  import {
+    pickSettingsSource,
+    pickSettingsTarget,
+    readSettingsFile,
+    writeSettingsFile,
+  } from "../settingsFileIO";
   import JournalSettings from "./JournalSettings.svelte";
   import RelaySection from "./RelaySection.svelte";
   import { theme } from "../theme.svelte";
@@ -127,7 +134,7 @@
     }
   }
 
-  async function load(): Promise<void> {
+  async function load(): Promise<boolean> {
     busy = true;
     try {
       const response = await client.getSettings({});
@@ -143,8 +150,10 @@
       loaded = true;
       notice = null;
       void syncSentry(sentryEnabled);
+      return true;
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("settings.loadFailed")) };
+      return false;
     } finally {
       busy = false;
     }
@@ -444,6 +453,78 @@
       login = await setLoginItem(enabled);
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("settings.loginFailed")) };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** exportSettingsFile keeps the settings in a file the user picks. */
+  async function exportSettingsFile(): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.exportSettings({
+        appSettings: appSectionOf(theme.mode, loginEnabled),
+      });
+      const target = await pickSettingsTarget(response.fileName);
+      if (!target) {
+        return;
+      }
+      await writeSettingsFile(target, new TextDecoder().decode(response.document));
+      notice = { kind: "info", text: t("settings.exportSaved", { path: target }) };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, t("settings.exportFailed")) };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** importSettingsFile applies the settings of a file the user picks. Keys the
+   * file does not carry keep their values. */
+  async function importSettingsFile(): Promise<void> {
+    busy = true;
+    notice = null;
+    const notes: string[] = [];
+    try {
+      const source = await pickSettingsSource();
+      if (!source) {
+        return;
+      }
+      const text = await readSettingsFile(source);
+      const response = await client.importSettings({
+        document: new TextEncoder().encode(text),
+      });
+
+      const app = desktopSectionOf(text);
+      if (app.theme) {
+        theme.set(app.theme);
+      }
+      if (app.loginItem !== undefined) {
+        try {
+          login = await setLoginItem(app.loginItem);
+        } catch {
+          notes.push(t("settings.importLoginSkipped"));
+        }
+      }
+      if (!(await load())) {
+        return;
+      }
+
+      if (response.fromNewerVersion) {
+        notes.unshift(t("settings.importNewer"));
+      }
+      if (response.ignored.length > 0) {
+        notes.push(t("settings.importIgnored", { keys: response.ignored.join(", ") }));
+      }
+      notice = {
+        kind: "info",
+        text:
+          notes.length > 0
+            ? `${t("settings.imported")} ${notes.join(" ")}`
+            : t("settings.imported"),
+      };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, t("settings.importFailed")) };
     } finally {
       busy = false;
     }
@@ -858,6 +939,33 @@
             <small>{t("settings.diagnosticsHint")}</small>
           </span>
         </label>
+      </div>
+    </section>
+
+    <section class="section">
+      <h3 class="section-title">{t("settings.settingsFile")}</h3>
+      <div class="list">
+        <div class="form-row">
+          <span class="label">{t("settings.settingsFileHint")}</span>
+          <div class="toolbar">
+            <button
+              class="button"
+              type="button"
+              onclick={() => void exportSettingsFile()}
+              disabled={busy}
+            >
+              {t("settings.exportSettings")}
+            </button>
+            <button
+              class="button"
+              type="button"
+              onclick={() => void importSettingsFile()}
+              disabled={busy}
+            >
+              {t("settings.importSettings")}
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 

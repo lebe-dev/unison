@@ -8,6 +8,7 @@ pub mod observability;
 mod prompt;
 mod proxy;
 mod redact;
+mod settings;
 mod share;
 mod streams;
 #[cfg(all(test, unix))]
@@ -297,6 +298,8 @@ pub fn run() {
             install_daemon,
             set_login_item,
             set_sentry_enabled,
+            settings::settings_read,
+            settings::settings_write,
             share::take_shared_files,
             show_window,
             tray::set_tray_state,
