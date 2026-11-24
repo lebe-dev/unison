@@ -551,6 +551,27 @@ describe("introduction of two devices", () => {
     expect(screen.getByText("Waiting for both devices to confirm.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cancel the introduction" })).toBeTruthy();
   });
+
+  it("renders a verification code with repeated emoji", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        personal("device-2", { name: "Studio", supportsMediatedPair: true }),
+      ],
+    });
+    const repeated = exchange();
+    repeated.sas = create(SasSchema, { digits: "654321", emoji: ["🐶", "🐶", "🐱", "🐶"] });
+    mediated.pairs = [repeated];
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce to another device..." }));
+
+    expect(screen.getByText("654 321")).toBeTruthy();
+    expect(screen.getAllByText("🐶")).toHaveLength(3);
+  });
 });
 
 /** exchange builds a running introduction of the two devices. */

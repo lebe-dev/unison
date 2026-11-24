@@ -514,7 +514,7 @@
                   <div class="code" aria-label={t("mediated.sasAria")}>
                     <div class="digits mono">{groupDigits(exchange.sas.digits)}</div>
                     <div class="emoji">
-                      {#each sasEmoji(exchange.sas.emoji) as symbol (symbol)}
+                      {#each sasEmoji(exchange.sas.emoji) as symbol, index (index)}
                         <span>{symbol}</span>
                       {/each}
                     </div>
