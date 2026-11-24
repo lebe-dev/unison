@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
 
+	"github.com/lebe-dev/unison/core/settingsfile"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -31,6 +34,10 @@ func (a *app) settings(ctx context.Context, args []string) error {
 		return a.settingsTTL(ctx, rest)
 	case "remote":
 		return a.settingsRemote(ctx, rest)
+	case "export":
+		return a.settingsExport(ctx, rest)
+	case "import":
+		return a.settingsImport(ctx, rest)
 	default:
 		return a.usageError("unknown settings command %q", command)
 	}
@@ -89,6 +96,110 @@ func (a *app) settingsRemote(ctx context.Context, args []string) error {
 	}
 	a.info("remote settings for every device are %s", onOff(allow))
 	return nil
+}
+
+// settingsExport writes the settings as a JSON document, or prints it when no
+// path is given.
+func (a *app) settingsExport(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("settings export")
+	positional, err := parseCommand(flags, args)
+	if err != nil {
+		return err
+	}
+	if len(positional) > 1 {
+		return a.usageError("settings export takes at most one path")
+	}
+
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	response, err := client.ExportSettings(ctx, connect.NewRequest(&localv1.ExportSettingsRequest{}))
+	if err != nil {
+		return fmt.Errorf("export the settings: %w", err)
+	}
+	document := response.Msg.GetDocument()
+
+	if len(positional) == 0 {
+		if _, err := a.stdout.Write(document); err != nil {
+			return fmt.Errorf("write the settings: %w", err)
+		}
+		return nil
+	}
+	path := positional[0]
+	//nolint:gosec // The user names the file the settings are written to.
+	if err := os.WriteFile(path, document, 0o600); err != nil {
+		return fmt.Errorf("write the settings: %w", err)
+	}
+	if a.json {
+		return a.writeJSONValue(struct {
+			Path     string `json:"path"`
+			FileName string `json:"file_name"`
+		}{Path: path, FileName: response.Msg.GetFileName()})
+	}
+	a.info("saved %s", path)
+	return nil
+}
+
+// settingsImport applies the settings of a JSON document.
+func (a *app) settingsImport(ctx context.Context, args []string) error {
+	flags := a.newFlagSet("settings import")
+	positional, err := parseCommand(flags, args)
+	if err != nil {
+		return err
+	}
+	if len(positional) != 1 {
+		return a.usageError("settings import takes one path")
+	}
+
+	document, err := readSettingsFile(positional[0], a.stdin)
+	if err != nil {
+		return err
+	}
+	client, err := a.api()
+	if err != nil {
+		return err
+	}
+	response, err := client.ImportSettings(ctx, connect.NewRequest(&localv1.ImportSettingsRequest{
+		Document: document,
+	}))
+	if err != nil {
+		return fmt.Errorf("import the settings: %w", err)
+	}
+	if a.json {
+		return a.writeJSON(response.Msg)
+	}
+	if response.Msg.GetFromNewerVersion() {
+		a.info("the file comes from a newer app, so only the known settings were applied")
+	}
+	if ignored := response.Msg.GetIgnored(); len(ignored) > 0 {
+		a.info("skipped unknown keys: %s", strings.Join(ignored, ", "))
+	}
+	a.info("settings imported")
+	return nil
+}
+
+// readSettingsFile returns the document of a path, or of standard input for
+// "-".
+func readSettingsFile(path string, stdin io.Reader) ([]byte, error) {
+	reader := stdin
+	if path != "-" {
+		//nolint:gosec // The user names the file the settings are read from.
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("read the settings: %w", err)
+		}
+		defer func() { _ = file.Close() }()
+		reader = file
+	}
+	document, err := io.ReadAll(io.LimitReader(reader, settingsfile.MaxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read the settings: %w", err)
+	}
+	if len(document) > settingsfile.MaxBytes {
+		return nil, fmt.Errorf("the settings file is larger than %d bytes", settingsfile.MaxBytes)
+	}
+	return document, nil
 }
 
 // settingsTTL prints or changes the lifetimes of the history.

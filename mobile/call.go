@@ -305,6 +305,26 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "ExportSettings":
+		call, err := requestOf[localv1.ExportSettingsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ExportSettings(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
+	case "ImportSettings":
+		call, err := requestOf[localv1.ImportSettingsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ImportSettings(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "GetRelay":
 		call, err := requestOf[localv1.GetRelayRequest](payload)
 		if err != nil {
