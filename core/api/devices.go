@@ -59,7 +59,7 @@ func (s *Service) RenameDevice(ctx context.Context, req *connect.Request[localv1
 	if err != nil {
 		return nil, errorOf(err)
 	}
-	return connect.NewResponse(&localv1.RenameDeviceResponse{Device: deviceToProto(peer, state)}), nil
+	return connect.NewResponse(&localv1.RenameDeviceResponse{Device: deviceToProto(peer, state, s.node.MediatedPeerSupported(id))}), nil
 }
 
 // RevokeDevice revokes a paired device or, when the local device is named,
@@ -179,7 +179,7 @@ func (s *Service) SetPeerAddress(ctx context.Context, req *connect.Request[local
 	if err != nil {
 		return nil, errorOf(err)
 	}
-	return connect.NewResponse(&localv1.SetPeerAddressResponse{Device: deviceToProto(peer, state)}), nil
+	return connect.NewResponse(&localv1.SetPeerAddressResponse{Device: deviceToProto(peer, state, s.node.MediatedPeerSupported(id))}), nil
 }
 
 // RetryDevice tries to reach a paired device again: the daemon announces this

@@ -50,6 +50,22 @@ const (
 	// KindPeerPolicy reports the confirmation flags of the sender for the
 	// receiver.
 	KindPeerPolicy
+	// KindMediatedOffer invites this device to an introduction through the
+	// sender.
+	KindMediatedOffer
+	// KindMediatedReady reports that the user accepted before the other
+	// endpoint sent its commit.
+	KindMediatedReady
+	// KindMediatedCommit carries the ephemeral keys of the endpoint with the
+	// lower device ID.
+	KindMediatedCommit
+	// KindMediatedFinish carries the ephemeral keys of the endpoint with the
+	// higher device ID.
+	KindMediatedFinish
+	// KindMediatedCancel ends a mediated exchange.
+	KindMediatedCancel
+	// KindMediatedResult confirms that the endpoint stored the new peer.
+	KindMediatedResult
 )
 
 // String returns the name of the kind.
@@ -89,6 +105,18 @@ func (k Kind) String() string {
 		return "share-result"
 	case KindPeerPolicy:
 		return "peer-policy"
+	case KindMediatedOffer:
+		return "mediated-offer"
+	case KindMediatedReady:
+		return "mediated-ready"
+	case KindMediatedCommit:
+		return "mediated-commit"
+	case KindMediatedFinish:
+		return "mediated-finish"
+	case KindMediatedCancel:
+		return "mediated-cancel"
+	case KindMediatedResult:
+		return "mediated-result"
 	default:
 		return "unknown"
 	}
@@ -135,6 +163,18 @@ func kindOf(msg *wirev1.ControlMessage) (Kind, error) {
 		return KindShareResult, nil
 	case *wirev1.ControlMessage_PeerPolicy:
 		return KindPeerPolicy, nil
+	case *wirev1.ControlMessage_MediatedOffer:
+		return KindMediatedOffer, nil
+	case *wirev1.ControlMessage_MediatedReady:
+		return KindMediatedReady, nil
+	case *wirev1.ControlMessage_MediatedCommit:
+		return KindMediatedCommit, nil
+	case *wirev1.ControlMessage_MediatedFinish:
+		return KindMediatedFinish, nil
+	case *wirev1.ControlMessage_MediatedCancel:
+		return KindMediatedCancel, nil
+	case *wirev1.ControlMessage_MediatedResult:
+		return KindMediatedResult, nil
 	default:
 		return KindUnknown, fmt.Errorf("%w: payload %T", ErrUnknownKind, msg.GetBody())
 	}
@@ -167,6 +207,8 @@ func actionOf(kind Kind) (trust.Action, error) {
 		return trust.ActionSetRemotePolicy, nil
 	case KindGossipDigest, KindGossipRecords:
 		return trust.ActionIntroduce, nil
+	case KindMediatedOffer, KindMediatedReady, KindMediatedCommit, KindMediatedFinish, KindMediatedCancel, KindMediatedResult:
+		return trust.ActionNone, nil
 	default:
 		return trust.ActionNone, fmt.Errorf("%w: kind %s", ErrUnknownKind, kind)
 	}

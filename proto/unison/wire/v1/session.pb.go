@@ -297,6 +297,12 @@ type ControlMessage struct {
 	//	*ControlMessage_ShareCancel
 	//	*ControlMessage_ShareResult
 	//	*ControlMessage_PeerPolicy
+	//	*ControlMessage_MediatedOffer
+	//	*ControlMessage_MediatedReady
+	//	*ControlMessage_MediatedCommit
+	//	*ControlMessage_MediatedFinish
+	//	*ControlMessage_MediatedCancel
+	//	*ControlMessage_MediatedResult
 	Body          isControlMessage_Body `protobuf_oneof:"body"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -492,6 +498,60 @@ func (x *ControlMessage) GetPeerPolicy() *PeerPolicy {
 	return nil
 }
 
+func (x *ControlMessage) GetMediatedOffer() *MediatedOffer {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_MediatedOffer); ok {
+			return x.MediatedOffer
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetMediatedReady() *MediatedReady {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_MediatedReady); ok {
+			return x.MediatedReady
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetMediatedCommit() *MediatedCommit {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_MediatedCommit); ok {
+			return x.MediatedCommit
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetMediatedFinish() *MediatedFinish {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_MediatedFinish); ok {
+			return x.MediatedFinish
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetMediatedCancel() *MediatedCancel {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_MediatedCancel); ok {
+			return x.MediatedCancel
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetMediatedResult() *MediatedResult {
+	if x != nil {
+		if x, ok := x.Body.(*ControlMessage_MediatedResult); ok {
+			return x.MediatedResult
+		}
+	}
+	return nil
+}
+
 type isControlMessage_Body interface {
 	isControlMessage_Body()
 }
@@ -566,6 +626,30 @@ type ControlMessage_PeerPolicy struct {
 	PeerPolicy *PeerPolicy `protobuf:"bytes,17,opt,name=peer_policy,json=peerPolicy,proto3,oneof"`
 }
 
+type ControlMessage_MediatedOffer struct {
+	MediatedOffer *MediatedOffer `protobuf:"bytes,18,opt,name=mediated_offer,json=mediatedOffer,proto3,oneof"`
+}
+
+type ControlMessage_MediatedReady struct {
+	MediatedReady *MediatedReady `protobuf:"bytes,19,opt,name=mediated_ready,json=mediatedReady,proto3,oneof"`
+}
+
+type ControlMessage_MediatedCommit struct {
+	MediatedCommit *MediatedCommit `protobuf:"bytes,20,opt,name=mediated_commit,json=mediatedCommit,proto3,oneof"`
+}
+
+type ControlMessage_MediatedFinish struct {
+	MediatedFinish *MediatedFinish `protobuf:"bytes,21,opt,name=mediated_finish,json=mediatedFinish,proto3,oneof"`
+}
+
+type ControlMessage_MediatedCancel struct {
+	MediatedCancel *MediatedCancel `protobuf:"bytes,22,opt,name=mediated_cancel,json=mediatedCancel,proto3,oneof"`
+}
+
+type ControlMessage_MediatedResult struct {
+	MediatedResult *MediatedResult `protobuf:"bytes,23,opt,name=mediated_result,json=mediatedResult,proto3,oneof"`
+}
+
 func (*ControlMessage_Hello) isControlMessage_Body() {}
 
 func (*ControlMessage_AuthProof) isControlMessage_Body() {}
@@ -600,11 +684,23 @@ func (*ControlMessage_ShareResult) isControlMessage_Body() {}
 
 func (*ControlMessage_PeerPolicy) isControlMessage_Body() {}
 
+func (*ControlMessage_MediatedOffer) isControlMessage_Body() {}
+
+func (*ControlMessage_MediatedReady) isControlMessage_Body() {}
+
+func (*ControlMessage_MediatedCommit) isControlMessage_Body() {}
+
+func (*ControlMessage_MediatedFinish) isControlMessage_Body() {}
+
+func (*ControlMessage_MediatedCancel) isControlMessage_Body() {}
+
+func (*ControlMessage_MediatedResult) isControlMessage_Body() {}
+
 var File_unison_wire_v1_session_proto protoreflect.FileDescriptor
 
 const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\n" +
-	"\x1cunison/wire/v1/session.proto\x12\x0eunison.wire.v1\x1a\x19unison/wire/v1/blob.proto\x1a\x19unison/wire/v1/clip.proto\x1a\x1aunison/wire/v1/trust.proto\x1a\x1aunison/wire/v1/types.proto\"\xdc\x01\n" +
+	"\x1cunison/wire/v1/session.proto\x12\x0eunison.wire.v1\x1a\x19unison/wire/v1/blob.proto\x1a\x19unison/wire/v1/clip.proto\x1a\x1cunison/wire/v1/mediate.proto\x1a\x1aunison/wire/v1/trust.proto\x1a\x1aunison/wire/v1/types.proto\"\xdc\x01\n" +
 	"\fStreamHeader\x12.\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1a.unison.wire.v1.StreamKindR\x04kind\x12\x1f\n" +
 	"\vtransfer_id\x18\x02 \x01(\tR\n" +
@@ -619,7 +715,7 @@ const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x124\n" +
 	"\bplatform\x18\x04 \x01(\x0e2\x18.unison.wire.v1.PlatformR\bplatformJ\x04\b\x05\x10\x06R\vself_policy\"(\n" +
 	"\tAuthProof\x12\x1b\n" +
-	"\tmldsa_sig\x18\x01 \x01(\fR\bmldsaSig\"\xf0\b\n" +
+	"\tmldsa_sig\x18\x01 \x01(\fR\bmldsaSig\"\xac\f\n" +
 	"\x0eControlMessage\x12-\n" +
 	"\x05hello\x18\x01 \x01(\v2\x15.unison.wire.v1.HelloH\x00R\x05hello\x12:\n" +
 	"\n" +
@@ -643,7 +739,13 @@ const file_unison_wire_v1_session_proto_rawDesc = "" +
 	"\fshare_cancel\x18\x0f \x01(\v2\x1b.unison.wire.v1.ShareCancelH\x00R\vshareCancel\x12@\n" +
 	"\fshare_result\x18\x10 \x01(\v2\x1b.unison.wire.v1.ShareResultH\x00R\vshareResult\x12=\n" +
 	"\vpeer_policy\x18\x11 \x01(\v2\x1a.unison.wire.v1.PeerPolicyH\x00R\n" +
-	"peerPolicyB\x06\n" +
+	"peerPolicy\x12F\n" +
+	"\x0emediated_offer\x18\x12 \x01(\v2\x1d.unison.wire.v1.MediatedOfferH\x00R\rmediatedOffer\x12F\n" +
+	"\x0emediated_ready\x18\x13 \x01(\v2\x1d.unison.wire.v1.MediatedReadyH\x00R\rmediatedReady\x12I\n" +
+	"\x0fmediated_commit\x18\x14 \x01(\v2\x1e.unison.wire.v1.MediatedCommitH\x00R\x0emediatedCommit\x12I\n" +
+	"\x0fmediated_finish\x18\x15 \x01(\v2\x1e.unison.wire.v1.MediatedFinishH\x00R\x0emediatedFinish\x12I\n" +
+	"\x0fmediated_cancel\x18\x16 \x01(\v2\x1e.unison.wire.v1.MediatedCancelH\x00R\x0emediatedCancel\x12I\n" +
+	"\x0fmediated_result\x18\x17 \x01(\v2\x1e.unison.wire.v1.MediatedResultH\x00R\x0emediatedResultB\x06\n" +
 	"\x04body*\\\n" +
 	"\n" +
 	"StreamKind\x12\x1b\n" +
@@ -688,6 +790,12 @@ var file_unison_wire_v1_session_proto_goTypes = []any{
 	(*ShareCancel)(nil),    // 19: unison.wire.v1.ShareCancel
 	(*ShareResult)(nil),    // 20: unison.wire.v1.ShareResult
 	(*PeerPolicy)(nil),     // 21: unison.wire.v1.PeerPolicy
+	(*MediatedOffer)(nil),  // 22: unison.wire.v1.MediatedOffer
+	(*MediatedReady)(nil),  // 23: unison.wire.v1.MediatedReady
+	(*MediatedCommit)(nil), // 24: unison.wire.v1.MediatedCommit
+	(*MediatedFinish)(nil), // 25: unison.wire.v1.MediatedFinish
+	(*MediatedCancel)(nil), // 26: unison.wire.v1.MediatedCancel
+	(*MediatedResult)(nil), // 27: unison.wire.v1.MediatedResult
 }
 var file_unison_wire_v1_session_proto_depIdxs = []int32{
 	0,  // 0: unison.wire.v1.StreamHeader.kind:type_name -> unison.wire.v1.StreamKind
@@ -710,11 +818,17 @@ var file_unison_wire_v1_session_proto_depIdxs = []int32{
 	19, // 17: unison.wire.v1.ControlMessage.share_cancel:type_name -> unison.wire.v1.ShareCancel
 	20, // 18: unison.wire.v1.ControlMessage.share_result:type_name -> unison.wire.v1.ShareResult
 	21, // 19: unison.wire.v1.ControlMessage.peer_policy:type_name -> unison.wire.v1.PeerPolicy
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	22, // 20: unison.wire.v1.ControlMessage.mediated_offer:type_name -> unison.wire.v1.MediatedOffer
+	23, // 21: unison.wire.v1.ControlMessage.mediated_ready:type_name -> unison.wire.v1.MediatedReady
+	24, // 22: unison.wire.v1.ControlMessage.mediated_commit:type_name -> unison.wire.v1.MediatedCommit
+	25, // 23: unison.wire.v1.ControlMessage.mediated_finish:type_name -> unison.wire.v1.MediatedFinish
+	26, // 24: unison.wire.v1.ControlMessage.mediated_cancel:type_name -> unison.wire.v1.MediatedCancel
+	27, // 25: unison.wire.v1.ControlMessage.mediated_result:type_name -> unison.wire.v1.MediatedResult
+	26, // [26:26] is the sub-list for method output_type
+	26, // [26:26] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_unison_wire_v1_session_proto_init() }
@@ -724,6 +838,7 @@ func file_unison_wire_v1_session_proto_init() {
 	}
 	file_unison_wire_v1_blob_proto_init()
 	file_unison_wire_v1_clip_proto_init()
+	file_unison_wire_v1_mediate_proto_init()
 	file_unison_wire_v1_trust_proto_init()
 	file_unison_wire_v1_types_proto_init()
 	file_unison_wire_v1_session_proto_msgTypes[3].OneofWrappers = []any{
@@ -744,6 +859,12 @@ func file_unison_wire_v1_session_proto_init() {
 		(*ControlMessage_ShareCancel)(nil),
 		(*ControlMessage_ShareResult)(nil),
 		(*ControlMessage_PeerPolicy)(nil),
+		(*ControlMessage_MediatedOffer)(nil),
+		(*ControlMessage_MediatedReady)(nil),
+		(*ControlMessage_MediatedCommit)(nil),
+		(*ControlMessage_MediatedFinish)(nil),
+		(*ControlMessage_MediatedCancel)(nil),
+		(*ControlMessage_MediatedResult)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

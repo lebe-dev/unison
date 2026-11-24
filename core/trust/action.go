@@ -29,6 +29,9 @@ const (
 	ActionRevoke
 	// ActionSetRemotePolicy lets the peer change the local peer policy.
 	ActionSetRemotePolicy
+	// ActionMediatedPair lets the peer invite this device to an introduction
+	// through itself. Every role may ask, but only the user decides.
+	ActionMediatedPair
 )
 
 // String returns the name of the action.
@@ -52,6 +55,8 @@ func (a Action) String() string {
 		return "revoke"
 	case ActionSetRemotePolicy:
 		return "set-remote-policy"
+	case ActionMediatedPair:
+		return "mediated-pair"
 	default:
 		return "none"
 	}
@@ -104,6 +109,7 @@ var matrix = map[Action]matrixRow{
 	ActionIntroduce:           {personal: Allow, personalConfirmation: Allow, friends: Deny},
 	ActionRevoke:              {personal: Allow, personalConfirmation: Allow, friends: Deny},
 	ActionSetRemotePolicy:     {personal: Allow, personalConfirmation: Allow, friends: Deny},
+	ActionMediatedPair:        {personal: Confirm, personalConfirmation: Confirm, friends: Confirm},
 }
 
 // Allowed reports whether the peer may perform the action without asking the

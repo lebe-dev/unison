@@ -425,6 +425,67 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg, maxCallBytes)
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "SetFriendsDiscovery":
+		call, err := requestOf[localv1.SetFriendsDiscoveryRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.SetFriendsDiscovery(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "StartMediatedPair":
+		call, err := requestOf[localv1.StartMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.StartMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "ConfirmMediatedPair":
+		call, err := requestOf[localv1.ConfirmMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ConfirmMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "RejectMediatedPair":
+		call, err := requestOf[localv1.RejectMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.RejectMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "CancelMediatedPair":
+		call, err := requestOf[localv1.CancelMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.CancelMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "ListMediatedPairs":
+		call, err := requestOf[localv1.ListMediatedPairsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ListMediatedPairs(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ListRequests":
 		call, err := requestOf[localv1.ListRequestsRequest](payload)
 		if err != nil {

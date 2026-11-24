@@ -304,6 +304,7 @@ func (n *Node) pairingEvent(event pairing.Event) {
 			SAS:      event.SAS,
 			Method:   event.Method,
 		})
+		n.advertise(n.ctx)
 		n.syncLinks()
 		if n.gossip != nil {
 			n.gossip.Notify(n.ctx)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"runtime/debug"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -228,6 +229,14 @@ func (s *Session) PeerHello() PeerHello {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.hello
+}
+
+// HasCapability reports whether the peer announced the capability in Hello. The
+// answer is false before the handshake completes.
+func (s *Session) HasCapability(name string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.Contains(s.hello.Capabilities, name)
 }
 
 // Events returns the session events. The channel is closed when the session ends.

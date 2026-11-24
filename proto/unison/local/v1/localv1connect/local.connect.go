@@ -129,6 +129,21 @@ const (
 	// UnisonServiceSetFriendsDiscoveryProcedure is the fully-qualified name of the UnisonService's
 	// SetFriendsDiscovery RPC.
 	UnisonServiceSetFriendsDiscoveryProcedure = "/unison.local.v1.UnisonService/SetFriendsDiscovery"
+	// UnisonServiceStartMediatedPairProcedure is the fully-qualified name of the UnisonService's
+	// StartMediatedPair RPC.
+	UnisonServiceStartMediatedPairProcedure = "/unison.local.v1.UnisonService/StartMediatedPair"
+	// UnisonServiceConfirmMediatedPairProcedure is the fully-qualified name of the UnisonService's
+	// ConfirmMediatedPair RPC.
+	UnisonServiceConfirmMediatedPairProcedure = "/unison.local.v1.UnisonService/ConfirmMediatedPair"
+	// UnisonServiceRejectMediatedPairProcedure is the fully-qualified name of the UnisonService's
+	// RejectMediatedPair RPC.
+	UnisonServiceRejectMediatedPairProcedure = "/unison.local.v1.UnisonService/RejectMediatedPair"
+	// UnisonServiceCancelMediatedPairProcedure is the fully-qualified name of the UnisonService's
+	// CancelMediatedPair RPC.
+	UnisonServiceCancelMediatedPairProcedure = "/unison.local.v1.UnisonService/CancelMediatedPair"
+	// UnisonServiceListMediatedPairsProcedure is the fully-qualified name of the UnisonService's
+	// ListMediatedPairs RPC.
+	UnisonServiceListMediatedPairsProcedure = "/unison.local.v1.UnisonService/ListMediatedPairs"
 	// UnisonServiceListRequestsProcedure is the fully-qualified name of the UnisonService's
 	// ListRequests RPC.
 	UnisonServiceListRequestsProcedure = "/unison.local.v1.UnisonService/ListRequests"
@@ -226,6 +241,13 @@ type UnisonServiceClient interface {
 	// Temporary search for Friends devices. Both devices of a pair turn it on
 	// for the devices to find each other.
 	SetFriendsDiscovery(context.Context, *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error)
+	// Introductions through a trusted device. The mediator starts an exchange
+	// for two devices it already trusts, each of the two devices confirms it.
+	StartMediatedPair(context.Context, *connect.Request[v1.StartMediatedPairRequest]) (*connect.Response[v1.StartMediatedPairResponse], error)
+	ConfirmMediatedPair(context.Context, *connect.Request[v1.ConfirmMediatedPairRequest]) (*connect.Response[v1.ConfirmMediatedPairResponse], error)
+	RejectMediatedPair(context.Context, *connect.Request[v1.RejectMediatedPairRequest]) (*connect.Response[v1.RejectMediatedPairResponse], error)
+	CancelMediatedPair(context.Context, *connect.Request[v1.CancelMediatedPairRequest]) (*connect.Response[v1.CancelMediatedPairResponse], error)
+	ListMediatedPairs(context.Context, *connect.Request[v1.ListMediatedPairsRequest]) (*connect.Response[v1.ListMediatedPairsResponse], error)
 	// Incoming file transfer requests that wait for a decision.
 	ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error)
 	// Accept or decline a request and tell the sender.
@@ -468,6 +490,36 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("SetFriendsDiscovery")),
 			connect.WithClientOptions(opts...),
 		),
+		startMediatedPair: connect.NewClient[v1.StartMediatedPairRequest, v1.StartMediatedPairResponse](
+			httpClient,
+			baseURL+UnisonServiceStartMediatedPairProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("StartMediatedPair")),
+			connect.WithClientOptions(opts...),
+		),
+		confirmMediatedPair: connect.NewClient[v1.ConfirmMediatedPairRequest, v1.ConfirmMediatedPairResponse](
+			httpClient,
+			baseURL+UnisonServiceConfirmMediatedPairProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ConfirmMediatedPair")),
+			connect.WithClientOptions(opts...),
+		),
+		rejectMediatedPair: connect.NewClient[v1.RejectMediatedPairRequest, v1.RejectMediatedPairResponse](
+			httpClient,
+			baseURL+UnisonServiceRejectMediatedPairProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("RejectMediatedPair")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelMediatedPair: connect.NewClient[v1.CancelMediatedPairRequest, v1.CancelMediatedPairResponse](
+			httpClient,
+			baseURL+UnisonServiceCancelMediatedPairProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("CancelMediatedPair")),
+			connect.WithClientOptions(opts...),
+		),
+		listMediatedPairs: connect.NewClient[v1.ListMediatedPairsRequest, v1.ListMediatedPairsResponse](
+			httpClient,
+			baseURL+UnisonServiceListMediatedPairsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ListMediatedPairs")),
+			connect.WithClientOptions(opts...),
+		),
 		listRequests: connect.NewClient[v1.ListRequestsRequest, v1.ListRequestsResponse](
 			httpClient,
 			baseURL+UnisonServiceListRequestsProcedure,
@@ -579,6 +631,11 @@ type unisonServiceClient struct {
 	acceptTransfer          *connect.Client[v1.AcceptTransferRequest, v1.AcceptTransferResponse]
 	rejectTransfer          *connect.Client[v1.RejectTransferRequest, v1.RejectTransferResponse]
 	setFriendsDiscovery     *connect.Client[v1.SetFriendsDiscoveryRequest, v1.SetFriendsDiscoveryResponse]
+	startMediatedPair       *connect.Client[v1.StartMediatedPairRequest, v1.StartMediatedPairResponse]
+	confirmMediatedPair     *connect.Client[v1.ConfirmMediatedPairRequest, v1.ConfirmMediatedPairResponse]
+	rejectMediatedPair      *connect.Client[v1.RejectMediatedPairRequest, v1.RejectMediatedPairResponse]
+	cancelMediatedPair      *connect.Client[v1.CancelMediatedPairRequest, v1.CancelMediatedPairResponse]
+	listMediatedPairs       *connect.Client[v1.ListMediatedPairsRequest, v1.ListMediatedPairsResponse]
 	listRequests            *connect.Client[v1.ListRequestsRequest, v1.ListRequestsResponse]
 	decideRequest           *connect.Client[v1.DecideRequestRequest, v1.DecideRequestResponse]
 	getPause                *connect.Client[v1.GetPauseRequest, v1.GetPauseResponse]
@@ -763,6 +820,31 @@ func (c *unisonServiceClient) SetFriendsDiscovery(ctx context.Context, req *conn
 	return c.setFriendsDiscovery.CallUnary(ctx, req)
 }
 
+// StartMediatedPair calls unison.local.v1.UnisonService.StartMediatedPair.
+func (c *unisonServiceClient) StartMediatedPair(ctx context.Context, req *connect.Request[v1.StartMediatedPairRequest]) (*connect.Response[v1.StartMediatedPairResponse], error) {
+	return c.startMediatedPair.CallUnary(ctx, req)
+}
+
+// ConfirmMediatedPair calls unison.local.v1.UnisonService.ConfirmMediatedPair.
+func (c *unisonServiceClient) ConfirmMediatedPair(ctx context.Context, req *connect.Request[v1.ConfirmMediatedPairRequest]) (*connect.Response[v1.ConfirmMediatedPairResponse], error) {
+	return c.confirmMediatedPair.CallUnary(ctx, req)
+}
+
+// RejectMediatedPair calls unison.local.v1.UnisonService.RejectMediatedPair.
+func (c *unisonServiceClient) RejectMediatedPair(ctx context.Context, req *connect.Request[v1.RejectMediatedPairRequest]) (*connect.Response[v1.RejectMediatedPairResponse], error) {
+	return c.rejectMediatedPair.CallUnary(ctx, req)
+}
+
+// CancelMediatedPair calls unison.local.v1.UnisonService.CancelMediatedPair.
+func (c *unisonServiceClient) CancelMediatedPair(ctx context.Context, req *connect.Request[v1.CancelMediatedPairRequest]) (*connect.Response[v1.CancelMediatedPairResponse], error) {
+	return c.cancelMediatedPair.CallUnary(ctx, req)
+}
+
+// ListMediatedPairs calls unison.local.v1.UnisonService.ListMediatedPairs.
+func (c *unisonServiceClient) ListMediatedPairs(ctx context.Context, req *connect.Request[v1.ListMediatedPairsRequest]) (*connect.Response[v1.ListMediatedPairsResponse], error) {
+	return c.listMediatedPairs.CallUnary(ctx, req)
+}
+
 // ListRequests calls unison.local.v1.UnisonService.ListRequests.
 func (c *unisonServiceClient) ListRequests(ctx context.Context, req *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error) {
 	return c.listRequests.CallUnary(ctx, req)
@@ -888,6 +970,13 @@ type UnisonServiceHandler interface {
 	// Temporary search for Friends devices. Both devices of a pair turn it on
 	// for the devices to find each other.
 	SetFriendsDiscovery(context.Context, *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error)
+	// Introductions through a trusted device. The mediator starts an exchange
+	// for two devices it already trusts, each of the two devices confirms it.
+	StartMediatedPair(context.Context, *connect.Request[v1.StartMediatedPairRequest]) (*connect.Response[v1.StartMediatedPairResponse], error)
+	ConfirmMediatedPair(context.Context, *connect.Request[v1.ConfirmMediatedPairRequest]) (*connect.Response[v1.ConfirmMediatedPairResponse], error)
+	RejectMediatedPair(context.Context, *connect.Request[v1.RejectMediatedPairRequest]) (*connect.Response[v1.RejectMediatedPairResponse], error)
+	CancelMediatedPair(context.Context, *connect.Request[v1.CancelMediatedPairRequest]) (*connect.Response[v1.CancelMediatedPairResponse], error)
+	ListMediatedPairs(context.Context, *connect.Request[v1.ListMediatedPairsRequest]) (*connect.Response[v1.ListMediatedPairsResponse], error)
 	// Incoming file transfer requests that wait for a decision.
 	ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error)
 	// Accept or decline a request and tell the sender.
@@ -1126,6 +1215,36 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("SetFriendsDiscovery")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceStartMediatedPairHandler := connect.NewUnaryHandler(
+		UnisonServiceStartMediatedPairProcedure,
+		svc.StartMediatedPair,
+		connect.WithSchema(unisonServiceMethods.ByName("StartMediatedPair")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceConfirmMediatedPairHandler := connect.NewUnaryHandler(
+		UnisonServiceConfirmMediatedPairProcedure,
+		svc.ConfirmMediatedPair,
+		connect.WithSchema(unisonServiceMethods.ByName("ConfirmMediatedPair")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceRejectMediatedPairHandler := connect.NewUnaryHandler(
+		UnisonServiceRejectMediatedPairProcedure,
+		svc.RejectMediatedPair,
+		connect.WithSchema(unisonServiceMethods.ByName("RejectMediatedPair")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceCancelMediatedPairHandler := connect.NewUnaryHandler(
+		UnisonServiceCancelMediatedPairProcedure,
+		svc.CancelMediatedPair,
+		connect.WithSchema(unisonServiceMethods.ByName("CancelMediatedPair")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceListMediatedPairsHandler := connect.NewUnaryHandler(
+		UnisonServiceListMediatedPairsProcedure,
+		svc.ListMediatedPairs,
+		connect.WithSchema(unisonServiceMethods.ByName("ListMediatedPairs")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceListRequestsHandler := connect.NewUnaryHandler(
 		UnisonServiceListRequestsProcedure,
 		svc.ListRequests,
@@ -1268,6 +1387,16 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceRejectTransferHandler.ServeHTTP(w, r)
 		case UnisonServiceSetFriendsDiscoveryProcedure:
 			unisonServiceSetFriendsDiscoveryHandler.ServeHTTP(w, r)
+		case UnisonServiceStartMediatedPairProcedure:
+			unisonServiceStartMediatedPairHandler.ServeHTTP(w, r)
+		case UnisonServiceConfirmMediatedPairProcedure:
+			unisonServiceConfirmMediatedPairHandler.ServeHTTP(w, r)
+		case UnisonServiceRejectMediatedPairProcedure:
+			unisonServiceRejectMediatedPairHandler.ServeHTTP(w, r)
+		case UnisonServiceCancelMediatedPairProcedure:
+			unisonServiceCancelMediatedPairHandler.ServeHTTP(w, r)
+		case UnisonServiceListMediatedPairsProcedure:
+			unisonServiceListMediatedPairsHandler.ServeHTTP(w, r)
 		case UnisonServiceListRequestsProcedure:
 			unisonServiceListRequestsHandler.ServeHTTP(w, r)
 		case UnisonServiceDecideRequestProcedure:
@@ -1435,6 +1564,26 @@ func (UnimplementedUnisonServiceHandler) RejectTransfer(context.Context, *connec
 
 func (UnimplementedUnisonServiceHandler) SetFriendsDiscovery(context.Context, *connect.Request[v1.SetFriendsDiscoveryRequest]) (*connect.Response[v1.SetFriendsDiscoveryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.SetFriendsDiscovery is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) StartMediatedPair(context.Context, *connect.Request[v1.StartMediatedPairRequest]) (*connect.Response[v1.StartMediatedPairResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.StartMediatedPair is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ConfirmMediatedPair(context.Context, *connect.Request[v1.ConfirmMediatedPairRequest]) (*connect.Response[v1.ConfirmMediatedPairResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ConfirmMediatedPair is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) RejectMediatedPair(context.Context, *connect.Request[v1.RejectMediatedPairRequest]) (*connect.Response[v1.RejectMediatedPairResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.RejectMediatedPair is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) CancelMediatedPair(context.Context, *connect.Request[v1.CancelMediatedPairRequest]) (*connect.Response[v1.CancelMediatedPairResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.CancelMediatedPair is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ListMediatedPairs(context.Context, *connect.Request[v1.ListMediatedPairsRequest]) (*connect.Response[v1.ListMediatedPairsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ListMediatedPairs is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) ListRequests(context.Context, *connect.Request[v1.ListRequestsRequest]) (*connect.Response[v1.ListRequestsResponse], error) {

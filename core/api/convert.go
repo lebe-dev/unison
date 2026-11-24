@@ -129,7 +129,7 @@ func networkToProto(state model.NetworkState) *localv1.NetworkState {
 }
 
 // deviceToProto converts a stored peer and its live state.
-func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
+func deviceToProto(peer trust.Peer, state model.PeerState, supportsMediated ...bool) *localv1.Device {
 	device := &localv1.Device{
 		DeviceId:                    peer.DeviceID().String(),
 		Name:                        peer.Name,
@@ -150,6 +150,7 @@ func deviceToProto(peer trust.Peer, state model.PeerState) *localv1.Device {
 		UnreachableDetail:           state.UnreachableDetail,
 		ProtocolVersion:             state.ProtocolVersion,
 		ProtocolNewer:               state.ProtocolKnown && protocol.Compare(state.ProtocolVersion) == protocol.PeerNewer,
+		SupportsMediatedPair:        len(supportsMediated) > 0 && supportsMediated[0],
 	}
 	if !peer.IntroducedBy.IsZero() {
 		device.IntroducedBy = peer.IntroducedBy.String()
@@ -229,6 +230,14 @@ func eventKindToProto(kind node.EventKind) localv1.EventKind {
 		return localv1.EventKind_EVENT_KIND_DEVICE_UPDATED
 	case node.EventPeerUnreachable:
 		return localv1.EventKind_EVENT_KIND_PEER_UNREACHABLE
+	case node.EventMediatedPairOffer:
+		return localv1.EventKind_EVENT_KIND_MEDIATED_PAIR_OFFER
+	case node.EventMediatedPairUpdated:
+		return localv1.EventKind_EVENT_KIND_MEDIATED_PAIR_UPDATED
+	case node.EventMediatedPairCompleted:
+		return localv1.EventKind_EVENT_KIND_MEDIATED_PAIR_COMPLETED
+	case node.EventMediatedPairCanceled:
+		return localv1.EventKind_EVENT_KIND_MEDIATED_PAIR_CANCELED
 	default:
 		return localv1.EventKind_EVENT_KIND_UNSPECIFIED
 	}
@@ -268,6 +277,9 @@ func eventToProto(event node.Event) *localv1.Event {
 		out.Item = clipItemToProto(event.Item)
 	case node.EventTransfer:
 		out.Transfer = TransferToProto(event.Transfer)
+	}
+	if event.Mediated != nil {
+		out.MediatedPair = mediatedPairToProto(*event.Mediated)
 	}
 	if event.Err != nil {
 		out.Error = event.Err.Error()

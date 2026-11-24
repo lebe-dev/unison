@@ -38,6 +38,14 @@ const (
 	EventType_EVENT_TYPE_PAIRING_FAILED    EventType = 9
 	EventType_EVENT_TYPE_PAIRING_CLOSED    EventType = 10
 	EventType_EVENT_TYPE_HISTORY           EventType = 11
+	// A trusted device offers to introduce this one to another one.
+	EventType_EVENT_TYPE_MEDIATED_PAIR_OFFER EventType = 12
+	// A mediated pairing exchange changed its state.
+	EventType_EVENT_TYPE_MEDIATED_PAIR_UPDATED EventType = 13
+	// A mediated pairing exchange added a new device.
+	EventType_EVENT_TYPE_MEDIATED_PAIR_COMPLETED EventType = 14
+	// A mediated pairing exchange ended without a new device.
+	EventType_EVENT_TYPE_MEDIATED_PAIR_CANCELED EventType = 15
 )
 
 // Enum value maps for EventType.
@@ -55,20 +63,28 @@ var (
 		9:  "EVENT_TYPE_PAIRING_FAILED",
 		10: "EVENT_TYPE_PAIRING_CLOSED",
 		11: "EVENT_TYPE_HISTORY",
+		12: "EVENT_TYPE_MEDIATED_PAIR_OFFER",
+		13: "EVENT_TYPE_MEDIATED_PAIR_UPDATED",
+		14: "EVENT_TYPE_MEDIATED_PAIR_COMPLETED",
+		15: "EVENT_TYPE_MEDIATED_PAIR_CANCELED",
 	}
 	EventType_value = map[string]int32{
-		"EVENT_TYPE_UNSPECIFIED":       0,
-		"EVENT_TYPE_CLIP_RECEIVED":     1,
-		"EVENT_TYPE_NETWORK_CHANGED":   2,
-		"EVENT_TYPE_PEER_ONLINE":       3,
-		"EVENT_TYPE_PEER_OFFLINE":      4,
-		"EVENT_TYPE_PEER_INCOMPATIBLE": 5,
-		"EVENT_TYPE_PAIRING_CANDIDATE": 6,
-		"EVENT_TYPE_PAIRING_REQUEST":   7,
-		"EVENT_TYPE_PAIRING_PAIRED":    8,
-		"EVENT_TYPE_PAIRING_FAILED":    9,
-		"EVENT_TYPE_PAIRING_CLOSED":    10,
-		"EVENT_TYPE_HISTORY":           11,
+		"EVENT_TYPE_UNSPECIFIED":             0,
+		"EVENT_TYPE_CLIP_RECEIVED":           1,
+		"EVENT_TYPE_NETWORK_CHANGED":         2,
+		"EVENT_TYPE_PEER_ONLINE":             3,
+		"EVENT_TYPE_PEER_OFFLINE":            4,
+		"EVENT_TYPE_PEER_INCOMPATIBLE":       5,
+		"EVENT_TYPE_PAIRING_CANDIDATE":       6,
+		"EVENT_TYPE_PAIRING_REQUEST":         7,
+		"EVENT_TYPE_PAIRING_PAIRED":          8,
+		"EVENT_TYPE_PAIRING_FAILED":          9,
+		"EVENT_TYPE_PAIRING_CLOSED":          10,
+		"EVENT_TYPE_HISTORY":                 11,
+		"EVENT_TYPE_MEDIATED_PAIR_OFFER":     12,
+		"EVENT_TYPE_MEDIATED_PAIR_UPDATED":   13,
+		"EVENT_TYPE_MEDIATED_PAIR_COMPLETED": 14,
+		"EVENT_TYPE_MEDIATED_PAIR_CANCELED":  15,
 	}
 )
 
@@ -849,7 +865,7 @@ const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\arecords\x18\x01 \x03(\v2+.unison.mobile.v1.CandidateTxt.RecordsEntryR\arecords\x1a:\n" +
 	"\fRecordsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xf7\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x90\x04\n" +
 	"\tEventType\x12\x1a\n" +
 	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18EVENT_TYPE_CLIP_RECEIVED\x10\x01\x12\x1e\n" +
@@ -863,7 +879,11 @@ const file_unison_mobile_v1_mobile_proto_rawDesc = "" +
 	"\x19EVENT_TYPE_PAIRING_FAILED\x10\t\x12\x1d\n" +
 	"\x19EVENT_TYPE_PAIRING_CLOSED\x10\n" +
 	"\x12\x16\n" +
-	"\x12EVENT_TYPE_HISTORY\x10\vB<Z:github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1b\x06proto3"
+	"\x12EVENT_TYPE_HISTORY\x10\v\x12\"\n" +
+	"\x1eEVENT_TYPE_MEDIATED_PAIR_OFFER\x10\f\x12$\n" +
+	" EVENT_TYPE_MEDIATED_PAIR_UPDATED\x10\r\x12&\n" +
+	"\"EVENT_TYPE_MEDIATED_PAIR_COMPLETED\x10\x0e\x12%\n" +
+	"!EVENT_TYPE_MEDIATED_PAIR_CANCELED\x10\x0fB<Z:github.com/lebe-dev/unison/proto/unison/mobile/v1;mobilev1b\x06proto3"
 
 var (
 	file_unison_mobile_v1_mobile_proto_rawDescOnce sync.Once

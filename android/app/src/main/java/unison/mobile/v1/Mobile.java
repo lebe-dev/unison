@@ -68,6 +68,38 @@ public final class Mobile {
      * <code>EVENT_TYPE_HISTORY = 11;</code>
      */
     EVENT_TYPE_HISTORY(11),
+    /**
+     * <pre>
+     * A trusted device offers to introduce this one to another one.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_OFFER = 12;</code>
+     */
+    EVENT_TYPE_MEDIATED_PAIR_OFFER(12),
+    /**
+     * <pre>
+     * A mediated pairing exchange changed its state.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_UPDATED = 13;</code>
+     */
+    EVENT_TYPE_MEDIATED_PAIR_UPDATED(13),
+    /**
+     * <pre>
+     * A mediated pairing exchange added a new device.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_COMPLETED = 14;</code>
+     */
+    EVENT_TYPE_MEDIATED_PAIR_COMPLETED(14),
+    /**
+     * <pre>
+     * A mediated pairing exchange ended without a new device.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_CANCELED = 15;</code>
+     */
+    EVENT_TYPE_MEDIATED_PAIR_CANCELED(15),
     UNRECOGNIZED(-1),
     ;
 
@@ -119,6 +151,38 @@ public final class Mobile {
      * <code>EVENT_TYPE_HISTORY = 11;</code>
      */
     public static final int EVENT_TYPE_HISTORY_VALUE = 11;
+    /**
+     * <pre>
+     * A trusted device offers to introduce this one to another one.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_OFFER = 12;</code>
+     */
+    public static final int EVENT_TYPE_MEDIATED_PAIR_OFFER_VALUE = 12;
+    /**
+     * <pre>
+     * A mediated pairing exchange changed its state.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_UPDATED = 13;</code>
+     */
+    public static final int EVENT_TYPE_MEDIATED_PAIR_UPDATED_VALUE = 13;
+    /**
+     * <pre>
+     * A mediated pairing exchange added a new device.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_COMPLETED = 14;</code>
+     */
+    public static final int EVENT_TYPE_MEDIATED_PAIR_COMPLETED_VALUE = 14;
+    /**
+     * <pre>
+     * A mediated pairing exchange ended without a new device.
+     * </pre>
+     *
+     * <code>EVENT_TYPE_MEDIATED_PAIR_CANCELED = 15;</code>
+     */
+    public static final int EVENT_TYPE_MEDIATED_PAIR_CANCELED_VALUE = 15;
 
 
     @java.lang.Override
@@ -153,6 +217,10 @@ public final class Mobile {
         case 9: return EVENT_TYPE_PAIRING_FAILED;
         case 10: return EVENT_TYPE_PAIRING_CLOSED;
         case 11: return EVENT_TYPE_HISTORY;
+        case 12: return EVENT_TYPE_MEDIATED_PAIR_OFFER;
+        case 13: return EVENT_TYPE_MEDIATED_PAIR_UPDATED;
+        case 14: return EVENT_TYPE_MEDIATED_PAIR_COMPLETED;
+        case 15: return EVENT_TYPE_MEDIATED_PAIR_CANCELED;
         default: return null;
       }
     }

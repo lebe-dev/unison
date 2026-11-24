@@ -165,7 +165,7 @@ func (s *Service) devices(ctx context.Context, includeRevoked bool) ([]*localv1.
 
 	devices := make([]*localv1.Device, 0, len(peers))
 	for _, peer := range peers {
-		devices = append(devices, deviceToProto(peer, live[peer.DeviceID()]))
+		devices = append(devices, deviceToProto(peer, live[peer.DeviceID()], s.node.MediatedPeerSupported(peer.DeviceID())))
 	}
 	return devices, nil
 }

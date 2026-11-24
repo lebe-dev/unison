@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/netip"
+	"slices"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -17,6 +18,7 @@ import (
 	"github.com/lebe-dev/unison/core/gossip"
 	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/identity"
+	"github.com/lebe-dev/unison/core/mediate"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/policy"
@@ -220,7 +222,8 @@ type Node struct {
 
 	share *share.Service
 
-	gossip *gossip.Service
+	gossip  *gossip.Service
+	mediate *mediate.Service
 
 	// main carries the listener and the dialer on one socket, so a peer that
 	// accepted a connection learns an address it can dial back.
@@ -307,6 +310,9 @@ func New(cfg Config) (*Node, error) {
 	}
 	cfg.ListenPacket = listen
 	cfg.Capabilities = append([]string(nil), cfg.Capabilities...)
+	if !slices.Contains(cfg.Capabilities, mediate.Capability) {
+		cfg.Capabilities = append(cfg.Capabilities, mediate.Capability)
+	}
 	limits := cfg.Limits.withDefaults()
 
 	n := &Node{
@@ -328,7 +334,7 @@ func New(cfg Config) (*Node, error) {
 	}
 	n.hooks = []SessionHook{
 		n.installClip, n.installTransfer, n.installHistory, n.installGossip,
-		n.installPolicy, n.installRevocation, n.installShare,
+		n.installPolicy, n.installRevocation, n.installShare, n.installMediate,
 	}
 	return n, nil
 }
@@ -640,6 +646,9 @@ func (n *Node) open(ctx context.Context) error {
 		return err
 	}
 	if err := n.openShare(db); err != nil {
+		return err
+	}
+	if err := n.openMediate(); err != nil {
 		return err
 	}
 	decider, err := n.openPolicy(ctx, db)
