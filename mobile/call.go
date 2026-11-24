@@ -425,7 +425,6 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg, maxCallBytes)
-		return encodeResponse(res.Msg, maxCallBytes)
 	case "SetFriendsDiscovery":
 		call, err := requestOf[localv1.SetFriendsDiscoveryRequest](payload)
 		if err != nil {
