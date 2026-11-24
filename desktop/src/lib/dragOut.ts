@@ -2,14 +2,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { client } from "./api/client";
 import type { HistoryItem } from "./api/gen/unison/local/v1/local_pb";
 import { translate } from "./i18n";
-import { isMac } from "./platform";
+import { isLinux, isMac, isWindows } from "./platform";
 
 /** Distance in pixels the pointer travels before a press becomes a drag. */
 export const DRAG_THRESHOLD = 4;
 
 /** canDragOut reports whether the system starts a native drag out of the window. */
 export function canDragOut(): boolean {
-  return isMac();
+  return isMac() || isWindows() || isLinux();
 }
 
 /** crossedDragThreshold reports whether the pointer left the press position far

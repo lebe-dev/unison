@@ -44,10 +44,14 @@ describe("drag threshold", () => {
 });
 
 describe("drag out", () => {
-  it("starts only on macOS", () => {
+  it("starts on every desktop platform", () => {
     setUserAgent(MAC_UA);
     expect(canDragOut()).toBe(true);
     setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+    expect(canDragOut()).toBe(true);
+    setUserAgent("Mozilla/5.0 (X11; Linux x86_64)");
+    expect(canDragOut()).toBe(true);
+    setUserAgent("Mozilla/5.0 (Linux; Android 14)");
     expect(canDragOut()).toBe(false);
   });
 

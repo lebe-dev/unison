@@ -12,6 +12,14 @@ the local API on a named pipe.
   unisond.exe         the daemon, GUI subsystem
 ```
 
+## Dragging files out of the window
+
+On Windows an image or a file item of the Dashboard can be dragged out of the window. The app stages
+the content of the item into a directory of its cache and starts a native OLE drag of the copies,
+several files of one item at once. The drag preview is the first staged image, or the icon of the
+app. The copies stay 24 hours, so a terminal that gets the path after the drop still finds the
+content. The window drags only files below the staging directory.
+
 ## Platform ports
 
 `platform/windows` provides two of the four ports and builds on every host, so `just vet-windows`

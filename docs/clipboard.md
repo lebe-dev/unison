@@ -173,16 +173,18 @@ The Dashboard is the first screen of the desktop app. It shows the newest images
 three tabs. The number of items per tab is set in Settings and is 12 by default. A click opens the
 item: the image in full size, the text with a copy button, or the files with copy and download.
 
-On macOS an image or a file can be dragged out of the window into another app: Finder saves the
-copies, a chat app attaches them, and a terminal inserts the path of a copy. Several files of one item
-are dragged together. The copies live in the cache of the app and are removed a day after they were
-written, so a terminal still reads them later. Text items are not dragged out; copy them with the
-button of the preview.
+In the desktop app an image or a file can be dragged out of the window into another app: a file
+manager saves the copies, a chat app attaches them, and a terminal inserts the path of a copy.
+Several files of one item are dragged together. The copies live in the cache of the app and are
+removed a day after they were written, so a terminal still reads them later. Text items are not
+dragged out; copy them with the button of the preview.
 
 A right click on an item opens its actions: `Send` offers the content to one online device as a file,
 `Copy` puts it on the clipboard of this device without sending it anywhere, and `Delete` removes it
-from this device and from the other Personal devices after a confirmation. `Copy` of an image or a
-file copies the files themselves, so they can be pasted into Finder or an attachment field.
+from this device and from the other Personal devices after a confirmation. `Copy` goes through the
+daemon, which marks its own clipboard write, so the copy is not announced to the other devices. Text
+and images are copied as their content, and a file item is saved to the received files folder and
+put on the clipboard as the files themselves.
 
 ## Holding items until you apply them
 

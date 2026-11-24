@@ -66,8 +66,8 @@ the newest items of the history in three tabs: images as a grid of thumbnails, f
 names and sizes, and text as snippets. The thumbnails come from the daemon, so the page decodes no
 image itself. The number of items per tab is a local preference (`unison.dashboard.limit` in
 `localStorage`); Settings > General offers 6, 12, 24 and 48, and 12 is the default. A click opens a
-preview with the full image, the text content, or the files. On macOS an image or a file item can be
-dragged out of the window; text items cannot.
+preview with the full image, the text content, or the files. On macOS, Windows and Linux an image or
+a file item can be dragged out of the window; text items cannot.
 
 The `dashboard` store follows the events of the daemon and reloads the tabs, capped by the configured
 number. The History screen keeps its own store and is not affected by the Dashboard.
@@ -165,13 +165,19 @@ files, and can be put away with `Later`.
 
 ### Dragging items out
 
-On macOS an image or a file item of the Dashboard can be dragged out of the window. When the press
-becomes a drag, the frontend asks `drag_staging_dir` for a new directory under the app cache (`drag/`),
-then fetches the payloads into it with `FetchHistoryItem`. Once the copies are written,
-`start_file_drag` receives their paths and `dragout.rs` starts a macOS drag session with
-`DragItem::Files` and `DragMode::Copy`. A plain click stages nothing and opens the preview instead.
-Several files of one item are dragged together. The drag preview is the first staged image, or the
-icon of the app.
+On macOS, Windows and Linux an image or a file item of the Dashboard can be dragged out of the
+window. When the press becomes a drag, the frontend asks `drag_staging_dir` for a new directory
+under the app cache (`drag/`), then fetches the payloads into it with `FetchHistoryItem`. Once the
+copies are written, `start_file_drag` receives their paths and the backend in `dragout/` starts a
+native drag with `DragItem::Files` and `DragMode::Copy`. A plain click stages nothing and opens the
+preview instead. Several files of one item are dragged together. The drag preview is the first
+staged image, or the icon of the app.
+
+The backends differ in what starts the session: macOS begins an `NSDraggingSession` and returns
+while the user still drags, Windows runs an OLE `DoDragDrop`, and Linux sets the drag source of the
+GTK `ApplicationWindow` that Tauri exposes with `gtk_window()`. The Linux backend needs the primary
+button to be pressed when the command reaches the main thread, so the copies must be ready while the
+user holds the pointer.
 
 `start_file_drag` canonicalizes every path and accepts only files below the cache directory, so the
 window cannot hand an arbitrary file of the user to another app. The staging directories are private
@@ -179,10 +185,11 @@ to the user. The copies stay after the drop: a terminal inserts the path of the 
 line tool can still read the content later. At startup the shell removes the staging directories that
 are older than 24 hours.
 
-The context menu of an item uses the same staging: `copy_files_to_clipboard` writes the staged paths
-as file URLs to the macOS pasteboard, which is how Finder copies a file. Nothing is sent to a device
-by this call. `Send` stages the content and offers the copies to one online device through
-`SendFiles`; `Delete` removes the item from the history on every Personal device.
+The context menu of an item uses the same staging for `Send`: the copies go to one online device
+through `SendFiles`. `Copy` does not use the staging: it calls `CopyHistoryItem`, so the daemon
+writes the item to the clipboard with the echo marker of its own writes. The copy is therefore not
+announced as a new item and reaches no other device. `Delete` removes the item from the history on
+every Personal device.
 
 ### Application log
 
