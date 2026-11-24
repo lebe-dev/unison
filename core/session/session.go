@@ -61,6 +61,9 @@ var (
 	// ErrHandlerPanic reports a handler that panicked on a message of the
 	// peer. The session ends, the process keeps running.
 	ErrHandlerPanic = errors.New("session: handler panicked")
+	// ErrViolation reports a protocol violation of the peer found by a
+	// handler. The message is dropped and counted like any other violation.
+	ErrViolation = errors.New("session: protocol violation")
 )
 
 // Trust is the peer store the session reads peers from. *trust.Store
@@ -447,6 +450,10 @@ func (s *Session) dispatch(msg *wirev1.ControlMessage) {
 	}
 	if err := s.guard(kind.String(), func() error { return handler(s.ctx, msg) }); err != nil {
 		if errors.Is(err, ErrHandlerPanic) {
+			return
+		}
+		if errors.Is(err, ErrViolation) {
+			s.violate(kind.String() + ": " + err.Error())
 			return
 		}
 		if s.ctx.Err() != nil {

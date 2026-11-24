@@ -443,16 +443,13 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 		return fmt.Errorf("%w: role %d", ErrInvalidOffer, role)
 	}
 	if !roleWithin(role, peer.Role) {
-		return fmt.Errorf("%w: role %s for a %s mediator", ErrRoleEscalation, role, peer.Role)
+		return violation(fmt.Errorf("%w: role %s for a %s mediator", ErrRoleEscalation, role, peer.Role))
 	}
 	if !validSessionID(offer.GetSessionId()) {
 		return fmt.Errorf("%w: session id of %d bytes", ErrInvalidOffer, len(offer.GetSessionId()))
 	}
 	var id [sessionIDSize]byte
 	copy(id[:], offer.GetSessionId())
-	if s.replay.seen(id) {
-		return fmt.Errorf("%w: session id was used already", ErrInvalidOffer)
-	}
 	expiresAt := time.UnixMilli(offer.GetExpiresAtUnixMs())
 	switch {
 	case !now.Before(expiresAt):
@@ -477,7 +474,7 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 	base := offerTranscript(id, mediator, low, high, role, expiresAt.UnixMilli())
 	signature := identity.Signature{Ed25519: offer.GetEd25519Sig(), MLDSA: offer.GetMldsaSig()}
 	if err := verifySignature(peer.Public, OfferSignatureType, base, signature); err != nil {
-		return fmt.Errorf("%w: offer signature: %w", ErrInvalidOffer, err)
+		return violation(fmt.Errorf("%w: offer signature: %w", ErrInvalidOffer, err))
 	}
 
 	alreadyPaired := false
@@ -503,6 +500,9 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 	defer s.mu.Unlock()
 	if s.stopped {
 		return ErrOffline
+	}
+	if s.replay.seen(id) {
+		return fmt.Errorf("%w: session id was used already", ErrInvalidOffer)
 	}
 	if !s.allowLocked(mediator, now) {
 		return ErrRateLimited
@@ -566,6 +566,10 @@ func (s *Service) handleReady(_ context.Context, sess *session.Session, msg *wir
 	if ex.direction != DirectionMediator {
 		return fmt.Errorf("%w: only the mediator tracks readiness", ErrInvalidOffer)
 	}
+	if s.clock.Now().After(ex.expiresAt) {
+		s.endLocked(context.Background(), ex, CancelReasonExpired, true)
+		return ErrExpired
+	}
 	if sess.DeviceID() != ex.highID {
 		return fmt.Errorf("%w: readiness of the wrong endpoint", ErrInvalidOffer)
 	}
@@ -586,6 +590,9 @@ func (s *Service) handleCommit(ctx context.Context, sess *session.Session, msg *
 	ex := s.exchanges[sessionIDString(commit.GetSessionId())]
 	if ex == nil {
 		return ErrNotFound
+	}
+	if s.expiredLocked(ctx, ex) {
+		return ErrExpired
 	}
 	if ex.direction == DirectionMediator {
 		if sess.DeviceID() != ex.lowID {
@@ -643,6 +650,9 @@ func (s *Service) handleFinish(ctx context.Context, sess *session.Session, msg *
 	if ex == nil {
 		return ErrNotFound
 	}
+	if s.expiredLocked(ctx, ex) {
+		return ErrExpired
+	}
 	if ex.direction == DirectionMediator {
 		if sess.DeviceID() != ex.highID {
 			return fmt.Errorf("%w: finish of the wrong endpoint", ErrInvalidFinish)
@@ -689,7 +699,7 @@ func (s *Service) handleFinish(ctx context.Context, sess *session.Session, msg *
 		return err
 	}
 	ex.state = StateCompleted
-	s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
+	_ = s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
 		Body: &wirev1.ControlMessage_MediatedResult{MediatedResult: &wirev1.MediatedResult{
 			SessionId: append([]byte(nil), ex.id[:]...),
 			Committed: true,
@@ -753,6 +763,21 @@ func (s *Service) handleResult(ctx context.Context, sess *session.Session, msg *
 	return nil
 }
 
+// violation marks an error as a protocol violation of the peer, so the session
+// counts it.
+func violation(err error) error {
+	return fmt.Errorf("%w: %w", session.ErrViolation, err)
+}
+
+// expiredLocked ends an exchange past its deadline and reports it.
+func (s *Service) expiredLocked(ctx context.Context, ex *exchange) bool {
+	if s.clock.Now().Before(ex.expiresAt) {
+		return false
+	}
+	s.endLocked(ctx, ex, CancelReasonExpired, true)
+	return true
+}
+
 // verifyCommitLocked checks the fields and the signature of a commit.
 func (s *Service) verifyCommitLocked(ex *exchange, commit *wirev1.MediatedCommit) error {
 	if len(commit.GetX25519Pub()) != x25519Size || len(commit.GetMlkemEk()) != mlkemEncapsulationKeySize {
@@ -770,7 +795,7 @@ func (s *Service) verifyCommitLocked(ex *exchange, commit *wirev1.MediatedCommit
 	signature := identity.Signature{Ed25519: commit.GetEd25519Sig(), MLDSA: commit.GetMldsaSig()}
 	lowPublic := s.lowPublicLocked(ex)
 	if err := verifySignature(lowPublic, CommitSignatureType, transcript, signature); err != nil {
-		return fmt.Errorf("%w: commit signature: %w", ErrInvalidCommit, err)
+		return violation(fmt.Errorf("%w: commit signature: %w", ErrInvalidCommit, err))
 	}
 	return nil
 }
@@ -796,7 +821,7 @@ func (s *Service) verifyFinishLocked(ex *exchange, finish *wirev1.MediatedFinish
 	highPublic := s.highPublicLocked(ex)
 	signature := identity.Signature{Ed25519: finish.GetEd25519Sig(), MLDSA: finish.GetMldsaSig()}
 	if err := verifySignature(highPublic, FinishSignatureType, transcript, signature); err != nil {
-		return fmt.Errorf("%w: finish signature: %w", ErrInvalidFinish, err)
+		return violation(fmt.Errorf("%w: finish signature: %w", ErrInvalidFinish, err))
 	}
 	return nil
 }
