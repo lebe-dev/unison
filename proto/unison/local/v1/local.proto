@@ -233,6 +233,11 @@ service UnisonService {
   // Settings of the daemon.
   rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
   rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
+  // Settings as a JSON document the user can keep and restore.
+  rpc ExportSettings(ExportSettingsRequest) returns (ExportSettingsResponse);
+  // Apply the settings of a JSON document. Keys that are absent keep the
+  // stored values.
+  rpc ImportSettings(ImportSettingsRequest) returns (ImportSettingsResponse);
 
   // Relay access of the Personal group and the state of its client.
   rpc GetRelay(GetRelayRequest) returns (GetRelayResponse);
@@ -941,6 +946,36 @@ message UpdateSettingsRequest {
 
 message UpdateSettingsResponse {
   Settings settings = 1;
+}
+
+message ExportSettingsRequest {
+  // Local settings of the app as a JSON object. It is written under the app
+  // key of the document without being interpreted. Empty for an app without
+  // local settings.
+  string app_settings = 1;
+}
+
+message ExportSettingsResponse {
+  // The document, formatted as JSON.
+  bytes document = 1;
+  // Name of the file, unison-<platform>-<date>-<time>.json. It carries the
+  // platform and the time of the document.
+  string file_name = 2;
+}
+
+message ImportSettingsRequest {
+  // The document.
+  bytes document = 1;
+}
+
+message ImportSettingsResponse {
+  // Settings after the import.
+  Settings settings = 1;
+  // Keys of the document this version does not know and did not apply, in
+  // dotted form.
+  repeated string ignored = 2;
+  // The document comes from a newer app, so only the known keys were applied.
+  bool from_newer_version = 3;
 }
 
 // Transport of the connection to the relay.

@@ -523,6 +523,19 @@ export const en = {
   "settings.stripTrackingFailed": "The tracking parameter setting could not be changed.",
   "settings.applicationLog": "Application log",
   "settings.applicationLogHint": "Records that help support find a problem.",
+  "settings.settingsFile": "Settings file",
+  "settings.settingsFileHint":
+    "Keep the settings of this device in a JSON file and restore them here or on another device. The device name, the folder of received files and the relay access are not part of the file.",
+  "settings.exportSettings": "Export",
+  "settings.importSettings": "Import",
+  "settings.exportSaved": "The settings are saved to {path}.",
+  "settings.exportFailed": "The settings could not be exported.",
+  "settings.imported": "The settings are imported.",
+  "settings.importFailed": "The settings could not be imported.",
+  "settings.importNewer":
+    "The file comes from a newer version of the app, so only the settings this version knows were applied.",
+  "settings.importIgnored": "Skipped unknown keys: {keys}.",
+  "settings.importLoginSkipped": "The startup setting was not applied.",
   "journal.enable": "Record the application log",
   "journal.enableHint":
     "The log helps support find the cause of a problem. It never records clipboard content, file names or passwords.",

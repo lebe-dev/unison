@@ -530,6 +530,19 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.stripTrackingFailed": "Не удалось изменить настройку параметров отслеживания.",
   "settings.applicationLog": "Журнал приложения",
   "settings.applicationLogHint": "Записи, которые помогают поддержке найти проблему.",
+  "settings.settingsFile": "Файл настроек",
+  "settings.settingsFileHint":
+    "Сохраните настройки этого устройства в файл JSON и восстановите их здесь или на другом устройстве. Имя устройства, папка полученных файлов и доступ к релею в файл не входят.",
+  "settings.exportSettings": "Экспорт",
+  "settings.importSettings": "Импорт",
+  "settings.exportSaved": "Настройки сохранены в {path}.",
+  "settings.exportFailed": "Не удалось экспортировать настройки.",
+  "settings.imported": "Настройки импортированы.",
+  "settings.importFailed": "Не удалось импортировать настройки.",
+  "settings.importNewer":
+    "Файл создан более новой версией приложения, поэтому применены только известные этой версии настройки.",
+  "settings.importIgnored": "Пропущены неизвестные ключи: {keys}.",
+  "settings.importLoginSkipped": "Настройка автозапуска не применена.",
   "journal.enable": "Записывать журнал приложения",
   "journal.enableHint":
     "Журнал помогает поддержке найти причину проблемы. Он не записывает содержимое буфера обмена, имена файлов и пароли.",

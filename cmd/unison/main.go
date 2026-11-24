@@ -309,6 +309,10 @@ commands:
   settings ttl reset          back to the default lifetimes
   settings remote on|off      allow paired devices to change the confirmation
                               flags of this device remotely
+  settings export [path]      write the settings as a JSON file, or print the
+                              document when no path is given
+  settings import <path|->    apply the settings of a JSON file; keys the file
+                              does not carry keep their values
   relay [status]              show the relay of the group and its connection
   relay set <url> --token <t> [--files-on-request]
                               store the relay address and token; the other

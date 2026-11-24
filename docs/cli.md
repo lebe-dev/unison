@@ -224,6 +224,10 @@ unison settings ttl text 30d       # keep text for 30 days
 unison settings ttl files 48h
 unison settings ttl reset          # the three lifetimes back to the defaults
 unison settings remote on|off      # allow paired devices to change the flags of this one
+unison settings export             # print the settings document
+unison settings export settings.json
+unison settings import settings.json
+unison settings import -           # read the document from standard input
 ```
 
 ```
@@ -240,6 +244,11 @@ The lifetime belongs to the device that captured the item; see
 The output before the table also shows `ad params`, whether text items lose the advertising
 parameters of their URLs; see
 [Clipboard and history](clipboard.md#advertising-parameters).
+
+`settings export` writes the document as JSON, or prints it when no path is given. `settings import`
+applies a document and keeps every value the file does not carry; it reports a file from a newer app
+and the keys this version skipped. The device name, the downloads directory and the relay access are
+not part of the file. See [Settings file](architecture/settings-file.md).
 
 ## relay
 

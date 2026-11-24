@@ -32,6 +32,7 @@ import app.unison.R
 import app.unison.clipboard.PauseOption
 import app.unison.clipboard.PauseRequest
 import app.unison.service.OperatingMode
+import app.unison.settingsfile.SettingsFile
 import app.unison.ui.SectionTitle
 import app.unison.ui.pauseLabel
 import app.unison.ui.state.CoreState
@@ -160,6 +161,57 @@ internal fun DownloadsFolderSection(
             modifier = Modifier.testTag(DOWNLOADS_RESET_TAG),
         ) {
             Text(text = stringResource(R.string.settings_downloads_reset))
+        }
+    }
+}
+
+/**
+ * Settings file: the user keeps the settings in a document and restores them.
+ * The document is written and read through the system picker, so the app needs
+ * no storage permission.
+ */
+@Composable
+internal fun SettingsFileSection(
+    onExport: (Uri) -> Unit,
+    onImport: (Uri) -> Unit,
+) {
+    val create =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(SettingsFile.MIME)) { uri ->
+            if (uri != null) {
+                onExport(uri)
+            }
+        }
+    val open =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                onImport(uri)
+            }
+        }
+
+    SectionTitle(text = stringResource(R.string.settings_section_settings_file))
+    Text(
+        text = stringResource(R.string.settings_file_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(
+            onClick = { create.launch(SettingsFile.fileName()) },
+            modifier = Modifier.testTag(SETTINGS_FILE_EXPORT_TAG),
+        ) {
+            Text(text = stringResource(R.string.settings_file_export))
+        }
+        OutlinedButton(
+            onClick = { open.launch(SETTINGS_FILE_TYPES) },
+            modifier = Modifier.testTag(SETTINGS_FILE_IMPORT_TAG),
+        ) {
+            Text(text = stringResource(R.string.settings_file_import))
         }
     }
 }
@@ -369,3 +421,17 @@ internal const val DOWNLOADS_RESET_TAG = "settings.downloads.reset"
 
 /** Tag of the button that saves the device name. */
 internal const val NAME_SAVE_TAG = "settings.name.save"
+
+/** Tag of the button that keeps the settings in a file. */
+internal const val SETTINGS_FILE_EXPORT_TAG = "settings.file.export"
+
+/** Tag of the button that restores the settings of a file. */
+internal const val SETTINGS_FILE_IMPORT_TAG = "settings.file.import"
+
+/** Types the system picker offers for an imported document. */
+private val SETTINGS_FILE_TYPES =
+    arrayOf(
+        SettingsFile.MIME,
+        "text/plain",
+        "application/octet-stream",
+    )
