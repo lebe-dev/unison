@@ -343,6 +343,16 @@ func (s *Service) Confirm(ctx context.Context, sessionID string, enableFriendsDi
 	if ex.localAccepted {
 		return nil
 	}
+	if mediator, err := s.opts.Trust.Get(ctx, ex.mediatorID); err == nil {
+		if mediator.Revoked {
+			s.endLocked(ctx, ex, CancelReasonRevoked, true)
+			return ErrPeerRevoked
+		}
+		if !roleWithin(ex.role, mediator.Role) {
+			s.endLocked(ctx, ex, CancelReasonRoleMismatch, true)
+			return ErrRoleEscalation
+		}
+	}
 	ex.localAccepted = true
 	ex.friendsPending = enableFriendsDiscovery
 
