@@ -9,6 +9,8 @@ use std::io::ErrorKind;
 use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tauri::AppHandle;
@@ -30,6 +32,13 @@ const WAIT_AFTER_RESTART: Duration = Duration::from_secs(10);
 /// STOP_WAIT is how long the app waits for a stopped daemon without systemd.
 const STOP_WAIT: Duration = Duration::from_secs(5);
 
+/// QUIT_GRACE is the pause before the app exits, so the window receives the
+/// restarting status.
+const QUIT_GRACE: Duration = Duration::from_millis(300);
+
+/// SYSTEM_BIN_DIRS are searched before PATH when resolving privileged tools.
+const SYSTEM_BIN_DIRS: [&str; 4] = ["/usr/bin", "/bin", "/usr/sbin", "/sbin"];
+
 /// asset_match reports whether a file of a release is the artifact of Linux.
 pub fn asset_match(filename: &str, version: &str) -> bool {
     filename == format!("unison-v{version}-linux.deb")
@@ -37,24 +46,41 @@ pub fn asset_match(filename: &str, version: &str) -> bool {
 
 /// can_self_update reports why the app cannot replace itself here.
 pub fn can_self_update() -> Result<(), String> {
-    if cfg!(debug_assertions) {
+    check_self_update(
+        cfg!(debug_assertions),
+        cfg!(target_arch = "x86_64"),
+        is_package_installed(),
+        find_executable("pkexec").is_some(),
+        find_executable("apt-get").is_some(),
+    )
+}
+
+/// check_self_update evaluates the preconditions for an in-app update.
+fn check_self_update(
+    debug: bool,
+    x86_64: bool,
+    installed: bool,
+    has_pkexec: bool,
+    has_apt_get: bool,
+) -> Result<(), String> {
+    if debug {
         return Err("in-app updates are disabled in development builds".to_string());
     }
-    if !cfg!(target_arch = "x86_64") {
+    if !x86_64 {
         return Err("in-app updates are only supported on 64-bit x86 Linux".to_string());
     }
-    if !package_installed() {
+    if !installed {
         return Err(
             "in-app updates are only supported for Debian package installations".to_string(),
         );
     }
-    if find_executable("pkexec").is_none() {
+    if !has_pkexec {
         return Err(
             "pkexec is not available; download the .deb release and install it with sudo apt install"
                 .to_string(),
         );
     }
-    if find_executable("apt-get").is_none() {
+    if !has_apt_get {
         return Err(
             "apt-get is not available; download the .deb release and install it with sudo apt install"
                 .to_string(),
@@ -76,17 +102,22 @@ pub async fn install(
     endpoint: Option<&str>,
     on_phase: &(dyn Fn(InstallPhase) + Send + Sync),
 ) -> Result<(), String> {
+    can_self_update()?;
+
     // The running binary keeps its path until the package replaces the file on
     // disk, after which the path of the running process ends in " (deleted)".
     let current_exe = std::env::current_exe()
         .and_then(|path| path.canonicalize())
         .map_err(|err| format!("cannot find the running application: {err}"))?;
 
-    on_phase(InstallPhase::Preparing);
-    let staging = stage(Path::new(STAGING_BASE), artifact_path, expected_version)?;
+    {
+        on_phase(InstallPhase::Preparing);
+        let staging = stage(Path::new(STAGING_BASE), artifact_path, expected_version)?;
 
-    on_phase(InstallPhase::ApplyingUpdate);
-    run_apt(staging.package()).await?;
+        on_phase(InstallPhase::ApplyingUpdate);
+        run_apt(staging.package()).await?;
+    }
+    cleanup_download(artifact_path);
 
     on_phase(InstallPhase::RestartingServices);
     restart_daemon(endpoint).await;
@@ -94,10 +125,15 @@ pub async fn install(
     on_phase(InstallPhase::Relaunching);
     relaunch(&current_exe)?;
 
-    cleanup_download(artifact_path);
-    drop(staging);
-    app.exit(0);
+    quit(app);
     Ok(())
+}
+
+/// is_package_installed caches whether dpkg knows the installed package of the
+/// app, so snapshot queries do not spawn `dpkg-query` repeatedly.
+fn is_package_installed() -> bool {
+    static INSTALLED: OnceLock<bool> = OnceLock::new();
+    *INSTALLED.get_or_init(package_installed)
 }
 
 /// package_installed reports whether dpkg knows an installed package of the
@@ -125,14 +161,18 @@ fn installed_status(stdout: &str, success: bool) -> bool {
 /// find_executable returns the first executable of the name in the system
 /// directories or in PATH.
 fn find_executable(name: &str) -> Option<PathBuf> {
-    for dir in ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
-        let path = Path::new(dir).join(name);
-        if is_executable(&path) {
-            return Some(path);
-        }
-    }
-    let path = std::env::var_os("PATH")?;
-    std::env::split_paths(&path)
+    let path_env = std::env::var_os("PATH");
+    let dirs = SYSTEM_BIN_DIRS
+        .iter()
+        .map(PathBuf::from)
+        .chain(path_env.iter().flat_map(std::env::split_paths));
+    find_executable_in(name, dirs)
+}
+
+/// find_executable_in returns the first executable of the name in the given
+/// directories.
+fn find_executable_in(name: &str, dirs: impl IntoIterator<Item = PathBuf>) -> Option<PathBuf> {
+    dirs.into_iter()
         .map(|dir| dir.join(name))
         .find(|path| is_executable(path))
 }
@@ -187,13 +227,10 @@ fn stage(base: &Path, artifact: &Path, expected_version: &str) -> Result<Staging
 /// create_staging_dir makes an empty directory that no other process could
 /// have prepared, and refuses one that is not a directory of this user.
 fn create_staging_dir(base: &Path) -> Result<PathBuf, String> {
+    // SAFETY: geteuid has no preconditions and always returns the effective uid.
     let uid = unsafe { libc::geteuid() };
-    for attempt in 0..STAGING_ATTEMPTS {
-        let path = base.join(format!(
-            "unison-update-{}-{}",
-            std::process::id(),
-            nonce(attempt)
-        ));
+    for _ in 0..STAGING_ATTEMPTS {
+        let path = base.join(format!("unison-update-{}-{}", std::process::id(), nonce()));
         match fs::DirBuilder::new().mode(0o755).create(&path) {
             Ok(()) => {}
             Err(err) if err.kind() == ErrorKind::AlreadyExists => continue,
@@ -241,20 +278,22 @@ fn copy_package(source: &Path, target: &Path) -> Result<(), String> {
     std::io::copy(&mut input, &mut output)
         .map_err(|err| format!("cannot copy the package for apt: {err}"))?;
     output
+        .set_permissions(fs::Permissions::from_mode(0o644))
+        .map_err(|err| format!("cannot open the staged package for apt: {err}"))?;
+    output
         .sync_all()
         .map_err(|err| format!("cannot flush the staged package: {err}"))?;
-    fs::set_permissions(target, fs::Permissions::from_mode(0o644))
-        .map_err(|err| format!("cannot open the staged package for apt: {err}"))?;
     Ok(())
 }
 
 /// nonce returns a value that no earlier staging name of this process used.
-fn nonce(attempt: u32) -> String {
+fn nonce() -> String {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|elapsed| elapsed.as_nanos())
         .unwrap_or_default();
-    format!("{nanos:x}{attempt}")
+    format!("{nanos:x}-{}", NEXT.fetch_add(1, Ordering::Relaxed))
 }
 
 /// run_apt installs the staged package through PolicyKit. The prompt belongs to
@@ -291,11 +330,8 @@ async fn run_apt(package: PathBuf) -> Result<(), String> {
             Ok(())
         }
         Err(failure) => {
-            let details = crate::redact::paths(stderr.trim());
-            crate::journal::record(
-                "ERROR",
-                &format!("the update package was not installed: {details}"),
-            );
+            let (level, message) = failure_log(&failure, &stderr);
+            crate::journal::record(level, &message);
             Err(failure.message())
         }
     }
@@ -323,6 +359,23 @@ impl InstallFailure {
     }
 }
 
+/// failure_log builds the journal level and message for a failed installation.
+fn failure_log(failure: &InstallFailure, stderr: &str) -> (&'static str, String) {
+    if *failure == InstallFailure::Cancelled {
+        return ("INFO", "the update installation was cancelled".to_string());
+    }
+    let details = stderr.trim();
+    let reason = if details.is_empty() {
+        failure.message()
+    } else {
+        details.to_string()
+    };
+    (
+        "ERROR",
+        format!("the update package was not installed: {reason}"),
+    )
+}
+
 /// policykit_outcome maps the exit code of pkexec to the result of the
 /// installation. pkexec uses 126 for a dismissed prompt and 127 for a failed
 /// authentication.
@@ -343,18 +396,11 @@ fn error_summary(stderr: &str) -> String {
         .map(str::trim)
         .filter(|line| !line.is_empty())
         .collect();
-    for line in &lines {
-        if line.starts_with("E: ") {
-            return (*line).to_string();
-        }
-    }
-    for line in &lines {
-        if line.starts_with("dpkg: error") {
-            return (*line).to_string();
-        }
-    }
     lines
-        .last()
+        .iter()
+        .find(|line| line.starts_with("E: "))
+        .or_else(|| lines.iter().find(|line| line.starts_with("dpkg: error")))
+        .or_else(|| lines.last())
         .map(|line| (*line).to_string())
         .unwrap_or_else(|| "the package manager failed without a message".to_string())
 }
@@ -438,6 +484,15 @@ fn relaunch(exe: &Path) -> Result<(), String> {
         .map_err(|err| format!("cannot start the updated application: {err}"))
 }
 
+/// quit exits the app after the window receives the last status update.
+fn quit(app: &AppHandle) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(QUIT_GRACE);
+        app.exit(0);
+    });
+}
+
 /// cleanup_download removes the directory of the downloaded package. The staged
 /// copy is removed by its guard.
 fn cleanup_download(artifact: &Path) {
@@ -447,8 +502,7 @@ fn cleanup_download(artifact: &Path) {
     let is_update_dir = dir
         .parent()
         .and_then(Path::file_name)
-        .map(|name| name == "updates")
-        .unwrap_or(false);
+        .is_some_and(|name| name == "updates");
     if is_update_dir {
         let _ = fs::remove_dir_all(dir);
     }
@@ -457,17 +511,7 @@ fn cleanup_download(artifact: &Path) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// temp_dir returns an empty directory of this test and its cleanup.
-    fn temp_dir(name: &str) -> PathBuf {
-        let path = std::env::temp_dir().join(format!(
-            "unison-linux-update-{name}-{}-{}",
-            std::process::id(),
-            nonce(0)
-        ));
-        fs::create_dir_all(&path).expect("create the temporary directory");
-        path
-    }
+    use crate::testutil::{TempDir, set_mode};
 
     #[test]
     fn the_linux_package_is_matched() {
@@ -483,12 +527,66 @@ mod tests {
     }
 
     #[test]
+    fn self_update_checks_every_precondition() {
+        assert!(check_self_update(false, true, true, true, true).is_ok());
+        assert!(
+            check_self_update(true, true, true, true, true)
+                .unwrap_err()
+                .contains("development builds")
+        );
+        assert!(
+            check_self_update(false, false, true, true, true)
+                .unwrap_err()
+                .contains("64-bit x86")
+        );
+        assert!(
+            check_self_update(false, true, false, true, true)
+                .unwrap_err()
+                .contains("Debian package")
+        );
+        assert!(
+            check_self_update(false, true, true, false, true)
+                .unwrap_err()
+                .contains("pkexec")
+        );
+        assert!(
+            check_self_update(false, true, true, true, false)
+                .unwrap_err()
+                .contains("apt-get")
+        );
+    }
+
+    #[test]
     fn only_an_installed_package_is_installed() {
         assert!(installed_status("install ok installed", true));
         assert!(installed_status(" install ok installed\n", true));
         assert!(!installed_status("deinstall ok config-files", true));
         assert!(!installed_status("", true));
         assert!(!installed_status("install ok installed", false));
+    }
+
+    #[test]
+    fn find_executable_prefers_the_first_executable_file() {
+        let first = TempDir::new();
+        let second = TempDir::new();
+
+        let non_exec = first.join("tool");
+        fs::write(&non_exec, b"#!/bin/sh\n").expect("write non-exec file");
+        set_mode(&non_exec, 0o644);
+
+        let exec = second.join("tool");
+        fs::write(&exec, b"#!/bin/sh\n").expect("write exec file");
+        set_mode(&exec, 0o755);
+
+        let found = find_executable_in(
+            "tool",
+            [first.path().to_path_buf(), second.path().to_path_buf()],
+        );
+        assert_eq!(found, Some(exec));
+        assert_eq!(
+            find_executable_in("missing", [first.path().to_path_buf()]),
+            None
+        );
     }
 
     #[test]
@@ -512,6 +610,24 @@ mod tests {
             InstallFailure::Cancelled.message(),
             "Authentication was cancelled; nothing was changed"
         );
+    }
+
+    #[test]
+    fn failure_log_distinguishes_cancellation_and_errors() {
+        let (level, msg) = failure_log(&InstallFailure::Cancelled, "dismissed");
+        assert_eq!(level, "INFO");
+        assert!(msg.contains("cancelled"));
+
+        let (level, msg) = failure_log(&InstallFailure::Authorization, "");
+        assert_eq!(level, "ERROR");
+        assert!(msg.contains("Authorization failed"));
+
+        let (level, msg) = failure_log(
+            &InstallFailure::Failed("E: lock".to_string()),
+            "E: lock held\n",
+        );
+        assert_eq!(level, "ERROR");
+        assert!(msg.ends_with("E: lock held"));
     }
 
     #[test]
@@ -540,18 +656,19 @@ dpkg: error processing package unison (--install)
 
     #[test]
     fn a_staged_package_is_readable_by_apt_and_removed() {
-        let base = temp_dir("base");
-        let source = temp_dir("source");
+        let base = TempDir::new();
+        let source = TempDir::new();
         let artifact = source.join("unison-v0.3.0-linux.deb");
         fs::write(&artifact, b"package").expect("write the artifact");
 
         let (dir, package) = {
-            let staged = stage(&base, &artifact, "0.3.0").expect("stage the package");
+            let staged = stage(base.path(), &artifact, "0.3.0").expect("stage the package");
             let dir = staged.dir.clone();
             let package = staged.package();
             let dir_meta = fs::metadata(&dir).expect("read the staging directory");
             assert_eq!(dir_meta.permissions().mode() & 0o777, 0o755);
             assert!(dir_meta.is_dir());
+            // SAFETY: geteuid has no preconditions and always returns the effective uid.
             assert_eq!(dir_meta.uid(), unsafe { libc::geteuid() });
             assert_eq!(package.file_name().unwrap(), "unison-v0.3.0-linux.deb");
             assert_eq!(
@@ -571,26 +688,41 @@ dpkg: error processing package unison (--install)
 
         assert!(!dir.exists());
         assert!(!package.exists());
-        fs::remove_dir_all(&base).expect("remove the base directory");
-        fs::remove_dir_all(&source).expect("remove the source directory");
     }
 
     #[test]
     fn a_failed_stage_leaves_no_directory() {
-        let base = temp_dir("failed-base");
-        let source = temp_dir("failed-source");
+        let base = TempDir::new();
+        let source = TempDir::new();
         let artifact = source.join("unison-v0.3.0-linux.deb");
         fs::write(&artifact, b"package").expect("write the artifact");
 
-        assert!(stage(&base, &artifact, "0.4.0").is_err());
+        assert!(stage(base.path(), &artifact, "0.4.0").is_err());
         assert_eq!(
-            fs::read_dir(&base)
+            fs::read_dir(base.path())
                 .expect("read the base directory")
                 .count(),
             0
         );
+    }
 
-        fs::remove_dir_all(&base).expect("remove the base directory");
-        fs::remove_dir_all(&source).expect("remove the source directory");
+    #[test]
+    fn cleanup_download_removes_only_update_directories() {
+        let root = TempDir::new();
+        let update_dir = root.join("updates/0.3.0");
+        fs::create_dir_all(&update_dir).expect("create the update directory");
+        let artifact = update_dir.join("unison-v0.3.0-linux.deb");
+        fs::write(&artifact, b"package").expect("write the artifact");
+
+        cleanup_download(&artifact);
+        assert!(!update_dir.exists());
+
+        let other_dir = root.join("other/0.3.0");
+        fs::create_dir_all(&other_dir).expect("create the other directory");
+        let other_artifact = other_dir.join("unison-v0.3.0-linux.deb");
+        fs::write(&other_artifact, b"package").expect("write the other artifact");
+
+        cleanup_download(&other_artifact);
+        assert!(other_dir.exists());
     }
 }
