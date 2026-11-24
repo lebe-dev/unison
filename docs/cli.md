@@ -106,6 +106,32 @@ open for pairing and asks which one to start with. The short code and four emoji
 appear on the screen, and the pairing completes after `y` on both devices. With `--qr` the command
 joins the device that shows the code instead, without discovery.
 
+## introduce
+
+```sh
+unison introduce <peer-a> <peer-b> [--role personal|friends]
+unison introduce list
+unison introduce accept <session> [--friends-discovery=true|false]
+unison introduce decline <session>
+```
+
+`introduce` asks this device to introduce two paired devices to each other, without a pairing window.
+This device is the mediator, and both devices have to be online and to support the introduction. The
+role is `personal` by default; when either device is a Friends device the new pair can only be
+Friends, so the command has to be given `--role friends`, or the daemon refuses it. The command
+prints the session, the expiry time and the six digits and four emoji, then waits: it reports each
+device as it confirms and ends when both confirmed. An interrupt cancels the exchange for both
+devices.
+
+`introduce list` shows the exchanges that wait for a decision, one line per exchange, with the
+direction, the state, the role, the devices, the code and the expiry time. The direction is
+`mediator` when this device started the exchange and `incoming` when another device offers to
+introduce this one. The reference is a unique prefix of the session id.
+
+`introduce accept` confirms an incoming offer. `--friends-discovery=true` turns the search for
+Friends devices on for fifteen minutes when a Friends pair completes; without it, both devices have
+to turn the search on themselves before they can meet. `introduce decline` sends the refusal.
+
 ## clip
 
 ```sh
@@ -266,8 +292,9 @@ connection and the rule for files. The rest is under [Relay](relay.md).
 ## JSON
 
 With `--json` every command prints the answer of the daemon as protobuf JSON, with the default
-values of the fields. The progress lines of `pair` go to stderr in that mode and the pairing events
-go to stdout as one JSON object per line, so the output stays machine readable.
+values of the fields. The progress lines of `pair` and `introduce` go to stderr in that mode and the
+pairing and introduction events go to stdout as one JSON object per line, so the output stays
+machine readable.
 
 ## The daemon
 

@@ -180,6 +180,7 @@ pipe дает доступ только текущему пользовател�
 | Устройства | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetDeviceRemoteSettings`, `SetPeerAddress`, `RetryDevice` |
 | Спаривание | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Спаривание по QR | `GetPairingQr`, `ScanPairingQr` |
+| Знакомства | `StartMediatedPair`, `ConfirmMediatedPair`, `RejectMediatedPair`, `CancelMediatedPair`, `ListMediatedPairs` |
 | Буфер обмена | `GetClip`, `SetClip` |
 | История | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `ClearHistory`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
 | Передачи | `SendFiles`, `ListTransfers`, `CancelTransfer`, `AcceptTransfer`, `RejectTransfer` |
@@ -190,8 +191,9 @@ pipe дает доступ только текущему пользовател�
 
 `WatchEvents` несет события шины узла: пир, который вышел онлайн или ушел офлайн, элемент буфера
 обмена, пир, которому нужно обновиться, и события спаривания с адресом кандидата и коротким
-кодом. Ответ серверного потока приходит с первым событием, поэтому клиент открывает поток до
-того, как ему понадобятся события.
+кодом. События знакомства несут снимок знакомства через доверенное устройство. Ответ серверного
+потока приходит с первым событием, поэтому клиент открывает поток до того, как ему понадобятся
+события.
 
 Статус, устройство и ретранслятор несут версию протокола, которую объявила другая сторона. События и
 список устройств также сообщают, новее ли другая сторона, поэтому клиент может сказать пользователю

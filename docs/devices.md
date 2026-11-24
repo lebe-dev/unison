@@ -1,5 +1,7 @@
 # Devices and pairing
 
+[Русский](devices.ru.md) | English
+
 Unison trusts devices, not accounts. A paired device is stored with its public keys, a display
 name, its platform, a role and the time it was last reachable. Everything else follows from that
 record: an unknown device is refused during the connection handshake, before any data is exchanged.
@@ -64,6 +66,111 @@ port of its window. A device has no name and no fingerprint before the pairing, 
 listed once even when it is reachable over IPv4 and IPv6.
 
 Re-pairing a known device keeps the single record. A revoked device cannot be paired again.
+
+## Introduce devices through a trusted device
+
+Two devices that are both paired with a third one can be introduced to each other without a pairing
+window, without a QR code and without being in one network. A laptop that is paired with a phone and
+with a desktop can introduce them: the phone and the desktop then become a pair of their own.
+
+The three devices have to be online at the same time. The messages go over the two sessions that
+already exist, so the exchange runs whether those sessions are on the local network or over the
+relay. The device in the middle forwards the messages and learns nothing of the key the two devices
+derive.
+
+### Who can introduce
+
+Any paired device can be the mediator, with the Personal or the Friends role. The role it has with
+each of the two devices decides the role of the new pair:
+
+| The mediator is | Personal to both devices | Friends to at least one |
+|-----------------|--------------------------|-------------------------|
+| The new pair is | Personal or Friends | Friends only |
+
+The new pair gets the lower of the two roles, so an introduction never gives a device more than the
+mediator has with either side. A Friends device cannot introduce two Personal devices, and no device
+can turn a Friends connection into a Personal one through a mediator. The mediator checks the rule
+before it sends an offer, and each of the two devices checks it again against its own record of the
+mediator. A device that is not paired and a revoked device cannot take part.
+
+### Confirmation
+
+The mediator starts the exchange; the two devices only receive an offer. Both of them ask their
+users, and nothing is stored until both users confirmed. The offer carries the name of the mediator,
+the name, platform and short device ID of the other device, the role of the new pair and the
+verification code; the app and the command line show all of it before the user decides.
+
+The code is derived from the mediator, both device identities, the role and the identifier of the
+exchange. A mediator that shows one device a different role than the other makes the two codes
+differ. A different deadline or different keys fail the signatures instead. Compare the code between
+the two people before either of them agrees. The name in the offer is what the mediator claims about
+the other device; the device itself signs its own name when it joins, and that name replaces the
+claim.
+
+The exchange lasts three minutes. A refusal, a closed session with the mediator or the deadline ends
+it on both sides, and nothing is written. A message that fails validation is dropped, and the
+exchange then ends at its deadline. The ephemeral keys of the exchange live in memory only.
+
+### A device that is already paired
+
+A mediator can offer a device that is already in the list with the same role only while that device
+is offline: the confirmation then replaces the connection keys of the pair, which is how a partly
+finished exchange is repaired. Such an offer is marked as already paired. When the device is online,
+the offer is refused, because the connection already works. A device that is in the list with the
+other role is refused as well, since its role cannot change.
+
+### Connections after the introduction
+
+Both devices store the address hints of the other one and the rendezvous key of the new pair, then
+try a connection at once, without waiting for the next discovery round:
+
+- the address hints are signed by their owner, so the mediator cannot substitute them. Up to four IP
+  addresses with a port are carried, and the receiver drops names, zones, unspecified, multicast and
+  loopback addresses; loopback passes only when the session with the mediator itself runs over
+  loopback;
+- two Personal devices also find each other through the group discovery key, which they already
+  share;
+- two Friends devices need the search for Friends devices to run on both sides, as any Friends pair
+  does. When you confirm a Friends introduction and allow the search, this device turns the search on
+  for fifteen minutes as soon as the exchange completes. The search publishes a tag of every Friends
+  pair of the device in the current network for those fifteen minutes, so the prompt names that cost
+  before you agree;
+- over the relay, the pair needs the same relay address and the same token on both devices. Personal
+  devices of one group have them already; two Friends devices that use different relays or different
+  tokens stay reachable only in one local network.
+
+The exchange itself never carries the discovery key or the relay settings. A Friends device cannot
+learn the group key or the relay token of a Personal device through an introduction.
+
+### Entry points
+
+The card of an online device in the desktop app has the action `Introduce to another device...`. It
+opens a dialog to pick a second online device that supports the introduction, and the role is fixed
+to Friends when either device is a Friends device. The dialog then shows the code and the progress
+of the exchange, and it can cancel a running exchange. On Android the same action is on the page of a
+device, where the running exchange is shown too, and an incoming offer appears on the `Requests`
+screen.
+
+An incoming offer appears on `Requests` and in the prompt window of the desktop app. The prompt and
+the request show the name of the mediator, the name, platform and short device ID of the other
+device, the role, the code, and the switch that turns the search for Friends devices on for fifteen
+minutes. A device that is already paired and offline is marked before the confirmation. On Android
+the offer also appears as a dialog while the app is open, and the switch for the search for Friends
+devices is in `Settings`.
+
+From the command line:
+
+```sh
+unison introduce <peer-a> <peer-b> [--role personal|friends]
+unison introduce list
+unison introduce accept <session> [--friends-discovery=true|false]
+unison introduce decline <session>
+```
+
+The first form starts an exchange from this device and waits until both devices answered, printing
+the code and each confirmation; an interrupt cancels the exchange. `introduce list` shows the
+exchanges that wait with their direction, state, role, devices and code, and the session reference
+of the other commands is a unique prefix of the session id. See [Command line](cli.md).
 
 ## Renaming
 
@@ -156,8 +263,9 @@ is online.
 Turning the search off withdraws the announcement, stops the lookups and refuses new sessions with
 Friends devices. A session that is already open stays until it ends.
 
-The Android app has no switch for the search yet, so a Friends device cannot open a session with
-Android: the pairing works and the device is listed, but nothing is exchanged.
+The Android app has the same switch in `Settings`. While the search is off there, a Friends device
+cannot open a session with Android: the pairing works and the device is listed, but nothing is
+exchanged.
 
 ## Confirmation flags
 

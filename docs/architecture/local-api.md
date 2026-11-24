@@ -177,6 +177,7 @@ call is not implemented, and the daemon passes the clipboard pipeline of the nod
 | Devices | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetDeviceRemoteSettings`, `SetPeerAddress`, `RetryDevice` |
 | Pairing | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Pairing by QR | `GetPairingQr`, `ScanPairingQr` |
+| Introductions | `StartMediatedPair`, `ConfirmMediatedPair`, `RejectMediatedPair`, `CancelMediatedPair`, `ListMediatedPairs` |
 | Clipboard | `GetClip`, `SetClip` |
 | History | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `ClearHistory`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
 | Transfers | `SendFiles`, `ListTransfers`, `CancelTransfer`, `AcceptTransfer`, `RejectTransfer` |
@@ -187,8 +188,9 @@ call is not implemented, and the daemon passes the clipboard pipeline of the nod
 
 `WatchEvents` carries the events of the node bus: a peer that comes online or goes offline, a
 clipboard item, a peer that has to be updated and the pairing events with the address of a candidate
-and the short code. The response of a server stream arrives with the first event, so a client opens
-the stream before it needs the events.
+and the short code. The mediated pair events carry the snapshot of an introduction through a trusted
+device. The response of a server stream arrives with the first event, so a client opens the stream
+before it needs the events.
 
 The status, a device and the relay carry the protocol version they announced. The events and the
 device list also report whether the other side is newer, so a client can tell the user to update

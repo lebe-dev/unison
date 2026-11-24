@@ -1,5 +1,7 @@
 # Security
 
+[Русский](security.ru.md) | English
+
 Unison trusts devices, not accounts. Two devices are paired once, they authenticate each other on
 every connection, and no service in between is trusted. This page describes how that is done: the
 keys, the protocol, how content from another device is handled, what is stored and what is logged.
@@ -114,6 +116,70 @@ one time token, the addresses of the listener and the role to propose. The scann
 only the pinned fingerprint, so a device in the middle cannot take part. The token is accepted once,
 in one window, for one pairing: it is replaced after a completed pairing and given back when the
 exchange fails. The code contains the token, so it is never logged or stored.
+
+## Introduction through a trusted device
+
+A paired device can introduce two devices it knows, and the mediator sees every message of the
+exchange. It is trusted as far as its own role goes: a Personal mediator is a device of the user, a
+Friends mediator is a device of somebody else. Both are treated the same way here, and the protocol
+makes a compromised mediator unable to do much more than cancel the exchange.
+
+**Role.** The new pair gets the lower of the two roles the mediator has with the endpoints, and each
+endpoint checks that rule against its own record of the mediator. A Friends mediator that offers a
+Personal pair is refused by the endpoints even when it lies to both, and a Friends relationship
+cannot become Personal through an introduction. A revoked mediator or endpoint is refused before a
+prompt is shown.
+
+**Consent.** Both users have to confirm, and no endpoint is stored before the other endpoint signed
+the transcript. The mediator cannot answer for an endpoint or make one endpoint believe the other
+agreed. Neither endpoint can ask the mediator for its peer list, so an introduction does not become
+a way to enumerate the contacts of somebody else.
+
+**Equivocation.** Both offers carry one transcript that names the mediator, both device identities,
+the role and the deadline. Each endpoint signs that transcript, extended with its own ephemeral
+keys, name and addresses, before it is stored. A mediator that shows one endpoint a different role,
+deadline or set of keys than the other one produces a signature that does not verify on the second
+endpoint, and the second endpoint writes nothing.
+
+**The rendezvous key.** The endpoints run an X25519 and ML-KEM-768 exchange through the mediator and
+derive the rendezvous key from the transcript and both shared secrets. The mediator forwards the
+public keys and the ciphertext but sees neither shared secret, so it cannot derive the key, cannot
+compute the discovery tags of the pair and cannot join their relay mailbox, now or after the
+mediator is revoked. The private ephemeral keys and the shared secrets are wiped when the key is
+derived or the exchange ends.
+
+**No group secrets.** The messages have no field for the discovery key, the relay address or the
+relay token. A Personal pair receives the group data through the existing sessions with the group,
+and a Friends pair never receives it. The relay token is not compared between Friends devices
+either, since a hash of a weak token would allow an offline search for it.
+
+**Address hints.** A device signs its own local addresses, so the mediator cannot replace them with
+its own. Up to four hints are accepted, each an IP address with a non-zero port; names, IPv6 zones,
+unspecified, multicast and loopback addresses are dropped, and loopback is kept only when the
+session with the mediator itself runs over loopback, which a development setup uses. A hint is used
+only after the user confirmed the exchange, and only through the authenticated transport, never
+through the pairing listener.
+
+**Replay.** An exchange identifier is 128 random bits and the deadline is inside the signature. A
+device remembers the identifiers it has seen for ten minutes, and an offer whose deadline is more
+than thirty seconds beyond the three minute lifetime is refused, so an old offer cannot be brought
+back into a new exchange.
+
+**Load.** One device runs at most four mediator exchanges at once, one per pair, keeps at most four
+incoming offers, at most two from one mediator, and accepts one offer per mediator in fifteen
+seconds with a burst of two. The limits bound the prompts a compromised Friends device can cause and
+the memory an exchange may take.
+
+**Revocation.** A revoked device cannot mediate or take part, and revoking a device after an
+introduction removes the pair like any other. The mediator does not learn the rendezvous key at any
+point, so a later compromise or revocation of the mediator does not open the new connection.
+
+What a compromised mediator can still do: it can refuse to start or forward an exchange, cancel it,
+see that two of its peers are being introduced, and read the names and local addresses they send it.
+The verification code proves that both endpoints agree on the mediator, the two identities and the
+role, while the signed transcripts cover the deadline and the keys. The code does not prove that the
+other device is the one the mediator named. Check the name and the short device ID as well, since the
+mediator chooses which of its peers to offer.
 
 ## Content from another device
 
@@ -254,6 +320,12 @@ A peer is bounded in every direction:
 | protocol violations before the session ends | 3 |
 | clipboard announcements | 5 per second, burst of 10 |
 | pairing connections per window | 4 per 10 seconds, 8 at once |
+| mediated exchanges per mediator | 4, one per pair |
+| pending mediated offers | 4, 2 per mediator |
+| mediated offers per mediator | 1 per 15 seconds, burst of 2 |
+| mediated exchange lifetime | 3 minutes |
+| remembered mediated exchange ids | 256 for 10 minutes |
+| address hints in a mediated message | 4, 64 bytes each |
 | blob range per request | 64 chunks |
 | sources of one fetch | 16 |
 | hash tree of a blob | 2 MiB |

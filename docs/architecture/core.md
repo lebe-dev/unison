@@ -17,6 +17,7 @@ the interfaces to the operating system, so everything else builds and runs on an
 | `transport` | QUIC with mutual TLS and the authentication proof |
 | `discovery` | mDNS/DNS-SD announcements and browsing |
 | `pairing` | the pairing window, the short code and the QR code |
+| `mediate` | introductions of two devices through a third one |
 | `policy` | role, network and size to an action |
 | `clip` | the clipboard pipeline in both directions |
 | `blob` | content addressed storage with encryption and verification |
@@ -128,15 +129,50 @@ cache are sealed.
 
 The Personal group shares its secrets through `group_secrets`: the discovery key of the group and
 the rendezvous key of each pair. Introductions spread a new Personal device to the rest of the
-group, so pairing with one device is enough. A revocation is signed by the device that issues it and
-spreads the same way. Revoking a Personal device rotates the discovery key, and the previous key
-keeps matching the discovery tags for one hour.
+group, so pairing with one device is enough. A completed pairing records the introductions of both
+sides, so the device that started the exchange spreads the new device as well, and the node
+announces itself again under the discovery key of the group. A revocation is signed by the device
+that issues it and spreads the same way. Revoking a Personal device rotates the discovery key, and
+the previous key keeps matching the discovery tags for one hour.
 
 A peer keeps at most 8 cached addresses, the group keeps at most 4096 introductions and 4096
 revocations, and a signed record whose time is more than 24 hours in the future is refused.
 
 The capability matrix is a pure function of a peer record and lives in `core/trust/action.go`; it is
 described in [Protocol](protocol.md#control-messages).
+
+## Introduction through a trusted device
+
+`core/mediate` lets a paired device introduce two devices it knows. The service is both the mediator
+and a participant of an exchange, and it registers its message handlers on every session like the
+other domains.
+
+The service owns:
+
+- the canonical transcripts of the offer, the commit and the finish, and the hybrid signatures over
+  them;
+- the ephemeral X25519 and ML-KEM-768 keys, the rendezvous key both endpoints derive and the
+  verification code they show;
+- the state machine of the mediator, which forwards a commit and a finish unchanged, tracks the two
+  endpoints and ends the exchange at its deadline or when a session closes;
+- the state machine of a participant, which validates an offer against the local trust store,
+  applies the limits and the replay cache, shows the offer to the user and stores the new peer with
+  its rendezvous key and address hints in one step;
+- the validation of names and address hints, so a peer cannot inject an invisible name, a DNS name,
+  a zone, a multicast or an unsuitable loopback address.
+
+The service reads and writes through two narrow interfaces: `Store`, implemented by `*trust.Store`,
+and `Sessions`, which hands out the open session of a device. Ephemeral keys and exchanges live in
+memory only, and `Stop` wipes them.
+
+`core/node` creates the service in `openMediate`, adds `mediated-pair/1` to the announced
+capabilities, and registers `installMediate` as a session hook. The node methods `StartMediatedPair`,
+`ConfirmMediatedPair`, `RejectMediatedPair`, `CancelMediatedPair` and `MediatedPairs` are the API of
+the service, and `supports_mediated_pair` of a device is true while its session announced the
+capability. The events `mediated-pair-offer`, `mediated-pair-updated`, `mediated-pair-completed` and
+`mediated-pair-canceled` carry the snapshot of an exchange. When an exchange completes, the node
+turns the search for Friends devices on if the user asked for it, syncs the links and, for a
+Personal pair, notifies gossip.
 
 ## Clipboard pipeline
 
