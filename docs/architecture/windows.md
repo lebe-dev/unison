@@ -87,10 +87,11 @@ The installer installs for all users into `%ProgramFiles%\Unison` by default, le
 another directory and asks for elevation once. A firewall rule needs elevation, so a per-machine
 installation keeps the rule in the same place as the files.
 
-The hooks in `desktop/src-tauri/installer-hooks.nsh` do three things:
+The hooks in `desktop/src-tauri/installer-hooks.nsh` do four things:
 
 | Step | Action |
 |------|--------|
+| before the copy | stops a running `unisond.exe` |
 | after the copy | writes the startup entry and adds the firewall rule |
 | before the uninstall | stops `unisond.exe`, removes the startup entry and the rule |
 | after the uninstall | removes `%LOCALAPPDATA%\Unison` when the app data option is set |
@@ -139,6 +140,37 @@ gets none; the installer remains the way to install for everybody.
 
 The installer stays the regular way to install and update Unison. The names it uses are the same,
 and a test compares them with the constants of the app.
+
+### Updating from the app
+
+The updater reads the releases of GitHub and downloads `unison-v<version>-windows.exe`, the NSIS
+installer of the release. It verifies the Ed25519 signature and the SHA-256 hash of the file before any
+installation step runs. Automatic checks are off by default, and the dashboard offers the release when
+one is found.
+
+The installer replaces the running binaries, so the app cannot start it directly:
+
+- The app stops the daemon cleanly, waits up to five seconds for its named pipe, and ends a daemon
+  that does not obey with `taskkill /F /IM unisond.exe`.
+- The app copies `Unison.exe` into a directory of its cache and starts the copy without elevation. The
+  copy waits for the app to exit, runs the installer with one elevation prompt and
+  `/S /D=<installation directory>`, so a custom installation directory is kept.
+- The installer writes the startup entry and the firewall rule again. When the user had turned
+  "Start at login" off, the helper removes the entry after the installation, so an upgrade does not
+  re-enable it.
+- After a successful installation the helper starts `<installation directory>\Unison.exe` without
+  elevation, so the app and the daemon run with the token of the logged-in user and keep access to the
+  clipboard and the DPAPI secrets.
+- When the user cancels the elevation prompt, nothing is changed: the helper records the reason in the
+  app log and starts the previous app again, which restarts the daemon.
+
+`NSIS_HOOK_PREINSTALL` stops a running `unisond.exe` before the installer extracts the files, since the
+daemon locks its binary. The app stops the daemon before it starts the helper, and the hook is the
+safety net for an installation that still has one running.
+
+In-app updates are available in x86_64 release builds only; a development build reports why it cannot
+replace itself. The Rust client writes the installer without a `Zone.Identifier` stream, so Windows
+applies no Mark-of-the-Web; the signature and hash check is the gate before execution.
 
 ### Signing
 

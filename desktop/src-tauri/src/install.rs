@@ -875,6 +875,29 @@ mod tests {
         );
     }
 
+    /// hook returns the body of one macro of the installer script.
+    fn hook(name: &str) -> &'static str {
+        let start = format!("!macro {name}");
+        let begin = HOOKS.find(&start).expect("the hook exists") + start.len();
+        let end = HOOKS[begin..].find("!macroend").expect("the hook ends");
+        &HOOKS[begin..begin + end]
+    }
+
+    #[test]
+    fn the_installer_stops_the_daemon_before_the_copy() {
+        let preinstall = hook("NSIS_HOOK_PREINSTALL");
+        assert!(
+            preinstall.contains(&format!("taskkill /F /IM {BINARY}")),
+            "an upgrade over a running daemon cannot replace it"
+        );
+
+        let postinstall = hook("NSIS_HOOK_POSTINSTALL");
+        assert!(
+            !postinstall.contains("taskkill"),
+            "the installer kills the daemon after the copy"
+        );
+    }
+
     #[cfg(not(windows))]
     #[test]
     fn the_app_installs_the_daemon_on_windows_only() {

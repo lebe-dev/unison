@@ -24,6 +24,12 @@
     SetErrorLevel 1
     Abort
   ${EndIf}
+
+  ; A running daemon locks unisond.exe, so an upgrade over a running
+  ; installation cannot replace it.
+  nsExec::Exec 'taskkill /F /IM unisond.exe'
+  Pop $0
+  Sleep 500
 !macroend
 
 !macro NSIS_HOOK_POSTINSTALL
