@@ -491,7 +491,6 @@ mod platform {
 /// current user.
 #[cfg(windows)]
 mod platform {
-    use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use std::path::Path;
 
@@ -502,6 +501,7 @@ mod platform {
     };
 
     use crate::install::{RUN_KEY, RUN_VALUE};
+    use crate::winutil::wide;
 
     use super::LoginItemStatus;
 
@@ -654,13 +654,5 @@ mod platform {
             .position(|unit| *unit == 0)
             .unwrap_or(units.len());
         String::from_utf16_lossy(&units[..end])
-    }
-
-    /// wide returns the UTF-16 form of a string with a terminating null.
-    fn wide(value: &str) -> Vec<u16> {
-        OsStr::new(value)
-            .encode_wide()
-            .chain(std::iter::once(0))
-            .collect()
     }
 }

@@ -12,10 +12,12 @@ mod redact;
 mod settings;
 mod share;
 mod streams;
-#[cfg(all(test, unix))]
+#[cfg(test)]
 mod testutil;
 mod tray;
 pub mod updater;
+#[cfg(any(windows, test))]
+mod winutil;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
