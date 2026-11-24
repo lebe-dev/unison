@@ -284,6 +284,7 @@ type session struct {
 	in     *io.PipeWriter
 	stdout *safeBuffer
 	stderr *safeBuffer
+	cancel context.CancelFunc
 	done   chan int
 }
 
@@ -299,10 +300,16 @@ func startSession(t *testing.T, args ...string) *session {
 		done:   make(chan int, 1),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	running.cancel = cancel
 	t.Cleanup(cancel)
 	go func() { running.done <- run(ctx, args, reader, running.stdout, running.stderr) }()
 	t.Cleanup(func() { _ = writer.Close() })
 	return running
+}
+
+// stop interrupts the running command, as Ctrl+C does.
+func (s *session) stop() {
+	s.cancel()
 }
 
 // answer writes one line to standard input.

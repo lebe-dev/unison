@@ -8,7 +8,7 @@ set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 scenarios=("$@")
 if [ "${#scenarios[@]}" -eq 0 ]; then
-    scenarios=(s1 s4 s5 s6 s7 s8 s9 s10)
+    scenarios=(s1 s4 s5 s6 s7 s8 s9 s10 s11)
 fi
 
 failed=0
