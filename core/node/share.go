@@ -5,9 +5,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
-	"mime"
-	"path/filepath"
-	"strings"
 
 	"github.com/lebe-dev/unison/core/clip"
 	"github.com/lebe-dev/unison/core/history"
@@ -167,30 +164,11 @@ func (n *Node) shareHistoryEntry(ctx context.Context, files []share.File) (model
 	return model.KindFiles, reps
 }
 
-// shareImageMIME reports the normalized image MIME type when a shared file can
-// be decoded as an image entry by clip.Thumbnail.
+// shareImageMIME reports the detected image MIME type when a shared file can
+// be decoded as an image entry by clip.Thumbnail, regardless of the MIME label
+// or extension announced by the sender.
 func (n *Node) shareImageMIME(ctx context.Context, file share.File) (string, bool) {
-	if file.Hash == ([32]byte{}) || file.Size <= 0 || file.Size > clip.MaxImageBytes {
-		return "", false
-	}
-	raw := strings.TrimSpace(file.MIME)
-	if raw == "" {
-		raw = mime.TypeByExtension(filepath.Ext(file.Name))
-	}
-	if raw == "" {
-		return "", false
-	}
-	mediaType, _, err := mime.ParseMediaType(raw)
-	if err != nil {
-		return "", false
-	}
-	normalized := strings.ToLower(mediaType)
-	switch normalized {
-	case "image/png", "image/jpeg", "image/gif":
-	default:
-		return "", false
-	}
-	if n.blobs == nil {
+	if n.blobs == nil || file.Hash == ([32]byte{}) || file.Size <= 0 || file.Size > clip.MaxImageBytes {
 		return "", false
 	}
 	reader, err := n.blobs.Open(ctx, file.Hash)
@@ -198,8 +176,5 @@ func (n *Node) shareImageMIME(ctx context.Context, file share.File) (string, boo
 		return "", false
 	}
 	defer func() { _ = reader.Close() }()
-	if !clip.CanDecodeImage(io.NewSectionReader(reader, 0, reader.Size()), reader.Size()) {
-		return "", false
-	}
-	return normalized, true
+	return clip.SniffImage(io.NewSectionReader(reader, 0, reader.Size()), reader.Size())
 }

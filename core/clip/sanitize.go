@@ -36,6 +36,7 @@ type Pixels struct {
 
 // imageCodec decodes one image format.
 type imageCodec struct {
+	mime   string
 	config func(io.Reader) (image.Config, error)
 	decode func(io.Reader) (image.Image, error)
 }
@@ -45,36 +46,39 @@ type imageCodec struct {
 func receivedCodec(data []byte) (imageCodec, error) {
 	switch {
 	case bytes.HasPrefix(data, pngSignature):
-		return imageCodec{config: png.DecodeConfig, decode: png.Decode}, nil
+		return imageCodec{mime: MIMEImagePNG, config: png.DecodeConfig, decode: png.Decode}, nil
 	case bytes.HasPrefix(data, jpegSignature):
-		return imageCodec{config: jpeg.DecodeConfig, decode: jpeg.Decode}, nil
+		return imageCodec{mime: "image/jpeg", config: jpeg.DecodeConfig, decode: jpeg.Decode}, nil
 	case bytes.HasPrefix(data, gif87Signature), bytes.HasPrefix(data, gif89Signature):
-		return imageCodec{config: gif.DecodeConfig, decode: gif.Decode}, nil
+		return imageCodec{mime: "image/gif", config: gif.DecodeConfig, decode: gif.Decode}, nil
 	default:
 		return imageCodec{}, ErrImageFormat
 	}
 }
 
-// CanDecodeImage reports whether r holds an image accepted by Thumbnail and
-// sanitizeImage within the image size and dimension limits.
-func CanDecodeImage(r io.Reader, size int64) bool {
+// SniffImage reports the MIME type of r when it holds an image accepted by
+// Thumbnail and sanitizeImage within the image size and dimension limits.
+func SniffImage(r io.Reader, size int64) (string, bool) {
 	if size <= 0 || size > MaxImageBytes {
-		return false
+		return "", false
 	}
 	var header [64]byte
 	n, err := io.ReadFull(r, header[:])
 	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return false
+		return "", false
 	}
 	codec, err := receivedCodec(header[:n])
 	if err != nil {
-		return false
+		return "", false
 	}
 	cfg, err := codec.config(io.MultiReader(bytes.NewReader(header[:n]), r))
 	if err != nil {
-		return false
+		return "", false
 	}
-	return checkImageBounds(cfg) == nil
+	if checkImageBounds(cfg) != nil {
+		return "", false
+	}
+	return codec.mime, true
 }
 
 // decodeReceived decodes an image of a peer within the image limits. A panic
