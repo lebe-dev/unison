@@ -189,6 +189,16 @@ class RunningCore(
         return client.settings()
     }
 
+    suspend fun exportSettings(appSettings: String): Local.ExportSettingsResponse {
+        ensureRunning()
+        return client.exportSettings(appSettings)
+    }
+
+    suspend fun importSettings(document: ByteArray): Local.ImportSettingsResponse {
+        ensureRunning()
+        return client.importSettings(document)
+    }
+
     override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
         ensureRunning()
         return client.setSentryEnabled(enabled)

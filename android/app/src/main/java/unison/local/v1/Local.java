@@ -4027,7 +4027,7 @@ public final class Local {
      * @param value The protocolVersion to set.
      */
     private void setProtocolVersion(int value) {
-
+      
       protocolVersion_ = value;
     }
     /**
@@ -4067,7 +4067,7 @@ public final class Local {
      * @param value The protocolNewer to set.
      */
     private void setProtocolNewer(boolean value) {
-
+      
       protocolNewer_ = value;
     }
     /**
@@ -9994,7 +9994,7 @@ public final class Local {
      * @param value The protocolNewer to set.
      */
     private void setProtocolNewer(boolean value) {
-
+      
       protocolNewer_ = value;
     }
     /**
@@ -17454,7 +17454,7 @@ java.lang.String defaultValue) {
      * @param value The protocolVersion to set.
      */
     private void setProtocolVersion(int value) {
-
+      
       protocolVersion_ = value;
     }
     /**
@@ -48673,6 +48673,1849 @@ java.lang.String defaultValue) {
     }
   }
 
+  public interface ExportSettingsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ExportSettingsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The appSettings.
+     */
+    java.lang.String getAppSettings();
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The bytes for appSettings.
+     */
+    com.google.protobuf.ByteString
+        getAppSettingsBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ExportSettingsRequest}
+   */
+  public  static final class ExportSettingsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ExportSettingsRequest, ExportSettingsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ExportSettingsRequest)
+      ExportSettingsRequestOrBuilder {
+    private ExportSettingsRequest() {
+      appSettings_ = "";
+    }
+    public static final int APP_SETTINGS_FIELD_NUMBER = 1;
+    private java.lang.String appSettings_;
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The appSettings.
+     */
+    @java.lang.Override
+    public java.lang.String getAppSettings() {
+      return appSettings_;
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The bytes for appSettings.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getAppSettingsBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(appSettings_);
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @param value The appSettings to set.
+     */
+    private void setAppSettings(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      appSettings_ = value;
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     */
+    private void clearAppSettings() {
+
+      appSettings_ = getDefaultInstance().getAppSettings();
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @param value The bytes for appSettings to set.
+     */
+    private void setAppSettingsBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      appSettings_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ExportSettingsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ExportSettingsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ExportSettingsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ExportSettingsRequest)
+        unison.local.v1.Local.ExportSettingsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ExportSettingsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @return The appSettings.
+       */
+      @java.lang.Override
+      public java.lang.String getAppSettings() {
+        return instance.getAppSettings();
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @return The bytes for appSettings.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getAppSettingsBytes() {
+        return instance.getAppSettingsBytes();
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @param value The appSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppSettings(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setAppSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAppSettings() {
+        copyOnWrite();
+        instance.clearAppSettings();
+        return this;
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @param value The bytes for appSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppSettingsBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setAppSettingsBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ExportSettingsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ExportSettingsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "appSettings_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ExportSettingsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ExportSettingsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ExportSettingsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ExportSettingsRequest)
+    private static final unison.local.v1.Local.ExportSettingsRequest DEFAULT_INSTANCE;
+    static {
+      ExportSettingsRequest defaultInstance = new ExportSettingsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ExportSettingsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ExportSettingsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ExportSettingsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ExportSettingsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ExportSettingsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    com.google.protobuf.ByteString getDocument();
+
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The fileName.
+     */
+    java.lang.String getFileName();
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The bytes for fileName.
+     */
+    com.google.protobuf.ByteString
+        getFileNameBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ExportSettingsResponse}
+   */
+  public  static final class ExportSettingsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ExportSettingsResponse, ExportSettingsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ExportSettingsResponse)
+      ExportSettingsResponseOrBuilder {
+    private ExportSettingsResponse() {
+      document_ = com.google.protobuf.ByteString.EMPTY;
+      fileName_ = "";
+    }
+    public static final int DOCUMENT_FIELD_NUMBER = 1;
+    private com.google.protobuf.ByteString document_;
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getDocument() {
+      return document_;
+    }
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @param value The document to set.
+     */
+    private void setDocument(com.google.protobuf.ByteString value) {
+      java.util.Objects.requireNonNull(value);
+  
+      document_ = value;
+    }
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     */
+    private void clearDocument() {
+
+      document_ = getDefaultInstance().getDocument();
+    }
+
+    public static final int FILE_NAME_FIELD_NUMBER = 2;
+    private java.lang.String fileName_;
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The fileName.
+     */
+    @java.lang.Override
+    public java.lang.String getFileName() {
+      return fileName_;
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The bytes for fileName.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getFileNameBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(fileName_);
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @param value The fileName to set.
+     */
+    private void setFileName(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      fileName_ = value;
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     */
+    private void clearFileName() {
+
+      fileName_ = getDefaultInstance().getFileName();
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @param value The bytes for fileName to set.
+     */
+    private void setFileNameBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      fileName_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ExportSettingsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ExportSettingsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ExportSettingsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ExportSettingsResponse)
+        unison.local.v1.Local.ExportSettingsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ExportSettingsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The document, formatted as JSON.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return The document.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getDocument() {
+        return instance.getDocument();
+      }
+      /**
+       * <pre>
+       * The document, formatted as JSON.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @param value The document to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDocument(com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDocument(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The document, formatted as JSON.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDocument() {
+        copyOnWrite();
+        instance.clearDocument();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @return The fileName.
+       */
+      @java.lang.Override
+      public java.lang.String getFileName() {
+        return instance.getFileName();
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @return The bytes for fileName.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getFileNameBytes() {
+        return instance.getFileNameBytes();
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @param value The fileName to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFileName(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setFileName(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFileName() {
+        copyOnWrite();
+        instance.clearFileName();
+        return this;
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @param value The bytes for fileName to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFileNameBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setFileNameBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ExportSettingsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ExportSettingsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "document_",
+              "fileName_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\n\u0002\u0208" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ExportSettingsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ExportSettingsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ExportSettingsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ExportSettingsResponse)
+    private static final unison.local.v1.Local.ExportSettingsResponse DEFAULT_INSTANCE;
+    static {
+      ExportSettingsResponse defaultInstance = new ExportSettingsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ExportSettingsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ExportSettingsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ExportSettingsResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ImportSettingsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ImportSettingsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    com.google.protobuf.ByteString getDocument();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ImportSettingsRequest}
+   */
+  public  static final class ImportSettingsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ImportSettingsRequest, ImportSettingsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ImportSettingsRequest)
+      ImportSettingsRequestOrBuilder {
+    private ImportSettingsRequest() {
+      document_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    public static final int DOCUMENT_FIELD_NUMBER = 1;
+    private com.google.protobuf.ByteString document_;
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getDocument() {
+      return document_;
+    }
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @param value The document to set.
+     */
+    private void setDocument(com.google.protobuf.ByteString value) {
+      java.util.Objects.requireNonNull(value);
+  
+      document_ = value;
+    }
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     */
+    private void clearDocument() {
+
+      document_ = getDefaultInstance().getDocument();
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ImportSettingsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ImportSettingsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ImportSettingsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ImportSettingsRequest)
+        unison.local.v1.Local.ImportSettingsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ImportSettingsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The document.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return The document.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getDocument() {
+        return instance.getDocument();
+      }
+      /**
+       * <pre>
+       * The document.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @param value The document to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDocument(com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDocument(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The document.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDocument() {
+        copyOnWrite();
+        instance.clearDocument();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ImportSettingsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ImportSettingsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "document_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\n";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ImportSettingsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ImportSettingsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ImportSettingsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ImportSettingsRequest)
+    private static final unison.local.v1.Local.ImportSettingsRequest DEFAULT_INSTANCE;
+    static {
+      ImportSettingsRequest defaultInstance = new ImportSettingsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ImportSettingsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ImportSettingsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ImportSettingsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ImportSettingsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ImportSettingsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     * @return Whether the settings field is set.
+     */
+    boolean hasSettings();
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     * @return The settings.
+     */
+    unison.local.v1.Local.Settings getSettings();
+
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return A list containing the ignored.
+     */
+    java.util.List<java.lang.String>
+        getIgnoredList();
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return The count of ignored.
+     */
+    int getIgnoredCount();
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the element to return.
+     * @return The ignored at the given index.
+     */
+    java.lang.String getIgnored(int index);
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the element to return.
+     * @return The ignored at the given index.
+     */
+    com.google.protobuf.ByteString
+        getIgnoredBytes(int index);
+
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     * @return The fromNewerVersion.
+     */
+    boolean getFromNewerVersion();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ImportSettingsResponse}
+   */
+  public  static final class ImportSettingsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ImportSettingsResponse, ImportSettingsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ImportSettingsResponse)
+      ImportSettingsResponseOrBuilder {
+    private ImportSettingsResponse() {
+      ignored_ = emptyProtobufList();
+    }
+    private int bitField0_;
+    public static final int SETTINGS_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Settings settings_;
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    @java.lang.Override
+    public boolean hasSettings() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Settings getSettings() {
+      return settings_ == null ? unison.local.v1.Local.Settings.getDefaultInstance() : settings_;
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    private void setSettings(unison.local.v1.Local.Settings value) {
+      java.util.Objects.requireNonNull(value);
+      settings_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeSettings(unison.local.v1.Local.Settings value) {
+      java.util.Objects.requireNonNull(value);
+      if (settings_ != null &&
+          settings_ != unison.local.v1.Local.Settings.getDefaultInstance()) {
+        settings_ =
+          unison.local.v1.Local.Settings.newBuilder(settings_).mergeFrom(value).buildPartial();
+      } else {
+        settings_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    private void clearSettings() {
+      settings_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int IGNORED_FIELD_NUMBER = 2;
+    private com.google.protobuf.Internal.ProtobufList<java.lang.String> ignored_;
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return A list containing the ignored.
+     */
+    @java.lang.Override
+    public java.util.List<java.lang.String> getIgnoredList() {
+      return ignored_;
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return The count of ignored.
+     */
+    @java.lang.Override
+    public int getIgnoredCount() {
+      return ignored_.size();
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the element to return.
+     * @return The ignored at the given index.
+     */
+    @java.lang.Override
+    public java.lang.String getIgnored(int index) {
+      return ignored_.get(index);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the ignored at the given index.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIgnoredBytes(int index) {
+      return com.google.protobuf.ByteString.copyFromUtf8(
+          ignored_.get(index));
+    }
+    private void ensureIgnoredIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<java.lang.String> tmp =
+          ignored_;  if (!tmp.isModifiable()) {
+        ignored_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index to set the value at.
+     * @param value The ignored to set.
+     */
+    private void setIgnored(
+        int index, java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureIgnoredIsMutable();
+      ignored_.set(index, value);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param value The ignored to add.
+     */
+    private void addIgnored(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureIgnoredIsMutable();
+      ignored_.add(value);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param values The ignored to add.
+     */
+    private void addAllIgnored(
+        java.lang.Iterable<java.lang.String> values) {
+      ensureIgnoredIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, ignored_);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     */
+    private void clearIgnored() {
+      ignored_ = emptyProtobufList();
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param value The bytes of the ignored to add.
+     */
+    private void addIgnoredBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      ensureIgnoredIsMutable();
+      ignored_.add(value.toStringUtf8());
+    }
+
+    public static final int FROM_NEWER_VERSION_FIELD_NUMBER = 3;
+    private boolean fromNewerVersion_;
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     * @return The fromNewerVersion.
+     */
+    @java.lang.Override
+    public boolean getFromNewerVersion() {
+      return fromNewerVersion_;
+    }
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     * @param value The fromNewerVersion to set.
+     */
+    private void setFromNewerVersion(boolean value) {
+      
+      fromNewerVersion_ = value;
+    }
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     */
+    private void clearFromNewerVersion() {
+
+      fromNewerVersion_ = false;
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ImportSettingsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ImportSettingsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ImportSettingsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ImportSettingsResponse)
+        unison.local.v1.Local.ImportSettingsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ImportSettingsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      @java.lang.Override
+      public boolean hasSettings() {
+        return instance.hasSettings();
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Settings getSettings() {
+        return instance.getSettings();
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder setSettings(unison.local.v1.Local.Settings value) {
+        copyOnWrite();
+        instance.setSettings(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder setSettings(
+          unison.local.v1.Local.Settings.Builder builderForValue) {
+        copyOnWrite();
+        instance.setSettings(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder mergeSettings(unison.local.v1.Local.Settings value) {
+        copyOnWrite();
+        instance.mergeSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder clearSettings() {  copyOnWrite();
+        instance.clearSettings();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @return A list containing the ignored.
+       */
+      @java.lang.Override
+      public java.util.List<java.lang.String>
+          getIgnoredList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getIgnoredList());
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @return The count of ignored.
+       */
+      @java.lang.Override
+      public int getIgnoredCount() {
+        return instance.getIgnoredCount();
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param index The index of the element to return.
+       * @return The ignored at the given index.
+       */
+      @java.lang.Override
+      public java.lang.String getIgnored(int index) {
+        return instance.getIgnored(index);
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the ignored at the given index.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIgnoredBytes(int index) {
+        return instance.getIgnoredBytes(index);
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param index The index to set the value at.
+       * @param value The ignored to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIgnored(
+          int index, java.lang.String value) {
+        copyOnWrite();
+        instance.setIgnored(index, value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param value The ignored to add.
+       * @return This builder for chaining.
+       */
+      public Builder addIgnored(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.addIgnored(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param values The ignored to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllIgnored(
+          java.lang.Iterable<java.lang.String> values) {
+        copyOnWrite();
+        instance.addAllIgnored(values);
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearIgnored() {
+        copyOnWrite();
+        instance.clearIgnored();
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param value The bytes of the ignored to add.
+       * @return This builder for chaining.
+       */
+      public Builder addIgnoredBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.addIgnoredBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The document comes from a newer app, so only the known keys were applied.
+       * </pre>
+       *
+       * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+       * @return The fromNewerVersion.
+       */
+      @java.lang.Override
+      public boolean getFromNewerVersion() {
+        return instance.getFromNewerVersion();
+      }
+      /**
+       * <pre>
+       * The document comes from a newer app, so only the known keys were applied.
+       * </pre>
+       *
+       * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+       * @param value The fromNewerVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFromNewerVersion(boolean value) {
+        copyOnWrite();
+        instance.setFromNewerVersion(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The document comes from a newer app, so only the known keys were applied.
+       * </pre>
+       *
+       * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFromNewerVersion() {
+        copyOnWrite();
+        instance.clearFromNewerVersion();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ImportSettingsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ImportSettingsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "settings_",
+              "ignored_",
+              "fromNewerVersion_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0001\u0000\u0001\u1009\u0000\u0002" +
+                "\u021a\u0003\u0007";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ImportSettingsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ImportSettingsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ImportSettingsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ImportSettingsResponse)
+    private static final unison.local.v1.Local.ImportSettingsResponse DEFAULT_INSTANCE;
+    static {
+      ImportSettingsResponse defaultInstance = new ImportSettingsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ImportSettingsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ImportSettingsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ImportSettingsResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
   public interface RelayOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.Relay)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -49080,7 +50923,7 @@ java.lang.String defaultValue) {
      * @param value The protocolVersion to set.
      */
     private void setProtocolVersion(int value) {
-
+      
       protocolVersion_ = value;
     }
     /**
@@ -49120,7 +50963,7 @@ java.lang.String defaultValue) {
      * @param value The protocolNewer to set.
      */
     private void setProtocolNewer(boolean value) {
-
+      
       protocolNewer_ = value;
     }
     /**

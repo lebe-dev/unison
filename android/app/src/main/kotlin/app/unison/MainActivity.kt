@@ -22,10 +22,12 @@ import app.unison.clipboard.ClipboardRead
 import app.unison.clipboard.ClipboardReader
 import app.unison.clipboard.ClipboardSender
 import app.unison.clipboard.HeldItems
+import app.unison.core.CoreException
 import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
 import app.unison.diagnostics.Diagnostics
+import app.unison.diagnostics.Journal
 import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryTtlDefaults
 import app.unison.history.HistoryTtlProto
@@ -38,6 +40,7 @@ import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
+import app.unison.settingsfile.SettingsFile
 import app.unison.storage.DownloadsFolder
 import app.unison.ui.Destination
 import app.unison.ui.PromptAnswer
@@ -45,12 +48,22 @@ import app.unison.ui.UnisonRoot
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.theme.UnisonTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import unison.local.v1.Local
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
+
+/** Largest settings document the app reads, the same bound as the core. */
+private const val MAX_SETTINGS_DOCUMENT = 512 shl 10
+
+/** Size of one read of a settings document. */
+private const val SETTINGS_READ_CHUNK = 8192
 
 /** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
@@ -163,6 +176,8 @@ class MainActivity : ComponentActivity() {
                         onNotificationsChange = ::saveNotificationSettings,
                         journalEnabled = state.journalEnabled,
                         onJournalChange = appState::setJournalEnabled,
+                        onExportSettings = ::exportSettings,
+                        onImportSettings = ::importSettings,
                         stripTracking = state.stripTracking,
                         onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->
@@ -406,6 +421,96 @@ class MainActivity : ComponentActivity() {
         DownloadsFolder.reset(this)
         downloadsFolder = null
     }
+
+    /** Writes the settings document to the file the user picked. */
+    private fun exportSettings(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val response = core.exportSettings(SettingsFile.appSection(operatingMode, notificationSettings))
+                withContext(Dispatchers.IO) {
+                    val stream =
+                        contentResolver.openOutputStream(uri)
+                            ?: throw IOException("the document cannot be written")
+                    stream.use { it.write(response.document.toByteArray()) }
+                }
+                Toast.makeText(this@MainActivity, R.string.settings_file_exported, Toast.LENGTH_SHORT).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                reportSettingsFileFailure(R.string.settings_file_export_failed, e)
+            } catch (e: SecurityException) {
+                reportSettingsFileFailure(R.string.settings_file_export_failed, e)
+            } catch (e: CoreException) {
+                reportSettingsFileFailure(R.string.settings_file_export_failed, e)
+            }
+        }
+    }
+
+    /** Applies the settings document of the file the user picked. */
+    private fun importSettings(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val document = withContext(Dispatchers.IO) { readSettingsDocument(uri) }
+                val response = core.importSettings(document)
+                val section = SettingsFile.appSectionOf(document.decodeToString())
+                section.operatingMode?.let(::saveOperatingMode)
+                section.notifications?.let { patch -> saveNotificationSettings(patch.applyTo(notificationSettings)) }
+                refresh()
+                Toast.makeText(this@MainActivity, importNotice(response), Toast.LENGTH_LONG).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                reportSettingsFileFailure(R.string.settings_file_import_failed, e)
+            } catch (e: SecurityException) {
+                reportSettingsFileFailure(R.string.settings_file_import_failed, e)
+            } catch (e: CoreException) {
+                reportSettingsFileFailure(R.string.settings_file_import_failed, e)
+            }
+        }
+    }
+
+    /** reportSettingsFileFailure writes the failure to the log and tells the user. */
+    private fun reportSettingsFileFailure(
+        message: Int,
+        error: Exception,
+    ) {
+        Journal.warn("the settings file failed", "error" to error.message)
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    /** readSettingsDocument returns the document of the picked file. */
+    private fun readSettingsDocument(uri: Uri): ByteArray {
+        val stream =
+            contentResolver.openInputStream(uri)
+                ?: throw IOException("the document cannot be read")
+        return stream.use { input ->
+            val chunks = ByteArrayOutputStream()
+            val buffer = ByteArray(SETTINGS_READ_CHUNK)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) {
+                    break
+                }
+                chunks.write(buffer, 0, read)
+                if (chunks.size() > MAX_SETTINGS_DOCUMENT) {
+                    throw IOException("the document is too large")
+                }
+            }
+            chunks.toByteArray()
+        }
+    }
+
+    /** importNotice tells what the import applied and what it had to skip. */
+    private fun importNotice(response: Local.ImportSettingsResponse): String =
+        buildList {
+            add(getString(R.string.settings_file_imported))
+            if (response.fromNewerVersion) {
+                add(getString(R.string.settings_file_newer))
+            }
+            if (response.ignoredCount > 0) {
+                add(getString(R.string.settings_file_ignored, response.ignoredList.joinToString(", ")))
+            }
+        }.joinToString(" ")
 
     private fun saveOperatingMode(mode: OperatingMode) {
         UnisonSettings.setOperatingMode(this, mode)

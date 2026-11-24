@@ -258,6 +258,31 @@ class CoreClientTest {
         }
 
     @Test
+    fun exportSendsTheLocalSettings() =
+        runBlocking {
+            val transport = FakeTransport { null }
+
+            CoreClient(transport).exportSettings("""{"android": {}}""")
+
+            assertEquals("ExportSettings", transport.lastRequest?.method)
+            val request = Local.ExportSettingsRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals("""{"android": {}}""", request.appSettings)
+        }
+
+    @Test
+    fun importSendsTheDocument() =
+        runBlocking {
+            val transport = FakeTransport { null }
+            val document = """{"schema": "unison-settings"}""".toByteArray()
+
+            CoreClient(transport).importSettings(document)
+
+            assertEquals("ImportSettings", transport.lastRequest?.method)
+            val request = Local.ImportSettingsRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals("""{"schema": "unison-settings"}""", request.document.toStringUtf8())
+        }
+
+    @Test
     fun applySendsTheItemId() =
         runBlocking {
             val transport = FakeTransport { null }
