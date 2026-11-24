@@ -1,6 +1,9 @@
 # Keep AIDL bridge interfaces and parcelables exposed to external clients.
 -keep class app.unison.bridge.** { *; }
 
+# WorkManager creates the worker from its class name.
+-keep class app.unison.updater.UpdateCheckWorker { *; }
+
 # Protobuf-javalite accesses generated message fields via reflection.
 -keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
     <fields>;

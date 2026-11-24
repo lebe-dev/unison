@@ -63,6 +63,8 @@ import app.unison.ui.ConfirmDialog
 import app.unison.ui.ErrorCard
 import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
+import app.unison.ui.UpdateBanner
+import app.unison.ui.UpdatePanel
 import app.unison.ui.groupItemColor
 import app.unison.ui.groupShape
 import app.unison.ui.sizeUnits
@@ -130,6 +132,10 @@ fun DashboardScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        panel.updates?.let { updates ->
+            Spacer(modifier = Modifier.height(12.dp))
+            UpdateBanner(panel = updates)
+        }
         Spacer(modifier = Modifier.height(8.dp))
         DashboardTabs(
             selected = selected,
@@ -172,6 +178,7 @@ data class DashboardPanel(
     val onApply: (Local.HistoryItem) -> Unit,
     val onDownload: (Local.HistoryItem) -> Unit,
     val onDelete: (Local.HistoryItem) -> Unit,
+    val updates: UpdatePanel? = null,
 )
 
 /** The three tabs of the dashboard. */

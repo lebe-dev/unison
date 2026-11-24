@@ -23,8 +23,10 @@ import app.unison.policy.PolicyDefaults
 import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.testString
+import app.unison.ui.UpdatePanel
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
+import app.unison.updater.UpdateUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -435,9 +437,26 @@ class SettingsScreenTest {
                     onImportSettings = onImportSettings,
                     stripTracking = stripTracking,
                     onStripTrackingChange = onStripTrackingChange,
+                    updates = updates(),
                     onRefresh = {},
                 )
             }
         }
     }
+
+    /** The update panel of a test whose actions change nothing. */
+    private fun updates(): UpdatePanel =
+        UpdatePanel(
+            state = UpdateUiState(currentVersion = "0.2.0"),
+            onOpenDialog = {},
+            onCloseDialog = {},
+            onDismissBanner = {},
+            onCheckNow = {},
+            onInstall = {},
+            onCancel = {},
+            onRequestInstallPermission = {},
+            onSetEnabled = {},
+            onSetBetaChannel = {},
+            onSetInterval = {},
+        )
 }

@@ -47,11 +47,14 @@ import app.unison.storage.DownloadsFolder
 import app.unison.ui.Destination
 import app.unison.ui.PromptAnswer
 import app.unison.ui.UnisonRoot
+import app.unison.ui.UpdatePanel
 import app.unison.ui.screens.DashboardPanel
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.state.DashboardLimit
 import app.unison.ui.theme.UnisonTheme
+import app.unison.updater.ApkInstaller
+import app.unison.updater.UpdateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -96,6 +99,11 @@ class MainActivity : ComponentActivity() {
             requestNotificationOrFinish()
         }
 
+    private val installPermission =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            UpdateManager.onInstallPermissionResult(this)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -119,6 +127,11 @@ class MainActivity : ComponentActivity() {
         diagnosticsEnabled = UnisonSettings.sentryEnabled(this)
         notificationSettings = NotificationSettings.load(this)
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
+        lifecycleScope.launch {
+            UpdateManager.pendingInstallIntent.collect { confirmation ->
+                runCatching { startActivity(confirmation) }
+            }
+        }
         // A recreated activity has already taken the code of its intent; a code
         // that still waits for the user is kept across the recreation.
         if (savedInstanceState == null) {
@@ -136,7 +149,24 @@ class MainActivity : ComponentActivity() {
                 val requests by appState.requests.collectAsState()
                 val held by HeldItems.shared.ids.collectAsState()
                 val prompts by appState.prompts.collectAsState()
+                val updates by UpdateManager.state.collectAsState()
                 if (onboarded) {
+                    val updatePanel =
+                        UpdatePanel(
+                            state = updates,
+                            onOpenDialog = UpdateManager::openDialog,
+                            onCloseDialog = UpdateManager::closeDialog,
+                            onDismissBanner = { UpdateManager.dismiss(this@MainActivity) },
+                            onCheckNow = { UpdateManager.checkNow(this@MainActivity) },
+                            onInstall = { UpdateManager.install(this@MainActivity) },
+                            onCancel = UpdateManager::cancel,
+                            onRequestInstallPermission = {
+                                installPermission.launch(ApkInstaller.unknownSourcesIntent(this@MainActivity))
+                            },
+                            onSetEnabled = { UpdateManager.setEnabled(this@MainActivity, it) },
+                            onSetBetaChannel = { UpdateManager.setBetaChannel(this@MainActivity, it) },
+                            onSetInterval = { UpdateManager.setInterval(this@MainActivity, it) },
+                        )
                     UnisonRoot(
                         state = state,
                         history = history,
@@ -149,8 +179,10 @@ class MainActivity : ComponentActivity() {
                                 onApply = { appState.applyHistoryItem(it.item.id) },
                                 onDownload = { appState.downloadHistoryItem(it.item.id) },
                                 onDelete = { appState.deleteHistoryItem(it.item.id) },
+                                updates = updatePanel,
                             ),
                         dashboardLimit = dashboardLimit,
+                        updates = updatePanel,
                         pairing = pairing,
                         requests = requests,
                         held = held,
@@ -252,6 +284,7 @@ class MainActivity : ComponentActivity() {
             appState.refreshDashboard()
             appState.refreshRequests()
             startRequestsPoll()
+            UpdateManager.checkIfDue(this)
         }
     }
 
@@ -451,7 +484,14 @@ class MainActivity : ComponentActivity() {
     private fun exportSettings(uri: Uri) {
         lifecycleScope.launch {
             try {
-                val response = core.exportSettings(SettingsFile.appSection(operatingMode, notificationSettings))
+                val response =
+                    core.exportSettings(
+                        SettingsFile.appSection(
+                            operatingMode = operatingMode,
+                            notifications = notificationSettings,
+                            updates = UpdateManager.state.value.config,
+                        ),
+                    )
                 withContext(Dispatchers.IO) {
                     val stream =
                         contentResolver.openOutputStream(uri)
@@ -480,6 +520,9 @@ class MainActivity : ComponentActivity() {
                 val section = SettingsFile.appSectionOf(document.decodeToString())
                 section.operatingMode?.let(::saveOperatingMode)
                 section.notifications?.let { patch -> saveNotificationSettings(patch.applyTo(notificationSettings)) }
+                section.updates?.let { patch ->
+                    UpdateManager.applyConfig(this@MainActivity, patch.applyTo(UpdateManager.state.value.config))
+                }
                 refresh()
                 Toast.makeText(this@MainActivity, importNotice(response), Toast.LENGTH_LONG).show()
             } catch (e: CancellationException) {

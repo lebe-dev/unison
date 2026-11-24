@@ -47,7 +47,10 @@ fun repositoryFile(path: String): File {
     return if (file.isAbsolute) file else rootProject.file("../$path")
 }
 
-/** Numeric versionCode derived from semver (major * 10000 + minor * 100 + patch). */
+/**
+ * Numeric versionCode that grows with every release, including the pre-releases
+ * of a version: 0.3.0-beta.1 < 0.3.0-beta.2 < 0.3.0-rc.1 < 0.3.0.
+ */
 fun computeVersionCode(version: String): Int {
     val override = buildValue("UNISON_ANDROID_VERSION_CODE")
     if (override.isNotEmpty()) {
@@ -58,12 +61,34 @@ fun computeVersionCode(version: String): Int {
         return parsed
     }
     val match =
-        Regex("""^(\d+)\.(\d+)\.(\d+)""").find(version)
+        Regex("""^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?""").find(version.trim().removePrefix("v"))
             ?: error("Cannot derive Android versionCode from version '$version'")
     val major = match.groupValues[1].toInt()
     val minor = match.groupValues[2].toInt()
     val patch = match.groupValues[3].toInt()
-    return major * 10_000 + minor * 100 + patch
+    val preRelease = match.groupValues[4]
+    val slot = preReleaseSlot(preRelease)
+    return major * 10_000_000 + minor * 100_000 + patch * 1_000 + slot
+}
+
+/** Order of a pre-release inside one version, below the 999 of the release. */
+fun preReleaseSlot(preRelease: String): Int {
+    if (preRelease.isEmpty()) {
+        return 999
+    }
+    val alpha = Regex("""^alpha\.(\d+)$""").find(preRelease)
+    if (alpha != null) {
+        return 100 + (alpha.groupValues[1].toIntOrNull() ?: 1).coerceIn(1, 99)
+    }
+    val beta = Regex("""^beta\.(\d+)$""").find(preRelease)
+    if (beta != null) {
+        return 200 + (beta.groupValues[1].toIntOrNull() ?: 1).coerceIn(1, 299)
+    }
+    val rc = Regex("""^rc\.(\d+)$""").find(preRelease)
+    if (rc != null) {
+        return 500 + (rc.groupValues[1].toIntOrNull() ?: 1).coerceIn(1, 399)
+    }
+    return 1
 }
 
 /** Version of the build, from UNISON_VERSION when it is set. */
@@ -72,6 +97,18 @@ val appVersion =
         ?: rootProject.file("../VERSION").readText().trim()
 val appVersionCode = computeVersionCode(appVersion)
 val sentryDsn = buildValue("SENTRY_DSN")
+
+/** Ed25519 key that signs the release manifest, from the environment or the repository. */
+val updatePublicKey =
+    buildValue("UNISON_UPDATE_PUBLIC_KEY").ifEmpty {
+        rootProject
+            .file("../packaging/release-public-key.txt")
+            .takeIf { it.isFile }
+            ?.readText()
+            ?.trim()
+            .orEmpty()
+    }
+val updateApiUrl = "https://api.github.com/repos/lebe-dev/unison/releases?per_page=20"
 
 /** Keystore of the release APK; release builds fail when it is not configured. */
 val releaseKeystore = buildValue("UNISON_ANDROID_KEYSTORE")
@@ -115,6 +152,8 @@ android {
         // An empty DSN disables reporting in that build.
         buildConfigField("String", "SENTRY_DSN", quoted(sentryDsn))
         buildConfigField("String", "RELEASE", quoted("unison@$appVersion"))
+        buildConfigField("String", "UPDATE_PUBLIC_KEY", quoted(updatePublicKey))
+        buildConfigField("String", "UPDATE_API_URL", quoted(updateApiUrl))
     }
 
     signingConfigs {
@@ -197,6 +236,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.protobuf.javalite)

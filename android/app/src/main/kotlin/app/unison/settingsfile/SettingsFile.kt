@@ -2,6 +2,8 @@ package app.unison.settingsfile
 
 import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
+import app.unison.updater.UpdateCheckInterval
+import app.unison.updater.UpdateConfig
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneOffset
@@ -12,7 +14,33 @@ import java.util.Locale
 internal data class AppSection(
     val operatingMode: OperatingMode? = null,
     val notifications: NotificationPatch? = null,
+    val updates: UpdatesPatch? = null,
 )
+
+/**
+ * The update settings of a document. An absent field keeps the stored value,
+ * and a channel switch drops the cached answer of the other channel.
+ */
+internal data class UpdatesPatch(
+    val enabled: Boolean? = null,
+    val betaChannel: Boolean? = null,
+    val interval: UpdateCheckInterval? = null,
+) {
+    /** The stored settings with the fields of the document applied. */
+    fun applyTo(current: UpdateConfig): UpdateConfig {
+        var config = current
+        if (betaChannel != null) {
+            config = config.withBetaChannel(betaChannel)
+        }
+        if (enabled != null) {
+            config = config.copy(enabled = enabled)
+        }
+        if (interval != null) {
+            config = config.copy(interval = interval)
+        }
+        return config
+    }
+}
 
 /**
  * Notification categories of a document. An absent category keeps the stored
@@ -55,6 +83,7 @@ internal object SettingsFile {
     fun appSection(
         operatingMode: OperatingMode,
         notifications: NotificationSettings,
+        updates: UpdateConfig = UpdateConfig.DEFAULT,
     ): String =
         JSONObject()
             .put(
@@ -70,6 +99,12 @@ internal object SettingsFile {
                             .put("confirmations", notifications.confirmations)
                             .put("hide_status_after_dismissal", notifications.hideStatusAfterDismissal)
                             .put("status_details", notifications.statusDetails),
+                    ).put(
+                        "updates",
+                        JSONObject()
+                            .put("enabled", updates.enabled)
+                            .put("beta_channel", updates.betaChannel)
+                            .put("interval", updates.interval.value),
                     ),
             ).toString()
 
@@ -86,8 +121,21 @@ internal object SettingsFile {
                 .takeIf { it.isNotEmpty() }
                 ?.let { value -> OperatingMode.entries.firstOrNull { it.value == value } }
         val categories = section.optJSONObject("notifications")?.let(::notificationPatch)
-        return AppSection(operatingMode = mode, notifications = categories)
+        val updates = section.optJSONObject("updates")?.let(::updatesPatch)
+        return AppSection(operatingMode = mode, notifications = categories, updates = updates)
     }
+
+    /** updatesPatch reads the fields of the update settings the object carries. */
+    private fun updatesPatch(values: JSONObject): UpdatesPatch =
+        UpdatesPatch(
+            enabled = boolOrNull(values, "enabled"),
+            betaChannel = boolOrNull(values, "beta_channel"),
+            interval =
+                values
+                    .optString("interval")
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { value -> UpdateCheckInterval.entries.firstOrNull { it.value == value } },
+        )
 
     /** notificationPatch reads the categories the object carries. */
     private fun notificationPatch(categories: JSONObject): NotificationPatch =

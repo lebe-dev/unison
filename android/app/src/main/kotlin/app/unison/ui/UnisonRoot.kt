@@ -53,6 +53,7 @@ fun UnisonRoot(
     history: HistoryState,
     dashboard: DashboardPanel,
     dashboardLimit: Int,
+    updates: UpdatePanel,
     pairing: PairingState,
     requests: RequestsState,
     held: Set<String>,
@@ -262,6 +263,7 @@ fun UnisonRoot(
                     onImportSettings = onImportSettings,
                     stripTracking = stripTracking,
                     onStripTrackingChange = onStripTrackingChange,
+                    updates = updates,
                     onRefresh = onRefresh,
                     modifier = content,
                 )
@@ -269,6 +271,7 @@ fun UnisonRoot(
     }
 
     PromptDialog(prompts = prompts, onAnswer = onAnswerPrompt)
+    UpdateDialog(panel = updates)
 }
 
 /** Bar of the top level destinations. */

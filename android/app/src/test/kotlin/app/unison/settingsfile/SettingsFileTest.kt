@@ -2,6 +2,8 @@ package app.unison.settingsfile
 
 import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
+import app.unison.updater.UpdateCheckInterval
+import app.unison.updater.UpdateConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -72,5 +74,52 @@ internal class SettingsFileTest {
         assertEquals(AppSection(), SettingsFile.appSectionOf("not json"))
         assertEquals(AppSection(), SettingsFile.appSectionOf("[]"))
         assertEquals(AppSection(), SettingsFile.appSectionOf("null"))
+    }
+
+    @Test
+    fun `the update settings survive an export and an import`() {
+        val updates = UpdateConfig(enabled = true, betaChannel = true, interval = UpdateCheckInterval.WEEKLY)
+        val section = SettingsFile.appSection(OperatingMode.ALWAYS, NotificationSettings(), updates)
+
+        val read = SettingsFile.appSectionOf("""{"app": $section}""")
+
+        assertEquals(true, read.updates?.enabled)
+        assertEquals(true, read.updates?.betaChannel)
+        assertEquals(UpdateCheckInterval.WEEKLY, read.updates?.interval)
+    }
+
+    @Test
+    fun `an absent update field keeps the stored value`() {
+        val current = UpdateConfig(enabled = true, betaChannel = false, interval = UpdateCheckInterval.DAILY)
+        val read = SettingsFile.appSectionOf("""{"app": {"android": {"updates": {"interval": "weekly"}}}}""")
+
+        val applied = read.updates?.applyTo(current) ?: current
+
+        assertEquals(true, applied.enabled)
+        assertEquals(false, applied.betaChannel)
+        assertEquals(UpdateCheckInterval.WEEKLY, applied.interval)
+    }
+
+    @Test
+    fun `an unknown update interval is ignored`() {
+        val read = SettingsFile.appSectionOf("""{"app": {"android": {"updates": {"interval": "hourly"}}}}""")
+        assertNull(read.updates?.interval)
+    }
+
+    @Test
+    fun `a channel switch of the document drops the cached answer`() {
+        val current =
+            UpdateConfig(
+                betaChannel = false,
+                lastEtag = "\"abc\"",
+                dismissedVersion = "0.3.0",
+            )
+        val patch = UpdatesPatch(betaChannel = true)
+
+        val applied = patch.applyTo(current)
+
+        assertEquals(true, applied.betaChannel)
+        assertNull(applied.lastEtag)
+        assertNull(applied.dismissedVersion)
     }
 }

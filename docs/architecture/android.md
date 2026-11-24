@@ -47,8 +47,9 @@ core.aar          the Go core, built with gomobile
 
 Requests and responses are protobuf messages of `proto/unison/mobile/v1`, which wraps the local API.
 `Call` covers the same methods as the daemon API, except `WatchEvents` (events arrive through a
-callback) and a few calls the mobile UI does not use. A request is limited to 1 MiB and answered
-within 30 seconds, except `FetchHistoryItem`, which allows 30 minutes.
+callback) and a few calls the mobile UI does not use. A request is limited to 1 MiB and a response
+to 1 MiB, except `GetHistoryThumbnail`, which answers up to 8 MiB for a 1024 px preview. A call is
+answered within 30 seconds, except `FetchHistoryItem`, which allows 30 minutes.
 
 `Platform` is the interface the Kotlin side implements. Every callback runs on a core goroutine:
 
@@ -87,17 +88,52 @@ The app opens on the dashboard, the first destination of the bottom bar. It show
 of the history in three tabs: images as a grid of thumbnails, files as a list with names and sizes,
 and text as snippets. Each tab asks the local API for at most the configured number of items, and
 the pixels arrive through `GetHistoryThumbnail`; the core decodes the image in pure Go, so no image
-payload of a peer reaches a platform decoder. An item opens a preview dialog with its actions: copy
-a text, an image or a file entry, download a file entry, apply an item that waits for a confirmation,
-and delete after a second confirmation. None of the actions sends content anywhere; they work on
-this device only.
+payload of a peer reaches a platform decoder.
+
+A tap on an image opens a fullscreen viewer with pinch zoom, drag to pan and a double tap that
+toggles between 1x and 2.5x; the close button and the system back return to the grid. A tap on a file
+or a text entry opens the preview dialog, which copies, downloads or applies the item when it waits
+for a confirmation. A long press on any entry opens the menu with `Send`, `Copy` and `Delete`.
+`Send` lists the paired devices that are online and offers the payloads as files: the app stages
+them in its cache under `outbox` with `FetchHistoryItem`, hands the absolute paths to `SendFiles`,
+and keeps the files while the transfer runs; entries older than a day are removed when the app
+starts. `Copy` writes the entry to the local clipboard with the echo marker of the core, so nothing
+is announced again. `Delete` asks once more and removes the entry on every Personal device.
 
 The number of items of each tab is a local preference of this device: 6, 12, 24 or 48, by default
 12. It lives in the `unison.settings` shared preferences under `dashboard.limit` and is not part of
-the settings file. A thumbnail is requested at 256 px for a tile and 480 px for the preview, because
-the facade answers at most 1 MiB.
+the settings file. A thumbnail is requested at 256 px for a tile and 1024 px for the fullscreen
+viewer; `GetHistoryThumbnail` answers up to 8 MiB, while every other response stays at 1 MiB.
 
 Android has no drag and drop out of an application, so the dashboard does not offer it.
+
+## Updates
+
+The app looks for a release of `lebe-dev/unison` on GitHub, verifies the APK against
+`SHA256SUMS` and `SHA256SUMS.sig` with the Ed25519 key of `packaging/release-public-key.txt`, and
+installs it through the session of the Android package installer.
+
+- Settings > Updates holds the automatic checks (off by default), the beta channel (off by default)
+  and the interval of 6 hours, 24 hours (default) or 7 days. `Check now` always works, also while the
+  automatic checks are off.
+- `UpdateCheckWorker` runs the unique periodic work `unison.update_check` of WorkManager. `MainActivity`
+  also checks on start when the interval has passed, so an OEM battery saver cannot stall the checks
+  for long. The last answer lives in the `unison.settings` preferences under `updates.*`, so the
+  dashboard shows the banner without a request after a restart.
+- The dashboard shows the banner above the tabs, and the dialog renders the changelog with a small
+  Markdown reader, never a web view. It shows the download, verification and installation progress,
+  the permission it needs and the errors with a retry.
+- Verification fails closed: the signature of the manifest is checked before the APK is read, the
+  SHA-256 of the APK must match the manifest, and the archive must carry the package name, a version
+  code no older than the installed one and the signing certificates of the installed app. A debug
+  build therefore reports a clear signature mismatch instead of failing inside the system installer.
+- `mobile.VerifyReleaseSignature` checks the signature, because the JCA provider of Android exists
+  only from API 33 while the app runs from API 29. An APK is never downloaded in the background.
+- The key comes from `UNISON_UPDATE_PUBLIC_KEY` or from `packaging/release-public-key.txt` at build
+  time. The `versionCode` grows with the pre-releases of a version:
+  `major * 10000000 + minor * 100000 + patch * 1000 + slot`, where a stable release uses 999 and
+  alpha, beta and rc use their own ranges, so `0.3.0-beta.2` upgrades to `0.3.0-rc.1` and then to
+  `0.3.0`.
 
 ## Service
 

@@ -47,6 +47,7 @@ import app.unison.ui.ItemGroup
 import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
 import app.unison.ui.SettingsCard
+import app.unison.ui.UpdatePanel
 import app.unison.ui.pauseLabel
 import app.unison.ui.screenColor
 import app.unison.ui.state.CoreState
@@ -63,6 +64,7 @@ internal enum class SettingsPage(
     HISTORY(R.string.settings_page_history, R.drawable.ic_nav_history),
     NOTIFICATIONS(R.string.settings_page_notifications, R.drawable.ic_nav_notifications),
     NETWORK(R.string.settings_page_network, R.drawable.ic_network),
+    UPDATES(R.string.settings_page_updates, R.drawable.ic_update),
     ABOUT(R.string.settings_section_about, R.drawable.ic_info),
     JOURNAL(R.string.settings_page_journal, R.drawable.ic_log),
     SETTINGS_FILE(R.string.settings_page_settings_file, R.drawable.ic_kind_file),
@@ -119,6 +121,7 @@ fun SettingsScreen(
     onImportSettings: (Uri) -> Unit,
     stripTracking: Boolean,
     onStripTrackingChange: (Boolean) -> Unit,
+    updates: UpdatePanel,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -132,6 +135,7 @@ fun SettingsScreen(
             deviceName = deviceName,
             operatingMode = operatingMode,
             downloadsFolder = downloadsFolder,
+            updates = updates,
             onOpen = { page = it },
             onRefresh = onRefresh,
             modifier = modifier,
@@ -251,6 +255,7 @@ fun SettingsScreen(
                         SettingsFileSection(onExport = onExportSettings, onImport = onImportSettings)
                     }
                 }
+                SettingsPage.UPDATES -> UpdatesSection(panel = updates)
             }
         }
     }
@@ -275,6 +280,7 @@ private fun SettingsIndex(
     deviceName: String,
     operatingMode: OperatingMode,
     downloadsFolder: String?,
+    updates: UpdatePanel,
     onOpen: (SettingsPage) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
@@ -292,6 +298,7 @@ private fun SettingsIndex(
             SettingsPage.HISTORY to stringResource(R.string.settings_page_history_summary),
             SettingsPage.NOTIFICATIONS to stringResource(R.string.settings_page_notifications_summary),
             SettingsPage.NETWORK to stringResource(R.string.settings_page_network_summary),
+            SettingsPage.UPDATES to updatesSummary(updates.state),
             SettingsPage.ABOUT to (
                 state.status?.let { stringResource(R.string.core_version, it.version) }
                     ?: stringResource(R.string.settings_page_about_summary)

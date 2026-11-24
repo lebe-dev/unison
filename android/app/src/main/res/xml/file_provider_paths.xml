@@ -4,4 +4,6 @@
     <cache-path name="clipboard" path="clipboard/" />
     <!-- Application log exports. -->
     <cache-path name="exports" path="exports/" />
+    <!-- Verified update packages that wait for the system installer. -->
+    <cache-path name="updates" path="updates/" />
 </paths>
