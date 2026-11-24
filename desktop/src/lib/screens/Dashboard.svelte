@@ -66,7 +66,7 @@
   const MENU_HEIGHT = 220;
 
   let active = $state<DashboardKind>("images");
-  let preview = $state<HistoryItem | null>(null);
+  let previewId = $state<string | null>(null);
   let pending: PendingDrag | null = null;
   let suppressClick = false;
   let menu = $state<ItemMenu | null>(null);
@@ -74,6 +74,18 @@
   let menuElement: HTMLDivElement | null = $state(null);
 
   const items = $derived(dashboard.items[active]);
+  const preview = $derived.by(() => {
+    if (!previewId) {
+      return null;
+    }
+    for (const kind of ["images", "files", "text"] as const) {
+      const found = dashboard.items[kind].find((entry) => entry.item?.id === previewId);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  });
   const menuDevices = $derived(daemon.devices.filter((device) => device.online && !device.revoked));
 
   // The lists are loaded when the daemon answers and again after it comes back.
@@ -206,11 +218,11 @@
     if (!item.item) {
       return;
     }
-    preview = item;
+    previewId = item.item.id;
   }
 
   function closePreview(): void {
-    preview = null;
+    previewId = null;
   }
 
   /** openMenu shows the actions of an item at the point of the right click. */
@@ -642,12 +654,20 @@
           {#snippet imageFallback()}
             <p class="muted">{t("history.notDownloaded")}</p>
           {/snippet}
-          <ImageCanvas
-            id={info.id}
-            maxSide={PREVIEW_SIDE}
-            label={historyTitle(info)}
-            fallback={imageFallback}
-          />
+          {#if preview.complete}
+            <ImageCanvas
+              id={info.id}
+              maxSide={PREVIEW_SIDE}
+              label={historyTitle(info)}
+              fallback={imageFallback}
+            />
+          {:else if dashboard.downloading.includes(info.id)}
+            <div class="preview-state">
+              <Spinner />
+            </div>
+          {:else}
+            <p class="muted">{t("history.notDownloaded")}</p>
+          {/if}
         {:else if info.kind === Kind.TEXT}
           <pre class="text">{textContent(info)}</pre>
         {:else}
@@ -663,7 +683,25 @@
         <figcaption>
           <span class="preview-title">{historyTitle(info)}</span>
           <span class="actions">
-            {#if info.kind === Kind.TEXT}
+            {#if info.kind === Kind.IMAGE}
+              <button
+                class="button small"
+                type="button"
+                onclick={() => void dashboard.copy(info.id)}
+              >
+                {t("common.copy")}
+              </button>
+              {#if !preview.complete}
+                <button
+                  class="button primary small"
+                  type="button"
+                  disabled={dashboard.downloading.includes(info.id)}
+                  onclick={() => void dashboard.download(info.id, Kind.IMAGE)}
+                >
+                  {t("common.download")}
+                </button>
+              {/if}
+            {:else if info.kind === Kind.TEXT}
               <button
                 class="button small"
                 type="button"
@@ -682,7 +720,8 @@
               <button
                 class="button small"
                 type="button"
-                onclick={() => void dashboard.download(info.id)}
+                disabled={dashboard.downloading.includes(info.id)}
+                onclick={() => void dashboard.download(info.id, Kind.FILES)}
               >
                 {t("common.download")}
               </button>
@@ -911,6 +950,14 @@
     max-width: 100%;
     max-height: 75vh;
     object-fit: contain;
+  }
+
+  .preview-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 160px;
+    min-height: 96px;
   }
 
   .text {

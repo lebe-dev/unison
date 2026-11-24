@@ -76,6 +76,8 @@ fun DashboardScreen(
         DashboardImageViewer(
             entry = entry,
             thumbnail = panel.thumbnail,
+            busy = entry.item.id in busy,
+            onDownload = { panel.onDownload(entry) },
             onClose = { viewerId = null },
         )
     }

@@ -168,6 +168,24 @@ class DashboardScreenTest {
     }
 
     @Test
+    fun missingImageCanBeDownloadedFromFullscreenViewer() {
+        var downloaded: Local.HistoryItem? = null
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    images = listOf(entry(id = "1", kind = Local.Kind.KIND_IMAGE, complete = false)),
+                ),
+            onDownload = { downloaded = it },
+        )
+
+        compose.onNodeWithTag(itemTag(image(id = "1"))).performClick()
+        compose.onNodeWithTag(FULLSCREEN_DOWNLOAD_TAG).assertIsDisplayed().performClick()
+
+        assertEquals("1", downloaded?.item?.id)
+    }
+
+    @Test
     fun fullscreenViewerSupportsPinchAndDoubleTap() {
         setContent(
             dashboard =

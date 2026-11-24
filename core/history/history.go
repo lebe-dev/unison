@@ -45,8 +45,8 @@ const (
 	MaxListLimit = 200
 	// maxInlineBytes bounds the inline payload of one item.
 	maxInlineBytes = 64 << 10
-	// maxRepresentations bounds the representations of one item.
-	maxRepresentations = 16
+	// MaxRepresentations bounds the representations of one item.
+	MaxRepresentations = 16
 	// maxPayloadOpenBytes bounds the payload Copy reads into memory.
 	maxPayloadOpenBytes = 64 << 20
 )
@@ -238,6 +238,21 @@ func (s *Store) Append(ctx context.Context, item model.ClipItem) error {
 	return nil
 }
 
+// AppendLocal allocates the next sequence number of this device, sets the
+// origin to this device and records the item.
+func (s *Store) AppendLocal(ctx context.Context, item model.ClipItem) (model.ClipItem, error) {
+	seq, err := s.nextSeq(ctx)
+	if err != nil {
+		return model.ClipItem{}, err
+	}
+	item.Origin = s.origin
+	item.Seq = seq
+	if err := s.Append(ctx, item); err != nil {
+		return model.ClipItem{}, err
+	}
+	return item, nil
+}
+
 // record writes one entry and reports whether it was new.
 func (s *Store) record(ctx context.Context, item model.ClipItem) (bool, error) {
 	if err := validate(item); err != nil {
@@ -324,8 +339,8 @@ func validate(item model.ClipItem) error {
 		return fmt.Errorf("%w: created time is zero", ErrInvalidItem)
 	case item.ExpiresAt.IsZero() || !item.ExpiresAt.After(item.CreatedAt):
 		return fmt.Errorf("%w: expiry is not after the creation time", ErrInvalidItem)
-	case len(item.Representations) > maxRepresentations:
-		return fmt.Errorf("%w: %d representations, limit %d", ErrInvalidItem, len(item.Representations), maxRepresentations)
+	case len(item.Representations) > MaxRepresentations:
+		return fmt.Errorf("%w: %d representations, limit %d", ErrInvalidItem, len(item.Representations), MaxRepresentations)
 	}
 	if item.Deleted {
 		return nil

@@ -56,6 +56,7 @@ beforeEach(() => {
   dashboard.limit = DEFAULT_DASHBOARD_LIMIT;
   dashboard.items = { images: [], files: [], text: [] };
   dashboard.loading = [];
+  dashboard.downloading = [];
   dashboard.error = null;
   dashboard.notice = null;
   dashboard.downloadsDir = "";
@@ -139,6 +140,10 @@ describe("dashboard lists", () => {
     mocks.handlers.at(-1)?.(create(EventSchema, { kind: EventKind.CLIPBOARD }));
 
     await vi.waitFor(() => expect(mocks.listHistory).toHaveBeenCalledTimes(6));
+
+    mocks.handlers.at(-1)?.(create(EventSchema, { kind: EventKind.HISTORY }));
+
+    await vi.waitFor(() => expect(mocks.listHistory).toHaveBeenCalledTimes(9));
     dashboard.stop();
   });
 });
@@ -163,6 +168,17 @@ describe("dashboard actions", () => {
 
     expect(mocks.fetchHistoryItem).toHaveBeenCalledWith({ id: "a", path: "/downloads" });
     expect(dashboard.notice?.text).toContain("/downloads/clip.png");
+  });
+
+  it("downloads an image into the local store without writing to downloads", async () => {
+    dashboard.downloadsDir = "/downloads";
+    mocks.fetchHistoryItem.mockResolvedValue(create(FetchHistoryItemResponseSchema, {}));
+
+    await dashboard.download("img-1", Kind.IMAGE);
+
+    expect(mocks.fetchHistoryItem).toHaveBeenCalledWith({ id: "img-1", path: "" });
+    expect(dashboard.downloading).toEqual([]);
+    expect(dashboard.notice?.kind).toBe("info");
   });
 
   it("reports a failed download", async () => {

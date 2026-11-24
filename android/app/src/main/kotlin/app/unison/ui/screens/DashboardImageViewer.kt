@@ -5,10 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +50,8 @@ import unison.local.v1.Local
 internal fun DashboardImageViewer(
     entry: Local.HistoryItem,
     thumbnail: HistoryThumbnailLoader,
+    busy: Boolean = false,
+    onDownload: () -> Unit = {},
     onClose: () -> Unit,
 ) {
     var image by remember(entry.item.id) { mutableStateOf<ImageBitmap?>(null) }
@@ -120,13 +125,26 @@ internal fun DashboardImageViewer(
                                         translationY = offset.y,
                                     ),
                         )
-                    loading -> CircularProgressIndicator(color = Color.White)
+                    loading || busy -> CircularProgressIndicator(color = Color.White)
                     else ->
-                        Text(
-                            text = stringResource(R.string.dashboard_not_downloaded),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White,
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.dashboard_not_downloaded),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White,
+                            )
+                            if (!entry.complete) {
+                                Button(
+                                    onClick = onDownload,
+                                    modifier = Modifier.testTag(FULLSCREEN_DOWNLOAD_TAG),
+                                ) {
+                                    Text(text = stringResource(R.string.action_download))
+                                }
+                            }
+                        }
                 }
             }
             IconButton(
@@ -169,6 +187,9 @@ internal const val FULLSCREEN_TAG = "dashboard.fullscreen"
 
 /** Tag of the close button of the fullscreen viewer. */
 internal const val FULLSCREEN_CLOSE_TAG = "dashboard.fullscreen.close"
+
+/** Tag of the download button of the fullscreen viewer. */
+internal const val FULLSCREEN_DOWNLOAD_TAG = "dashboard.fullscreen.download"
 
 /** Zoom limits of the fullscreen viewer. */
 private const val MIN_ZOOM = 1f

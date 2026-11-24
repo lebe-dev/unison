@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lebe-dev/unison/core/blob"
+	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/ports/fake"
@@ -549,4 +550,62 @@ func waitProgress(t *testing.T, n *testNode, id string) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	t.Fatalf("transfer %s made no progress within %v", id, testTimeout)
+}
+
+// TestShareRecordsReceivedImageAndFilesInHistory checks that completed incoming
+// share transfers are recorded in history as image or file items.
+func TestShareRecordsReceivedImageAndFilesInHistory(t *testing.T) {
+	a, b := shareNodes(t, 63000, model.RolePersonal)
+	allowLargeShares(b)
+
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	defer cancel()
+
+	imagePath, _ := shareFile(t, "screenshot.png", 1024)
+	ids, err := a.Share().SendPaths(ctx, []string{imagePath}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send image: %v", err)
+	}
+	incomingImg := waitIncoming(t, b, a.DeviceID(), share.StateDone)
+	waitTransfer(t, a, ids[0], share.StateDone)
+
+	images, err := b.History().List(ctx, history.ListFilter{Kind: model.KindImage})
+	if err != nil {
+		t.Fatalf("list image history: %v", err)
+	}
+	if len(images) != 1 {
+		t.Fatalf("got %d image history items, want 1", len(images))
+	}
+	if !images[0].Complete || images[0].Source != model.SourceShare {
+		t.Fatalf("image item complete=%v source=%s, want complete share", images[0].Complete, images[0].Source)
+	}
+	if images[0].Representations[0].FileName != "screenshot.png" || images[0].Representations[0].Hash != incomingImg.Files[0].Hash {
+		t.Fatalf("unexpected image representation: %+v", images[0].Representations[0])
+	}
+
+	filePath, _ := shareFile(t, "notes.txt", 512)
+	ids, err = a.Share().SendPaths(ctx, []string{filePath}, []model.DeviceID{b.DeviceID()})
+	if err != nil {
+		t.Fatalf("send file: %v", err)
+	}
+	waitTransfer(t, a, ids[0], share.StateDone)
+
+	deadline := time.Now().Add(testTimeout)
+	for time.Now().Before(deadline) {
+		files, err := b.History().List(ctx, history.ListFilter{Kind: model.KindFiles})
+		if err != nil {
+			t.Fatalf("list file history: %v", err)
+		}
+		if len(files) == 1 {
+			if !files[0].Complete || files[0].Source != model.SourceShare {
+				t.Fatalf("file item complete=%v source=%s, want complete share", files[0].Complete, files[0].Source)
+			}
+			if files[0].Representations[0].FileName != "notes.txt" {
+				t.Fatalf("unexpected file name %q, want notes.txt", files[0].Representations[0].FileName)
+			}
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("shared file did not appear in history")
 }

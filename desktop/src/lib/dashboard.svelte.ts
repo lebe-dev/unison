@@ -75,6 +75,8 @@ class DashboardStore {
   items = $state<DashboardItems>({ images: [], files: [], text: [] });
   /** Tabs with a visible reload in flight. */
   loading = $state<DashboardKind[]>([]);
+  /** Item ids whose payloads are being downloaded. */
+  downloading = $state<string[]>([]);
   /** Reason of the last failure, absent when it works. */
   error = $state<string | null>(null);
   /** Message of the last action. */
@@ -161,14 +163,19 @@ class DashboardStore {
     }
   }
 
-  /** download stores the files of an item in the downloads directory. */
-  async download(id: string): Promise<void> {
-    if (!id) {
+  /**
+   * download stores the payloads of an item on this device. Files are written
+   * to the downloads directory, other kinds only fill the local store.
+   */
+  async download(id: string, kind: Kind = Kind.FILES): Promise<void> {
+    if (!id || this.downloading.includes(id)) {
       return;
     }
     this.notice = null;
+    this.downloading = [...this.downloading, id];
     try {
-      const response = await client.fetchHistoryItem({ id, path: this.downloadsDir });
+      const path = kind === Kind.FILES ? this.downloadsDir : "";
+      const response = await client.fetchHistoryItem({ id, path });
       if (response.files.length > 0) {
         this.notice = {
           kind: "info",
@@ -177,12 +184,14 @@ class DashboardStore {
       } else {
         this.notice = { kind: "info", text: translate("history.downloadedLocal") };
       }
-      void this.loadAll(true);
+      await this.loadAll(true);
     } catch (error) {
       this.notice = {
         kind: "error",
         text: errorText(error, translate("dashboard.downloadFailed")),
       };
+    } finally {
+      this.downloading = this.downloading.filter((current) => current !== id);
     }
   }
 
@@ -201,6 +210,7 @@ class DashboardStore {
       case EventKind.CLIPBOARD:
       case EventKind.CLIP_DOWNLOAD:
       case EventKind.CLIP_APPLY:
+      case EventKind.HISTORY:
       case EventKind.PEER_ONLINE:
         void this.loadAll(true);
         break;
