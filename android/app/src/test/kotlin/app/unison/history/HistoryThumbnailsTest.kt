@@ -94,8 +94,13 @@ class HistoryThumbnailsTest {
     }
 
     @Test
-    fun previewSideFitsTheFacadeCap() {
-        assertEquals(480, HistoryThumbnails.PREVIEW_SIDE)
-        assertTrue(HistoryThumbnails.PREVIEW_SIDE * HistoryThumbnails.PREVIEW_SIDE * 4 <= 1 shl 20)
+    fun fullscreenSideFitsTheFacadeCap() {
+        assertEquals(1024, HistoryThumbnails.FULLSCREEN_SIDE)
+        assertTrue(HistoryThumbnails.FULLSCREEN_SIDE * HistoryThumbnails.FULLSCREEN_SIDE * 4 <= 8 shl 20)
+    }
+
+    @Test
+    fun fullscreenImagesAreNotCached() {
+        assertTrue(HistoryThumbnails.FULLSCREEN_SIDE > HistoryThumbnails.CACHE_MAX_SIDE)
     }
 }

@@ -40,6 +40,9 @@ func callTimeoutOf(method string) time.Duration {
 const (
 	// maxCallBytes bounds one call request and one call response.
 	maxCallBytes = 1 << 20
+	// maxThumbnailBytes bounds the response of GetHistoryThumbnail, which carries
+	// the pixels of a 1024 px image: 1024 x 1024 x 4 bytes plus the envelope.
+	maxThumbnailBytes = 8 << 20
 	// maxNameBytes bounds the device name.
 	maxNameBytes = 128
 )

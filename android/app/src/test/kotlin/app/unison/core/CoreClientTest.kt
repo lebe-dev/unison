@@ -321,4 +321,17 @@ class CoreClientTest {
             assertEquals(2, thumbnail.width)
             assertEquals(1, thumbnail.height)
         }
+
+    @Test
+    fun sendFilesSendsThePathsAndTheDevices() =
+        runBlocking {
+            val transport = FakeTransport { null }
+
+            CoreClient(transport).sendFiles(listOf("/cache/outbox/a/report.pdf"), listOf("abcd"))
+
+            assertEquals("SendFiles", transport.lastRequest?.method)
+            val request = Local.SendFilesRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals(listOf("/cache/outbox/a/report.pdf"), request.pathsList)
+            assertEquals(listOf("abcd"), request.deviceIdsList)
+        }
 }

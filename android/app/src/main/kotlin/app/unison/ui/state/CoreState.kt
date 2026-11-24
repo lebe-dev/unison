@@ -61,4 +61,12 @@ data class CoreState(
             .orEmpty()
             .filter { !it.revoked && it.role == role }
             .sortedWith(compareByDescending<Local.Device> { it.online }.thenBy { it.name.lowercase() })
+
+    /** Paired devices that can receive files now. */
+    val sendTargets: List<Local.Device>
+        get() =
+            status
+                ?.devicesList
+                .orEmpty()
+                .filter { it.online && !it.revoked }
 }

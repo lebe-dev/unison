@@ -132,6 +132,12 @@ interface CoreApi {
         path: String,
     ): Local.FetchHistoryItemResponse
 
+    /** Offers the files at [paths] to the devices as transfers. */
+    suspend fun sendFiles(
+        paths: List<String>,
+        deviceIds: List<String>,
+    ): Local.SendFilesResponse
+
     /** Every file transfer of this device, newest first. */
     suspend fun listTransfers(): Local.ListTransfersResponse
 
@@ -342,6 +348,14 @@ class RunningCore(
     ): Local.FetchHistoryItemResponse {
         ensureRunning()
         return client.fetchHistoryItem(id, path)
+    }
+
+    override suspend fun sendFiles(
+        paths: List<String>,
+        deviceIds: List<String>,
+    ): Local.SendFilesResponse {
+        ensureRunning()
+        return client.sendFiles(paths, deviceIds)
     }
 
     override suspend fun listTransfers(): Local.ListTransfersResponse {

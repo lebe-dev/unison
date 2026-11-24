@@ -6,6 +6,7 @@ import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
 import app.unison.history.HistorySaver
+import app.unison.history.HistorySender
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -259,6 +260,16 @@ class AppStateTest {
             path: String,
         ): Local.FetchHistoryItemResponse = Local.FetchHistoryItemResponse.getDefaultInstance()
 
+        val sentFiles = mutableListOf<Pair<List<String>, List<String>>>()
+
+        override suspend fun sendFiles(
+            paths: List<String>,
+            deviceIds: List<String>,
+        ): Local.SendFilesResponse {
+            sentFiles += paths to deviceIds
+            return Local.SendFilesResponse.getDefaultInstance()
+        }
+
         override suspend fun listTransfers(): Local.ListTransfersResponse = Local.ListTransfersResponse.getDefaultInstance()
 
         override suspend fun cancelTransfer(id: String) = Unit
@@ -349,6 +360,19 @@ class AppStateTest {
             ids += id
             failure?.let { throw it }
             return saved
+        }
+    }
+
+    private class FakeSender : HistorySender {
+        var failure: Exception? = null
+        val sent = mutableListOf<Pair<String, String>>()
+
+        override suspend fun send(
+            id: String,
+            deviceId: String,
+        ) {
+            sent += id to deviceId
+            failure?.let { throw it }
         }
     }
 
@@ -733,6 +757,54 @@ class AppStateTest {
 
             assertTrue(notices.isNotEmpty())
             assertEquals(R.string.history_download_failed, notices.last())
+            collector.cancel()
+        }
+
+    @Test
+    fun sendStagesTheEntryAndReloadsTheDashboard() =
+        runTest {
+            val core = FakeCore()
+            val sender = FakeSender()
+            val state = appState(core, sender = sender)
+            val notices = mutableListOf<Int>()
+            val collector = launch { state.notices.collect { notices += it } }
+            runCurrent()
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            state.sendHistoryItem("item", "device")
+            advanceUntilIdle()
+
+            assertEquals(listOf("item" to "device"), sender.sent)
+            assertTrue(R.string.dashboard_sent in notices)
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            assertTrue(
+                state.history.value.busy
+                    .isEmpty(),
+            )
+            collector.cancel()
+        }
+
+    @Test
+    fun failedSendEmitsNotice() =
+        runTest {
+            val core = FakeCore()
+            val sender = FakeSender()
+            sender.failure = IllegalStateException("the device is offline")
+            val state = appState(core, sender = sender)
+            val notices = mutableListOf<Int>()
+            val collector = launch { state.notices.collect { notices += it } }
+            runCurrent()
+
+            state.sendHistoryItem("item", "device")
+            advanceUntilIdle()
+
+            assertEquals(listOf(R.string.dashboard_send_failed), notices)
+            assertTrue(
+                state.history.value.busy
+                    .isEmpty(),
+            )
             collector.cancel()
         }
 
@@ -1876,6 +1948,7 @@ class AppStateTest {
     private fun TestScope.appState(
         core: CoreApi,
         saver: HistorySaver = FakeSaver(),
+        sender: HistorySender = FakeSender(),
         held: HeldItems = HeldItems(),
         dashboardLimit: Int = DashboardLimit.DEFAULT,
     ): AppState =
@@ -1883,6 +1956,7 @@ class AppStateTest {
             core = core,
             events = events,
             saver = saver,
+            sender = sender,
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
             held = held,
             dashboardLimit = dashboardLimit,

@@ -567,6 +567,24 @@ class CoreClient(
         )
     }
 
+    /** Offers the files at [paths] to the devices as transfers. */
+    override suspend fun sendFiles(
+        paths: List<String>,
+        deviceIds: List<String>,
+    ): Local.SendFilesResponse {
+        val request =
+            Local.SendFilesRequest
+                .newBuilder()
+                .addAllPaths(paths)
+                .addAllDeviceIds(deviceIds)
+                .build()
+        return call(
+            method = "SendFiles",
+            request = request,
+            parse = { Local.SendFilesResponse.parseFrom(it) },
+        )
+    }
+
     /** Every file transfer of this device, newest first. */
     override suspend fun listTransfers(): Local.ListTransfersResponse =
         call(

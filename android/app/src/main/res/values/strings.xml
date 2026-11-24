@@ -365,7 +365,6 @@
     <string name="clipboard_applied">Clipboard applied</string>
     <string name="clipboard_apply_failed">Cannot apply the clipboard</string>
 
-    <string name="dashboard_newest">The newest %1$d items of each kind</string>
     <string name="dashboard_empty_images">No images yet</string>
     <string name="dashboard_empty_files">No files yet</string>
     <string name="dashboard_empty_text">No text yet</string>
@@ -374,6 +373,12 @@
     <string name="dashboard_delete_title">Delete this item?</string>
     <string name="dashboard_delete_body">The item is removed from this device and from the other Personal devices. This cannot be undone.</string>
     <string name="dashboard_delete_confirm">Delete item</string>
+    <string name="dashboard_item_actions">Item actions</string>
+    <string name="dashboard_send">Send</string>
+    <string name="dashboard_send_to">Send to</string>
+    <string name="dashboard_no_devices">No devices are online. Open Unison on the other device.</string>
+    <string name="dashboard_sent">Sent to the device</string>
+    <string name="dashboard_send_failed">Cannot send this item</string>
 
     <string name="requests_empty">No requests</string>
     <string name="requests_empty_body">File offers from friends, and from the devices you ask about, wait here until you answer them.</string>

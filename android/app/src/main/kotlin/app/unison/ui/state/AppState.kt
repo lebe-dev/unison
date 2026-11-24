@@ -9,6 +9,7 @@ import app.unison.core.CoreException
 import app.unison.core.qrCodeAddresses
 import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
+import app.unison.history.HistorySender
 import app.unison.pairing.PairingLink
 import app.unison.service.IncomingFiles
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ class AppState(
     private val core: CoreApi,
     events: Flow<Mobile.Event>,
     private val saver: HistorySaver,
+    private val sender: HistorySender,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
     private val localAddresses: () -> List<String> = { emptyList() },
     private val held: HeldItems = HeldItems.shared,
@@ -268,6 +270,19 @@ class AppState(
             refreshHistory()
             refreshDashboard()
         }
+
+    /** Offers the payloads of an entry to one device as files. */
+    fun sendHistoryItem(
+        itemId: String,
+        deviceId: String,
+    ) = runHistoryAction(
+        itemId = itemId,
+        failure = R.string.dashboard_send_failed,
+    ) {
+        sender.send(itemId, deviceId)
+        mutableNotices.tryEmit(R.string.dashboard_sent)
+        refreshDashboard()
+    }
 
     /** Deletes an entry on every device. */
     fun deleteHistoryItem(itemId: String) =

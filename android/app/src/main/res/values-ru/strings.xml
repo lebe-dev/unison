@@ -368,7 +368,6 @@
     <string name="clipboard_applied">Буфер обмена применен</string>
     <string name="clipboard_apply_failed">Не удалось применить буфер обмена</string>
 
-    <string name="dashboard_newest">Новые элементы каждого типа: до %1$d</string>
     <string name="dashboard_empty_images">Изображений пока нет</string>
     <string name="dashboard_empty_files">Файлов пока нет</string>
     <string name="dashboard_empty_text">Текста пока нет</string>
@@ -377,6 +376,12 @@
     <string name="dashboard_delete_title">Удалить элемент?</string>
     <string name="dashboard_delete_body">Элемент будет удален с этого и с других личных устройств. Это нельзя отменить.</string>
     <string name="dashboard_delete_confirm">Удалить элемент</string>
+    <string name="dashboard_item_actions">Действия с элементом</string>
+    <string name="dashboard_send">Отправить</string>
+    <string name="dashboard_send_to">Отправить на</string>
+    <string name="dashboard_no_devices">Нет устройств в сети. Откройте Unison на другом устройстве.</string>
+    <string name="dashboard_sent">Отправлено на устройство</string>
+    <string name="dashboard_send_failed">Не удалось отправить элемент</string>
 
     <string name="requests_empty">Запросов нет</string>
     <string name="requests_empty_body">Предложения файлов от друзей и от устройств, о которых вы спрашиваете, ждут здесь, пока вы не ответите.</string>

@@ -1,14 +1,17 @@
 package app.unison.ui.screens
 
 import android.graphics.Bitmap
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pinch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.R
 import app.unison.history.HistoryText
@@ -34,13 +37,12 @@ class DashboardScreenTest {
     val compose = createComposeRule()
 
     @Test
-    fun tabsAndLimitAreShown() {
-        setContent(dashboard = DashboardState(loaded = true, limit = 24))
+    fun tabsAreShown() {
+        setContent(dashboard = DashboardState(loaded = true))
 
         DashboardTab.entries.forEach { tab ->
             compose.onNodeWithTag(tabTag(tab)).assertIsDisplayed()
         }
-        compose.onNodeWithText(testString(R.string.dashboard_newest, 24)).assertIsDisplayed()
     }
 
     @Test
@@ -148,23 +150,166 @@ class DashboardScreenTest {
     }
 
     @Test
-    fun imagePreviewCopiesTheItem() {
-        var copied: Local.HistoryItem? = null
+    fun imageTapOpensTheFullscreenViewerAndCloses() {
         setContent(
             dashboard =
                 DashboardState(
                     loaded = true,
                     images = listOf(entry(id = "1", kind = Local.Kind.KIND_IMAGE)),
                 ),
-            onCopy = { copied = it },
+            thumbnail = { _, _ -> Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).asImageBitmap() },
         )
 
         compose.onNodeWithTag(itemTag(image(id = "1"))).performClick()
 
-        compose.onNodeWithTag(PREVIEW_TAG).assertIsDisplayed()
-        compose.onNodeWithTag(PREVIEW_COPY_TAG).performClick()
+        compose.onNodeWithTag(FULLSCREEN_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(FULLSCREEN_CLOSE_TAG).performClick()
+        compose.onNodeWithTag(FULLSCREEN_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun fullscreenViewerSupportsPinchAndDoubleTap() {
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    images = listOf(entry(id = "1", kind = Local.Kind.KIND_IMAGE)),
+                ),
+            thumbnail = { _, _ -> Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888).asImageBitmap() },
+        )
+        compose.onNodeWithTag(itemTag(image(id = "1"))).performClick()
+
+        compose.onNodeWithTag(FULLSCREEN_TAG).performTouchInput {
+            pinch(
+                start0 = center - Offset(80f, 0f),
+                end0 = center - Offset(160f, 0f),
+                start1 = center + Offset(80f, 0f),
+                end1 = center + Offset(160f, 0f),
+            )
+            doubleClick()
+        }
+
+        compose.onNodeWithTag(FULLSCREEN_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(FULLSCREEN_CLOSE_TAG).performClick()
+        compose.onNodeWithTag(FULLSCREEN_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun imageLongPressOpensTheMenuInsteadOfTheViewer() {
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    images = listOf(entry(id = "1", kind = Local.Kind.KIND_IMAGE)),
+                ),
+        )
+
+        compose.onNodeWithTag(itemTag(image(id = "1"))).performTouchInput { longClick() }
+
+        compose.onNodeWithTag(MENU_SEND_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(FULLSCREEN_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun longPressShowsTheMenuWithoutThePreview() {
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    text = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT)),
+                ),
+            devices = listOf(device(id = "mac", name = "Mac")),
+        )
+        compose.onNodeWithTag(tabTag(DashboardTab.TEXT)).performClick()
+
+        compose.onNodeWithTag(itemTag(text(id = "1"))).performTouchInput { longClick() }
+
+        compose.onNodeWithTag(MENU_SEND_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(MENU_COPY_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(MENU_DELETE_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(PREVIEW_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun menuCopiesTheItem() {
+        var copied: Local.HistoryItem? = null
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    text = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT)),
+                ),
+            onCopy = { copied = it },
+        )
+        compose.onNodeWithTag(tabTag(DashboardTab.TEXT)).performClick()
+
+        compose.onNodeWithTag(itemTag(text(id = "1"))).performTouchInput { longClick() }
+        compose.onNodeWithTag(MENU_COPY_TAG).performClick()
+
         assertEquals("1", copied?.item?.id)
-        compose.onAllNodesWithTag(PREVIEW_DOWNLOAD_TAG).assertCountEquals(0)
+    }
+
+    @Test
+    fun menuSendsTheItemToADevice() {
+        var sent: Pair<String, String>? = null
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    text = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT)),
+                ),
+            devices = listOf(device(id = "mac", name = "Mac")),
+            onSend = { item, deviceId -> sent = item.item.id to deviceId },
+        )
+        compose.onNodeWithTag(tabTag(DashboardTab.TEXT)).performClick()
+
+        compose.onNodeWithTag(itemTag(text(id = "1"))).performTouchInput { longClick() }
+        compose.onNodeWithTag(MENU_SEND_TAG).performClick()
+        compose.onNodeWithText(testString(R.string.dashboard_send_to)).assertIsDisplayed()
+        compose.onNodeWithTag(deviceMenuTag("mac")).performClick()
+
+        assertEquals("1" to "mac", sent)
+    }
+
+    @Test
+    fun menuSaysWhenNoDeviceIsOnline() {
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    text = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT)),
+                ),
+        )
+        compose.onNodeWithTag(tabTag(DashboardTab.TEXT)).performClick()
+
+        compose.onNodeWithTag(itemTag(text(id = "1"))).performTouchInput { longClick() }
+        compose.onNodeWithTag(MENU_SEND_TAG).performClick()
+
+        compose.onNodeWithText(testString(R.string.dashboard_no_devices)).assertIsDisplayed()
+    }
+
+    @Test
+    fun menuDeletesAfterConfirmation() {
+        var deleted: Local.HistoryItem? = null
+        setContent(
+            dashboard =
+                DashboardState(
+                    loaded = true,
+                    text = listOf(entry(id = "1", kind = Local.Kind.KIND_TEXT)),
+                ),
+            onDelete = { deleted = it },
+        )
+        compose.onNodeWithTag(tabTag(DashboardTab.TEXT)).performClick()
+
+        compose.onNodeWithTag(itemTag(text(id = "1"))).performTouchInput { longClick() }
+        compose.onNodeWithTag(MENU_DELETE_TAG).performClick()
+
+        compose.onNodeWithText(testString(R.string.dashboard_delete_title)).assertIsDisplayed()
+        assertNull(deleted)
+
+        compose.onNodeWithText(testString(R.string.dashboard_delete_confirm)).performClick()
+
+        assertEquals("1", deleted?.item?.id)
     }
 
     @Test
@@ -255,9 +400,11 @@ class DashboardScreenTest {
         dashboard: DashboardState,
         held: Set<String> = emptySet(),
         busy: Set<String> = emptySet(),
+        devices: List<Local.Device> = emptyList(),
         thumbnail: HistoryThumbnailLoader = { _, _ -> null },
         onRefresh: () -> Unit = {},
         onCopy: (Local.HistoryItem) -> Unit = {},
+        onSend: (Local.HistoryItem, String) -> Unit = { _, _ -> },
         onApply: (Local.HistoryItem) -> Unit = {},
         onDownload: (Local.HistoryItem) -> Unit = {},
         onDelete: (Local.HistoryItem) -> Unit = {},
@@ -269,8 +416,10 @@ class DashboardScreenTest {
                         DashboardPanel(
                             state = dashboard,
                             thumbnail = thumbnail,
+                            devices = devices,
                             onRefresh = onRefresh,
                             onCopy = onCopy,
+                            onSend = onSend,
                             onApply = onApply,
                             onDownload = onDownload,
                             onDelete = onDelete,
@@ -327,4 +476,18 @@ class DashboardScreenTest {
     private fun image(id: String): Local.ClipItem = entry(id = id, kind = Local.Kind.KIND_IMAGE).item
 
     private fun file(id: String): Local.ClipItem = entry(id = id, kind = Local.Kind.KIND_FILES).item
+
+    private fun text(id: String): Local.ClipItem = entry(id = id, kind = Local.Kind.KIND_TEXT).item
+
+    private fun device(
+        id: String,
+        name: String,
+    ): Local.Device =
+        Local.Device
+            .newBuilder()
+            .setDeviceId(id)
+            .setName(name)
+            .setOnline(true)
+            .setRole(Local.Role.ROLE_PERSONAL)
+            .build()
 }

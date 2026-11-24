@@ -18,13 +18,17 @@ object HistoryThumbnails {
     const val TILE_SIDE = 256
 
     /**
-     * Longer side of the preview. The facade answers at most 1 MiB, and
-     * 480 x 480 x 4 bytes is the largest square that fits.
+     * Longer side of the fullscreen viewer. The core allows up to 1024 px, and
+     * the facade answers `GetHistoryThumbnail` up to 8 MiB, which holds
+     * 1024 x 1024 x 4 bytes.
      */
-    const val PREVIEW_SIDE = 480
+    const val FULLSCREEN_SIDE = 1024
 
     /** Number of thumbnails kept in memory. */
     const val CACHE_ENTRIES = 64
+
+    /** Largest thumbnail that stays in memory; a fullscreen image would not fit. */
+    const val CACHE_MAX_SIDE = TILE_SIDE
 
     private const val PIXEL_BYTES = 4
     private const val RED_OFFSET = 0
@@ -122,7 +126,7 @@ class HistoryThumbnailCache(
             } catch (_: CoreException) {
                 null
             }
-        if (bitmap != null) {
+        if (bitmap != null && maxSide <= HistoryThumbnails.CACHE_MAX_SIDE) {
             mutex.withLock { cache[key] = bitmap }
         }
         return bitmap

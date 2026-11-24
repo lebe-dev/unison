@@ -14,6 +14,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.core.CoreClient
 import app.unison.core.CoreStarter
 import app.unison.core.coreEvents
+import app.unison.history.HistorySender
 import app.unison.ui.screens.HistoryScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.theme.UnisonTheme
@@ -40,7 +41,7 @@ class HistoryLiveTest {
     fun itemCapturedWhileTheScreenIsOpenAppears() {
         assertTrue("the core did not start", runBlocking { CoreStarter.await(context, START_TIMEOUT_MS) })
         val core = CoreClient()
-        val state = AppState(core, coreEvents.events, HistoryDownloads(context))
+        val state = AppState(core, coreEvents.events, HistoryDownloads(context), HistorySender { _, _ -> })
         try {
             state.refreshHistory()
             compose.waitUntil(TIMEOUT_MS) { state.history.value.loaded }
@@ -115,7 +116,7 @@ class HistoryLiveTest {
     fun entryDeletedInTheCoreLeavesTheScreen() {
         assertTrue("the core did not start", runBlocking { CoreStarter.await(context, START_TIMEOUT_MS) })
         val core = CoreClient()
-        val state = AppState(core, coreEvents.events, HistoryDownloads(context))
+        val state = AppState(core, coreEvents.events, HistoryDownloads(context), HistorySender { _, _ -> })
         try {
             val text = "delete probe ${System.currentTimeMillis()}"
             val id =
@@ -172,7 +173,7 @@ class HistoryLiveTest {
     fun scrollPositionIsKeptWhenAnEntryArrives() {
         assertTrue("the core did not start", runBlocking { CoreStarter.await(context, START_TIMEOUT_MS) })
         val core = CoreClient()
-        val state = AppState(core, coreEvents.events, HistoryDownloads(context))
+        val state = AppState(core, coreEvents.events, HistoryDownloads(context), HistorySender { _, _ -> })
         try {
             val stamp = System.currentTimeMillis()
             for (index in 1..LIST_SIZE) {

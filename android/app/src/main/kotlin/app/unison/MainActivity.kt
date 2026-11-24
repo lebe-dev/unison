@@ -29,6 +29,7 @@ import app.unison.core.coreEvents
 import app.unison.diagnostics.Diagnostics
 import app.unison.diagnostics.Journal
 import app.unison.history.HistoryDownloads
+import app.unison.history.HistoryOutbox
 import app.unison.history.HistoryThumbnailCache
 import app.unison.history.HistoryThumbnails
 import app.unison.history.HistoryTtlDefaults
@@ -77,6 +78,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var appState: AppState
     private lateinit var core: RunningCore
     private lateinit var thumbnails: HistoryThumbnailCache
+    private lateinit var outbox: HistoryOutbox
     private var onboarded by mutableStateOf(false)
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
@@ -110,11 +112,14 @@ class MainActivity : ComponentActivity() {
         core = RunningCore(this)
         dashboardLimit = UnisonSettings.dashboardLimit(this)
         thumbnails = HistoryThumbnails.cache(core::historyThumbnail)
+        outbox = HistoryOutbox(this)
+        lifecycleScope.launch(Dispatchers.IO) { outbox.clearExpired() }
         appState =
             AppState(
                 core = core,
                 events = coreEvents.events,
                 saver = HistoryDownloads(this),
+                sender = outbox,
                 localAddresses = LocalAddresses(this)::ipv4,
                 dashboardLimit = dashboardLimit,
             )
@@ -174,8 +179,10 @@ class MainActivity : ComponentActivity() {
                             DashboardPanel(
                                 state = dashboard,
                                 thumbnail = thumbnails::thumbnail,
+                                devices = state.sendTargets,
                                 onRefresh = appState::refreshDashboard,
                                 onCopy = { appState.copyHistoryItem(it.item.id) },
+                                onSend = { entry, deviceId -> appState.sendHistoryItem(entry.item.id, deviceId) },
                                 onApply = { appState.applyHistoryItem(it.item.id) },
                                 onDownload = { appState.downloadHistoryItem(it.item.id) },
                                 onDelete = { appState.deleteHistoryItem(it.item.id) },
