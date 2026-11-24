@@ -288,6 +288,19 @@ export const en = {
   "dashboard.dragHint": "Drag an item out of the window to hand it to another app.",
   "dashboard.previewAria": "Item preview",
   "dashboard.closePreviewAria": "Close the preview",
+  "dashboard.menuAria": "Item actions",
+  "dashboard.closeMenuAria": "Close the menu",
+  "dashboard.menuSend": "Send",
+  "dashboard.menuCopy": "Copy",
+  "dashboard.sendTo": "Send to",
+  "dashboard.sendFailed": "The item could not be sent.",
+  "dashboard.sentTo": "Sent to {name}.",
+  "dashboard.copied": "Copied to the clipboard.",
+  "dashboard.deleteTitle": "Delete the item?",
+  "dashboard.deleteConfirm":
+    "The item is deleted from this device and from the other Personal devices.",
+  "dashboard.deleteFailed": "The item could not be deleted.",
+  "dashboard.deleted": "The item was deleted.",
 
   // Names of the values of the local API.
   "format.role.personal": "Personal",

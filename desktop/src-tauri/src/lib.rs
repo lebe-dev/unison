@@ -287,6 +287,7 @@ pub fn run() {
             daemon_status,
             dragout::drag_staging_dir,
             dragout::start_file_drag,
+            dragout::copy_files_to_clipboard,
             open_local_network_settings,
             files::show_in_folder,
             files::open_files,

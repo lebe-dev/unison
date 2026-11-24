@@ -179,6 +179,11 @@ are dragged together. The copies live in the cache of the app and are removed a 
 written, so a terminal still reads them later. Text items are not dragged out; copy them with the
 button of the preview.
 
+A right click on an item opens its actions: `Send` offers the content to one online device as a file,
+`Copy` puts it on the clipboard of this device without sending it anywhere, and `Delete` removes it
+from this device and from the other Personal devices after a confirmation. `Copy` of an image or a
+file copies the files themselves, so they can be pasted into Finder or an attachment field.
+
 ## Holding items until you apply them
 
 A device that asks before it applies the clipboard of another device does not apply its items. They

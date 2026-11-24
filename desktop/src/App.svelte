@@ -154,6 +154,16 @@
     }
   }
 
+  /** suppressContextMenu hides the menu of the webview, which belongs to a
+   * browser. Editable fields keep their own menu with copy and paste. */
+  function suppressContextMenu(event: MouseEvent): void {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (target?.closest("input, textarea, [contenteditable='true']")) {
+      return;
+    }
+    event.preventDefault();
+  }
+
   function trailing(id: SectionID): number {
     if (id === "requests") {
       return requests.pending;
@@ -165,7 +175,7 @@
   }
 </script>
 
-<svelte:window onkeydown={handleShortcut} />
+<svelte:window onkeydown={handleShortcut} oncontextmenu={suppressContextMenu} />
 
 <div class="app">
   <aside class="sidebar" data-tauri-drag-region>

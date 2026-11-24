@@ -166,6 +166,11 @@ to the user. The copies stay after the drop: a terminal inserts the path of the 
 line tool can still read the content later. At startup the shell removes the staging directories that
 are older than 24 hours.
 
+The context menu of an item uses the same staging: `copy_files_to_clipboard` writes the staged paths
+as file URLs to the macOS pasteboard, which is how Finder copies a file. Nothing is sent to a device
+by this call. `Send` stages the content and offers the copies to one online device through
+`SendFiles`; `Delete` removes the item from the history on every Personal device.
+
 ### Application log
 
 Settings > Application log turns on a log for support. The daemon marks it with `logs/journal.on` in

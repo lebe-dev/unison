@@ -1,4 +1,5 @@
-//! Dragging the content of a clip out of the window as files.
+//! Dragging the content of a clip out of the window as files, and copying it
+//! to the system clipboard.
 //!
 //! The shell copies an item into a staging directory of the caches and starts a
 //! native drag of the copies. The copies stay on disk after the drop, so a
@@ -156,6 +157,57 @@ pub fn start_file_drag(
                 }
             })
             .map_err(|err| format!("cannot reach the main thread: {err}"))
+    }
+}
+
+/// copy_files_to_clipboard puts the staged files on the system pasteboard, so
+/// the user can paste them into another app without sending them anywhere.
+#[tauri::command]
+pub fn copy_files_to_clipboard(
+    window: tauri::Window,
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+) -> Result<(), String> {
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (window, app, paths);
+        Err("copying files to the clipboard is not supported on this platform".to_string())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let root = staging_root(&app)?
+            .canonicalize()
+            .map_err(|err| format!("cannot read the staging directory: {err}"))?;
+        let staged = staged_paths(&root, &paths)?;
+        let (sender, receiver) = std::sync::mpsc::channel();
+        window
+            .run_on_main_thread(move || {
+                use objc2::rc::Retained;
+                use objc2::runtime::ProtocolObject;
+                use objc2_app_kit::{NSPasteboard, NSPasteboardWriting};
+                use objc2_foundation::{NSArray, NSString, NSURL};
+
+                let urls: Vec<Retained<NSURL>> = staged
+                    .iter()
+                    .map(|path| {
+                        NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()))
+                    })
+                    .collect();
+                let objects: Vec<Retained<ProtocolObject<dyn NSPasteboardWriting>>> = urls
+                    .into_iter()
+                    .map(ProtocolObject::from_retained)
+                    .collect();
+                let array = NSArray::from_retained_slice(&objects);
+                let pasteboard = NSPasteboard::generalPasteboard();
+                pasteboard.clearContents();
+                let _ = sender.send(pasteboard.writeObjects(&array));
+            })
+            .map_err(|err| format!("cannot reach the main thread: {err}"))?;
+        match receiver.recv_timeout(Duration::from_secs(2)) {
+            Ok(true) => Ok(()),
+            Ok(false) => Err("the files were not copied to the clipboard".to_string()),
+            Err(_) => Err("the pasteboard did not answer".to_string()),
+        }
     }
 }
 

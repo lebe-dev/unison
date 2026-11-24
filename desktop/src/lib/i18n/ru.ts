@@ -285,6 +285,18 @@ export const ru: { [K in MessageKey]: Message } = {
   "dashboard.dragHint": "Перетащите элемент из окна, чтобы передать его другому приложению.",
   "dashboard.previewAria": "Просмотр элемента",
   "dashboard.closePreviewAria": "Закрыть просмотр",
+  "dashboard.menuAria": "Действия с элементом",
+  "dashboard.closeMenuAria": "Закрыть меню",
+  "dashboard.menuSend": "Отправить",
+  "dashboard.menuCopy": "Скопировать",
+  "dashboard.sendTo": "Отправить на устройство",
+  "dashboard.sendFailed": "Не удалось отправить элемент.",
+  "dashboard.sentTo": "Отправлено на {name}.",
+  "dashboard.copied": "Скопировано в буфер обмена.",
+  "dashboard.deleteTitle": "Удалить элемент?",
+  "dashboard.deleteConfirm": "Элемент будет удален с этого устройства и с других личных устройств.",
+  "dashboard.deleteFailed": "Не удалось удалить элемент.",
+  "dashboard.deleted": "Элемент удален.",
 
   // Names of the values of the local API.
   "format.role.personal": "Личные",
