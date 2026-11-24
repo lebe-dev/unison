@@ -16,17 +16,20 @@ fn emit_icon_watch() {
     println!("cargo:rerun-if-changed={}", icons.display());
 }
 
-/// emit_build_env bakes the Sentry DSN and the version of the repository into
-/// the binary. The variable of the environment wins over the `.env` file.
+/// emit_build_env bakes the Sentry DSN, the version of the repository and the
+/// public key of the updates into the binary. A variable of the environment
+/// wins over the `.env` file and the files of the repository.
 fn emit_build_env() {
     let manifest = env::var("CARGO_MANIFEST_DIR").expect("the manifest directory is set");
     let root = Path::new(&manifest).join("../..");
     let dotenv = root.join(".env");
-    let version = root.join("VERSION");
+    let version_file = root.join("VERSION");
 
     println!("cargo:rerun-if-changed={}", dotenv.display());
-    println!("cargo:rerun-if-changed={}", version.display());
+    println!("cargo:rerun-if-changed={}", version_file.display());
     println!("cargo:rerun-if-env-changed=SENTRY_DSN");
+    println!("cargo:rerun-if-env-changed=UNISON_VERSION");
+    println!("cargo:rerun-if-env-changed=UNISON_UPDATE_PUBLIC_KEY");
 
     let dsn = env::var("SENTRY_DSN")
         .ok()
@@ -34,12 +37,39 @@ fn emit_build_env() {
         .unwrap_or_default();
     println!("cargo:rustc-env=UNISON_SENTRY_DSN={dsn}");
 
-    let version = fs::read_to_string(&version)
-        .map(|text| text.trim().to_string())
+    // A release build names its exact version, including a pre-release suffix,
+    // so the updater compares the version that runs and not the crate version.
+    let version = env::var("UNISON_VERSION")
         .ok()
+        .map(|text| text.trim().to_string())
         .filter(|text| !text.is_empty())
+        .or_else(|| read_trimmed(&version_file))
         .unwrap_or_else(|| env::var("CARGO_PKG_VERSION").unwrap_or_default());
     println!("cargo:rustc-env=UNISON_VERSION={version}");
+
+    let key = public_key(&root);
+    println!("cargo:rustc-env=UNISON_UPDATE_PUBLIC_KEY={key}");
+}
+
+/// read_trimmed returns the trimmed text of a file when it is not empty.
+fn read_trimmed(path: &Path) -> Option<String> {
+    fs::read_to_string(path)
+        .ok()
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
+}
+
+/// public_key returns the key that verifies a release. The variable of the
+/// environment wins, so a build for a test can use its own key.
+fn public_key(root: &Path) -> String {
+    if let Ok(key) = env::var("UNISON_UPDATE_PUBLIC_KEY")
+        && !key.trim().is_empty()
+    {
+        return key.trim().to_string();
+    }
+    let path = root.join("packaging/release-public-key.txt");
+    println!("cargo:rerun-if-changed={}", path.display());
+    read_trimmed(&path).unwrap_or_default()
 }
 
 /// dotenv_value returns the value of a key in a `.env` file.

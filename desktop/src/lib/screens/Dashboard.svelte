@@ -20,6 +20,7 @@
   import ImageCanvas from "../ImageCanvas.svelte";
   import Spinner from "../Spinner.svelte";
   import { transfers } from "../transfers.svelte";
+  import UpdateBanner from "../UpdateBanner.svelte";
 
   /** Longer side of the pixels of a tile. */
   const THUMB_SIDE = 256;
@@ -376,6 +377,8 @@
     return name || t("common.item");
   }
 </script>
+
+<UpdateBanner />
 
 {#if !daemon.connected}
   <section class="state">

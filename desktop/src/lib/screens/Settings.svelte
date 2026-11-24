@@ -3,7 +3,7 @@
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { history } from "../history.svelte";
-  import { shortDeviceID } from "../format";
+  import { formatDateTime, shortDeviceID } from "../format";
   import { t, type MessageKey } from "../i18n";
   import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
@@ -36,7 +36,7 @@
     type HistoryTTL,
     type TTLKind,
   } from "../ttl";
-  import { appSectionOf, desktopSectionOf } from "../settingsFile";
+  import { appSectionOf, desktopSectionOf, isCheckInterval } from "../settingsFile";
   import {
     pickSettingsSource,
     pickSettingsTarget,
@@ -47,6 +47,8 @@
   import RelaySection from "./RelaySection.svelte";
   import { dashboard, DASHBOARD_LIMIT_OPTIONS, isDashboardLimit } from "../dashboard.svelte";
   import { theme } from "../theme.svelte";
+  import { updater } from "../updater.svelte";
+  import type { CheckInterval } from "../updater";
   import Icon, { type IconName } from "../Icon.svelte";
 
   type TabID = "general" | "clipboard" | "files" | "network" | "privacy";
@@ -57,6 +59,12 @@
     { id: "files", labelKey: "settings.tabFiles", icon: "file" },
     { id: "network", labelKey: "settings.tabNetwork", icon: "devices" },
     { id: "privacy", labelKey: "settings.tabPrivacy", icon: "shield" },
+  ];
+
+  const updateIntervals: readonly { value: CheckInterval; labelKey: MessageKey }[] = [
+    { value: "six_hours", labelKey: "settings.updatesSixHours" },
+    { value: "daily", labelKey: "settings.updatesDaily" },
+    { value: "weekly", labelKey: "settings.updatesWeekly" },
   ];
 
   const pauses: { choice: PauseChoice; labelKey: MessageKey }[] = [
@@ -100,6 +108,25 @@
     const minutes = Math.floor(left / 60_000);
     const seconds = Math.floor((left % 60_000) / 1000);
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  });
+
+  const updateLastChecked = $derived.by(() => {
+    const time = updater.config.lastCheckedUnixMs;
+    return time ? formatDateTime(time) : t("settings.updatesNeverChecked");
+  });
+
+  const updateState = $derived.by((): string => {
+    const status = updater.status;
+    if (status.kind === "error") {
+      return t("settings.updatesError", { message: status.message });
+    }
+    if (updater.available) {
+      return t("settings.updatesAvailable", { version: updater.available.version });
+    }
+    if (status.kind === "up_to_date") {
+      return t("settings.updatesUpToDate");
+    }
+    return "";
   });
 
   const loginHint = $derived.by((): MessageKey => {
@@ -398,6 +425,14 @@
     }
   }
 
+  /** setUpdateInterval changes the interval of the background checks. */
+  function setUpdateInterval(event: Event): void {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (isCheckInterval(value)) {
+      void updater.setInterval(value);
+    }
+  }
+
   /** Shows the lifetimes and fills the fields with them. */
   function showTTL(next: HistoryTTL | null): void {
     ttl = next;
@@ -479,7 +514,11 @@
     notice = null;
     try {
       const response = await client.exportSettings({
-        appSettings: appSectionOf(theme.mode, loginEnabled),
+        appSettings: appSectionOf(theme.mode, loginEnabled, {
+          enabled: updater.config.enabled,
+          betaChannel: updater.config.betaChannel,
+          interval: updater.config.interval,
+        }),
       });
       const target = await pickSettingsTarget(response.fileName);
       if (!target) {
@@ -520,6 +559,9 @@
         } catch {
           notes.push(t("settings.importLoginSkipped"));
         }
+      }
+      if (app.updates) {
+        await updater.setConfig(app.updates);
       }
       if (!(await load())) {
         return;
@@ -647,6 +689,83 @@
           <small>{t(loginHint)}</small>
         </span>
       </label>
+    </div>
+  </section>
+{/snippet}
+
+{#snippet updates()}
+  <section class="section">
+    <h3 class="section-title">{t("settings.updates")}</h3>
+    <div class="list">
+      <label class="toggle form-row">
+        <input
+          type="checkbox"
+          checked={updater.config.enabled}
+          disabled={updater.busy}
+          onchange={(event) => void updater.setEnabled(event.currentTarget.checked)}
+        />
+        <span>
+          {t("settings.updatesAuto")}
+          <small>{t("settings.updatesAutoHint")}</small>
+        </span>
+      </label>
+      <label class="form-row">
+        <span class="label">{t("settings.updatesInterval")}</span>
+        <select
+          aria-label={t("settings.updatesInterval")}
+          value={updater.config.interval}
+          disabled={!updater.config.enabled || updater.busy}
+          onchange={setUpdateInterval}
+        >
+          {#each updateIntervals as option (option.value)}
+            <option value={option.value}>{t(option.labelKey)}</option>
+          {/each}
+        </select>
+      </label>
+      <label class="toggle form-row">
+        <input
+          type="checkbox"
+          checked={updater.config.betaChannel}
+          disabled={updater.busy}
+          onchange={(event) => void updater.setBetaChannel(event.currentTarget.checked)}
+        />
+        <span>
+          {t("settings.updatesBeta")}
+          <small>{t("settings.updatesBetaHint")}</small>
+        </span>
+      </label>
+    </div>
+    <div class="list">
+      <div class="form-row">
+        <span class="label">
+          {t("settings.updatesVersion", {
+            version: updater.currentVersion || t("updates.unknownVersion"),
+          })}
+          <small>{t("settings.updatesLastChecked", { time: updateLastChecked })}</small>
+          {#if updateState}
+            <small>{updateState}</small>
+          {/if}
+        </span>
+        <div class="toolbar">
+          <button
+            class="button"
+            type="button"
+            disabled={updater.busy}
+            onclick={() => void updater.checkNow()}
+          >
+            {#if updater.status.kind === "checking"}
+              <Spinner size={14} />
+            {:else}
+              {t("settings.updatesCheckNow")}
+            {/if}
+          </button>
+          {#if updater.hasUpdate}
+            <button class="button" type="button" onclick={() => updater.openDialog()}>
+              {t("settings.updatesView")}
+            </button>
+          {/if}
+        </div>
+      </div>
     </div>
   </section>
 {/snippet}
@@ -794,6 +913,8 @@
         {@render dashboardSection()}
 
         {@render startup()}
+
+        {@render updates()}
 
         {@render applicationLog()}
 

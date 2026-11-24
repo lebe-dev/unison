@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { tick } from "svelte";
 import {
   DeviceSchema,
@@ -24,6 +24,9 @@ import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
 import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
 import { pickFolder } from "../files";
+import { checkNow, getUpdaterState, onUpdaterState, setConfig } from "../updater";
+import { updater } from "../updater.svelte";
+import type { UpdaterSnapshot } from "../updater";
 import { relayDraft } from "../relayDraft.svelte";
 import { setSentryEnabled } from "../sentry";
 import {
@@ -55,6 +58,16 @@ vi.mock("../settingsFileIO", () => ({
   pickSettingsTarget: vi.fn(),
   readSettingsFile: vi.fn(),
   writeSettingsFile: vi.fn(),
+}));
+
+vi.mock("../updater", () => ({
+  getUpdaterState: vi.fn(),
+  onUpdaterState: vi.fn().mockResolvedValue(() => {}),
+  setConfig: vi.fn(),
+  checkNow: vi.fn(),
+  dismissUpdate: vi.fn(),
+  installUpdate: vi.fn(),
+  cancelUpdate: vi.fn(),
 }));
 
 vi.mock("../journalIO", () => ({
@@ -91,6 +104,10 @@ vi.mock("../api/client", () => ({
   },
 }));
 
+const getUpdaterStateMock = vi.mocked(getUpdaterState);
+const onUpdaterStateMock = vi.mocked(onUpdaterState);
+const setConfigMock = vi.mocked(setConfig);
+const checkNowMock = vi.mocked(checkNow);
 const getStatus = vi.mocked(client.getStatus);
 const getSettings = vi.mocked(client.getSettings);
 const updateSettings = vi.mocked(client.updateSettings);
@@ -144,8 +161,42 @@ function settings(): SettingsMessage {
   });
 }
 
+/** updaterSnapshot returns the state of the updater of a test. */
+function updaterSnapshot(overrides: Partial<UpdaterSnapshot> = {}): UpdaterSnapshot {
+  return {
+    currentVersion: "0.2.5",
+    supported: true,
+    unsupportedReason: null,
+    config: {
+      enabled: false,
+      betaChannel: false,
+      interval: "daily",
+      lastCheckedUnixMs: null,
+      dismissedVersion: null,
+      lastEtag: null,
+    },
+    status: { kind: "idle" },
+    available: null,
+    dismissed: false,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  updater.snapshot = null;
+  updater.dialogOpen = false;
+  updater.failure = null;
+  onUpdaterStateMock.mockResolvedValue(() => {});
+  getUpdaterStateMock.mockResolvedValue(updaterSnapshot());
+  setConfigMock.mockImplementation((changes) =>
+    Promise.resolve(
+      updaterSnapshot({
+        config: { ...updaterSnapshot().config, ...changes },
+      }),
+    ),
+  );
+  checkNowMock.mockResolvedValue(updaterSnapshot({ status: { kind: "up_to_date" } }));
   setSentryEnabledMock.mockResolvedValue();
   relayDraft.url = "";
   relayDraft.token = "";
@@ -785,6 +836,87 @@ describe("settings file", () => {
     await fireEvent.click(await screen.findByRole("button", { name: "Export" }));
 
     expect(writeSettingsFileMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the updates section with checks off by default", async () => {
+    render(Settings);
+
+    expect(await screen.findByText("Updates")).toBeTruthy();
+    const automatic = screen.getByRole<HTMLInputElement>("checkbox", {
+      name: /Check for updates automatically/,
+    });
+    expect(automatic.checked).toBe(false);
+    const interval = screen.getByRole<HTMLSelectElement>("combobox", { name: "Check interval" });
+    expect(interval.value).toBe("daily");
+    expect(interval.hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByRole<HTMLInputElement>("checkbox", { name: /Include beta releases/ }).checked,
+    ).toBe(false);
+  });
+
+  it("turns the automatic checks on", async () => {
+    render(Settings);
+
+    const automatic = await screen.findByRole("checkbox", {
+      name: /Check for updates automatically/,
+    });
+    await fireEvent.click(automatic);
+
+    expect(setConfigMock).toHaveBeenCalledWith({ enabled: true });
+  });
+
+  it("includes the beta releases on request", async () => {
+    render(Settings);
+
+    const beta = await screen.findByRole("checkbox", { name: /Include beta releases/ });
+    await fireEvent.click(beta);
+
+    expect(setConfigMock).toHaveBeenCalledWith({ betaChannel: true });
+  });
+
+  it("switches the interval of the automatic checks", async () => {
+    updater.snapshot = updaterSnapshot({
+      config: { ...updaterSnapshot().config, enabled: true },
+    });
+    render(Settings);
+
+    const interval = await screen.findByRole("combobox", { name: "Check interval" });
+    await fireEvent.change(interval, { target: { value: "weekly" } });
+
+    expect(setConfigMock).toHaveBeenCalledWith({ interval: "weekly" });
+  });
+
+  it("checks for an update on demand and reports it", async () => {
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Check now" }));
+
+    expect(checkNowMock).toHaveBeenCalled();
+    expect(await screen.findByText("Up to date")).toBeTruthy();
+  });
+
+  it("applies the updater settings of the file the user picked", async () => {
+    const text = JSON.stringify({
+      schema: "unison-settings",
+      format_version: 1,
+      app: { desktop: { updates: { enabled: true, beta_channel: true, interval: "weekly" } } },
+    });
+    pickSettingsSourceMock.mockResolvedValue("/tmp/unison-settings.json");
+    readSettingsFileMock.mockResolvedValue(text);
+    importSettings.mockResolvedValue(
+      create(ImportSettingsResponseSchema, { settings: settings() }),
+    );
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    await waitFor(() =>
+      expect(setConfigMock).toHaveBeenCalledWith({
+        enabled: true,
+        betaChannel: true,
+        interval: "weekly",
+      }),
+    );
   });
 
   it("applies the settings of the file the user picked", async () => {

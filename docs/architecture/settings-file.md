@@ -40,7 +40,11 @@ document, and the CLI, the desktop app and the Android app show it to the user.
     }
   },
   "app": {
-    "desktop": { "theme": "dark", "login_item": true },
+    "desktop": {
+      "theme": "dark",
+      "login_item": true,
+      "updates": { "enabled": false, "beta_channel": false, "interval": "daily" }
+    },
     "android": { "operating_mode": "wifi_only" }
   }
 }
@@ -51,6 +55,10 @@ parameters, the error reporting consent, the application log, the history lifeti
 policy. It is written with the values that are in effect, so a restore reproduces the device. The
 `app` part holds the local settings of a client, one object per platform family, and the daemon
 stores it without interpreting it.
+
+The `app.desktop.updates` object carries the update behavior: whether the background checks are on,
+whether the beta channel is included, and the interval `six_hours`, `daily` or `weekly`. It holds no
+installed version, no download and no signing key, so a restore changes only what the user chose.
 
 The following values are deliberately absent:
 
@@ -69,8 +77,8 @@ setting the file never knew. Values are checked before anything is written, so a
 invalid limit or action changes nothing.
 
 A client applies its own section of `app` and ignores the others, so the same file restores a
-desktop and an Android device. The desktop applies the theme and the login item; Android applies the
-service mode and the notification categories.
+desktop and an Android device. The desktop applies the theme, the login item and the update
+settings; Android applies the service mode and the notification categories.
 
 ## Versions
 

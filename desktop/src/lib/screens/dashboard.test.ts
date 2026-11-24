@@ -71,6 +71,8 @@ vi.mock("../dragOut", () => ({
 }));
 
 import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
+import { updater } from "../updater.svelte";
+import type { UpdaterSnapshot } from "../updater";
 import Dashboard from "./Dashboard.svelte";
 
 beforeEach(() => {
@@ -87,6 +89,8 @@ beforeEach(() => {
   dashboard.error = null;
   dashboard.notice = null;
   dashboard.downloadsDir = "";
+  updater.snapshot = null;
+  updater.dialogOpen = false;
   mocks.getSettings.mockResolvedValue(create(GetSettingsResponseSchema, {}));
   mocks.copyHistoryItem.mockResolvedValue(create(CopyHistoryItemResponseSchema, {}));
   mocks.listHistory.mockImplementation((request: { kind: Kind }) => {
@@ -358,3 +362,57 @@ function textHistory(id: string, text: string) {
     }),
   });
 }
+
+/** updaterSnapshot returns a state with one available release. */
+function updaterSnapshot(overrides: Partial<UpdaterSnapshot> = {}): UpdaterSnapshot {
+  return {
+    currentVersion: "0.2.5",
+    supported: true,
+    unsupportedReason: null,
+    config: {
+      enabled: false,
+      betaChannel: false,
+      interval: "daily",
+      lastCheckedUnixMs: null,
+      dismissedVersion: null,
+      lastEtag: null,
+    },
+    status: { kind: "available" },
+    available: {
+      version: "0.3.0",
+      name: "Unison 0.3.0",
+      body: "## What is new",
+      prerelease: false,
+      publishedAt: "2026-11-24T10:00:00Z",
+      htmlUrl: "https://github.com/lebe-dev/unison/releases/tag/0.3.0",
+      assetSize: 1024,
+    },
+    dismissed: false,
+    ...overrides,
+  };
+}
+
+describe("dashboard update banner", () => {
+  afterEach(() => {
+    updater.snapshot = null;
+  });
+
+  it("shows an available update even without a daemon", () => {
+    mocks.daemon.connected = false;
+    mocks.daemon.loading = false;
+    updater.snapshot = updaterSnapshot();
+
+    render(Dashboard);
+
+    expect(screen.getByText("Unison 0.3.0 is available")).toBeTruthy();
+    expect(screen.getByText(/The daemon is not running/)).toBeTruthy();
+  });
+
+  it("hides the banner of a release the user put aside", () => {
+    updater.snapshot = updaterSnapshot({ dismissed: true });
+
+    render(Dashboard);
+
+    expect(screen.queryByText("Unison 0.3.0 is available")).toBeNull();
+  });
+});

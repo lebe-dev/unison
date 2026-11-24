@@ -15,9 +15,21 @@ tauri-build = { version = "2", features = [] }
 base64 = "0.22"
 # Native drags out of the window. The crate binds AppKit, OLE and GTK from Rust.
 drag = "2"
+# Verification of the release signature of an update.
+ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
+# Reading the stream of a downloaded update.
+futures-util = "0.3"
 http-body-util = "0.1"
 hyper = { version = "1", features = ["client", "http2"] }
 hyper-util = { version = "0.1", features = ["tokio"] }
+# The API of GitHub and the artifacts of a release. The TLS stack is pure Rust,
+# so the shell links the same way on every platform.
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+  "json",
+  "stream",
+  "gzip",
+] }
 sentry = { version = "0.49", default-features = false, features = [
   "backtrace",
   "contexts",
@@ -25,6 +37,9 @@ sentry = { version = "0.49", default-features = false, features = [
   "transport",
 ] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The digest of a downloaded update.
+sha2 = "0.10"
 sys-locale = "0.3"
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-clipboard-manager = "2"
@@ -45,7 +60,7 @@ zbus = "5"
 
 [dev-dependencies]
 hyper = { version = "1", features = ["server", "http2"] }
-serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

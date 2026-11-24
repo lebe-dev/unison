@@ -568,10 +568,29 @@ release-all ver=release_version:
     just release-windows "{{ver}}"
     just release-linux "{{ver}}"
     just release-android "{{ver}}"
+    @if [ -n "${UNISON_RELEASE_SIGN_KEY:-}${UNISON_RELEASE_SIGN_KEY_FILE:-}" ]; then \
+        just --justfile "{{justfile_directory()}}/Justfile" release-sign; \
+    else \
+        echo "release: WARNING the release is not signed, set UNISON_RELEASE_SIGN_KEY or UNISON_RELEASE_SIGN_KEY_FILE"; \
+    fi
 
 # Build every artifact of the current commit into release/.
 release-all-dev:
     just release-all "{{release_dev_version}}"
+
+# Write release/SHA256SUMS and its Ed25519 signature.
+release-checksums:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=(--dir "{{release_dir}}")
+    if [ -n "${UNISON_RELEASE_SIGN_KEY_FILE:-}" ]; then
+        args+=(--key "$UNISON_RELEASE_SIGN_KEY_FILE")
+    fi
+    go run ./cmd/unison-release-sign sign "${args[@]}"
+
+# Verify the signature and every artifact hash of release/.
+release-sign: release-checksums
+    go run ./cmd/unison-release-sign verify --pubkey packaging/release-public-key.txt --dir {{release_dir}}
 
 # Build the Windows installer and the test kit that runs on a Windows host.
 windows-kit: package-windows-cross

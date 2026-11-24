@@ -28,6 +28,8 @@
   import { onSharedFiles } from "./lib/share";
   import { onTrayAction, type TrayAction } from "./lib/tray";
   import { transfers } from "./lib/transfers.svelte";
+  import UpdateDialog from "./lib/UpdateDialog.svelte";
+  import { updater } from "./lib/updater.svelte";
 
   const sections = [
     { id: "dashboard", labelKey: "nav.dashboard", icon: "dashboard" },
@@ -72,6 +74,7 @@
     transfers.start();
     requests.start();
     prompts.start();
+    updater.start();
     void promptHost.start();
     // A notification shows its buttons while the shell listens to them, so the
     // events of the daemon start after the subscription.
@@ -91,6 +94,7 @@
     transfers.stop();
     requests.stop();
     prompts.stop();
+    updater.stop();
     promptHost.stop();
     notifications.stop();
     daemon.stop();
@@ -291,6 +295,8 @@
     </div>
   </div>
 {/if}
+
+<UpdateDialog />
 
 {#snippet navItem(section: (typeof sections)[number])}
   {@const count = trailing(section.id)}
