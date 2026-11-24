@@ -134,9 +134,9 @@ function settings(): SettingsMessage {
     roaming: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
     dataSaver: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
     relayMaxSizeBytes: megabyte,
-    historyTtlTextSeconds: 7n * 86400n,
-    historyTtlImageSeconds: 3n * 86400n,
-    historyTtlFilesSeconds: 86400n,
+    historyTtlTextSeconds: 86400n,
+    historyTtlImageSeconds: 7n * 86400n,
+    historyTtlFilesSeconds: 7n * 86400n,
     downloadsDir: "/Users/me/Downloads/Unison",
     sentryEnabled: false,
     stripTracking: true,
@@ -439,9 +439,9 @@ describe("settings screen", () => {
     render(Settings);
     await openTab("Clipboard");
 
-    expect((await screen.findByLabelText<HTMLInputElement>("Text lifetime")).value).toBe("7d");
-    expect(screen.getByLabelText<HTMLInputElement>("Images lifetime").value).toBe("3d");
-    expect(screen.getByLabelText<HTMLInputElement>("Files lifetime").value).toBe("1d");
+    expect((await screen.findByLabelText<HTMLInputElement>("Text lifetime")).value).toBe("1d");
+    expect(screen.getByLabelText<HTMLInputElement>("Images lifetime").value).toBe("7d");
+    expect(screen.getByLabelText<HTMLInputElement>("Files lifetime").value).toBe("7d");
   });
 
   it("saves a new lifetime", async () => {

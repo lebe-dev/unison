@@ -225,7 +225,7 @@ rate and a daily traffic quota; above them the relay drops datagrams or closes t
 
 ## Retention
 
-The history keeps text for 7 days, images for 3 days and files for 24 hours by default. The lifetime
+The history keeps text for 24 hours, images for 7 days and files for 7 days by default. The lifetime
 belongs to the device that captured the item and is written into it, so every device expires it at the
 same moment and no network is needed for that. Expired entries are removed every ten minutes, and a
 deletion travels to the other Personal devices as a tombstone.

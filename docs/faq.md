@@ -116,7 +116,7 @@ it as usual. Pause the clipboard when you work with secrets that are not marked.
 ### Is the history stored in the cloud?
 
 No. The history is a local SQLite database on each device, shared only with the paired Personal
-devices and kept for a fixed time: 7 days for text, 3 days for images and 24 hours for files by
+devices and kept for a fixed time: 24 hours for text, 7 days for images and 7 days for files by
 default. The relay stores no content and writes nothing to disk. Payloads are cached locally and
 sealed.
 

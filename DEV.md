@@ -346,8 +346,8 @@ tombstone with the id of the deleted item to the log of the device that deletes,
 the other devices like any other entry. Expiry is decided by the origin device and carried in the
 item: the queries skip entries past their expiry and a cleanup every ten minutes removes them, so
 an expired item disappears on every device without a network exchange. The lifetimes are the
-`history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, seven days, three days and
-one day by default; `UpdateSettings` stores them and `ReloadTTLs` passes them to the pipeline, so a
+`history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, one day, seven days and
+seven days by default; `UpdateSettings` stores them and `ReloadTTLs` passes them to the pipeline, so a
 change applies to the next captured item without a restart. Every write to the log reports itself
 through `history.Options.OnChange`, which the node publishes as the `history` event, so a reader
 refreshes its list whoever recorded the entry: the pipeline, the local API or the exchange.

@@ -29,11 +29,11 @@ const (
 // Lifetime defaults and limits.
 const (
 	// DefaultTextTTL is the lifetime of a text item.
-	DefaultTextTTL = 7 * 24 * time.Hour
+	DefaultTextTTL = 24 * time.Hour
 	// DefaultImageTTL is the lifetime of an image item.
-	DefaultImageTTL = 3 * 24 * time.Hour
+	DefaultImageTTL = 7 * 24 * time.Hour
 	// DefaultFilesTTL is the lifetime of a file item.
-	DefaultFilesTTL = 24 * time.Hour
+	DefaultFilesTTL = 7 * 24 * time.Hour
 	// DefaultCleanupInterval is how often expired entries are removed.
 	DefaultCleanupInterval = 10 * time.Minute
 	// MaxTTL is the longest lifetime a device may set for a kind.

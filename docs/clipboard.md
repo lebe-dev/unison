@@ -131,9 +131,9 @@ An item lives for a fixed time from the moment it was captured:
 
 | Type | Lifetime |
 |------|----------|
-| text | 7 days |
-| images | 3 days |
-| files | 24 hours |
+| text | 24 hours |
+| images | 7 days |
+| files | 7 days |
 
 Expired items are removed every ten minutes and when the daemon starts. Deleting an item removes it
 on the other Personal devices as well, so it does not come back from them.
