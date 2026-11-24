@@ -3,12 +3,27 @@
 //!
 //! The shell copies an item into a staging directory of the caches and starts a
 //! native drag of the copies. The copies stay on disk after the drop, so a
-//! terminal inserts a path that still points at the content.
+//! terminal inserts a path that still points at the content. The native part of
+//! the drag and the clipboard write belongs to the backend of the platform.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime};
 use tauri::Manager;
+
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(target_os = "macos")]
+mod macos;
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[cfg(target_os = "linux")]
+use linux as platform;
+#[cfg(target_os = "macos")]
+use macos as platform;
+#[cfg(target_os = "windows")]
+use windows as platform;
 
 /// How long the copies of a dropped item stay on disk.
 pub const STAGING_RETENTION: Duration = Duration::from_secs(24 * 60 * 60);
@@ -16,12 +31,10 @@ pub const STAGING_RETENTION: Duration = Duration::from_secs(24 * 60 * 60);
 /// Name of the directory that holds the staging directories, inside the caches.
 const STAGING_DIR: &str = "drag";
 
-/// preview icon of a drag that carries no image.
-#[cfg(target_os = "macos")]
-const APP_ICON: &[u8] = include_bytes!("../icons/128x128.png");
+/// Icon of a drag that carries no image.
+const APP_ICON: &[u8] = include_bytes!("../../icons/128x128.png");
 
 /// Extensions the system shows as an image, lowercase.
-#[cfg(target_os = "macos")]
 const IMAGE_EXTENSIONS: [&str; 9] = [
     "png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "tif", "tiff",
 ];
@@ -103,7 +116,6 @@ fn staged_paths(root: &Path, paths: &[String]) -> Result<Vec<PathBuf>, String> {
 }
 
 /// is_image reports whether the path looks like an image the system can show.
-#[cfg(target_os = "macos")]
 fn is_image(path: &Path) -> bool {
     path.extension()
         .and_then(|extension| extension.to_str())
@@ -116,7 +128,6 @@ fn is_image(path: &Path) -> bool {
 
 /// preview returns the image that follows the cursor: the first staged image,
 /// or the icon of the app.
-#[cfg(target_os = "macos")]
 fn preview(paths: &[PathBuf]) -> drag::Image {
     match paths.iter().find(|path| is_image(path)) {
         Some(path) => drag::Image::File(path.clone()),
@@ -132,83 +143,11 @@ pub fn start_file_drag(
     app: tauri::AppHandle,
     paths: Vec<String>,
 ) -> Result<(), String> {
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = (window, app, paths);
-        Err("dragging files out of the window is not supported on this platform".to_string())
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let root = staging_root(&app)?
-            .canonicalize()
-            .map_err(|err| format!("cannot read the staging directory: {err}"))?;
-        let staged = staged_paths(&root, &paths)?;
-        let image = preview(&staged);
-        let options = drag::Options {
-            mode: drag::DragMode::Copy,
-            ..drag::Options::default()
-        };
-        let drag_window = window.clone();
-        window
-            .run_on_main_thread(move || {
-                let item = drag::DragItem::Files(staged);
-                if let Err(err) = drag::start_drag(&drag_window, item, image, |_, _| {}, options) {
-                    crate::journal::error(&format!("the drag did not start: {err}"));
-                }
-            })
-            .map_err(|err| format!("cannot reach the main thread: {err}"))
-    }
-}
-
-/// copy_files_to_clipboard puts the staged files on the system pasteboard, so
-/// the user can paste them into another app without sending them anywhere.
-#[tauri::command]
-pub fn copy_files_to_clipboard(
-    window: tauri::Window,
-    app: tauri::AppHandle,
-    paths: Vec<String>,
-) -> Result<(), String> {
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = (window, app, paths);
-        Err("copying files to the clipboard is not supported on this platform".to_string())
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let root = staging_root(&app)?
-            .canonicalize()
-            .map_err(|err| format!("cannot read the staging directory: {err}"))?;
-        let staged = staged_paths(&root, &paths)?;
-        let (sender, receiver) = std::sync::mpsc::channel();
-        window
-            .run_on_main_thread(move || {
-                use objc2::rc::Retained;
-                use objc2::runtime::ProtocolObject;
-                use objc2_app_kit::{NSPasteboard, NSPasteboardWriting};
-                use objc2_foundation::{NSArray, NSString, NSURL};
-
-                let urls: Vec<Retained<NSURL>> = staged
-                    .iter()
-                    .map(|path| {
-                        NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()))
-                    })
-                    .collect();
-                let objects: Vec<Retained<ProtocolObject<dyn NSPasteboardWriting>>> = urls
-                    .into_iter()
-                    .map(ProtocolObject::from_retained)
-                    .collect();
-                let array = NSArray::from_retained_slice(&objects);
-                let pasteboard = NSPasteboard::generalPasteboard();
-                pasteboard.clearContents();
-                let _ = sender.send(pasteboard.writeObjects(&array));
-            })
-            .map_err(|err| format!("cannot reach the main thread: {err}"))?;
-        match receiver.recv_timeout(Duration::from_secs(2)) {
-            Ok(true) => Ok(()),
-            Ok(false) => Err("the files were not copied to the clipboard".to_string()),
-            Err(_) => Err("the pasteboard did not answer".to_string()),
-        }
-    }
+    let root = staging_root(&app)?
+        .canonicalize()
+        .map_err(|err| format!("cannot read the staging directory: {err}"))?;
+    let staged = staged_paths(&root, &paths)?;
+    platform::start_drag(&window, staged)
 }
 
 /// purge_staging removes the copies that are older than the retention.
@@ -330,7 +269,6 @@ mod tests {
             .expect("a missing directory is not an error");
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn follows_the_images_of_a_drag() {
         assert!(is_image(Path::new("/caches/drag/item/clip.png")));

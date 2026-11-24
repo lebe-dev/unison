@@ -292,7 +292,6 @@ export const ru: { [K in MessageKey]: Message } = {
   "dashboard.sendTo": "Отправить на устройство",
   "dashboard.sendFailed": "Не удалось отправить элемент.",
   "dashboard.sentTo": "Отправлено на {name}.",
-  "dashboard.copied": "Скопировано в буфер обмена.",
   "dashboard.deleteTitle": "Удалить элемент?",
   "dashboard.deleteConfirm": "Элемент будет удален с этого устройства и с других личных устройств.",
   "dashboard.deleteFailed": "Не удалось удалить элемент.",

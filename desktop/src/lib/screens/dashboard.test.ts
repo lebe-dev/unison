@@ -25,7 +25,6 @@ const mocks = vi.hoisted(() => {
     deleteHistoryItem: vi.fn(),
     stageItem: vi.fn(),
     startStagedDrag: vi.fn(),
-    copyStagedFiles: vi.fn(),
     transfersSend: vi.fn(),
     transfersNotice,
     daemon: {
@@ -69,7 +68,6 @@ vi.mock("../dragOut", () => ({
     Math.hypot(current.x - start.x, current.y - start.y) >= 4,
   stageItem: mocks.stageItem,
   startStagedDrag: mocks.startStagedDrag,
-  copyStagedFiles: mocks.copyStagedFiles,
 }));
 
 import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
@@ -81,7 +79,6 @@ beforeEach(() => {
   mocks.daemon.loading = false;
   mocks.daemon.devices = [];
   mocks.transfersNotice = { kind: "error", text: "The transfer failed." };
-  mocks.copyStagedFiles.mockResolvedValue(undefined);
   mocks.deleteHistoryItem.mockResolvedValue(create(DeleteHistoryItemResponseSchema, {}));
   dashboard.stop();
   dashboard.limit = DEFAULT_DASHBOARD_LIMIT;
@@ -271,16 +268,15 @@ describe("dashboard menu", () => {
     expect(screen.getByText("No device is online right now.")).toBeTruthy();
   });
 
-  it("copies the files of an image without sending them", async () => {
-    mocks.stageItem.mockResolvedValue(["/staging/clip.png"]);
+  it("copies an image through the daemon without sending it", async () => {
     render(Dashboard);
 
     await fireEvent.contextMenu(await screen.findByRole("button", { name: "Image - 128 B" }));
     await fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
 
-    expect(mocks.copyStagedFiles).toHaveBeenCalledWith(["/staging/clip.png"]);
+    expect(mocks.copyHistoryItem).toHaveBeenCalledWith({ id: "image-1" });
     expect(mocks.transfersSend).not.toHaveBeenCalled();
-    expect(await screen.findByText("Copied to the clipboard.")).toBeTruthy();
+    expect(await screen.findByText("The item is on the clipboard.")).toBeTruthy();
   });
 
   it("copies text through the daemon", async () => {

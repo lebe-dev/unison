@@ -4,13 +4,7 @@
   import { Kind, type Device, type HistoryItem } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
   import { dashboard, type DashboardKind } from "../dashboard.svelte";
-  import {
-    canDragOut,
-    copyStagedFiles,
-    crossedDragThreshold,
-    stageItem,
-    startStagedDrag,
-  } from "../dragOut";
+  import { canDragOut, crossedDragThreshold, stageItem, startStagedDrag } from "../dragOut";
   import { errorText } from "../errors";
   import {
     formatBytes,
@@ -310,8 +304,8 @@
   }
 
   /** copyItem puts the item on the clipboard without sending it anywhere. The
-   * files of an image or file item are copied as files; text is copied as
-   * text. */
+   * daemon writes it with the echo marker of its own writes, so the copy does
+   * not come back as a new item and is not announced to the other devices. */
   async function copyItem(item: HistoryItem): Promise<void> {
     const info = item.item;
     if (!info || menuBusy) {
@@ -319,18 +313,7 @@
     }
     menuBusy = true;
     try {
-      if (info.kind === Kind.TEXT) {
-        await dashboard.copy(info.id);
-      } else {
-        const paths = await stageItem(item);
-        await copyStagedFiles(paths);
-        dashboard.notice = { kind: "info", text: t("dashboard.copied") };
-      }
-    } catch (error) {
-      dashboard.notice = {
-        kind: "error",
-        text: errorText(error, t("dashboard.copyFailed")),
-      };
+      await dashboard.copy(info.id);
     } finally {
       menuBusy = false;
       closeMenu();

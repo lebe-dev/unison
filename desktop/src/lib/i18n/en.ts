@@ -295,7 +295,6 @@ export const en = {
   "dashboard.sendTo": "Send to",
   "dashboard.sendFailed": "The item could not be sent.",
   "dashboard.sentTo": "Sent to {name}.",
-  "dashboard.copied": "Copied to the clipboard.",
   "dashboard.deleteTitle": "Delete the item?",
   "dashboard.deleteConfirm":
     "The item is deleted from this device and from the other Personal devices.",
