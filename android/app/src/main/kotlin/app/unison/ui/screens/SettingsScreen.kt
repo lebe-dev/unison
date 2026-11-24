@@ -90,8 +90,10 @@ fun SettingsScreen(
     operatingMode: OperatingMode,
     policy: PolicyConfig,
     ttl: HistoryTtl,
+    dashboardLimit: Int,
     onDeviceNameChange: (String) -> Unit,
     onOperatingModeChange: (OperatingMode) -> Unit,
+    onDashboardLimitChange: (Int) -> Unit,
     onPolicyChange: (PolicyConfig) -> Unit,
     onPolicyReset: () -> Unit,
     onTtlSave: (Local.Kind, Long) -> Unit,
@@ -144,6 +146,9 @@ fun SettingsScreen(
                     }
                     SettingsCard {
                         ServiceMode(operatingMode = operatingMode, onOperatingModeChange = onOperatingModeChange)
+                    }
+                    SettingsCard {
+                        DashboardSettings(limit = dashboardLimit, onLimitChange = onDashboardLimitChange)
                     }
                     SettingsCard {
                         Group(onLeave = { leaving = true })

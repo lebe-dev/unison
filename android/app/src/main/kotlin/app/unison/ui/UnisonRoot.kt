@@ -31,6 +31,8 @@ import app.unison.policy.PolicyConfig
 import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.ui.screens.AddScreen
+import app.unison.ui.screens.DashboardPanel
+import app.unison.ui.screens.DashboardScreen
 import app.unison.ui.screens.DevicesScreen
 import app.unison.ui.screens.HistoryScreen
 import app.unison.ui.screens.RequestsScreen
@@ -49,6 +51,8 @@ import unison.local.v1.Local
 fun UnisonRoot(
     state: CoreState,
     history: HistoryState,
+    dashboard: DashboardPanel,
+    dashboardLimit: Int,
     pairing: PairingState,
     requests: RequestsState,
     held: Set<String>,
@@ -71,6 +75,7 @@ fun UnisonRoot(
     onPolicyReset: () -> Unit,
     onTtlSave: (Local.Kind, Long) -> Unit,
     onTtlReset: () -> Unit,
+    onDashboardLimitChange: (Int) -> Unit,
     downloadsFolder: String?,
     onDownloadsFolderPick: (Uri) -> Unit,
     onDownloadsFolderReset: () -> Unit,
@@ -145,23 +150,23 @@ fun UnisonRoot(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (destination.inBar) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    Destination.entries.filter { it.inBar }.forEach { item ->
-                        NavigationBarItem(
-                            selected = item == destination,
-                            onClick = { destination = item },
-                            icon = {
-                                DestinationIcon(item = item, pending = requests.pending)
-                            },
-                            label = { Text(text = stringResource(item.label)) },
-                        )
-                    }
-                }
+                BottomBar(
+                    destination = destination,
+                    pending = requests.pending,
+                    onSelect = { destination = it },
+                )
             }
         },
     ) { padding ->
         val content = Modifier.padding(padding)
         when (destination) {
+            Destination.DASHBOARD ->
+                DashboardDestination(
+                    panel = dashboard,
+                    held = held,
+                    busy = history.busy,
+                    modifier = content,
+                )
             Destination.DEVICES ->
                 DevicesScreen(
                     state = state,
@@ -228,8 +233,10 @@ fun UnisonRoot(
                     operatingMode = operatingMode,
                     policy = policy,
                     ttl = ttl,
+                    dashboardLimit = dashboardLimit,
                     onDeviceNameChange = onDeviceNameChange,
                     onOperatingModeChange = onOperatingModeChange,
+                    onDashboardLimitChange = onDashboardLimitChange,
                     onPolicyChange = onPolicyChange,
                     onPolicyReset = onPolicyReset,
                     onTtlSave = onTtlSave,
@@ -262,6 +269,37 @@ fun UnisonRoot(
     }
 
     PromptDialog(prompts = prompts, onAnswer = onAnswerPrompt)
+}
+
+/** Bar of the top level destinations. */
+@Composable
+private fun BottomBar(
+    destination: Destination,
+    pending: Int,
+    onSelect: (Destination) -> Unit,
+) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Destination.entries.filter { it.inBar }.forEach { item ->
+            NavigationBarItem(
+                selected = item == destination,
+                onClick = { onSelect(item) },
+                icon = { DestinationIcon(item = item, pending = pending) },
+                label = { Text(text = stringResource(item.label)) },
+            )
+        }
+    }
+}
+
+/** The dashboard, reloaded whenever the destination opens. */
+@Composable
+private fun DashboardDestination(
+    panel: DashboardPanel,
+    held: Set<String>,
+    busy: Set<String>,
+    modifier: Modifier,
+) {
+    LaunchedEffect(Unit) { panel.onRefresh() }
+    DashboardScreen(panel = panel, held = held, busy = busy, modifier = modifier)
 }
 
 /** Icon of a destination with the number of requests that wait for an answer. */

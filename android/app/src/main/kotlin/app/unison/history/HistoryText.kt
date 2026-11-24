@@ -22,6 +22,14 @@ object HistoryText {
         return shorten(inline.inlineBytes.toStringUtf8(), limit)
     }
 
+    /** Whole inline text of a text entry, without shortening. */
+    fun fullText(item: Local.ClipItem): String =
+        item.representationsList
+            .firstOrNull { it.mimeType == MIME_TEXT_PLAIN }
+            ?.inlineBytes
+            ?.toStringUtf8()
+            .orEmpty()
+
     /** First names of the files of an entry. */
     fun fileNames(item: Local.ClipItem): FileNames {
         val names = item.representationsList.mapNotNull { it.fileName.ifBlank { null } }

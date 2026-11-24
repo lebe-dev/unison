@@ -1,5 +1,6 @@
 package app.unison.core
 
+import com.google.protobuf.ByteString
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -291,5 +292,33 @@ class CoreClientTest {
 
             assertEquals("ApplyHistoryItem", transport.lastRequest?.method)
             assertEquals("item", Local.ApplyHistoryItemRequest.parseFrom(transport.lastRequest?.payload).id)
+        }
+
+    @Test
+    fun thumbnailSendsTheItemAndTheSide() =
+        runBlocking {
+            val response =
+                Local.GetHistoryThumbnailResponse
+                    .newBuilder()
+                    .setWidth(2)
+                    .setHeight(1)
+                    .setRgba(ByteString.copyFrom(ByteArray(8)))
+                    .build()
+            val transport =
+                FakeTransport {
+                    Mobile.CallResponse
+                        .newBuilder()
+                        .setPayload(response.toByteString())
+                        .build()
+                }
+
+            val thumbnail = CoreClient(transport).historyThumbnail("item", maxSide = 256)
+
+            assertEquals("GetHistoryThumbnail", transport.lastRequest?.method)
+            val request = Local.GetHistoryThumbnailRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals("item", request.id)
+            assertEquals(256, request.maxSide)
+            assertEquals(2, thumbnail.width)
+            assertEquals(1, thumbnail.height)
         }
 }

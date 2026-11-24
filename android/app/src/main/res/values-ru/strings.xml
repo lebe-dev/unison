@@ -48,6 +48,7 @@
     <string name="pause_changed">Пауза буфера обмена изменена</string>
     <string name="pause_failed">Не удалось изменить паузу буфера обмена</string>
 
+    <string name="nav_dashboard">Обзор</string>
     <string name="nav_devices">Устройства</string>
     <string name="nav_add">Добавить</string>
     <string name="nav_requests">Входящие</string>
@@ -116,6 +117,9 @@
     <string name="settings_name_applies">Передается сопряженным устройствам</string>
     <string name="settings_name_saved">Имя устройства сохранено</string>
     <string name="settings_name_failed">Не удалось сохранить имя устройства</string>
+    <string name="settings_section_dashboard">Обзор</string>
+    <string name="settings_dashboard_items">Элементов на вкладке</string>
+    <string name="settings_dashboard_hint">Сколько новых элементов показывает каждая вкладка обзора.</string>
     <string name="settings_section_downloads">Полученные файлы</string>
     <string name="settings_downloads_default">Download/Unison</string>
     <string name="settings_downloads_hint">Unison получает доступ только к выбранной папке.</string>
@@ -363,6 +367,16 @@
     <string name="clipboard_applied">Буфер обмена применен</string>
     <string name="clipboard_apply_failed">Не удалось применить буфер обмена</string>
 
+    <string name="dashboard_newest">Новые элементы каждого типа: до %1$d</string>
+    <string name="dashboard_empty_images">Изображений пока нет</string>
+    <string name="dashboard_empty_files">Файлов пока нет</string>
+    <string name="dashboard_empty_text">Текста пока нет</string>
+    <string name="dashboard_empty_body">Скопированные на ваших устройствах элементы появятся здесь.</string>
+    <string name="dashboard_not_downloaded">Не загружено</string>
+    <string name="dashboard_delete_title">Удалить элемент?</string>
+    <string name="dashboard_delete_body">Элемент будет удален с этого и с других личных устройств. Это нельзя отменить.</string>
+    <string name="dashboard_delete_confirm">Удалить элемент</string>
+
     <string name="requests_empty">Запросов нет</string>
     <string name="requests_empty_body">Предложения файлов от друзей и от устройств, о которых вы спрашиваете, ждут здесь, пока вы не ответите.</string>
     <plurals name="request_files">
@@ -462,6 +476,7 @@
     <string name="action_remove">Удалить</string>
     <string name="action_download">Скачать</string>
     <string name="action_delete">Удалить</string>
+    <string name="action_close">Закрыть</string>
 
     <string name="history_ttl_section">Сроки хранения</string>
     <string name="history_ttl_hint">Как долго это устройство хранит скопированные элементы. Уже существующие элементы сохраняют свой срок.</string>

@@ -108,6 +108,12 @@ interface CoreApi {
         limit: Int = 0,
     ): Local.ListHistoryResponse
 
+    /** Scaled down pixels of an image entry, decoded by the core. */
+    suspend fun historyThumbnail(
+        id: String,
+        maxSide: Int,
+    ): Local.GetHistoryThumbnailResponse
+
     /** Writes one history entry back to the clipboard. */
     suspend fun copyHistoryItem(id: String)
 
@@ -300,6 +306,14 @@ class RunningCore(
     ): Local.ListHistoryResponse {
         ensureRunning()
         return client.listHistory(kind, deviceId, limit)
+    }
+
+    override suspend fun historyThumbnail(
+        id: String,
+        maxSide: Int,
+    ): Local.GetHistoryThumbnailResponse {
+        ensureRunning()
+        return client.historyThumbnail(id, maxSide)
     }
 
     override suspend fun copyHistoryItem(id: String) {

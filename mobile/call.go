@@ -215,6 +215,16 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 			return failure(err)
 		}
 		return encodeResponse(res.Msg)
+	case "GetHistoryThumbnail":
+		call, err := requestOf[localv1.GetHistoryThumbnailRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.GetHistoryThumbnail(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg)
 	case "DeleteHistoryItem":
 		call, err := requestOf[localv1.DeleteHistoryItemRequest](payload)
 		if err != nil {

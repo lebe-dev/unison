@@ -100,6 +100,17 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun dashboardLimitIsSelected() {
+        var limit: Int? = null
+        setContent(dashboardLimit = 12, onDashboardLimitChange = { limit = it })
+        open(SettingsPage.DEVICE)
+
+        compose.onNodeWithTag(dashboardLimitTag(48)).performScrollTo().performClick()
+
+        assertEquals(48, limit)
+    }
+
+    @Test
     fun deviceNameIsSaved() {
         var saved: String? = null
         setContent(deviceName = "Pixel", onDeviceNameChange = { saved = it })
@@ -361,8 +372,10 @@ class SettingsScreenTest {
                 .build(),
         settings: Local.Settings = Local.Settings.getDefaultInstance(),
         ttl: HistoryTtl = HistoryTtlDefaults.values,
+        dashboardLimit: Int = app.unison.ui.state.DashboardLimit.DEFAULT,
         onDeviceNameChange: (String) -> Unit = {},
         onOperatingModeChange: (OperatingMode) -> Unit = {},
+        onDashboardLimitChange: (Int) -> Unit = {},
         onPause: (PauseRequest) -> Unit = {},
         onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit = { _, _, _ -> },
         onRelayOff: () -> Unit = {},
@@ -393,8 +406,10 @@ class SettingsScreenTest {
                     operatingMode = operatingMode,
                     policy = PolicyDefaults.config,
                     ttl = ttl,
+                    dashboardLimit = dashboardLimit,
                     onDeviceNameChange = onDeviceNameChange,
                     onOperatingModeChange = onOperatingModeChange,
+                    onDashboardLimitChange = onDashboardLimitChange,
                     onPolicyChange = {},
                     onPolicyReset = {},
                     onTtlSave = onTtlSave,

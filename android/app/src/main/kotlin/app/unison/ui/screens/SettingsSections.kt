@@ -36,6 +36,7 @@ import app.unison.settingsfile.SettingsFile
 import app.unison.ui.SectionTitle
 import app.unison.ui.pauseLabel
 import app.unison.ui.state.CoreState
+import app.unison.ui.state.DashboardLimit
 import app.unison.ui.state.DeviceNames
 import unison.local.v1.Local
 
@@ -110,6 +111,54 @@ internal fun ServiceMode(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Number of newest items each tab of the dashboard shows.
+ */
+@Composable
+internal fun DashboardSettings(
+    limit: Int,
+    onLimitChange: (Int) -> Unit,
+) {
+    SectionTitle(text = stringResource(R.string.settings_section_dashboard))
+    Text(
+        text = stringResource(R.string.settings_dashboard_items),
+        style = MaterialTheme.typography.bodyLarge,
+    )
+    Text(
+        text = stringResource(R.string.settings_dashboard_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Column(
+        modifier =
+            Modifier
+                .padding(top = 4.dp)
+                .selectableGroup(),
+    ) {
+        DashboardLimit.OPTIONS.forEach { option ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = option == limit,
+                            onClick = { onLimitChange(option) },
+                            role = Role.RadioButton,
+                        ).testTag(dashboardLimitTag(option))
+                        .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = option == limit, onClick = null)
+                Text(
+                    text = option.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
             }
         }
     }
@@ -427,6 +476,9 @@ internal const val SETTINGS_FILE_EXPORT_TAG = "settings.file.export"
 
 /** Tag of the button that restores the settings of a file. */
 internal const val SETTINGS_FILE_IMPORT_TAG = "settings.file.import"
+
+/** Tag of the number of items of a dashboard tab. */
+internal fun dashboardLimitTag(option: Int): String = "settings.dashboard.limit.$option"
 
 /** Types the system picker offers for an imported document. */
 private val SETTINGS_FILE_TYPES =

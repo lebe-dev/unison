@@ -81,6 +81,24 @@ The facade supplies all four ports, so the core does not know that it runs in an
   a copy of the app directory cannot be read.
 - **Clock.** The system clock.
 
+## Dashboard
+
+The app opens on the dashboard, the first destination of the bottom bar. It shows the newest items
+of the history in three tabs: images as a grid of thumbnails, files as a list with names and sizes,
+and text as snippets. Each tab asks the local API for at most the configured number of items, and
+the pixels arrive through `GetHistoryThumbnail`; the core decodes the image in pure Go, so no image
+payload of a peer reaches a platform decoder. An item opens a preview dialog with its actions: copy
+a text, an image or a file entry, download a file entry, apply an item that waits for a confirmation,
+and delete after a second confirmation. None of the actions sends content anywhere; they work on
+this device only.
+
+The number of items of each tab is a local preference of this device: 6, 12, 24 or 48, by default
+12. It lives in the `unison.settings` shared preferences under `dashboard.limit` and is not part of
+the settings file. A thumbnail is requested at 256 px for a tile and 480 px for the preview, because
+the facade answers at most 1 MiB.
+
+Android has no drag and drop out of an application, so the dashboard does not offer it.
+
 ## Service
 
 `UnisonService` is a foreground service of the type `connectedDevice`. It owns the core for the

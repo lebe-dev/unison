@@ -29,6 +29,8 @@ import app.unison.core.coreEvents
 import app.unison.diagnostics.Diagnostics
 import app.unison.diagnostics.Journal
 import app.unison.history.HistoryDownloads
+import app.unison.history.HistoryThumbnailCache
+import app.unison.history.HistoryThumbnails
 import app.unison.history.HistoryTtlDefaults
 import app.unison.history.HistoryTtlProto
 import app.unison.pairing.PairingLink
@@ -45,8 +47,10 @@ import app.unison.storage.DownloadsFolder
 import app.unison.ui.Destination
 import app.unison.ui.PromptAnswer
 import app.unison.ui.UnisonRoot
+import app.unison.ui.screens.DashboardPanel
 import app.unison.ui.screens.OnboardingScreen
 import app.unison.ui.state.AppState
+import app.unison.ui.state.DashboardLimit
 import app.unison.ui.theme.UnisonTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,9 +73,11 @@ private const val SETTINGS_READ_CHUNK = 8192
 class MainActivity : ComponentActivity() {
     private lateinit var appState: AppState
     private lateinit var core: RunningCore
+    private lateinit var thumbnails: HistoryThumbnailCache
     private var onboarded by mutableStateOf(false)
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
+    private var dashboardLimit by mutableStateOf(DashboardLimit.DEFAULT)
     private var downloadsFolder by mutableStateOf<String?>(null)
     private var policy by mutableStateOf(PolicyDefaults.config)
     private var historyTtl by mutableStateOf(HistoryTtlDefaults.values)
@@ -94,12 +100,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         core = RunningCore(this)
+        dashboardLimit = UnisonSettings.dashboardLimit(this)
+        thumbnails = HistoryThumbnails.cache(core::historyThumbnail)
         appState =
             AppState(
                 core = core,
                 events = coreEvents.events,
                 saver = HistoryDownloads(this),
                 localAddresses = LocalAddresses(this)::ipv4,
+                dashboardLimit = dashboardLimit,
             )
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
@@ -122,6 +131,7 @@ class MainActivity : ComponentActivity() {
             UnisonTheme {
                 val state by appState.state.collectAsState()
                 val history by appState.history.collectAsState()
+                val dashboard by appState.dashboard.collectAsState()
                 val pairing by appState.pairing.collectAsState()
                 val requests by appState.requests.collectAsState()
                 val held by HeldItems.shared.ids.collectAsState()
@@ -130,6 +140,17 @@ class MainActivity : ComponentActivity() {
                     UnisonRoot(
                         state = state,
                         history = history,
+                        dashboard =
+                            DashboardPanel(
+                                state = dashboard,
+                                thumbnail = thumbnails::thumbnail,
+                                onRefresh = appState::refreshDashboard,
+                                onCopy = { appState.copyHistoryItem(it.item.id) },
+                                onApply = { appState.applyHistoryItem(it.item.id) },
+                                onDownload = { appState.downloadHistoryItem(it.item.id) },
+                                onDelete = { appState.deleteHistoryItem(it.item.id) },
+                            ),
+                        dashboardLimit = dashboardLimit,
                         pairing = pairing,
                         requests = requests,
                         held = held,
@@ -159,6 +180,7 @@ class MainActivity : ComponentActivity() {
                         onPolicyReset = ::resetPolicy,
                         onTtlSave = ::saveHistoryTtl,
                         onTtlReset = ::resetHistoryTtl,
+                        onDashboardLimitChange = ::saveDashboardLimit,
                         downloadsFolder = downloadsFolder,
                         onDownloadsFolderPick = ::saveDownloadsFolder,
                         onDownloadsFolderReset = ::resetDownloadsFolder,
@@ -227,6 +249,7 @@ class MainActivity : ComponentActivity() {
             UnisonService.start(this)
             refresh()
             appState.refreshHistory()
+            appState.refreshDashboard()
             appState.refreshRequests()
             startRequestsPoll()
         }
@@ -258,6 +281,7 @@ class MainActivity : ComponentActivity() {
         refresh()
         if (onboarded) {
             appState.refreshHistory()
+            appState.refreshDashboard()
             appState.refreshRequests()
         }
     }
@@ -292,6 +316,7 @@ class MainActivity : ComponentActivity() {
         UnisonService.start(this)
         refresh()
         appState.refreshHistory()
+        appState.refreshDashboard()
         appState.refreshRequests()
         startRequestsPoll()
         offerPairingLink()
@@ -518,6 +543,14 @@ class MainActivity : ComponentActivity() {
         if (mode != OperatingMode.APP_OPEN) {
             UnisonService.start(this)
         }
+    }
+
+    /** Stores the number of items each tab of the dashboard shows. */
+    private fun saveDashboardLimit(limit: Int) {
+        val normalized = DashboardLimit.normalize(limit)
+        UnisonSettings.setDashboardLimit(this, normalized)
+        dashboardLimit = normalized
+        appState.setDashboardLimit(normalized)
     }
 
     /** Stores the network policy in the core. */

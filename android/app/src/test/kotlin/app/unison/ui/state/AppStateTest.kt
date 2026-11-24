@@ -6,6 +6,7 @@ import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
 import app.unison.history.HistorySaver
+import com.google.protobuf.ByteString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ class AppStateTest {
         var history: List<Local.HistoryItem> = emptyList()
         var historyFailure: Exception? = null
         val historyCalls = mutableListOf<Pair<Local.Kind, String>>()
+        val historyLimits = mutableListOf<Int>()
         val copied = mutableListOf<String>()
         val deleted = mutableListOf<String>()
         val applied = mutableListOf<String>()
@@ -85,10 +87,28 @@ class AppStateTest {
             limit: Int,
         ): Local.ListHistoryResponse {
             historyCalls += kind to deviceId
+            historyLimits += limit
             historyFailure?.let { throw it }
+            val selected =
+                history.filter { item ->
+                    kind == Local.Kind.KIND_UNSPECIFIED || item.item.kind == kind
+                }
             return Local.ListHistoryResponse
                 .newBuilder()
-                .addAllItems(history)
+                .addAllItems(selected)
+                .build()
+        }
+
+        override suspend fun historyThumbnail(
+            id: String,
+            maxSide: Int,
+        ): Local.GetHistoryThumbnailResponse {
+            historyFailure?.let { throw it }
+            return Local.GetHistoryThumbnailResponse
+                .newBuilder()
+                .setWidth(1)
+                .setHeight(1)
+                .setRgba(ByteString.copyFrom(byteArrayOf(0, 0, 0, 0)))
                 .build()
         }
 
@@ -791,6 +811,152 @@ class AppStateTest {
             advanceUntilIdle()
 
             assertTrue(core.historyCalls.size > before)
+        }
+
+    @Test
+    fun dashboardLoadsTheNewestItemsOfEachKind() =
+        runTest {
+            val core = FakeCore()
+            core.history =
+                listOf(
+                    entry("img1", Local.Kind.KIND_IMAGE),
+                    entry("img2", Local.Kind.KIND_IMAGE),
+                    entry("file1", Local.Kind.KIND_FILES),
+                    entry("txt1", Local.Kind.KIND_TEXT),
+                )
+            val state = appState(core, dashboardLimit = 24)
+
+            state.refreshDashboard()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(
+                    Local.Kind.KIND_IMAGE to "",
+                    Local.Kind.KIND_FILES to "",
+                    Local.Kind.KIND_TEXT to "",
+                ),
+                core.historyCalls,
+            )
+            assertEquals(listOf(24, 24, 24), core.historyLimits)
+            val dashboard = state.dashboard.value
+            assertTrue(dashboard.loaded)
+            assertNull(dashboard.failure)
+            assertEquals(listOf("img1", "img2"), dashboard.images.map { it.item.id })
+            assertEquals(listOf("file1"), dashboard.files.map { it.item.id })
+            assertEquals(listOf("txt1"), dashboard.text.map { it.item.id })
+            state.close()
+        }
+
+    @Test
+    fun dashboardKeepsAtMostTheConfiguredNumber() =
+        runTest {
+            val core = FakeCore()
+            core.history = (1..8).map { entry("img$it", Local.Kind.KIND_IMAGE) }
+            val state = appState(core, dashboardLimit = 6)
+
+            state.refreshDashboard()
+            advanceUntilIdle()
+
+            assertEquals(6, state.dashboard.value.images.size)
+            state.close()
+        }
+
+    @Test
+    fun dashboardLimitIsNormalizedAndReloadsTheLists() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core, dashboardLimit = 12)
+
+            state.setDashboardLimit(48)
+            advanceUntilIdle()
+            assertEquals(48, state.dashboard.value.limit)
+            assertEquals(48, core.historyLimits.last())
+
+            state.setDashboardLimit(7)
+            advanceUntilIdle()
+
+            assertEquals(DashboardLimit.DEFAULT, state.dashboard.value.limit)
+            assertEquals(DashboardLimit.DEFAULT, core.historyLimits.last())
+            state.close()
+        }
+
+    @Test
+    fun dashboardLimitThatDoesNotChangeSkipsTheReload() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core, dashboardLimit = 12)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = core.historyCalls.size
+
+            state.setDashboardLimit(12)
+            advanceUntilIdle()
+
+            assertEquals(before, core.historyCalls.size)
+            state.close()
+        }
+
+    @Test
+    fun failedDashboardLoadIsReported() =
+        runTest {
+            val core = FakeCore()
+            core.historyFailure = IllegalStateException("core is busy")
+            val state = appState(core)
+
+            state.refreshDashboard()
+            advanceUntilIdle()
+
+            assertEquals(CoreFailure.UNAVAILABLE, state.dashboard.value.failure)
+            assertFalse(state.dashboard.value.loaded)
+            state.close()
+        }
+
+    @Test
+    fun dashboardEventReloadsEveryTab() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            events.emit(historyEvent(Local.EventKind.EVENT_KIND_CLIPBOARD))
+            advanceUntilIdle()
+
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            state.close()
+        }
+
+    @Test
+    fun historyActionsReloadTheDashboard() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            state.copyHistoryItem("item")
+            advanceUntilIdle()
+
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            state.close()
+        }
+
+    @Test
+    fun clearReloadsTheDashboard() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            state.clearHistory()
+            advanceUntilIdle()
+
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            state.close()
         }
 
     @Test
@@ -1666,10 +1832,14 @@ class AppStateTest {
             state.close()
         }
 
+    /** Calls that only the dashboard makes, one per tab. */
+    private fun dashboardCalls(core: FakeCore): Int = core.historyCalls.count { (kind, _) -> kind != Local.Kind.KIND_UNSPECIFIED }
+
     private fun TestScope.appState(
         core: CoreApi,
         saver: HistorySaver = FakeSaver(),
         held: HeldItems = HeldItems(),
+        dashboardLimit: Int = DashboardLimit.DEFAULT,
     ): AppState =
         AppState(
             core = core,
@@ -1677,6 +1847,7 @@ class AppStateTest {
             saver = saver,
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
             held = held,
+            dashboardLimit = dashboardLimit,
         )
 
     /** One call of setDeviceConfirmation. */
@@ -1689,6 +1860,9 @@ class AppStateTest {
 
     private companion object {
         const val WINDOW_MS = 180_000L
+
+        /** Number of tabs the dashboard loads at once. */
+        const val DASHBOARD_TABS = 3
 
         fun sampleStatus(): Local.GetStatusResponse =
             Local.GetStatusResponse

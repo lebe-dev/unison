@@ -481,6 +481,24 @@ class CoreClient(
         )
     }
 
+    /** Scaled down pixels of an image entry, decoded by the core. */
+    override suspend fun historyThumbnail(
+        id: String,
+        maxSide: Int,
+    ): Local.GetHistoryThumbnailResponse {
+        val request =
+            Local.GetHistoryThumbnailRequest
+                .newBuilder()
+                .setId(id)
+                .setMaxSide(maxSide)
+                .build()
+        return call(
+            method = "GetHistoryThumbnail",
+            request = request,
+            parse = { Local.GetHistoryThumbnailResponse.parseFrom(it) },
+        )
+    }
+
     /** Writes one history entry back to the clipboard. */
     override suspend fun copyHistoryItem(id: String) {
         val request =

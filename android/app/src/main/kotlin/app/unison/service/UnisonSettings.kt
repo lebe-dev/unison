@@ -3,6 +3,7 @@ package app.unison.service
 import android.content.Context
 import android.os.Build
 import androidx.core.content.edit
+import app.unison.ui.state.DashboardLimit
 
 /** How long the core stays running. */
 enum class OperatingMode(
@@ -64,6 +65,9 @@ object UnisonSettings {
 
     /** Show the device name and the online devices in the status notification. */
     const val KEY_NOTIFICATIONS_STATUS_DETAILS = "notifications.status_details"
+
+    /** Number of newest items each tab of the dashboard shows. */
+    const val KEY_DASHBOARD_LIMIT = "dashboard.limit"
 
     fun operatingMode(context: Context): OperatingMode {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -153,5 +157,20 @@ object UnisonSettings {
         context
             .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putBoolean(KEY_SENTRY_ENABLED, value) }
+    }
+
+    /** Number of newest items each tab of the dashboard shows. */
+    fun dashboardLimit(context: Context): Int {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return DashboardLimit.normalize(prefs.getInt(KEY_DASHBOARD_LIMIT, DashboardLimit.DEFAULT))
+    }
+
+    fun setDashboardLimit(
+        context: Context,
+        value: Int,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putInt(KEY_DASHBOARD_LIMIT, DashboardLimit.normalize(value)) }
     }
 }

@@ -43,6 +43,7 @@ class AppState(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
     private val localAddresses: () -> List<String> = { emptyList() },
     private val held: HeldItems = HeldItems.shared,
+    dashboardLimit: Int = DashboardLimit.DEFAULT,
 ) {
     private val mutableState = MutableStateFlow(CoreState())
 
@@ -53,6 +54,11 @@ class AppState(
 
     /** What the history screen renders. */
     val history: StateFlow<HistoryState> = mutableHistory.asStateFlow()
+
+    private val mutableDashboard = MutableStateFlow(DashboardState(limit = DashboardLimit.normalize(dashboardLimit)))
+
+    /** What the dashboard screen renders. */
+    val dashboard: StateFlow<DashboardState> = mutableDashboard.asStateFlow()
 
     private val mutablePairing = MutableStateFlow(PairingState())
 
@@ -89,6 +95,7 @@ class AppState(
 
     private var load: Job? = null
     private var loadHistory: Job? = null
+    private var loadDashboard: Job? = null
     private var loadRequests: Job? = null
     private var pollCandidates: Job? = null
     private var closeWindow: Job? = null
@@ -107,6 +114,7 @@ class AppState(
                 }
                 if (visible && event.changesHistory()) {
                     refreshHistory()
+                    refreshDashboard()
                 }
                 if (visible && event.changesRequests()) {
                     refreshRequests()
@@ -175,6 +183,48 @@ class AppState(
             }
     }
 
+    /**
+     * Reloads the newest items of every kind that the dashboard shows. The
+     * lists keep the current entries while the call runs.
+     */
+    fun refreshDashboard() {
+        loadDashboard?.cancel()
+        val limit = mutableDashboard.value.limit
+        loadDashboard =
+            scope.launch {
+                mutableDashboard.update { it.copy(loading = true, failure = null) }
+                try {
+                    val images = core.listHistory(Local.Kind.KIND_IMAGE, limit = limit)
+                    val files = core.listHistory(Local.Kind.KIND_FILES, limit = limit)
+                    val text = core.listHistory(Local.Kind.KIND_TEXT, limit = limit)
+                    mutableDashboard.update {
+                        it.copy(
+                            loading = false,
+                            loaded = true,
+                            images = images.itemsList.take(limit),
+                            files = files.itemsList.take(limit),
+                            text = text.itemsList.take(limit),
+                            failure = null,
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    mutableDashboard.update { it.copy(loading = false, failure = failureOf(e)) }
+                }
+            }
+    }
+
+    /** Keeps the number of items each tab shows and reloads the lists. */
+    fun setDashboardLimit(limit: Int) {
+        val normalized = DashboardLimit.normalize(limit)
+        if (mutableDashboard.value.limit == normalized) {
+            return
+        }
+        mutableDashboard.update { it.copy(limit = normalized) }
+        refreshDashboard()
+    }
+
     /** Shows entries of one kind only, KIND_UNSPECIFIED shows every kind. */
     fun setHistoryKind(kind: Local.Kind) {
         if (mutableHistory.value.kind == kind) {
@@ -202,6 +252,7 @@ class AppState(
             core.copyHistoryItem(itemId)
             mutableNotices.tryEmit(R.string.history_copied)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Saves the payloads of an entry into the Downloads collection. */
@@ -215,6 +266,7 @@ class AppState(
             }
             mutableNotices.tryEmit(R.string.history_downloaded)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Deletes an entry on every device. */
@@ -226,6 +278,7 @@ class AppState(
             core.deleteHistoryItem(itemId)
             mutableNotices.tryEmit(R.string.history_deleted)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Deletes every entry on every device. */
@@ -241,6 +294,7 @@ class AppState(
                 heldPrompts.update { emptyMap() }
                 mutableNotices.tryEmit(R.string.history_cleared)
                 refreshHistory()
+                refreshDashboard()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -261,6 +315,7 @@ class AppState(
             held.remove(itemId)
             mutableNotices.tryEmit(R.string.history_applied)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Changes the pause of the clipboard synchronization. */
@@ -445,6 +500,7 @@ class AppState(
                 mutableNotices.tryEmit(R.string.settings_left_group)
                 refresh()
                 refreshHistory()
+                refreshDashboard()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
