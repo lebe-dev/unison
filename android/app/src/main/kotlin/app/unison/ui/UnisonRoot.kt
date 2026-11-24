@@ -1,6 +1,5 @@
 package app.unison.ui
 
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
@@ -25,17 +24,13 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import app.unison.clipboard.ClipboardDraft
-import app.unison.clipboard.PauseRequest
-import app.unison.history.HistoryTtl
-import app.unison.policy.PolicyConfig
-import app.unison.service.NotificationSettings
-import app.unison.service.OperatingMode
 import app.unison.ui.screens.AddScreen
 import app.unison.ui.screens.DashboardPanel
 import app.unison.ui.screens.DashboardScreen
 import app.unison.ui.screens.DevicesScreen
 import app.unison.ui.screens.HistoryScreen
 import app.unison.ui.screens.RequestsScreen
+import app.unison.ui.screens.SettingsPanel
 import app.unison.ui.screens.SettingsScreen
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.HistoryState
@@ -53,18 +48,13 @@ fun UnisonRoot(
     state: CoreState,
     history: HistoryState,
     dashboard: DashboardPanel,
-    dashboardLimit: Int,
-    updates: UpdatePanel,
+    settings: SettingsPanel,
     pairing: PairingState,
     requests: RequestsState,
     mediated: MediatedState,
     held: Set<String>,
     prompts: List<PendingPrompt>,
     onAnswerPrompt: (PendingPrompt, PromptAnswer) -> Unit,
-    deviceName: String,
-    operatingMode: OperatingMode,
-    policy: PolicyConfig,
-    ttl: HistoryTtl,
     clipboardOffer: ClipboardDraft?,
     notices: Flow<Int>,
     requestedScreen: StateFlow<Destination?>,
@@ -72,34 +62,6 @@ fun UnisonRoot(
     onRefresh: () -> Unit,
     onSendClipboard: (ClipboardDraft) -> Unit,
     onDismissClipboard: () -> Unit,
-    onDeviceNameChange: (String) -> Unit,
-    onOperatingModeChange: (OperatingMode) -> Unit,
-    onPolicyChange: (PolicyConfig) -> Unit,
-    onPolicyReset: () -> Unit,
-    onTtlSave: (Local.Kind, Long) -> Unit,
-    onTtlReset: () -> Unit,
-    onDashboardLimitChange: (Int) -> Unit,
-    downloadsFolder: String?,
-    onDownloadsFolderPick: (Uri) -> Unit,
-    onDownloadsFolderReset: () -> Unit,
-    onPause: (PauseRequest) -> Unit,
-    onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit,
-    onRelayOff: () -> Unit,
-    onRefreshRelay: () -> Unit,
-    onRelayCheck: (url: String, token: String?) -> Unit,
-    onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
-    onAllowRemoteSettingsChange: (Boolean) -> Unit,
-    onLeaveGroup: () -> Unit,
-    diagnosticsEnabled: Boolean,
-    onDiagnosticsChange: (Boolean) -> Unit,
-    notifications: NotificationSettings,
-    onNotificationsChange: (NotificationSettings) -> Unit,
-    journalEnabled: Boolean,
-    onJournalChange: (Boolean) -> Unit,
-    onExportSettings: (Uri) -> Unit,
-    onImportSettings: (Uri) -> Unit,
-    stripTracking: Boolean,
-    onStripTrackingChange: (Boolean) -> Unit,
     onSetDeviceConfirmation: (Local.Device, Local.ConfirmationScope, Local.ConfirmationSide, Boolean) -> Unit,
     onSetDeviceRemoteSettings: (Local.Device, Boolean) -> Unit,
     onRenameDevice: (Local.Device, String) -> Unit,
@@ -115,7 +77,6 @@ fun UnisonRoot(
     onRefreshRequests: () -> Unit,
     onAcceptRequest: (Local.ShareRequest) -> Unit,
     onDeclineRequest: (Local.ShareRequest) -> Unit,
-    onFriendsDiscoveryChange: (Boolean) -> Unit,
     onIntroduceDevices: (peerA: String, peerB: String, role: Local.Role) -> Unit,
     onCancelMediated: (Local.MediatedPair) -> Unit,
     onAcceptMediated: (Local.MediatedPair, Boolean) -> Unit,
@@ -188,7 +149,7 @@ fun UnisonRoot(
                     onRename = onRenameDevice,
                     onRevoke = onRevokeDevice,
                     modifier = content,
-                    onPause = onPause,
+                    onPause = settings.clipboard.onPause,
                     onAdd = { destination = Destination.ADD },
                     mediated = mediated,
                     onIntroduce = onIntroduceDevices,
@@ -250,49 +211,14 @@ fun UnisonRoot(
             Destination.SETTINGS ->
                 SettingsScreen(
                     state = state,
-                    deviceName = deviceName,
-                    operatingMode = operatingMode,
-                    policy = policy,
-                    ttl = ttl,
-                    dashboardLimit = dashboardLimit,
-                    onDeviceNameChange = onDeviceNameChange,
-                    onOperatingModeChange = onOperatingModeChange,
-                    onDashboardLimitChange = onDashboardLimitChange,
-                    onPolicyChange = onPolicyChange,
-                    onPolicyReset = onPolicyReset,
-                    onTtlSave = onTtlSave,
-                    onTtlReset = onTtlReset,
-                    downloadsFolder = downloadsFolder,
-                    onDownloadsFolderPick = onDownloadsFolderPick,
-                    onDownloadsFolderReset = onDownloadsFolderReset,
-                    onPause = onPause,
-                    onRelaySave = onRelaySave,
-                    onRelayOff = onRelayOff,
-                    onRefreshRelay = onRefreshRelay,
-                    onRelayCheck = onRelayCheck,
-                    onSelfConfirmationChange = onSelfConfirmationChange,
-                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
-                    onFriendsDiscoveryChange = onFriendsDiscoveryChange,
-                    onLeaveGroup = onLeaveGroup,
-                    diagnosticsEnabled = diagnosticsEnabled,
-                    onDiagnosticsChange = onDiagnosticsChange,
-                    notifications = notifications,
-                    onNotificationsChange = onNotificationsChange,
-                    journalEnabled = journalEnabled,
-                    onJournalChange = onJournalChange,
-                    onExportSettings = onExportSettings,
-                    onImportSettings = onImportSettings,
-                    stripTracking = stripTracking,
-                    onStripTrackingChange = onStripTrackingChange,
-                    updates = updates,
-                    onRefresh = onRefresh,
+                    panel = settings,
                     modifier = content,
                 )
         }
     }
 
     PromptDialog(prompts = prompts, onAnswer = onAnswerPrompt)
-    UpdateDialog(panel = updates)
+    UpdateDialog(panel = settings.app.updates)
 }
 
 /** Bar of the top level destinations. */

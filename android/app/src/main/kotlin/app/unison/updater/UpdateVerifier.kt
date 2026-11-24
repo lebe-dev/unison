@@ -112,9 +112,6 @@ internal class UpdateVerifier(
         } catch (e: UpdateVerificationException) {
             part.delete()
             throw e
-        } catch (e: IOException) {
-            part.delete()
-            throw UpdateVerificationException(UpdateVerificationError.DOWNLOAD, e.message, e)
         } catch (e: Exception) {
             part.delete()
             throw UpdateVerificationException(UpdateVerificationError.DOWNLOAD, e.message, e)

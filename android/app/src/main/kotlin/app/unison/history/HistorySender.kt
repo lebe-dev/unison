@@ -44,12 +44,20 @@ class HistoryOutbox(
             if (!staging.mkdirs()) {
                 error("cannot create the outbox directory")
             }
-            val response = client.fetchHistoryItem(id, staging.absolutePath)
-            val paths = response.filesList.filter { File(it).isFile }
-            if (paths.isEmpty()) {
-                error("the item has no payload to send")
+            var sent = false
+            try {
+                val response = client.fetchHistoryItem(id, staging.absolutePath)
+                val paths = response.filesList.filter { File(it).isFile }
+                if (paths.isEmpty()) {
+                    error("the item has no payload to send")
+                }
+                client.sendFiles(paths, listOf(deviceId))
+                sent = true
+            } finally {
+                if (!sent) {
+                    staging.deleteRecursively()
+                }
             }
-            client.sendFiles(paths, listOf(deviceId))
         }
     }
 

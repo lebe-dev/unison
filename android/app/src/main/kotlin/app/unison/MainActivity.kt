@@ -44,18 +44,28 @@ import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
 import app.unison.settingsfile.SettingsFile
+import app.unison.settingsfile.SettingsFileTransfer
 import app.unison.storage.DownloadsFolder
 import app.unison.ui.Destination
 import app.unison.ui.PromptAnswer
 import app.unison.ui.UnisonRoot
 import app.unison.ui.UpdatePanel
+import app.unison.ui.screens.AppSettingsPanel
+import app.unison.ui.screens.ClipboardSettingsPanel
 import app.unison.ui.screens.DashboardPanel
+import app.unison.ui.screens.DeviceSettingsPanel
+import app.unison.ui.screens.FilesSettingsPanel
+import app.unison.ui.screens.HistorySettingsPanel
+import app.unison.ui.screens.NetworkSettingsPanel
 import app.unison.ui.screens.OnboardingScreen
+import app.unison.ui.screens.SettingsPanel
 import app.unison.ui.state.AppState
+import app.unison.ui.state.CoreState
 import app.unison.ui.state.DashboardLimit
 import app.unison.ui.theme.UnisonTheme
 import app.unison.updater.ApkInstaller
 import app.unison.updater.UpdateManager
+import app.unison.updater.UpdateUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -63,15 +73,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import unison.local.v1.Local
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
-
-/** Largest settings document the app reads, the same bound as the core. */
-private const val MAX_SETTINGS_DOCUMENT = 512 shl 10
-
-/** Size of one read of a settings document. */
-private const val SETTINGS_READ_CHUNK = 8192
 
 /** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
@@ -157,22 +160,8 @@ class MainActivity : ComponentActivity() {
                 val prompts by appState.prompts.collectAsState()
                 val updates by UpdateManager.state.collectAsState()
                 if (onboarded) {
-                    val updatePanel =
-                        UpdatePanel(
-                            state = updates,
-                            onOpenDialog = UpdateManager::openDialog,
-                            onCloseDialog = UpdateManager::closeDialog,
-                            onDismissBanner = { UpdateManager.dismiss(this@MainActivity) },
-                            onCheckNow = { UpdateManager.checkNow(this@MainActivity) },
-                            onInstall = { UpdateManager.install(this@MainActivity) },
-                            onCancel = UpdateManager::cancel,
-                            onRequestInstallPermission = {
-                                installPermission.launch(ApkInstaller.unknownSourcesIntent(this@MainActivity))
-                            },
-                            onSetEnabled = { UpdateManager.setEnabled(this@MainActivity, it) },
-                            onSetBetaChannel = { UpdateManager.setBetaChannel(this@MainActivity, it) },
-                            onSetInterval = { UpdateManager.setInterval(this@MainActivity, it) },
-                        )
+                    val updatePanel = buildUpdatePanel(updates)
+                    val settingsPanel = buildSettingsPanel(state, updatePanel)
                     UnisonRoot(
                         state = state,
                         history = history,
@@ -189,8 +178,7 @@ class MainActivity : ComponentActivity() {
                                 onDelete = { appState.deleteHistoryItem(it.item.id) },
                                 updates = updatePanel,
                             ),
-                        dashboardLimit = dashboardLimit,
-                        updates = updatePanel,
+                        settings = settingsPanel,
                         pairing = pairing,
                         requests = requests,
                         mediated = mediated,
@@ -207,10 +195,6 @@ class MainActivity : ComponentActivity() {
                                 PromptAnswer.DeclineMediated -> appState.rejectMediatedPair(prompt.id)
                             }
                         },
-                        deviceName = deviceName,
-                        operatingMode = operatingMode,
-                        policy = policy,
-                        ttl = historyTtl,
                         clipboardOffer = pending,
                         notices = appState.notices,
                         requestedScreen = requestedScreen,
@@ -218,34 +202,6 @@ class MainActivity : ComponentActivity() {
                         onRefresh = ::refresh,
                         onSendClipboard = ::send,
                         onDismissClipboard = { pending = null },
-                        onDeviceNameChange = ::saveDeviceName,
-                        onOperatingModeChange = ::saveOperatingMode,
-                        onPolicyChange = ::savePolicy,
-                        onPolicyReset = ::resetPolicy,
-                        onTtlSave = ::saveHistoryTtl,
-                        onTtlReset = ::resetHistoryTtl,
-                        onDashboardLimitChange = ::saveDashboardLimit,
-                        downloadsFolder = downloadsFolder,
-                        onDownloadsFolderPick = ::saveDownloadsFolder,
-                        onDownloadsFolderReset = ::resetDownloadsFolder,
-                        onPause = appState::setPause,
-                        onRelaySave = appState::setRelay,
-                        onRelayOff = appState::relayOff,
-                        onRefreshRelay = appState::refreshRelay,
-                        onRelayCheck = appState::testRelay,
-                        onSelfConfirmationChange = appState::setSelfConfirmation,
-                        onAllowRemoteSettingsChange = appState::setAllowRemoteSettings,
-                        onLeaveGroup = appState::leaveGroup,
-                        diagnosticsEnabled = diagnosticsEnabled,
-                        onDiagnosticsChange = ::saveDiagnostics,
-                        notifications = notificationSettings,
-                        onNotificationsChange = ::saveNotificationSettings,
-                        journalEnabled = state.journalEnabled,
-                        onJournalChange = appState::setJournalEnabled,
-                        onExportSettings = ::exportSettings,
-                        onImportSettings = ::importSettings,
-                        stripTracking = state.stripTracking,
-                        onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->
                             appState.setDeviceConfirmation(device.deviceId, scope, side, require)
                         },
@@ -265,7 +221,6 @@ class MainActivity : ComponentActivity() {
                         onRefreshRequests = appState::refreshRequests,
                         onAcceptRequest = { appState.decideRequest(it.id, accept = true) },
                         onDeclineRequest = { appState.decideRequest(it.id, accept = false) },
-                        onFriendsDiscoveryChange = appState::setFriendsDiscovery,
                         onIntroduceDevices = appState::startMediatedPair,
                         onCancelMediated = { appState.cancelMediatedPair(it.sessionId) },
                         onAcceptMediated = { pair, discovery ->
@@ -293,6 +248,84 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun buildUpdatePanel(updates: UpdateUiState): UpdatePanel =
+        UpdatePanel(
+            state = updates,
+            onOpenDialog = UpdateManager::openDialog,
+            onCloseDialog = UpdateManager::closeDialog,
+            onDismissBanner = { UpdateManager.dismiss(this) },
+            onCheckNow = { UpdateManager.checkNow(this) },
+            onInstall = { UpdateManager.install(this) },
+            onCancel = UpdateManager::cancel,
+            onRequestInstallPermission = {
+                installPermission.launch(ApkInstaller.unknownSourcesIntent(this))
+            },
+            onSetEnabled = { UpdateManager.setEnabled(this, it) },
+            onSetBetaChannel = { UpdateManager.setBetaChannel(this, it) },
+            onSetInterval = { UpdateManager.setInterval(this, it) },
+        )
+
+    private fun buildSettingsPanel(
+        state: CoreState,
+        updatePanel: UpdatePanel,
+    ): SettingsPanel =
+        SettingsPanel(
+            device =
+                DeviceSettingsPanel(
+                    deviceName = deviceName,
+                    operatingMode = operatingMode,
+                    dashboardLimit = dashboardLimit,
+                    onDeviceNameChange = ::saveDeviceName,
+                    onOperatingModeChange = ::saveOperatingMode,
+                    onDashboardLimitChange = ::saveDashboardLimit,
+                    onFriendsDiscoveryChange = appState::setFriendsDiscovery,
+                    onLeaveGroup = appState::leaveGroup,
+                ),
+            clipboard =
+                ClipboardSettingsPanel(
+                    stripTracking = state.stripTracking,
+                    onPause = appState::setPause,
+                    onSelfConfirmationChange = appState::setSelfConfirmation,
+                    onAllowRemoteSettingsChange = appState::setAllowRemoteSettings,
+                    onStripTrackingChange = appState::setStripTracking,
+                ),
+            files =
+                FilesSettingsPanel(
+                    downloadsFolder = downloadsFolder,
+                    onDownloadsFolderPick = ::saveDownloadsFolder,
+                    onDownloadsFolderReset = ::resetDownloadsFolder,
+                ),
+            history =
+                HistorySettingsPanel(
+                    ttl = historyTtl,
+                    onTtlSave = ::saveHistoryTtl,
+                    onTtlReset = ::resetHistoryTtl,
+                ),
+            network =
+                NetworkSettingsPanel(
+                    policy = policy,
+                    onPolicyChange = ::savePolicy,
+                    onPolicyReset = ::resetPolicy,
+                    onRelaySave = appState::setRelay,
+                    onRelayOff = appState::relayOff,
+                    onRefreshRelay = appState::refreshRelay,
+                    onRelayCheck = appState::testRelay,
+                ),
+            app =
+                AppSettingsPanel(
+                    notifications = notificationSettings,
+                    onNotificationsChange = ::saveNotificationSettings,
+                    diagnosticsEnabled = diagnosticsEnabled,
+                    onDiagnosticsChange = ::saveDiagnostics,
+                    journalEnabled = state.journalEnabled,
+                    onJournalChange = appState::setJournalEnabled,
+                    onExportSettings = ::exportSettings,
+                    onImportSettings = ::importSettings,
+                    updates = updatePanel,
+                ),
+            onRefresh = ::refresh,
+        )
 
     override fun onStart() {
         super.onStart()
@@ -516,10 +549,7 @@ class MainActivity : ComponentActivity() {
                         ),
                     )
                 withContext(Dispatchers.IO) {
-                    val stream =
-                        contentResolver.openOutputStream(uri)
-                            ?: throw IOException("the document cannot be written")
-                    stream.use { it.write(response.document.toByteArray()) }
+                    SettingsFileTransfer.writeDocument(contentResolver, uri, response.document.toByteArray())
                 }
                 Toast.makeText(this@MainActivity, R.string.settings_file_exported, Toast.LENGTH_SHORT).show()
             } catch (e: CancellationException) {
@@ -538,7 +568,7 @@ class MainActivity : ComponentActivity() {
     private fun importSettings(uri: Uri) {
         lifecycleScope.launch {
             try {
-                val document = withContext(Dispatchers.IO) { readSettingsDocument(uri) }
+                val document = withContext(Dispatchers.IO) { SettingsFileTransfer.readDocument(contentResolver, uri) }
                 val response = core.importSettings(document)
                 val section = SettingsFile.appSectionOf(document.decodeToString())
                 section.operatingMode?.let(::saveOperatingMode)
@@ -547,7 +577,8 @@ class MainActivity : ComponentActivity() {
                     UpdateManager.applyConfig(this@MainActivity, patch.applyTo(UpdateManager.state.value.config))
                 }
                 refresh()
-                Toast.makeText(this@MainActivity, importNotice(response), Toast.LENGTH_LONG).show()
+                val notice = SettingsFileTransfer.importNotice(this@MainActivity, response)
+                Toast.makeText(this@MainActivity, notice, Toast.LENGTH_LONG).show()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
@@ -568,40 +599,6 @@ class MainActivity : ComponentActivity() {
         Journal.warn("the settings file failed", "error" to error.message)
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
-
-    /** readSettingsDocument returns the document of the picked file. */
-    private fun readSettingsDocument(uri: Uri): ByteArray {
-        val stream =
-            contentResolver.openInputStream(uri)
-                ?: throw IOException("the document cannot be read")
-        return stream.use { input ->
-            val chunks = ByteArrayOutputStream()
-            val buffer = ByteArray(SETTINGS_READ_CHUNK)
-            while (true) {
-                val read = input.read(buffer)
-                if (read < 0) {
-                    break
-                }
-                chunks.write(buffer, 0, read)
-                if (chunks.size() > MAX_SETTINGS_DOCUMENT) {
-                    throw IOException("the document is too large")
-                }
-            }
-            chunks.toByteArray()
-        }
-    }
-
-    /** importNotice tells what the import applied and what it had to skip. */
-    private fun importNotice(response: Local.ImportSettingsResponse): String =
-        buildList {
-            add(getString(R.string.settings_file_imported))
-            if (response.fromNewerVersion) {
-                add(getString(R.string.settings_file_newer))
-            }
-            if (response.ignoredCount > 0) {
-                add(getString(R.string.settings_file_ignored, response.ignoredList.joinToString(", ")))
-            }
-        }.joinToString(" ")
 
     private fun saveOperatingMode(mode: OperatingMode) {
         UnisonSettings.setOperatingMode(this, mode)

@@ -143,15 +143,14 @@ internal fun updateProgress(status: UpdateStatus.Downloading): Float =
         0f
     }
 
+/** Whole percentage of a download that is done, from 0 to 100. */
+internal fun updatePercent(status: UpdateStatus.Downloading): Int = (updateProgress(status) * PERCENT).toInt()
+
 /** Line under the title of the banner during a download or an installation. */
 @Composable
 internal fun updateProgressText(status: UpdateStatus): String? =
     when (status) {
-        is UpdateStatus.Downloading ->
-            stringResource(
-                R.string.updates_downloading,
-                ((status.downloaded * PERCENT) / status.total.coerceAtLeast(1)).toInt(),
-            )
+        is UpdateStatus.Downloading -> stringResource(R.string.updates_downloading, updatePercent(status))
         UpdateStatus.Verifying -> stringResource(R.string.updates_verifying)
         UpdateStatus.Installing -> stringResource(R.string.updates_installing)
         else -> null

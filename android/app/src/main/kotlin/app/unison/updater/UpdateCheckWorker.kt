@@ -17,10 +17,6 @@ class UpdateCheckWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
-        val config = UpdateConfig.load(applicationContext)
-        if (!config.enabled) {
-            return Result.success()
-        }
         val retry = UpdateManager.checkInBackground(applicationContext)
         return if (retry && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
     }

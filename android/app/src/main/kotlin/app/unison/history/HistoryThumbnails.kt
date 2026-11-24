@@ -4,8 +4,10 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import app.unison.core.CoreException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import unison.local.v1.Local
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -59,7 +61,7 @@ object HistoryThumbnails {
         if (width <= 0 || height <= 0) {
             return null
         }
-        if (rgba.size != width * height * PIXEL_BYTES) {
+        if (rgba.size.toLong() != width.toLong() * height * PIXEL_BYTES) {
             return null
         }
         val pixels = IntArray(width * height)
@@ -120,7 +122,8 @@ class HistoryThumbnailCache(
         mutex.withLock { cache[key] }?.let { return it }
         val bitmap =
             try {
-                HistoryThumbnails.bitmap(load(id, maxSide))
+                val response = load(id, maxSide)
+                withContext(Dispatchers.Default) { HistoryThumbnails.bitmap(response) }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: CoreException) {
