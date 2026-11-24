@@ -60,6 +60,12 @@ internal fun DashboardImageViewer(
     var offset by remember(entry.item.id) { mutableStateOf(Offset.Zero) }
     var viewport by remember { mutableStateOf(IntSize.Zero) }
 
+    LaunchedEffect(entry.item.id) {
+        if (!entry.complete && !busy) {
+            onDownload()
+        }
+    }
+
     LaunchedEffect(entry.item.id, entry.complete) {
         if (entry.complete) {
             image = thumbnail(entry.item.id, HistoryThumbnails.FULLSCREEN_SIDE)

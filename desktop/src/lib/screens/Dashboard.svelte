@@ -219,6 +219,9 @@
       return;
     }
     previewId = item.item.id;
+    if (item.item.kind === Kind.IMAGE && !item.complete) {
+      void dashboard.download(item.item.id, Kind.IMAGE);
+    }
   }
 
   function closePreview(): void {
@@ -662,6 +665,11 @@
       ></button>
       <figure>
         {#if info.kind === Kind.IMAGE}
+          {#snippet imageLoading()}
+            <div class="preview-state">
+              <Spinner />
+            </div>
+          {/snippet}
           {#snippet imageFallback()}
             <p class="muted">{t("dashboard.previewUnavailable")}</p>
           {/snippet}
@@ -670,6 +678,7 @@
               id={info.id}
               maxSide={PREVIEW_SIDE}
               label={historyTitle(info)}
+              loading={imageLoading}
               fallback={imageFallback}
             />
           {:else if dashboard.downloading.includes(info.id)}
