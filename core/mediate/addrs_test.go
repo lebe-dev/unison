@@ -22,7 +22,7 @@ func TestNormalizeAddrs(t *testing.T) {
 		{"unspecified dropped", []string{"0.0.0.0:4242"}, false, nil},
 		{"multicast dropped", []string{"224.0.0.1:4242"}, false, nil},
 		{"zero port dropped", []string{"192.0.2.10:0"}, false, nil},
-		{"long address dropped", []string{"192.0.2.10:4242"}, false, []string{"192.0.2.10:4242"}},
+		{"long address dropped", []string{"[2001:0db8:85a3:0000:0000:8a2e:0370:7334:extra:padding:exceeding:64]:4242"}, false, nil},
 		{"five addresses dropped", []string{"192.0.2.1:1", "192.0.2.2:2", "192.0.2.3:3", "192.0.2.4:4", "192.0.2.5:5"}, false, nil},
 	}
 	for _, test := range tests {

@@ -55,6 +55,7 @@ func (n *Node) openMediate() error {
 		Trust:       n.trust,
 		Sessions:    nodeSessions{node: n},
 		Name:        n.Name(),
+		NameFunc:    n.Name,
 		Platform:    n.cfg.Platform,
 		ListenAddrs: n.ListenAddrs,
 		LoopbackHint: func(id model.DeviceID) bool {
@@ -74,6 +75,9 @@ func (n *Node) openMediate() error {
 
 // installMediate registers the mediated pairing handlers on a new session.
 func (n *Node) installMediate(_ context.Context, sess *session.Session) error {
+	if n.mediate == nil {
+		return nil
+	}
 	return n.mediate.Register(sess)
 }
 

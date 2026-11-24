@@ -50,8 +50,12 @@ type Options struct {
 	Trust Store
 	// Sessions hands out the open sessions. It is required.
 	Sessions Sessions
-	// Name is the display name this device announces to the new peer.
+	// Name is the display name this device announces to the new peer when
+	// NameFunc is nil.
 	Name string
+	// NameFunc returns the current display name this device announces to the
+	// new peer. When nil, Name is used.
+	NameFunc func() string
 	// Platform is the operating system of this device.
 	Platform model.Platform
 	// ListenAddrs returns the local addresses a peer may dial. The addresses

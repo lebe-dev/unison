@@ -18,8 +18,20 @@ import (
 	"github.com/lebe-dev/unison/core/ports"
 	"github.com/lebe-dev/unison/core/session"
 	"github.com/lebe-dev/unison/core/trust"
+	"github.com/lebe-dev/unison/internal/observability"
 	wirev1 "github.com/lebe-dev/unison/proto/unison/wire/v1"
 )
+
+// cancelSendTimeout bounds an outbound message sent after the service mutex is
+// released, so a stalled peer cannot hold a goroutine indefinitely.
+const cancelSendTimeout = 5 * time.Second
+
+// pendingSend is a control message delivered after the service mutex is
+// released.
+type pendingSend struct {
+	target model.DeviceID
+	msg    *wirev1.ControlMessage
+}
 
 // exchange is one mediated pairing exchange. The service mutex guards it.
 type exchange struct {
@@ -57,7 +69,6 @@ type exchange struct {
 	localAccepted  bool
 	friendsPending bool
 	keys           *ephemeralKeys
-	timer          *time.Timer
 	done           chan struct{}
 }
 
@@ -234,12 +245,12 @@ func (s *Service) Start(ctx context.Context, peerA, peerB model.DeviceID, role m
 		return Exchange{}, fmt.Errorf("mediate: generate session id: %w", err)
 	}
 	idHex := sessionIDString(id[:])
-	if s.replay.seen(id) {
+	now := s.clock.Now()
+	if s.replay.seen(id, now) {
 		return Exchange{}, fmt.Errorf("%w: duplicate session id", ErrInvalidOffer)
 	}
 
 	low, high := orderDevices(peerA, peerB)
-	now := s.clock.Now()
 	expiresAt := now.Add(s.ttl)
 	base := offerTranscript(id, local.DeviceID, low, high, role, expiresAt.UnixMilli())
 	signature, err := s.opts.Identity.Sign(OfferSignatureType, base)
@@ -276,7 +287,7 @@ func (s *Service) Start(ctx context.Context, peerA, peerB model.DeviceID, role m
 		done:       make(chan struct{}),
 	}
 	s.exchanges[idHex] = ex
-	s.replay.add(id)
+	s.replay.add(id, now)
 	s.watchLocked(ex, sessionLow)
 	s.watchLocked(ex, sessionHigh)
 	s.armTimerLocked(ex)
@@ -324,91 +335,102 @@ func (s *Service) Start(ctx context.Context, peerA, peerB model.DeviceID, role m
 // lower one sends its keys. enableFriendsDiscovery records the choice of the
 // user for the completion callback.
 func (s *Service) Confirm(ctx context.Context, sessionID string, enableFriendsDiscovery bool) error {
+	var (
+		sends     []pendingSend
+		completed *Exchange
+		retErr    error
+	)
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionID]
-	if ex == nil {
-		return ErrNotFound
-	}
-	if ex.direction != DirectionIncoming {
-		return fmt.Errorf("%w: the mediator does not confirm", ErrState)
-	}
-	if ex.state != StateWaiting && ex.state != StateReady {
-		return ErrState
-	}
-	if s.clock.Now().After(ex.expiresAt) {
-		s.endLocked(ctx, ex, CancelReasonExpired, true)
-		return ErrExpired
-	}
-	if ex.localAccepted {
-		return nil
-	}
-	if mediator, err := s.opts.Trust.Get(ctx, ex.mediatorID); err == nil {
-		if mediator.Revoked {
-			s.endLocked(ctx, ex, CancelReasonRevoked, true)
-			return ErrPeerRevoked
-		}
-		if !roleWithin(ex.role, mediator.Role) {
-			s.endLocked(ctx, ex, CancelReasonRoleMismatch, true)
-			return ErrRoleEscalation
-		}
-	}
-	ex.localAccepted = true
-	ex.friendsPending = enableFriendsDiscovery
+	switch {
+	case ex == nil:
+		retErr = ErrNotFound
+	case ex.direction != DirectionIncoming:
+		retErr = fmt.Errorf("%w: the mediator does not confirm", ErrState)
+	case ex.state != StateWaiting && ex.state != StateReady:
+		retErr = ErrState
+	case !s.clock.Now().Before(ex.expiresAt):
+		sends = s.endLocked(ex, CancelReasonExpired, true)
+		retErr = ErrExpired
+	case ex.localAccepted:
+		retErr = nil
+	default:
+		if reason, err := s.checkMediatorLocked(ctx, ex); err != nil {
+			sends = s.endLocked(ex, reason, true)
+			retErr = err
+		} else {
+			ex.localAccepted = true
+			ex.friendsPending = enableFriendsDiscovery
 
-	if s.isLowLocked(ex) {
-		keys, err := newEphemeralKeys()
-		if err != nil {
-			s.endLocked(ctx, ex, CancelReasonFailed, true)
-			return err
+			if s.isLowLocked(ex) {
+				keys, err := newEphemeralKeys()
+				if err != nil {
+					sends = s.endLocked(ex, CancelReasonFailed, true)
+					retErr = err
+				} else {
+					ex.keys = keys
+					commit, err := s.buildCommitLocked(ex)
+					if err != nil {
+						sends = s.endLocked(ex, CancelReasonFailed, true)
+						retErr = err
+					} else {
+						ex.state = StateAwaitingFinish
+						if err := s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
+							Body: &wirev1.ControlMessage_MediatedCommit{MediatedCommit: commit},
+						}); err != nil {
+							sends = s.endLocked(ex, CancelReasonPeerOffline, false)
+							retErr = err
+						} else {
+							s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+						}
+					}
+				}
+			} else {
+				ex.state = StateReady
+				if err := s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
+					Body: &wirev1.ControlMessage_MediatedReady{MediatedReady: &wirev1.MediatedReady{SessionId: append([]byte(nil), ex.id[:]...)}},
+				}); err != nil {
+					sends = s.endLocked(ex, CancelReasonPeerOffline, false)
+					retErr = err
+				} else if ex.commit != nil {
+					snap, cancelSends, err := s.finishHighLocked(ctx, ex)
+					if err != nil {
+						sends = cancelSends
+						retErr = err
+					} else {
+						completed = &snap
+					}
+				} else {
+					s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+				}
+			}
 		}
-		ex.keys = keys
-		commit, err := s.buildCommitLocked(ex)
-		if err != nil {
-			s.endLocked(ctx, ex, CancelReasonFailed, true)
-			return err
-		}
-		ex.state = StateAwaitingFinish
-		if err := s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
-			Body: &wirev1.ControlMessage_MediatedCommit{MediatedCommit: commit},
-		}); err != nil {
-			s.endLocked(ctx, ex, CancelReasonPeerOffline, false)
-			return err
-		}
-		s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
-		return nil
 	}
+	s.mu.Unlock()
 
-	ex.state = StateReady
-	if err := s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
-		Body: &wirev1.ControlMessage_MediatedReady{MediatedReady: &wirev1.MediatedReady{SessionId: append([]byte(nil), ex.id[:]...)}},
-	}); err != nil {
-		s.endLocked(ctx, ex, CancelReasonPeerOffline, false)
-		return err
+	s.sendPending(ctx, sends)
+	if completed != nil {
+		s.notifyCompleted(ctx, *completed)
 	}
-	if ex.commit != nil {
-		if err := s.finishHighLocked(ctx, ex); err != nil {
-			s.endLocked(ctx, ex, CancelReasonPeerOffline, true)
-			return err
-		}
-		return nil
-	}
-	s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
-	return nil
+	return retErr
 }
 
 // Reject declines an incoming offer.
 func (s *Service) Reject(ctx context.Context, sessionID string) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionID]
 	if ex == nil {
+		s.mu.Unlock()
 		return ErrNotFound
 	}
 	if ex.direction != DirectionIncoming {
+		s.mu.Unlock()
 		return fmt.Errorf("%w: the mediator cancels instead", ErrState)
 	}
-	s.endLocked(ctx, ex, CancelReasonUserRejected, true)
+	sends := s.endLocked(ex, CancelReasonUserRejected, true)
+	s.mu.Unlock()
+	s.sendPending(ctx, sends)
 	return nil
 }
 
@@ -416,16 +438,18 @@ func (s *Service) Reject(ctx context.Context, sessionID string) error {
 // the mediator.
 func (s *Service) Cancel(ctx context.Context, sessionID string) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionID]
 	if ex == nil {
+		s.mu.Unlock()
 		return ErrNotFound
 	}
+	reason := CancelReasonUserRejected
 	if ex.direction == DirectionMediator {
-		s.endLocked(ctx, ex, CancelReasonMediatorCanceled, true)
-		return nil
+		reason = CancelReasonMediatorCanceled
 	}
-	s.endLocked(ctx, ex, CancelReasonUserRejected, true)
+	sends := s.endLocked(ex, reason, true)
+	s.mu.Unlock()
+	s.sendPending(ctx, sends)
 	return nil
 }
 
@@ -476,6 +500,23 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 	if peerPublic.DeviceID == local.DeviceID {
 		return fmt.Errorf("%w: offer of the local device", ErrInvalidOffer)
 	}
+	if peerPublic.DeviceID == mediator {
+		return fmt.Errorf("%w: offer of the mediator", ErrInvalidOffer)
+	}
+
+	// Refuse stopped services and replayed session IDs before running the
+	// hybrid signature verification.
+	s.mu.Lock()
+	if s.stopped {
+		s.mu.Unlock()
+		return ErrOffline
+	}
+	if s.replay.seen(id, now) {
+		s.mu.Unlock()
+		return fmt.Errorf("%w: session id was used already", ErrInvalidOffer)
+	}
+	s.mu.Unlock()
+
 	low, high := orderDevices(local.DeviceID, peerPublic.DeviceID)
 	lowPublic, highPublic := local, peerPublic
 	if low == peerPublic.DeviceID {
@@ -511,7 +552,7 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 	if s.stopped {
 		return ErrOffline
 	}
-	if s.replay.seen(id) {
+	if s.replay.seen(id, now) {
 		return fmt.Errorf("%w: session id was used already", ErrInvalidOffer)
 	}
 	if !s.allowLocked(mediator, now) {
@@ -531,7 +572,7 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 		return ErrBusy
 	}
 
-	s.replay.add(id)
+	s.replay.add(id, now)
 	ex := &exchange{
 		id:           id,
 		idHex:        sessionIDString(id[:]),
@@ -562,29 +603,35 @@ func (s *Service) handleOffer(ctx context.Context, sess *session.Session, msg *w
 }
 
 // handleReady records that an endpoint accepted before the keys arrived.
-func (s *Service) handleReady(_ context.Context, sess *session.Session, msg *wirev1.ControlMessage) error {
+func (s *Service) handleReady(ctx context.Context, sess *session.Session, msg *wirev1.ControlMessage) error {
 	ready := msg.GetMediatedReady()
 	if ready == nil || !validSessionID(ready.GetSessionId()) {
 		return ErrInvalidOffer
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionIDString(ready.GetSessionId())]
 	if ex == nil {
+		s.mu.Unlock()
 		return ErrNotFound
 	}
 	if ex.direction != DirectionMediator {
+		s.mu.Unlock()
 		return fmt.Errorf("%w: only the mediator tracks readiness", ErrInvalidOffer)
 	}
-	if s.clock.Now().After(ex.expiresAt) {
-		s.endLocked(context.Background(), ex, CancelReasonExpired, true)
+	if sends, expired := s.expiredLocked(ex); expired {
+		s.mu.Unlock()
+		s.sendPending(ctx, sends)
 		return ErrExpired
 	}
 	if sess.DeviceID() != ex.highID {
+		s.mu.Unlock()
 		return fmt.Errorf("%w: readiness of the wrong endpoint", ErrInvalidOffer)
 	}
-	ex.state = StateReady
-	s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+	if ex.state == StateWaiting {
+		ex.state = StateReady
+		s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+	}
+	s.mu.Unlock()
 	return nil
 }
 
@@ -595,56 +642,78 @@ func (s *Service) handleCommit(ctx context.Context, sess *session.Session, msg *
 	if commit == nil || !validSessionID(commit.GetSessionId()) {
 		return ErrInvalidCommit
 	}
+
+	var (
+		sends     []pendingSend
+		completed *Exchange
+		retErr    error
+	)
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionIDString(commit.GetSessionId())]
 	if ex == nil {
-		return ErrNotFound
+		retErr = ErrNotFound
+	} else if cancelSends, expired := s.expiredLocked(ex); expired {
+		sends = cancelSends
+		retErr = ErrExpired
+	} else if ex.direction == DirectionMediator {
+		switch {
+		case sess.DeviceID() != ex.lowID:
+			retErr = fmt.Errorf("%w: commit of the wrong endpoint", ErrInvalidCommit)
+		case ex.commit != nil:
+			retErr = fmt.Errorf("%w: duplicate commit", ErrInvalidCommit)
+		default:
+			if err := s.verifyCommitLocked(ex, commit); err != nil {
+				retErr = err
+			} else {
+				ex.commit = commit
+				ex.state = StateAwaitingFinish
+				if err := s.sendToLocked(ctx, ex.highID, msg); err != nil {
+					sends = s.endLocked(ex, CancelReasonPeerOffline, true)
+					retErr = err
+				} else {
+					s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+				}
+			}
+		}
+	} else {
+		switch {
+		case sess.DeviceID() != ex.mediatorID:
+			retErr = violation(fmt.Errorf("%w: commit of a foreign device", ErrInvalidCommit))
+		case s.isLowLocked(ex):
+			retErr = fmt.Errorf("%w: the lower endpoint does not receive a commit", ErrInvalidCommit)
+		case ex.commit != nil:
+			retErr = fmt.Errorf("%w: duplicate commit", ErrInvalidCommit)
+		default:
+			if err := s.verifyCommitLocked(ex, commit); err != nil {
+				retErr = err
+			} else {
+				ex.commit = commit
+				ex.peerName = commit.GetName()
+				ex.peerPlatform = protoconv.PlatformFromProto(commit.GetPlatform())
+				if ex.localAccepted {
+					snap, cancelSends, err := s.finishHighLocked(ctx, ex)
+					if err != nil {
+						sends = cancelSends
+						retErr = err
+					} else {
+						completed = &snap
+					}
+				} else {
+					// Keep StateWaiting until the local user decides, so
+					// prompts and notifications stay visible.
+					s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+				}
+			}
+		}
 	}
-	if s.expiredLocked(ctx, ex) {
-		return ErrExpired
-	}
-	if ex.direction == DirectionMediator {
-		if sess.DeviceID() != ex.lowID {
-			return fmt.Errorf("%w: commit of the wrong endpoint", ErrInvalidCommit)
-		}
-		if ex.commit != nil {
-			return fmt.Errorf("%w: duplicate commit", ErrInvalidCommit)
-		}
-		if err := s.verifyCommitLocked(ex, commit); err != nil {
-			return err
-		}
-		ex.commit = commit
-		ex.state = StateAwaitingFinish
-		if err := s.sendToLocked(ctx, ex.highID, msg); err != nil {
-			s.endLocked(ctx, ex, CancelReasonPeerOffline, true)
-			return err
-		}
-		s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
-		return nil
-	}
+	s.mu.Unlock()
 
-	if s.isLowLocked(ex) {
-		return fmt.Errorf("%w: the lower endpoint does not receive a commit", ErrInvalidCommit)
+	s.sendPending(ctx, sends)
+	if completed != nil {
+		s.notifyCompleted(ctx, *completed)
 	}
-	if err := s.verifyCommitLocked(ex, commit); err != nil {
-		return err
-	}
-	ex.commit = commit
-	ex.peerName = commit.GetName()
-	ex.peerPlatform = protoconv.PlatformFromProto(commit.GetPlatform())
-	if ex.localAccepted {
-		if err := s.finishHighLocked(ctx, ex); err != nil {
-			s.endLocked(ctx, ex, CancelReasonPeerOffline, true)
-			return err
-		}
-		return nil
-	}
-	if ex.state == StateWaiting {
-		ex.state = StateReady
-	}
-	s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
-	return nil
+	return retErr
 }
 
 // handleFinish verifies the finish of the higher endpoint and stores the new
@@ -654,69 +723,97 @@ func (s *Service) handleFinish(ctx context.Context, sess *session.Session, msg *
 	if finish == nil || !validSessionID(finish.GetSessionId()) {
 		return ErrInvalidFinish
 	}
+
+	var (
+		sends     []pendingSend
+		completed *Exchange
+		retErr    error
+	)
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionIDString(finish.GetSessionId())]
 	if ex == nil {
-		return ErrNotFound
-	}
-	if s.expiredLocked(ctx, ex) {
-		return ErrExpired
-	}
-	if ex.direction == DirectionMediator {
-		if sess.DeviceID() != ex.highID {
-			return fmt.Errorf("%w: finish of the wrong endpoint", ErrInvalidFinish)
+		retErr = ErrNotFound
+	} else if cancelSends, expired := s.expiredLocked(ex); expired {
+		sends = cancelSends
+		retErr = ErrExpired
+	} else if ex.direction == DirectionMediator {
+		switch {
+		case sess.DeviceID() != ex.highID:
+			retErr = fmt.Errorf("%w: finish of the wrong endpoint", ErrInvalidFinish)
+		case ex.finish != nil:
+			retErr = fmt.Errorf("%w: duplicate finish", ErrInvalidFinish)
+		case ex.commit == nil:
+			retErr = fmt.Errorf("%w: finish without a commit", ErrInvalidFinish)
+		default:
+			if err := s.verifyFinishLocked(ex, finish); err != nil {
+				retErr = err
+			} else {
+				ex.finish = finish
+				if err := s.sendToLocked(ctx, ex.lowID, msg); err != nil {
+					sends = s.endLocked(ex, CancelReasonPeerOffline, true)
+					retErr = err
+				} else {
+					s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
+				}
+			}
 		}
-		if ex.finish != nil {
-			return fmt.Errorf("%w: duplicate finish", ErrInvalidFinish)
-		}
-		if ex.commit == nil {
-			return fmt.Errorf("%w: finish without a commit", ErrInvalidFinish)
-		}
-		if err := s.verifyFinishLocked(ex, finish); err != nil {
-			return err
-		}
-		ex.finish = finish
-		if err := s.sendToLocked(ctx, ex.lowID, msg); err != nil {
-			s.endLocked(ctx, ex, CancelReasonPeerOffline, true)
-			return err
-		}
-		s.emitLocked(Event{Kind: EventUpdated, Exchange: s.snapshotLocked(ex)})
-		return nil
-	}
+	} else {
+		switch {
+		case sess.DeviceID() != ex.mediatorID:
+			retErr = violation(fmt.Errorf("%w: finish of a foreign device", ErrInvalidFinish))
+		case !s.isLowLocked(ex) || ex.state != StateAwaitingFinish || ex.keys == nil:
+			retErr = fmt.Errorf("%w: unexpected finish", ErrInvalidFinish)
+		default:
+			if err := s.verifyFinishLocked(ex, finish); err != nil {
+				retErr = err
+			} else if reason, err := s.checkMediatorLocked(ctx, ex); err != nil {
+				sends = s.endLocked(ex, reason, true)
+				retErr = err
+			} else {
+				sharedX, sharedPQ, err := decapsulate(ex.keys, finish.GetX25519Pub(), finish.GetMlkemCt())
+				if err != nil {
+					sends = s.endLocked(ex, CancelReasonFailed, true)
+					retErr = err
+				} else {
+					ex.peerName = finish.GetName()
+					ex.peerPlatform = protoconv.PlatformFromProto(finish.GetPlatform())
+					base := offerTranscript(ex.id, ex.mediatorID, ex.lowID, ex.highID, ex.role, ex.expiresAt.UnixMilli())
+					rendezvous := deriveRendezvousKey(base, ex.keys.xPub, ex.keys.ek, finish.GetX25519Pub(), finish.GetMlkemCt(), sharedX, sharedPQ)
+					clear(sharedX)
+					clear(sharedPQ)
 
-	if !s.isLowLocked(ex) || ex.state != StateAwaitingFinish || ex.keys == nil {
-		return fmt.Errorf("%w: unexpected finish", ErrInvalidFinish)
+					addrs := normalizeAddrs(finish.GetAddrs(), s.loopbackLocked(ex.mediatorID))
+					saveErr := s.savePeerLocked(ctx, ex, ex.peerName, addrs, rendezvous)
+					clear(rendezvous)
+					if saveErr != nil {
+						sends = s.endLocked(ex, reasonOf(saveErr), true)
+						retErr = saveErr
+					} else {
+						ex.state = StateCompleted
+						sends = []pendingSend{{
+							target: ex.mediatorID,
+							msg: &wirev1.ControlMessage{
+								Body: &wirev1.ControlMessage_MediatedResult{MediatedResult: &wirev1.MediatedResult{
+									SessionId: append([]byte(nil), ex.id[:]...),
+									Committed: true,
+								}},
+							},
+						}}
+						snap := s.completeLocked(ex)
+						completed = &snap
+					}
+				}
+			}
+		}
 	}
-	if err := s.verifyFinishLocked(ex, finish); err != nil {
-		return err
-	}
-	sharedX, sharedPQ, err := decapsulate(ex.keys, finish.GetX25519Pub(), finish.GetMlkemCt())
-	if err != nil {
-		s.endLocked(ctx, ex, CancelReasonFailed, true)
-		return err
-	}
-	ex.peerName = finish.GetName()
-	ex.peerPlatform = protoconv.PlatformFromProto(finish.GetPlatform())
-	base := offerTranscript(ex.id, ex.mediatorID, ex.lowID, ex.highID, ex.role, ex.expiresAt.UnixMilli())
-	rendezvous := deriveRendezvousKey(base, ex.keys.xPub, ex.keys.ek, finish.GetX25519Pub(), finish.GetMlkemCt(), sharedX, sharedPQ)
-	clear(sharedX)
-	clear(sharedPQ)
+	s.mu.Unlock()
 
-	addrs := normalizeAddrs(finish.GetAddrs(), s.loopbackLocked(ex.mediatorID))
-	if err := s.savePeerLocked(ctx, ex, ex.peerName, addrs, rendezvous); err != nil {
-		s.endLocked(ctx, ex, reasonOf(err), true)
-		return err
+	s.sendPending(ctx, sends)
+	if completed != nil {
+		s.notifyCompleted(ctx, *completed)
 	}
-	ex.state = StateCompleted
-	_ = s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
-		Body: &wirev1.ControlMessage_MediatedResult{MediatedResult: &wirev1.MediatedResult{
-			SessionId: append([]byte(nil), ex.id[:]...),
-			Committed: true,
-		}},
-	})
-	s.completeLocked(ctx, ex)
-	return nil
+	return retErr
 }
 
 // handleCancel ends the exchange on this device.
@@ -725,27 +822,35 @@ func (s *Service) handleCancel(ctx context.Context, sess *session.Session, msg *
 	if cancel == nil || !validSessionID(cancel.GetSessionId()) {
 		return ErrInvalidOffer
 	}
+	var (
+		sends  []pendingSend
+		retErr error
+	)
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionIDString(cancel.GetSessionId())]
-	if ex == nil {
-		return nil
+	if ex != nil {
+		reason := cancelReasonFromProto(cancel.GetReason())
+		switch {
+		case ex.direction == DirectionIncoming:
+			if sess.DeviceID() != ex.mediatorID {
+				retErr = violation(fmt.Errorf("%w: cancel of a foreign device", ErrInvalidOffer))
+			} else {
+				sends = s.endLocked(ex, reason, false)
+			}
+		case sess.DeviceID() != ex.lowID && sess.DeviceID() != ex.highID:
+			retErr = fmt.Errorf("%w: cancel of a foreign device", ErrInvalidOffer)
+		default:
+			other := ex.lowID
+			if sess.DeviceID() == ex.lowID {
+				other = ex.highID
+			}
+			sends = append(s.endLocked(ex, reason, false), pendingSend{target: other, msg: msg})
+		}
 	}
-	reason := cancelReasonFromProto(cancel.GetReason())
-	if ex.direction == DirectionIncoming {
-		s.endLocked(ctx, ex, reason, false)
-		return nil
-	}
-	if sess.DeviceID() != ex.lowID && sess.DeviceID() != ex.highID {
-		return fmt.Errorf("%w: cancel of a foreign device", ErrInvalidOffer)
-	}
-	other := ex.lowID
-	if sess.DeviceID() == ex.lowID {
-		other = ex.highID
-	}
-	_ = s.sendToLocked(ctx, other, msg)
-	s.endLocked(ctx, ex, reason, false)
-	return nil
+	s.mu.Unlock()
+
+	s.sendPending(ctx, sends)
+	return retErr
 }
 
 // handleResult marks an exchange of the mediator as completed.
@@ -754,23 +859,35 @@ func (s *Service) handleResult(ctx context.Context, sess *session.Session, msg *
 	if result == nil || !validSessionID(result.GetSessionId()) {
 		return ErrInvalidFinish
 	}
+	var (
+		sends     []pendingSend
+		completed *Exchange
+		retErr    error
+	)
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	ex := s.exchanges[sessionIDString(result.GetSessionId())]
-	if ex == nil {
-		return ErrNotFound
+	switch {
+	case ex == nil:
+		retErr = ErrNotFound
+	case ex.direction != DirectionMediator || sess.DeviceID() != ex.lowID:
+		retErr = fmt.Errorf("%w: result of the wrong endpoint", ErrInvalidFinish)
+	case ex.finish == nil:
+		retErr = fmt.Errorf("%w: result before finish", ErrInvalidFinish)
+	case !result.GetCommitted():
+		sends = s.endLocked(ex, CancelReasonFailed, false)
+	default:
+		ex.state = StateCompleted
+		s.log.Info("mediated pairing completed", "session", ex.idHex, "low", ex.lowID, "high", ex.highID)
+		snap := s.completeLocked(ex)
+		completed = &snap
 	}
-	if ex.direction != DirectionMediator || sess.DeviceID() != ex.lowID {
-		return fmt.Errorf("%w: result of the wrong endpoint", ErrInvalidFinish)
+	s.mu.Unlock()
+
+	s.sendPending(ctx, sends)
+	if completed != nil {
+		s.notifyCompleted(ctx, *completed)
 	}
-	if !result.GetCommitted() {
-		s.endLocked(ctx, ex, CancelReasonFailed, false)
-		return nil
-	}
-	ex.state = StateCompleted
-	s.log.Info("mediated pairing completed", "session", ex.idHex, "low", ex.lowID, "high", ex.highID)
-	s.completeLocked(ctx, ex)
-	return nil
+	return retErr
 }
 
 // violation marks an error as a protocol violation of the peer, so the session
@@ -780,12 +897,25 @@ func violation(err error) error {
 }
 
 // expiredLocked ends an exchange past its deadline and reports it.
-func (s *Service) expiredLocked(ctx context.Context, ex *exchange) bool {
+func (s *Service) expiredLocked(ex *exchange) ([]pendingSend, bool) {
 	if s.clock.Now().Before(ex.expiresAt) {
-		return false
+		return nil, false
 	}
-	s.endLocked(ctx, ex, CancelReasonExpired, true)
-	return true
+	return s.endLocked(ex, CancelReasonExpired, true), true
+}
+
+// validateAddrHints checks that the list of address hints obeys the protocol
+// count and per-entry byte limits before it enters a signed transcript.
+func validateAddrHints(addrs []string, kind error) error {
+	if len(addrs) > MaxAddrs {
+		return fmt.Errorf("%w: %d address hints", kind, len(addrs))
+	}
+	for _, addr := range addrs {
+		if len(addr) == 0 || len(addr) > MaxAddrLength {
+			return fmt.Errorf("%w: address hint of %d bytes", kind, len(addr))
+		}
+	}
+	return nil
 }
 
 // verifyCommitLocked checks the fields and the signature of a commit.
@@ -796,8 +926,8 @@ func (s *Service) verifyCommitLocked(ex *exchange, commit *wirev1.MediatedCommit
 	if err := validateName(commit.GetName()); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidCommit, err)
 	}
-	if len(commit.GetAddrs()) > MaxAddrs {
-		return fmt.Errorf("%w: %d address hints", ErrInvalidCommit, len(commit.GetAddrs()))
+	if err := validateAddrHints(commit.GetAddrs(), ErrInvalidCommit); err != nil {
+		return err
 	}
 	base := offerTranscript(ex.id, ex.mediatorID, ex.lowID, ex.highID, ex.role, ex.expiresAt.UnixMilli())
 	transcript := commitTranscript(base, commit.GetX25519Pub(), commit.GetMlkemEk(),
@@ -818,8 +948,8 @@ func (s *Service) verifyFinishLocked(ex *exchange, finish *wirev1.MediatedFinish
 	if err := validateName(finish.GetName()); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidFinish, err)
 	}
-	if len(finish.GetAddrs()) > MaxAddrs {
-		return fmt.Errorf("%w: %d address hints", ErrInvalidFinish, len(finish.GetAddrs()))
+	if err := validateAddrHints(finish.GetAddrs(), ErrInvalidFinish); err != nil {
+		return err
 	}
 	lowX25519, lowEK := ex.lowEphemeral()
 	if len(lowX25519) == 0 || len(lowEK) == 0 {
@@ -849,28 +979,83 @@ func (ex *exchange) lowEphemeral() (x25519Pub, mlkemEK []byte) {
 	return nil, nil
 }
 
-// finishHighLocked stores the lower endpoint on the higher one and sends the
-// finish message.
-func (s *Service) finishHighLocked(ctx context.Context, ex *exchange) error {
+// checkMediatorLocked verifies that the mediator is still trusted, unrevoked
+// and allowed to introduce the role of the exchange. It fails closed on store
+// errors so a removed or unreadable mediator cannot complete an exchange.
+func (s *Service) checkMediatorLocked(ctx context.Context, ex *exchange) (CancelReason, error) {
+	mediator, err := s.opts.Trust.Get(ctx, ex.mediatorID)
+	if err != nil {
+		if errors.Is(err, trust.ErrPeerNotFound) {
+			return CancelReasonRevoked, ErrPeerRevoked
+		}
+		return CancelReasonFailed, fmt.Errorf("mediate: read mediator: %w", err)
+	}
+	if mediator.Revoked {
+		return CancelReasonRevoked, ErrPeerRevoked
+	}
+	if mediator.Decision(trust.ActionMediatedPair) != trust.Confirm {
+		return CancelReasonFailed, fmt.Errorf("%w: mediator role %s", ErrInvalidOffer, mediator.Role)
+	}
+	if !roleWithin(ex.role, mediator.Role) {
+		return CancelReasonRoleMismatch, ErrRoleEscalation
+	}
+	return CancelReasonNone, nil
+}
+
+// checkPeerSaveLocked validates the peer name and existing trust state before
+// the finish message is sent or stored.
+func (s *Service) checkPeerSaveLocked(ctx context.Context, ex *exchange, name string) error {
+	if err := validateName(name); err != nil {
+		return err
+	}
+	stored, err := s.opts.Trust.Get(ctx, ex.peer.DeviceID)
+	switch {
+	case err == nil:
+		if stored.Revoked {
+			return ErrPeerRevoked
+		}
+		if stored.Role != ex.role {
+			return ErrRoleMismatch
+		}
+		return nil
+	case errors.Is(err, trust.ErrPeerNotFound):
+		return nil
+	default:
+		return fmt.Errorf("mediate: read peer: %w", err)
+	}
+}
+
+// finishHighLocked validates trust, sends the finish message and stores the
+// lower endpoint on the higher one. Sending precedes storage so an offline
+// mediator never leaves a half-committed peer in the trust store.
+func (s *Service) finishHighLocked(ctx context.Context, ex *exchange) (Exchange, []pendingSend, error) {
 	commit := ex.commit
 	if commit == nil {
-		return fmt.Errorf("%w: missing commit", ErrInvalidCommit)
+		return Exchange{}, s.endLocked(ex, CancelReasonFailed, true), fmt.Errorf("%w: missing commit", ErrInvalidCommit)
+	}
+	if reason, err := s.checkMediatorLocked(ctx, ex); err != nil {
+		return Exchange{}, s.endLocked(ex, reason, true), err
+	}
+	if err := s.checkPeerSaveLocked(ctx, ex, commit.GetName()); err != nil {
+		return Exchange{}, s.endLocked(ex, reasonOf(err), true), err
 	}
 	share, err := encapsulate(commit.GetX25519Pub(), commit.GetMlkemEk())
 	if err != nil {
-		return err
+		return Exchange{}, s.endLocked(ex, CancelReasonFailed, true), err
 	}
 	defer share.destroy()
 
 	base := offerTranscript(ex.id, ex.mediatorID, ex.lowID, ex.highID, ex.role, ex.expiresAt.UnixMilli())
 	rendezvous := deriveRendezvousKey(base, commit.GetX25519Pub(), commit.GetMlkemEk(), share.xPub, share.mlkemCT, share.sharedX, share.sharedPQ)
+	defer clear(rendezvous)
+
 	addrs := s.localAddrsLocked(ex.mediatorID)
-	name := s.opts.Name
+	name := s.localName()
 	platform := s.opts.Platform
 	transcript := finishTranscript(base, commit.GetX25519Pub(), commit.GetMlkemEk(), share.xPub, share.mlkemCT, platform, name, addrs)
 	signature, err := s.opts.Identity.Sign(FinishSignatureType, transcript)
 	if err != nil {
-		return fmt.Errorf("mediate: sign finish: %w", err)
+		return Exchange{}, s.endLocked(ex, CancelReasonFailed, true), fmt.Errorf("mediate: sign finish: %w", err)
 	}
 	finish := &wirev1.MediatedFinish{
 		SessionId:  append([]byte(nil), ex.id[:]...),
@@ -882,20 +1067,19 @@ func (s *Service) finishHighLocked(ctx context.Context, ex *exchange) error {
 		Ed25519Sig: signature.Ed25519,
 		MldsaSig:   signature.MLDSA,
 	}
-	peerAddrs := normalizeAddrs(commit.GetAddrs(), s.loopbackLocked(ex.mediatorID))
-	if err := s.savePeerLocked(ctx, ex, commit.GetName(), peerAddrs, rendezvous); err != nil {
-		return err
-	}
 	ex.finish = finish
 	ex.state = StateAwaitingFinish
 	if err := s.sendToLocked(ctx, ex.mediatorID, &wirev1.ControlMessage{
 		Body: &wirev1.ControlMessage_MediatedFinish{MediatedFinish: finish},
 	}); err != nil {
-		return err
+		return Exchange{}, s.endLocked(ex, CancelReasonPeerOffline, false), err
+	}
+	peerAddrs := normalizeAddrs(commit.GetAddrs(), s.loopbackLocked(ex.mediatorID))
+	if err := s.savePeerLocked(ctx, ex, commit.GetName(), peerAddrs, rendezvous); err != nil {
+		return Exchange{}, s.endLocked(ex, reasonOf(err), true), err
 	}
 	ex.state = StateCompleted
-	s.completeLocked(ctx, ex)
-	return nil
+	return s.completeLocked(ex), nil, nil
 }
 
 // buildCommitLocked builds and signs the commit of the lower endpoint.
@@ -903,9 +1087,10 @@ func (s *Service) buildCommitLocked(ex *exchange) (*wirev1.MediatedCommit, error
 	if ex.keys == nil {
 		return nil, fmt.Errorf("%w: missing keys", ErrInvalidCommit)
 	}
+	name := s.localName()
 	addrs := s.localAddrsLocked(ex.mediatorID)
 	base := offerTranscript(ex.id, ex.mediatorID, ex.lowID, ex.highID, ex.role, ex.expiresAt.UnixMilli())
-	transcript := commitTranscript(base, ex.keys.xPub, ex.keys.ek, s.opts.Platform, s.opts.Name, addrs)
+	transcript := commitTranscript(base, ex.keys.xPub, ex.keys.ek, s.opts.Platform, name, addrs)
 	signature, err := s.opts.Identity.Sign(CommitSignatureType, transcript)
 	if err != nil {
 		return nil, fmt.Errorf("mediate: sign commit: %w", err)
@@ -914,7 +1099,7 @@ func (s *Service) buildCommitLocked(ex *exchange) (*wirev1.MediatedCommit, error
 		SessionId:  append([]byte(nil), ex.id[:]...),
 		X25519Pub:  append([]byte(nil), ex.keys.xPub...),
 		MlkemEk:    append([]byte(nil), ex.keys.ek...),
-		Name:       s.opts.Name,
+		Name:       name,
 		Platform:   protoconv.PlatformToProto(s.opts.Platform),
 		Addrs:      addrs,
 		Ed25519Sig: signature.Ed25519,
@@ -983,44 +1168,72 @@ func (s *Service) savePeerLocked(ctx context.Context, ex *exchange, name string,
 	return nil
 }
 
-// completeLocked reports a completed exchange and releases it.
-func (s *Service) completeLocked(ctx context.Context, ex *exchange) {
+// completeLocked reports a completed exchange, releases it and returns the
+// snapshot for the completion callback.
+func (s *Service) completeLocked(ex *exchange) Exchange {
 	snapshot := s.snapshotLocked(ex)
 	s.releaseLocked(ex)
 	delete(s.exchanges, ex.idHex)
 	s.emitLocked(Event{Kind: EventCompleted, Exchange: snapshot})
+	return snapshot
+}
+
+// notifyCompleted runs the completion callback without holding the service
+// mutex.
+func (s *Service) notifyCompleted(ctx context.Context, snapshot Exchange) {
 	if s.opts.Completed != nil {
 		s.opts.Completed(ctx, snapshot)
 	}
 }
 
-// endLocked cancels an exchange, tells the peers when possible and reports it.
-func (s *Service) endLocked(ctx context.Context, ex *exchange, reason CancelReason, notify bool) {
+// endLocked cancels an exchange, reports it and returns any cancel messages to
+// deliver after releasing the service mutex.
+func (s *Service) endLocked(ex *exchange, reason CancelReason, notify bool) []pendingSend {
 	if ex.state == StateCompleted {
-		return
+		return nil
 	}
 	ex.state = StateCanceled
 	ex.reason = reason
+	var sends []pendingSend
 	if notify && ex.direction == DirectionIncoming {
-		_ = s.sendToLocked(ctx, ex.mediatorID, cancelMessage(ex.id, reason))
+		sends = append(sends, pendingSend{target: ex.mediatorID, msg: cancelMessage(ex.id, reason)})
 	}
 	if notify && ex.direction == DirectionMediator {
-		_ = s.sendToLocked(ctx, ex.lowID, cancelMessage(ex.id, reason))
-		_ = s.sendToLocked(ctx, ex.highID, cancelMessage(ex.id, reason))
+		msg := cancelMessage(ex.id, reason)
+		sends = append(sends,
+			pendingSend{target: ex.lowID, msg: msg},
+			pendingSend{target: ex.highID, msg: msg},
+		)
 	}
 	snapshot := s.snapshotLocked(ex)
 	s.releaseLocked(ex)
 	delete(s.exchanges, ex.idHex)
 	s.log.Info("mediated pairing canceled", "session", ex.idHex, "reason", reason.String())
 	s.emitLocked(Event{Kind: EventCanceled, Exchange: snapshot})
+	return sends
 }
 
-// releaseLocked stops the timer and wipes the ephemeral keys.
-func (s *Service) releaseLocked(ex *exchange) {
-	if ex.timer != nil {
-		ex.timer.Stop()
-		ex.timer = nil
+// sendPending delivers queued control messages without holding the service
+// mutex. A context without a deadline gets a bounded timeout so a stalled peer
+// cannot block indefinitely.
+func (s *Service) sendPending(ctx context.Context, sends []pendingSend) {
+	if len(sends) == 0 {
+		return
 	}
+	sendCtx := ctx
+	var cancel context.CancelFunc
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		sendCtx, cancel = context.WithTimeout(ctx, cancelSendTimeout)
+		defer cancel()
+	}
+	for _, item := range sends {
+		_ = s.sendToLocked(sendCtx, item.target, item.msg)
+	}
+}
+
+// releaseLocked wipes the ephemeral keys and signals the exchange watchers to
+// stop.
+func (s *Service) releaseLocked(ex *exchange) {
 	if ex.keys != nil {
 		ex.keys.destroy()
 		ex.keys = nil
@@ -1041,15 +1254,25 @@ func (s *Service) armTimerLocked(ex *exchange) {
 		delay = 0
 	}
 	id := ex.idHex
-	ex.timer = time.AfterFunc(delay, func() {
+	done := ex.done
+	timer := s.clock.After(delay)
+	go func() {
+		defer observability.Recover()
+		select {
+		case <-done:
+			return
+		case <-timer:
+		}
 		s.mu.Lock()
-		defer s.mu.Unlock()
 		current := s.exchanges[id]
-		if current == nil {
+		if current == nil || s.clock.Now().Before(current.expiresAt) {
+			s.mu.Unlock()
 			return
 		}
-		s.endLocked(context.Background(), current, CancelReasonExpired, true)
-	})
+		sends := s.endLocked(current, CancelReasonExpired, true)
+		s.mu.Unlock()
+		s.sendPending(context.Background(), sends)
+	}()
 }
 
 // watchLocked ends the exchange when a mediator session closes.
@@ -1059,19 +1282,23 @@ func (s *Service) watchLocked(ex *exchange, sess *session.Session) {
 	}
 	done := sess.Done()
 	exchangeID := ex.idHex
+	exDone := ex.done
 	go func() {
+		defer observability.Recover()
 		select {
 		case <-done:
-		case <-ex.done:
+		case <-exDone:
 			return
 		}
 		s.mu.Lock()
-		defer s.mu.Unlock()
 		current := s.exchanges[exchangeID]
 		if current == nil {
+			s.mu.Unlock()
 			return
 		}
-		s.endLocked(context.Background(), current, CancelReasonPeerOffline, true)
+		sends := s.endLocked(current, CancelReasonPeerOffline, true)
+		s.mu.Unlock()
+		s.sendPending(context.Background(), sends)
 	}()
 }
 
@@ -1080,19 +1307,23 @@ func (s *Service) watchLocked(ex *exchange, sess *session.Session) {
 func (s *Service) watchSessionLocked(ex *exchange, sess *session.Session) {
 	exchangeID := ex.idHex
 	done := sess.Done()
+	exDone := ex.done
 	go func() {
+		defer observability.Recover()
 		select {
 		case <-done:
-		case <-ex.done:
+		case <-exDone:
 			return
 		}
 		s.mu.Lock()
-		defer s.mu.Unlock()
 		current := s.exchanges[exchangeID]
 		if current == nil {
+			s.mu.Unlock()
 			return
 		}
-		s.endLocked(context.Background(), current, CancelReasonPeerOffline, false)
+		sends := s.endLocked(current, CancelReasonPeerOffline, false)
+		s.mu.Unlock()
+		s.sendPending(context.Background(), sends)
 	}()
 }
 
@@ -1155,6 +1386,16 @@ func (s *Service) checkCapacityLocked() error {
 	return nil
 }
 
+// localName returns the current display name of this device.
+func (s *Service) localName() string {
+	if s.opts.NameFunc != nil {
+		if name := s.opts.NameFunc(); name != "" {
+			return name
+		}
+	}
+	return s.opts.Name
+}
+
 // snapshotLocked returns the public view of an exchange.
 func (s *Service) snapshotLocked(ex *exchange) Exchange {
 	snapshot := Exchange{
@@ -1170,7 +1411,7 @@ func (s *Service) snapshotLocked(ex *exchange) Exchange {
 	}
 	if ex.direction == DirectionMediator {
 		local := s.opts.Identity.Public()
-		snapshot.Mediator = Device{ID: local.DeviceID, Name: s.opts.Name, Platform: s.opts.Platform}
+		snapshot.Mediator = Device{ID: local.DeviceID, Name: s.localName(), Platform: s.opts.Platform}
 		snapshot.PeerA = Device{ID: ex.requestA, Name: ex.nameOf(ex.requestA), Platform: ex.platformOf(ex.requestA)}
 		snapshot.PeerB = Device{ID: ex.requestB, Name: ex.nameOf(ex.requestB), Platform: ex.platformOf(ex.requestB)}
 		return snapshot
@@ -1331,7 +1572,7 @@ type replayCache struct {
 }
 
 // seen reports whether the identifier was used within the window.
-func (c *replayCache) seen(id [sessionIDSize]byte) bool {
+func (c *replayCache) seen(id [sessionIDSize]byte, now time.Time) bool {
 	if c.entries == nil {
 		return false
 	}
@@ -1339,7 +1580,7 @@ func (c *replayCache) seen(id [sessionIDSize]byte) bool {
 	if !ok {
 		return false
 	}
-	if time.Since(at) > ReplayCacheTTL {
+	if now.Sub(at) > ReplayCacheTTL {
 		delete(c.entries, id)
 		return false
 	}
@@ -1347,11 +1588,11 @@ func (c *replayCache) seen(id [sessionIDSize]byte) bool {
 }
 
 // add records an identifier and prunes the cache.
-func (c *replayCache) add(id [sessionIDSize]byte) {
+func (c *replayCache) add(id [sessionIDSize]byte, now time.Time) {
 	if c.entries == nil {
 		c.entries = make(map[[sessionIDSize]byte]time.Time)
 	}
-	c.entries[id] = time.Now()
+	c.entries[id] = now
 	if len(c.entries) <= ReplayCacheSize {
 		return
 	}

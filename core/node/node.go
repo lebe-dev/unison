@@ -964,6 +964,9 @@ func (n *Node) shutdown(ctx context.Context, cancel context.CancelFunc) error {
 	if n.share != nil {
 		n.share.Close()
 	}
+	if n.mediate != nil {
+		n.mediate.Stop()
+	}
 	n.closeSessions()
 
 	if n.listener != nil {
