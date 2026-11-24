@@ -125,6 +125,10 @@ export const en = {
   "events.transfer": "Transfer updated",
   "events.deviceUpdated": "Device settings changed",
   "events.peerUnreachable": "Device not reachable",
+  "events.mediatedPairOffer": "Introduction offered",
+  "events.mediatedPairUpdated": "Introduction updated",
+  "events.mediatedPairCompleted": "Introduction complete",
+  "events.mediatedPairCanceled": "Introduction ended",
   "events.event": "Event",
 
   // Errors of the local API.
@@ -178,6 +182,50 @@ export const en = {
   "devices.allowRemote": "Allow {name} to change these settings",
   "devices.allowRemoteHint":
     "The device can change the confirmation flags of this device over the session. The switch in Settings covers every device.",
+
+  // Introduction of two devices through a trusted one.
+  "mediated.introduce": "Introduce to another device...",
+  "mediated.dialogAria": "Introduce two devices",
+  "mediated.introduceHint":
+    "This device introduces two online devices to each other. Both of them confirm the code before the new pair is written.",
+  "mediated.secondDevice": "Second device",
+  "mediated.roleLegend": "Role of the new pair",
+  "mediated.roleLocked": "Friends only, because {name} is a Friends device.",
+  "mediated.start": "Introduce",
+  "mediated.progressAria": "Introduction progress",
+  "mediated.heading": "Introducing {a} to {b}",
+  "mediated.waiting": "Waiting for both devices to confirm.",
+  "mediated.ready": "One device confirmed and waits for the other one.",
+  "mediated.awaitingFinish": "The devices exchange their keys.",
+  "mediated.ended": "The introduction is over.",
+  "mediated.cancel": "Cancel the introduction",
+  "mediated.offerHeading": "Introduction from {name}",
+  "mediated.role": "New role",
+  "mediated.sasAria": "Verification code",
+  "mediated.alreadyPaired":
+    "This device is already paired and offline; confirming replaces its connection keys.",
+  "mediated.friendsDiscovery": "Turn on friend discovery for 15 minutes after confirming",
+  "mediated.answering": "Answering...",
+  "mediated.startFailed": "The introduction could not be started.",
+  "mediated.loadFailed": "The introductions could not be loaded.",
+  "mediated.confirmed": "Confirmed. Waiting for the other device.",
+  "mediated.confirmFailed": "The introduction could not be confirmed.",
+  "mediated.rejected": "The introduction is declined.",
+  "mediated.rejectFailed": "The introduction could not be declined.",
+  "mediated.canceled": "The introduction is canceled.",
+  "mediated.cancelFailed": "The introduction could not be canceled.",
+  "mediated.paired": "{name} is paired.",
+  "mediated.completed": "The devices are introduced to each other.",
+  "mediated.canceledReason": "The introduction ended: {reason}.",
+  "mediated.reason.userRejected": "the other device declined",
+  "mediated.reason.mediatorCanceled": "the exchange was canceled",
+  "mediated.reason.expired": "the offer expired",
+  "mediated.reason.revoked": "a device is revoked",
+  "mediated.reason.roleMismatch": "a device is paired with another role",
+  "mediated.reason.alreadyPaired": "both devices are already paired and online",
+  "mediated.reason.busy": "another introduction is running",
+  "mediated.reason.peerOffline": "a device went offline",
+  "mediated.reason.failed": "the exchange failed",
 
   // Add device screen and pairing.
   "add.roleLegend": "Role of the device you add",
@@ -359,6 +407,7 @@ export const en = {
   // Requests screen and store.
   "requests.intro":
     "Files that Friends offer, and files of the devices you ask about, wait here until you answer. Nothing is written to this device before you accept.",
+  "requests.introductionsHeading": "Introductions",
   "requests.daemonNotRunning": "The daemon is not running, so the requests are unavailable.",
   "requests.loading": "Loading the requests...",
   "requests.empty": "No file waits for your answer.",
@@ -632,6 +681,7 @@ export const en = {
   // Prompt window. The main window builds the summary and the size.
   "prompt.filesFrom": "Files from {device}",
   "prompt.clipboardFrom": "Clipboard from {device}",
+  "prompt.introductionFrom": "Introduction from {device}",
   "prompt.countOf": "1 of {total}",
   "prompt.acceptPrefix": "Accept",
   "prompt.acceptSuffix": "?",

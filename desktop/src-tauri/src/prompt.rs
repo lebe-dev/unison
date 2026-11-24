@@ -11,9 +11,10 @@ use tauri::{
 /// lists it, so the window may use the local API.
 const PROMPT_LABEL: &str = "prompt";
 
-/// Logical size of the prompt window.
+/// Logical size of the prompt window. The height leaves room for the details
+/// of an introduction.
 const WIDTH: f64 = 360.0;
-const HEIGHT: f64 = 150.0;
+const HEIGHT: f64 = 210.0;
 
 /// MARGIN keeps the window off the edges of the screen, in logical pixels.
 const MARGIN: f64 = 16.0;

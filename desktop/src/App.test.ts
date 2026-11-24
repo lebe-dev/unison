@@ -84,6 +84,10 @@ vi.mock("./lib/requests.svelte", () => ({
   requests: { start: vi.fn(), stop: vi.fn(), pending: 0 },
 }));
 
+vi.mock("./lib/mediated.svelte", () => ({
+  mediated: { start: vi.fn(), stop: vi.fn(), pending: 0 },
+}));
+
 vi.mock("./lib/prompts.svelte", () => ({
   prompts: { start: vi.fn(), stop: vi.fn(), queue: [], answer: vi.fn() },
 }));

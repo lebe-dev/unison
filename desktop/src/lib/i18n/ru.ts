@@ -110,6 +110,10 @@ export const ru: { [K in MessageKey]: Message } = {
   "events.transfer": "Передача обновлена",
   "events.deviceUpdated": "Настройки устройства изменены",
   "events.peerUnreachable": "Устройство недоступно",
+  "events.mediatedPairOffer": "Предложено знакомство",
+  "events.mediatedPairUpdated": "Знакомство обновлено",
+  "events.mediatedPairCompleted": "Знакомство завершено",
+  "events.mediatedPairCanceled": "Знакомство прекращено",
   "events.event": "Событие",
 
   // Errors of the local API.
@@ -164,6 +168,50 @@ export const ru: { [K in MessageKey]: Message } = {
   "devices.allowRemote": "Разрешить {name} менять эти настройки",
   "devices.allowRemoteHint":
     "Устройство сможет менять флаги подтверждения этого устройства через сессию. Переключатель в настройках действует на все устройства.",
+
+  // Introduction of two devices through a trusted one.
+  "mediated.introduce": "Познакомить с другим устройством...",
+  "mediated.dialogAria": "Знакомство двух устройств",
+  "mediated.introduceHint":
+    "Это устройство познакомит два устройства из сети друг с другом. Оба они подтверждают код, прежде чем новая связь будет записана.",
+  "mediated.secondDevice": "Второе устройство",
+  "mediated.roleLegend": "Роль новой связи",
+  "mediated.roleLocked": "Только друзья, потому что {name} - устройство друзей.",
+  "mediated.start": "Познакомить",
+  "mediated.progressAria": "Ход знакомства",
+  "mediated.heading": "Знакомим {a} и {b}",
+  "mediated.waiting": "Ждем подтверждения на обоих устройствах.",
+  "mediated.ready": "Одно устройство подтвердило и ждет второе.",
+  "mediated.awaitingFinish": "Устройства обмениваются ключами.",
+  "mediated.ended": "Знакомство завершилось.",
+  "mediated.cancel": "Отменить знакомство",
+  "mediated.offerHeading": "Знакомство от {name}",
+  "mediated.role": "Новая роль",
+  "mediated.sasAria": "Проверочный код",
+  "mediated.alreadyPaired":
+    "Это устройство уже сопряжено и не в сети; подтверждение заменит ключи связи.",
+  "mediated.friendsDiscovery": "Включить поиск друзей на 15 минут после подтверждения",
+  "mediated.answering": "Отвечаем...",
+  "mediated.startFailed": "Не удалось начать знакомство.",
+  "mediated.loadFailed": "Не удалось загрузить знакомства.",
+  "mediated.confirmed": "Подтверждено. Ждем второе устройство.",
+  "mediated.confirmFailed": "Не удалось подтвердить знакомство.",
+  "mediated.rejected": "Знакомство отклонено.",
+  "mediated.rejectFailed": "Не удалось отклонить знакомство.",
+  "mediated.canceled": "Знакомство отменено.",
+  "mediated.cancelFailed": "Не удалось отменить знакомство.",
+  "mediated.paired": "{name} сопряжено.",
+  "mediated.completed": "Устройства познакомлены друг с другом.",
+  "mediated.canceledReason": "Знакомство завершилось: {reason}.",
+  "mediated.reason.userRejected": "другое устройство отклонило",
+  "mediated.reason.mediatorCanceled": "обмен отменен",
+  "mediated.reason.expired": "срок предложения истек",
+  "mediated.reason.revoked": "устройство отозвано",
+  "mediated.reason.roleMismatch": "устройство сопряжено с другой ролью",
+  "mediated.reason.alreadyPaired": "оба устройства уже сопряжены и в сети",
+  "mediated.reason.busy": "идет другое знакомство",
+  "mediated.reason.peerOffline": "устройство вышло из сети",
+  "mediated.reason.failed": "обмен не удался",
 
   // Add device screen and pairing.
   "add.roleLegend": "Роль добавляемого устройства",
@@ -357,6 +405,7 @@ export const ru: { [K in MessageKey]: Message } = {
   // Requests screen and store.
   "requests.intro":
     "Файлы, которые предлагают друзья, и файлы устройств, о которых вы спрашиваете, ждут здесь вашего ответа. Ничего не записывается на это устройство, пока вы не примете.",
+  "requests.introductionsHeading": "Знакомства",
   "requests.daemonNotRunning": "Служба не запущена, поэтому запросы недоступны.",
   "requests.loading": "Загрузка запросов...",
   "requests.empty": "Ни один файл не ждет вашего ответа.",
@@ -640,6 +689,7 @@ export const ru: { [K in MessageKey]: Message } = {
   // Prompt window. The main window builds the summary and the size.
   "prompt.filesFrom": "Файлы от {device}",
   "prompt.clipboardFrom": "Буфер обмена от {device}",
+  "prompt.introductionFrom": "Знакомство от {device}",
   "prompt.countOf": "1 из {total}",
   "prompt.acceptPrefix": "Принять",
   "prompt.acceptSuffix": "?",

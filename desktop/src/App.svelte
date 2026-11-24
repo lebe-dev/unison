@@ -6,6 +6,7 @@
   import { dashboard } from "./lib/dashboard.svelte";
   import { eventKindLabel } from "./lib/events";
   import { history } from "./lib/history.svelte";
+  import { mediated } from "./lib/mediated.svelte";
   import { openLocalNetworkSettings } from "./lib/localNetwork";
   import { isMac } from "./lib/platform";
   import { notifications } from "./lib/notifications.svelte";
@@ -52,7 +53,9 @@
   let unlistenShare: UnlistenFn | null = null;
   // The prompt window asks the questions that wait for the user, so a held
   // item or an offer does not stay unnoticed while this window is hidden.
-  const promptHost = new PromptHost((answer) => void prompts.answer(answer.id, answer.action));
+  const promptHost = new PromptHost(
+    (answer) => void prompts.answer(answer.id, answer.action, answer.enableFriendsDiscovery),
+  );
   const sentry = new SentrySync();
 
   $effect(() => {
@@ -73,6 +76,7 @@
     history.start();
     transfers.start();
     requests.start();
+    mediated.start();
     prompts.start();
     updater.start();
     void promptHost.start();
@@ -93,6 +97,7 @@
     history.stop();
     transfers.stop();
     requests.stop();
+    mediated.stop();
     prompts.stop();
     updater.stop();
     promptHost.stop();
@@ -170,7 +175,7 @@
 
   function trailing(id: SectionID): number {
     if (id === "requests") {
-      return requests.pending;
+      return requests.pending + mediated.pending;
     }
     if (id === "devices") {
       return daemon.devices.length;

@@ -32,6 +32,22 @@ const clip: Prompt = {
   summary: "Text",
   size: "12 B",
 };
+const introduction: Prompt = {
+  id: "session-1",
+  kind: "mediated",
+  device: "MacBook",
+  summary: "Phone",
+  size: "",
+  mediated: {
+    platform: "Android",
+    deviceId: "0123 4567 89AB",
+    role: "Friends",
+    digits: "123 456",
+    emoji: ["🔒", "🚀", "🌍", "🎁"],
+    alreadyPaired: true,
+    friends: true,
+  },
+};
 
 async function show(queue: Prompt[]): Promise<void> {
   await vi.waitFor(() => expect(mocks.listeners.has("prompts")).toBe(true));
@@ -77,5 +93,30 @@ describe("prompt window", () => {
 
     await fireEvent.click(screen.getByRole("button", { name: "Decline" }));
     expect(mocks.emit).toHaveBeenCalledWith("prompt-answer", { id: "offer-1", action: "decline" });
+  });
+
+  it("asks about an introduction and sends the friends choice", async () => {
+    render(PromptWindow);
+    await show([introduction]);
+
+    expect(screen.getByText("Introduction from MacBook")).toBeTruthy();
+    expect(screen.getByText("Phone")).toBeTruthy();
+    expect(screen.getByText(/0123 4567 89AB/)).toBeTruthy();
+    expect(screen.getByText("123 456")).toBeTruthy();
+    expect(screen.getByText("🔒 🚀 🌍 🎁")).toBeTruthy();
+    expect(screen.getByText(/already paired and offline/)).toBeTruthy();
+
+    const toggle = screen.getByRole("checkbox", {
+      name: "Turn on friend discovery for 15 minutes after confirming",
+    });
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+    await fireEvent.click(toggle);
+    await fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+
+    expect(mocks.emit).toHaveBeenCalledWith("prompt-answer", {
+      id: "session-1",
+      action: "accept",
+      enableFriendsDiscovery: false,
+    });
   });
 });

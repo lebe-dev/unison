@@ -4,19 +4,27 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { tick } from "svelte";
 import {
+  CancelMediatedPairResponseSchema,
   ConfirmationScope,
   ConfirmationSide,
   DeviceSchema,
   GetStatusResponseSchema,
+  MediatedDeviceSchema,
+  MediatedPairDirection,
+  MediatedPairSchema,
+  MediatedPairState,
   Platform,
   RetryDeviceResponseSchema,
   RevokeDeviceResponseSchema,
   Role,
+  SasSchema,
   SetDeviceConfirmationResponseSchema,
   SetDeviceRemoteSettingsResponseSchema,
+  StartMediatedPairResponseSchema,
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
+import { mediated } from "../mediated.svelte";
 import Devices from "./Devices.svelte";
 
 vi.mock("../api/client", () => ({
@@ -26,6 +34,8 @@ vi.mock("../api/client", () => ({
     setDeviceConfirmation: vi.fn(),
     setDeviceRemoteSettings: vi.fn(),
     revokeDevice: vi.fn(),
+    startMediatedPair: vi.fn(),
+    cancelMediatedPair: vi.fn(),
   },
 }));
 
@@ -34,6 +44,8 @@ const setDeviceConfirmation = vi.mocked(client.setDeviceConfirmation);
 const setDeviceRemoteSettings = vi.mocked(client.setDeviceRemoteSettings);
 const revokeDevice = vi.mocked(client.revokeDevice);
 const retryDevice = vi.mocked(client.retryDevice);
+const startMediatedPair = vi.mocked(client.startMediatedPair);
+const cancelMediatedPair = vi.mocked(client.cancelMediatedPair);
 
 const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
 const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
@@ -50,6 +62,9 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mediated.pairs = [];
+  mediated.notice = null;
+  mediated.answering = [];
   getStatus.mockResolvedValue(
     create(GetStatusResponseSchema, {
       running: true,
@@ -62,6 +77,8 @@ beforeEach(() => {
   setDeviceRemoteSettings.mockResolvedValue(create(SetDeviceRemoteSettingsResponseSchema, {}));
   revokeDevice.mockResolvedValue(create(RevokeDeviceResponseSchema, {}));
   retryDevice.mockResolvedValue(create(RetryDeviceResponseSchema, {}));
+  startMediatedPair.mockResolvedValue(create(StartMediatedPairResponseSchema, {}));
+  cancelMediatedPair.mockResolvedValue(create(CancelMediatedPairResponseSchema, {}));
   daemon.status = create(GetStatusResponseSchema, {
     running: true,
     deviceId: "self",
@@ -381,14 +398,192 @@ describe("devices screen", () => {
   });
 });
 
+describe("introduction of two devices", () => {
+  it("offers the action when two online devices support it", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        personal("device-2", { supportsMediatedPair: true }),
+      ],
+    });
+
+    render(Devices);
+
+    expect(screen.getByRole("button", { name: "Introduce to another device..." })).toBeTruthy();
+  });
+
+  it("keeps the action away when the second device cannot take part", () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [personal("device-1", { supportsMediatedPair: true }), personal("device-2")],
+    });
+
+    render(Devices);
+
+    expect(screen.queryByRole("button", { name: "Introduce to another device..." })).toBeNull();
+  });
+
+  it("locks the role to Friends when one device is a Friends device", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        friends("device-2", { online: true, supportsMediatedPair: true }),
+      ],
+    });
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce to another device..." }));
+
+    const personalRole = screen.getByRole("radio", { name: "Personal" });
+    const friendsRole = screen.getByRole("radio", { name: "Friends" });
+    expect((personalRole as HTMLInputElement).disabled).toBe(true);
+    expect((friendsRole as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText(/Friends only, because Phone is a Friends device/)).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce" }));
+    expect(startMediatedPair).toHaveBeenCalledWith({
+      peerA: "device-1",
+      peerB: "device-2",
+      role: Role.FRIENDS,
+    });
+  });
+
+  it("introduces the chosen device and shows the code of the exchange", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        personal("device-2", { name: "Studio", supportsMediatedPair: true }),
+      ],
+    });
+    startMediatedPair.mockResolvedValue(
+      create(StartMediatedPairResponseSchema, { pair: exchange() }),
+    );
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce to another device..." }));
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce" }));
+
+    expect(startMediatedPair).toHaveBeenCalledWith({
+      peerA: "device-1",
+      peerB: "device-2",
+      role: Role.PERSONAL,
+    });
+    expect(await screen.findByText("Waiting for both devices to confirm.")).toBeTruthy();
+    expect(screen.getByText("123 456")).toBeTruthy();
+  });
+
+  it("introduces the device picked in the dialog", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        personal("device-2", { name: "Studio", supportsMediatedPair: true }),
+        personal("device-3", { name: "Office", supportsMediatedPair: true }),
+      ],
+    });
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce to another device..." }));
+    await fireEvent.change(screen.getByLabelText("Second device"), {
+      target: { value: "device-3" },
+    });
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce" }));
+
+    expect(startMediatedPair).toHaveBeenCalledWith({
+      peerA: "device-1",
+      peerB: "device-3",
+      role: Role.PERSONAL,
+    });
+  });
+
+  it("cancels a running exchange", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        personal("device-2", { name: "Studio", supportsMediatedPair: true }),
+      ],
+    });
+    startMediatedPair.mockResolvedValue(
+      create(StartMediatedPairResponseSchema, { pair: exchange() }),
+    );
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce to another device..." }));
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Cancel the introduction" }));
+
+    expect(cancelMediatedPair).toHaveBeenCalledWith({ sessionId: "s1" });
+    expect(await screen.findByText("The introduction is canceled.")).toBeTruthy();
+  });
+
+  it("shows an exchange the daemon still holds", async () => {
+    daemon.status = create(GetStatusResponseSchema, {
+      running: true,
+      deviceId: "self",
+      deviceName: "This Mac",
+      devices: [
+        personal("device-1", { supportsMediatedPair: true }),
+        personal("device-2", { name: "Studio", supportsMediatedPair: true }),
+      ],
+    });
+    mediated.pairs = [exchange()];
+
+    render(Devices);
+    await fireEvent.click(screen.getByRole("button", { name: "Introduce to another device..." }));
+
+    expect(screen.queryByLabelText("Second device")).toBeNull();
+    expect(screen.getByText("Waiting for both devices to confirm.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel the introduction" })).toBeTruthy();
+  });
+});
+
+/** exchange builds a running introduction of the two devices. */
+function exchange() {
+  return create(MediatedPairSchema, {
+    sessionId: "s1",
+    direction: MediatedPairDirection.MEDIATOR,
+    state: MediatedPairState.WAITING,
+    role: Role.PERSONAL,
+    peerA: create(MediatedDeviceSchema, {
+      deviceId: "device-1",
+      name: "MacBook",
+      platform: Platform.MACOS,
+    }),
+    peerB: create(MediatedDeviceSchema, {
+      deviceId: "device-2",
+      name: "Studio",
+      platform: Platform.WINDOWS,
+    }),
+    sas: create(SasSchema, { digits: "123456", emoji: ["🔒", "🚀", "🌍", "🎁"] }),
+  });
+}
+
 function personal(
   id: string,
   fields: {
+    name?: string;
     peerRequireConfirmation?: boolean;
     peerRequireFileConfirmation?: boolean;
     allowRemoteSettings?: boolean;
     online?: boolean;
     protocolNewer?: boolean;
+    supportsMediatedPair?: boolean;
   } = {},
 ) {
   return create(DeviceSchema, {
@@ -403,11 +598,12 @@ function personal(
   });
 }
 
-function friends(id: string) {
+function friends(id: string, fields: { online?: boolean; supportsMediatedPair?: boolean } = {}) {
   return create(DeviceSchema, {
     deviceId: id,
     name: "Phone",
     role: Role.FRIENDS,
     platform: Platform.ANDROID,
+    ...fields,
   });
 }

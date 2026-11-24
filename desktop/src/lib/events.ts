@@ -16,6 +16,10 @@ const LABELS: Record<number, MessageKey> = {
   [EventKind.TRANSFER]: "events.transfer",
   [EventKind.DEVICE_UPDATED]: "events.deviceUpdated",
   [EventKind.PEER_UNREACHABLE]: "events.peerUnreachable",
+  [EventKind.MEDIATED_PAIR_OFFER]: "events.mediatedPairOffer",
+  [EventKind.MEDIATED_PAIR_UPDATED]: "events.mediatedPairUpdated",
+  [EventKind.MEDIATED_PAIR_COMPLETED]: "events.mediatedPairCompleted",
+  [EventKind.MEDIATED_PAIR_CANCELED]: "events.mediatedPairCanceled",
 };
 
 /** eventKindLabel returns a short label of a daemon event. */

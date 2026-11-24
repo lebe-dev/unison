@@ -1,15 +1,24 @@
 <script lang="ts">
-  import { Platform, Role, type Device } from "../api/gen/unison/local/v1/local_pb";
+  import {
+    MediatedPairState,
+    Platform,
+    Role,
+    type Device,
+    type MediatedPair,
+  } from "../api/gen/unison/local/v1/local_pb";
   import Icon, { type IconName } from "../Icon.svelte";
   import { client } from "../api/client";
   import { confirmation, type Scope, type Side } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { t } from "../i18n";
+  import { mediated } from "../mediated.svelte";
+  import { roleLimit } from "../mediated";
   import NetworkIssue from "../NetworkIssue.svelte";
   import Spinner from "../Spinner.svelte";
   import { deviceNameKey } from "../platform";
   import { deviceProtocolIssue, unreachableDeviceIssue } from "../network";
+  import { groupDigits, sasEmoji } from "../pairing/countdown";
   import {
     formatDateTime,
     formatTime,
@@ -200,6 +209,128 @@
       busy = false;
     }
   }
+
+  /** Devices this one can be introduced to: online and able to take part. */
+  function partnersOf(device: Device): Device[] {
+    return daemon.devices.filter(
+      (other) => other.online && other.supportsMediatedPair && other.deviceId !== device.deviceId,
+    );
+  }
+
+  const selectedPartners = $derived(selected ? partnersOf(selected) : []);
+
+  // The dialog stays with the device it was opened from, so another click in
+  // the list does not move a running exchange to another device.
+  let introducing = $state(false);
+  let introduceFrom = $state<string | null>(null);
+  let secondID = $state("");
+  let introduceRole = $state<Role>(Role.PERSONAL);
+  let sessionID = $state<string | null>(null);
+
+  const introducingDevice = $derived(
+    daemon.devices.find((device) => device.deviceId === introduceFrom) ?? null,
+  );
+  const dialogPartners = $derived(introducingDevice ? partnersOf(introducingDevice) : []);
+  const introducePartner = $derived(
+    dialogPartners.find((device) => device.deviceId === secondID) ?? dialogPartners[0] ?? null,
+  );
+  const introduceLimit = $derived(
+    introducingDevice && introducePartner
+      ? roleLimit(introducingDevice.role, introducePartner.role)
+      : Role.PERSONAL,
+  );
+  // The device that limits the role, so the hint names the right one.
+  const introduceFriends = $derived(
+    introducingDevice && introducePartner
+      ? ([introducingDevice, introducePartner].find((device) => device.role !== Role.PERSONAL) ??
+          null)
+      : null,
+  );
+  const exchange = $derived(
+    sessionID ? (mediated.pairs.find((pair) => pair.sessionId === sessionID) ?? null) : null,
+  );
+
+  function beginIntroduce(device: Device): void {
+    const running = mediated.outgoing.find((pair) => otherEnd(pair, device) !== null);
+    const partnerID = running ? otherEnd(running, device) : null;
+    const partners = partnersOf(device);
+    const partner =
+      partners.find((current) => current.deviceId === partnerID) ?? partners[0] ?? null;
+    introducing = true;
+    introduceFrom = device.deviceId;
+    secondID = partnerID ?? partner?.deviceId ?? "";
+    introduceRole = partner ? roleLimit(device.role, partner.role) : Role.PERSONAL;
+    sessionID = running?.sessionId ?? null;
+    mediated.clearNotice();
+  }
+
+  /** otherEnd returns the device a mediator exchange introduces besides this
+   * one, absent when the exchange does not involve it. */
+  function otherEnd(pair: MediatedPair, device: Device): string | null {
+    if (pair.peerA?.deviceId === device.deviceId) {
+      return pair.peerB?.deviceId ?? null;
+    }
+    if (pair.peerB?.deviceId === device.deviceId) {
+      return pair.peerA?.deviceId ?? null;
+    }
+    return null;
+  }
+
+  /** runningExchange reports a mediator exchange this device takes part in. */
+  function runningExchange(device: Device): boolean {
+    return mediated.outgoing.some((pair) => otherEnd(pair, device) !== null);
+  }
+
+  function closeIntroduce(): void {
+    introducing = false;
+    introduceFrom = null;
+    secondID = "";
+    sessionID = null;
+    mediated.clearNotice();
+  }
+
+  function choosePartner(deviceID: string): void {
+    secondID = deviceID;
+    const partner = dialogPartners.find((device) => device.deviceId === deviceID);
+    if (introducingDevice && partner) {
+      introduceRole = roleLimit(introducingDevice.role, partner.role);
+    }
+  }
+
+  async function introduce(): Promise<void> {
+    if (!introducingDevice || !introducePartner) {
+      return;
+    }
+    const started = await mediated.startPair(
+      introducingDevice.deviceId,
+      introducePartner.deviceId,
+      introduceRole,
+    );
+    if (started) {
+      sessionID = started;
+    }
+  }
+
+  /** exchangeNames returns the two names an exchange introduces. */
+  function exchangeNames(pair: MediatedPair): { a: string; b: string } {
+    const a = pair.peerA?.name || t("common.theDevice");
+    const b = pair.peerB?.name || t("common.theDevice");
+    return { a, b };
+  }
+
+  /** exchangeState describes how far an exchange has come. */
+  function exchangeState(pair: MediatedPair): string {
+    switch (pair.state) {
+      case MediatedPairState.WAITING:
+        return t("mediated.waiting");
+      case MediatedPairState.READY:
+        return t("mediated.ready");
+      case MediatedPairState.AWAITING_FINISH:
+        return t("mediated.awaitingFinish");
+      default:
+        return t("mediated.ended");
+    }
+  }
 </script>
 
 {#if !daemon.connected}
@@ -371,6 +502,110 @@
           {/if}
         {/if}
 
+        {#if introducing && introducingDevice}
+          <div class="panel introduce" role="dialog" aria-label={t("mediated.dialogAria")}>
+            {#if sessionID}
+              <h3>{t("mediated.progressAria")}</h3>
+              {#if exchange}
+                {@const names = exchangeNames(exchange)}
+                <p class="muted">{t("mediated.heading", { a: names.a, b: names.b })}</p>
+                <p>{exchangeState(exchange)}</p>
+                {#if exchange.sas?.digits}
+                  <div class="code" aria-label={t("mediated.sasAria")}>
+                    <div class="digits mono">{groupDigits(exchange.sas.digits)}</div>
+                    <div class="emoji">
+                      {#each sasEmoji(exchange.sas.emoji) as symbol (symbol)}
+                        <span>{symbol}</span>
+                      {/each}
+                    </div>
+                  </div>
+                {/if}
+                {#if exchange.alreadyPaired}
+                  <p class="notice info">{t("mediated.alreadyPaired")}</p>
+                {/if}
+                <div class="toolbar end">
+                  <button
+                    class="button"
+                    type="button"
+                    onclick={() => void mediated.cancel(exchange.sessionId)}
+                    disabled={mediated.answering.includes(exchange.sessionId)}
+                  >
+                    {t("mediated.cancel")}
+                  </button>
+                </div>
+              {:else}
+                <p class="muted">{mediated.notice?.text ?? t("mediated.ended")}</p>
+                <div class="toolbar end">
+                  <button class="button" type="button" onclick={closeIntroduce}>
+                    {t("common.close")}
+                  </button>
+                </div>
+              {/if}
+            {:else}
+              <h3>{t("mediated.introduce")}</h3>
+              <p class="muted">{t("mediated.introduceHint")}</p>
+              <div class="form-row">
+                <label class="label" for="mediated-second">{t("mediated.secondDevice")}</label>
+                <select
+                  id="mediated-second"
+                  value={secondID}
+                  onchange={(event) => choosePartner(event.currentTarget.value)}
+                >
+                  {#each dialogPartners as partner (partner.deviceId)}
+                    <option value={partner.deviceId}>
+                      {partner.name || t("common.unnamedDevice")} · {platformLabel(
+                        partner.platform,
+                      )}
+                    </option>
+                  {/each}
+                </select>
+              </div>
+              <div class="form-row">
+                <span class="label">
+                  {t("mediated.roleLegend")}
+                  {#if introduceLimit === Role.FRIENDS && introduceFriends}
+                    <small>
+                      {t("mediated.roleLocked", {
+                        name: introduceFriends.name || t("common.theDevice"),
+                      })}
+                    </small>
+                  {/if}
+                </span>
+                {#each [Role.PERSONAL, Role.FRIENDS] as value (value)}
+                  <label class="switch-cell">
+                    <input
+                      type="radio"
+                      name="mediated-role"
+                      {value}
+                      bind:group={introduceRole}
+                      disabled={value === Role.PERSONAL && introduceLimit === Role.FRIENDS}
+                    />
+                    {roleLabel(value)}
+                  </label>
+                {/each}
+              </div>
+              {#if mediated.notice}
+                <p class="notice" class:error={mediated.notice.kind === "error"}>
+                  {mediated.notice.text}
+                </p>
+              {/if}
+              <div class="toolbar end">
+                <button class="button" type="button" onclick={closeIntroduce}>
+                  {t("common.cancel")}
+                </button>
+                <button
+                  class="button primary"
+                  type="button"
+                  onclick={() => void introduce()}
+                  disabled={!introducePartner}
+                >
+                  {t("mediated.start")}
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
         {#if device.role === Role.PERSONAL}
           <div class="section" role="group" aria-label={t("devices.askBeforeTaking")}>
             <h3 class="section-title">{t("devices.askBeforeTaking")}</h3>
@@ -500,6 +735,11 @@
                 disabled={busy}
               >
                 {t("devices.reconnect")}
+              </button>
+            {/if}
+            {#if !introducing && device.online && device.supportsMediatedPair && (selectedPartners.length > 0 || runningExchange(device))}
+              <button class="button" type="button" onclick={() => beginIntroduce(device)}>
+                {t("mediated.introduce")}
               </button>
             {/if}
             <button class="button" type="button" onclick={() => beginRename(device)}>
@@ -759,5 +999,34 @@
 
   .revoke p {
     margin: 0;
+  }
+
+  .introduce .muted {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .introduce .code {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 10px;
+    background-color: var(--surface-soft);
+    text-align: center;
+  }
+
+  .introduce .digits {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.2rem;
+  }
+
+  .introduce .emoji {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    font-size: 22px;
+    line-height: 1.2;
   }
 </style>

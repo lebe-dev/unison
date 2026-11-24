@@ -5,7 +5,14 @@ import {
   EventKind,
   EventSchema,
   Kind,
+  MediatedDeviceSchema,
+  MediatedPairDirection,
+  MediatedPairSchema,
+  MediatedPairState,
+  Platform,
   RepresentationSchema,
+  Role,
+  SasSchema,
   ShareRequestSchema,
   TransferFileSchema,
   type Event as DaemonEvent,
@@ -24,12 +31,14 @@ const mocks = vi.hoisted(() => {
     },
     history: { held: [] as string[], apply: vi.fn(), release: vi.fn() },
     requests: { requests: [] as unknown[], decide: vi.fn() },
+    mediated: { incoming: [] as unknown[], confirm: vi.fn(), reject: vi.fn() },
   };
 });
 
 vi.mock("./daemon.svelte", () => ({ daemon: mocks.daemon }));
 vi.mock("./history.svelte", () => ({ history: mocks.history }));
 vi.mock("./requests.svelte", () => ({ requests: mocks.requests }));
+vi.mock("./mediated.svelte", () => ({ mediated: mocks.mediated }));
 
 import { prompts } from "./prompts.svelte";
 
@@ -56,6 +65,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.history.held = [];
   mocks.requests.requests = [];
+  mocks.mediated.incoming = [];
   prompts.start();
 });
 
@@ -118,4 +128,59 @@ describe("prompt queue", () => {
     expect(mocks.requests.decide).toHaveBeenCalledWith("offer-2", false);
     expect(mocks.requests.decide).toHaveBeenCalledTimes(2);
   });
+
+  it("asks about an introduction after the file offers", () => {
+    mocks.requests.requests = [create(ShareRequestSchema, { id: "offer-1", deviceName: "Pixel" })];
+    mocks.mediated.incoming = [introduction()];
+
+    expect(prompts.queue.map((prompt) => prompt.id)).toEqual(["offer-1", "s1"]);
+    expect(prompts.queue[1]).toEqual({
+      id: "s1",
+      kind: "mediated",
+      device: "MacBook",
+      summary: "Phone",
+      size: "",
+      mediated: {
+        platform: "Android",
+        deviceId: "0123 4567 89AB",
+        role: "Personal",
+        digits: "123 456",
+        emoji: ["🔒", "🚀", "🌍", "🎁"],
+        alreadyPaired: false,
+        friends: false,
+      },
+    });
+  });
+
+  it("routes the answer of an introduction with the friends choice", async () => {
+    mocks.mediated.incoming = [introduction()];
+
+    await prompts.answer("s1", "accept", false);
+    await prompts.answer("s1", "decline");
+
+    expect(mocks.mediated.confirm).toHaveBeenCalledWith("s1", false);
+    expect(mocks.mediated.reject).toHaveBeenCalledWith("s1");
+    expect(mocks.requests.decide).not.toHaveBeenCalled();
+  });
 });
+
+/** introduction builds an offer another device makes to this one. */
+function introduction() {
+  return create(MediatedPairSchema, {
+    sessionId: "s1",
+    direction: MediatedPairDirection.INCOMING,
+    state: MediatedPairState.WAITING,
+    role: Role.PERSONAL,
+    mediator: create(MediatedDeviceSchema, {
+      deviceId: "mediator",
+      name: "MacBook",
+      platform: Platform.MACOS,
+    }),
+    peer: create(MediatedDeviceSchema, {
+      deviceId: "0123456789ab",
+      name: "Phone",
+      platform: Platform.ANDROID,
+    }),
+    sas: create(SasSchema, { digits: "123456", emoji: ["🔒", "🚀", "🌍", "🎁"] }),
+  });
+}
