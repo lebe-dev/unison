@@ -18,6 +18,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,6 +39,7 @@ import app.unison.ui.pauseLabel
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.DashboardLimit
 import app.unison.ui.state.DeviceNames
+import kotlinx.coroutines.delay
 import unison.local.v1.Local
 
 /** Name announced to the other devices. */
@@ -365,6 +367,46 @@ internal fun Links(
     )
 }
 
+/**
+ * Temporary search for Friends devices. The core publishes and browses the
+ * Friends tags for 15 minutes, and only then can a new Friends pair connect
+ * through the local network.
+ */
+@Composable
+internal fun FriendsDiscoverySection(
+    search: Local.FriendsDiscovery?,
+    onRefresh: () -> Unit,
+    onChange: (Boolean) -> Unit,
+) {
+    val on = search?.on == true
+    val until = search?.untilUnixMs ?: 0
+    LaunchedEffect(until) {
+        if (!on || until <= 0) {
+            return@LaunchedEffect
+        }
+        delay((until - System.currentTimeMillis()).coerceAtLeast(0) + EXPIRY_MARGIN_MS)
+        onRefresh()
+    }
+    val minutes = if (on && until > 0) ((until - System.currentTimeMillis()) / 60_000).coerceAtLeast(1) else 0
+    val hint =
+        if (minutes > 0) {
+            stringResource(R.string.settings_friends_discovery_left, minutes)
+        } else {
+            stringResource(R.string.settings_friends_discovery_hint)
+        }
+    SectionTitle(text = stringResource(R.string.settings_section_friends))
+    SettingsSwitch(
+        title = stringResource(R.string.settings_friends_discovery),
+        hint = hint,
+        checked = on,
+        tag = FRIENDS_DISCOVERY_TAG,
+        onChange = onChange,
+    )
+}
+
+/** Time after the end of the search before the screen reads the state again. */
+private const val EXPIRY_MARGIN_MS = 500L
+
 /** Reporting of the crashes and the errors of this device to the developer. */
 @Composable
 internal fun Diagnostics(
@@ -461,6 +503,9 @@ internal const val DIAGNOSTICS_TAG = "settings.diagnostics"
 
 /** Tag of the switch of the tracking parameters removal. */
 internal const val STRIP_TRACKING_TAG = "settings.strip_tracking"
+
+/** Tag of the switch of the search for Friends devices. */
+internal const val FRIENDS_DISCOVERY_TAG = "settings.friends_discovery"
 
 /** Tag of the button that opens the folder picker for received files. */
 internal const val DOWNLOADS_PICK_TAG = "settings.downloads.pick"

@@ -348,6 +348,94 @@ class AppStateTest {
         override suspend fun rejectPairing(deviceId: String) {
             rejected += deviceId
         }
+
+        var friendsDiscovery: Local.FriendsDiscovery = Local.FriendsDiscovery.getDefaultInstance()
+        val friendsDiscoveryChanges = mutableListOf<Boolean>()
+
+        override suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery {
+            friendsDiscoveryChanges += on
+            friendsDiscovery =
+                if (on) {
+                    Local.FriendsDiscovery
+                        .newBuilder()
+                        .setOn(true)
+                        .setUntilUnixMs(System.currentTimeMillis() + DISCOVERY_MS)
+                        .build()
+                } else {
+                    Local.FriendsDiscovery.getDefaultInstance()
+                }
+            response = response.toBuilder().setFriendsDiscovery(friendsDiscovery).build()
+            return friendsDiscovery
+        }
+
+        var mediated: List<Local.MediatedPair> = emptyList()
+        var mediatedFailure: Exception? = null
+        val startedMediated = mutableListOf<Triple<String, String, Local.Role>>()
+        val confirmedMediated = mutableListOf<Pair<String, Boolean>>()
+        val rejectedMediated = mutableListOf<String>()
+        val canceledMediated = mutableListOf<String>()
+
+        override suspend fun mediatedPairs(): List<Local.MediatedPair> {
+            mediatedFailure?.let { throw it }
+            return mediated
+        }
+
+        override suspend fun startMediatedPair(
+            peerA: String,
+            peerB: String,
+            role: Local.Role,
+        ): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            startedMediated += Triple(peerA, peerB, role)
+            val pair =
+                Local.MediatedPair
+                    .newBuilder()
+                    .setSessionId("started")
+                    .setDirection(Local.MediatedPairDirection.MEDIATED_PAIR_DIRECTION_MEDIATOR)
+                    .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING)
+                    .setRole(role)
+                    .setPeerA(mediatedDevice(peerA, "Mac"))
+                    .setPeerB(mediatedDevice(peerB, "Windows"))
+                    .build()
+            mediated = mediated + pair
+            return pair
+        }
+
+        override suspend fun confirmMediatedPair(
+            sessionId: String,
+            enableFriendsDiscovery: Boolean,
+        ): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            confirmedMediated += sessionId to enableFriendsDiscovery
+            mediated = mediated.filter { it.sessionId != sessionId }
+            return Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_AWAITING_FINISH)
+                .build()
+        }
+
+        override suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            rejectedMediated += sessionId
+            mediated = mediated.filter { it.sessionId != sessionId }
+            return Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_CANCELED)
+                .build()
+        }
+
+        override suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            canceledMediated += sessionId
+            mediated = mediated.filter { it.sessionId != sessionId }
+            return Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_CANCELED)
+                .build()
+        }
     }
 
     private class FakeSaver(
@@ -1942,6 +2030,173 @@ class AppStateTest {
             state.close()
         }
 
+    @Test
+    fun friendsDiscoveryComesFromTheStatus() =
+        runTest {
+            val core = FakeCore()
+            core.response =
+                sampleStatus()
+                    .toBuilder()
+                    .setFriendsDiscovery(
+                        Local.FriendsDiscovery
+                            .newBuilder()
+                            .setOn(true)
+                            .setUntilUnixMs(4_000L)
+                            .build(),
+                    ).build()
+            val state = appState(core)
+
+            state.refresh()
+            advanceUntilIdle()
+
+            assertTrue(state.state.value.friendsDiscoveryOn)
+            assertEquals(4_000L, state.state.value.friendsDiscoveryUntilUnixMs)
+        }
+
+    @Test
+    fun friendsDiscoveryIsSwitchedThroughTheCore() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+
+            state.setFriendsDiscovery(true)
+            advanceUntilIdle()
+
+            assertEquals(listOf(true), core.friendsDiscoveryChanges)
+            assertTrue(state.state.value.friendsDiscoveryOn)
+        }
+
+    @Test
+    fun incomingOfferIsAsked() =
+        runTest {
+            val core = FakeCore()
+            core.mediated = listOf(mediatedOffer("session-one"))
+            val state = appState(core)
+
+            state.refreshMediated()
+            runCurrent()
+
+            val prompt =
+                state.prompts.value
+                    .firstOrNull { it.kind == PendingPrompt.Kind.MEDIATED }
+            assertEquals("session-one", prompt?.id)
+            assertEquals("session-one", prompt?.mediated?.sessionId)
+            assertEquals("Trusted Mac", prompt?.device)
+            state.close()
+        }
+
+    @Test
+    fun acceptedOfferIsForwarded() =
+        runTest {
+            val core = FakeCore()
+            core.mediated = listOf(mediatedOffer("session-one"))
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+
+            state.confirmMediatedPair("session-one", enableFriendsDiscovery = true)
+            advanceUntilIdle()
+
+            assertEquals(listOf("session-one" to true), core.confirmedMediated)
+            assertTrue(
+                state.prompts.value.none { it.kind == PendingPrompt.Kind.MEDIATED },
+            )
+            state.close()
+        }
+
+    @Test
+    fun rejectedOfferLeavesTheList() =
+        runTest {
+            val core = FakeCore()
+            core.mediated = listOf(mediatedOffer("session-one"))
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+
+            state.rejectMediatedPair("session-one")
+            advanceUntilIdle()
+
+            assertEquals(listOf("session-one"), core.rejectedMediated)
+            assertTrue(state.prompts.value.isEmpty())
+            state.close()
+        }
+
+    @Test
+    fun startedIntroductionIsExposed() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+
+            state.startMediatedPair("mac", "windows", Local.Role.ROLE_FRIENDS)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(Triple("mac", "windows", Local.Role.ROLE_FRIENDS)),
+                core.startedMediated,
+            )
+            assertEquals(1, state.mediated.value.outgoing.size)
+            assertFalse(state.mediated.value.starting)
+            state.close()
+        }
+
+    @Test
+    fun canceledIntroductionLeavesTheList() =
+        runTest {
+            val core = FakeCore()
+            core.mediated =
+                listOf(
+                    mediatedOffer("session-one")
+                        .toBuilder()
+                        .setDirection(Local.MediatedPairDirection.MEDIATED_PAIR_DIRECTION_MEDIATOR)
+                        .build(),
+                )
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+
+            state.cancelMediatedPair("session-one")
+            advanceUntilIdle()
+
+            assertEquals(listOf("session-one"), core.canceledMediated)
+            assertTrue(
+                state.mediated.value.outgoing
+                    .isEmpty(),
+            )
+            state.close()
+        }
+
+    @Test
+    fun mediatedOfferEventReloadsTheList() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+            core.mediated = listOf(mediatedOffer("session-two"))
+
+            events.emit(
+                Mobile.Event
+                    .newBuilder()
+                    .setType(Mobile.EventType.EVENT_TYPE_MEDIATED_PAIR_OFFER)
+                    .setEvent(
+                        Local.Event
+                            .newBuilder()
+                            .setKind(Local.EventKind.EVENT_KIND_MEDIATED_PAIR_OFFER)
+                            .build(),
+                    ).build(),
+            )
+            runCurrent()
+
+            assertEquals(
+                "session-two",
+                state.mediated.value
+                    .offers
+                    .single()
+                    .sessionId,
+            )
+            state.close()
+        }
+
     /** Calls that only the dashboard makes, one per tab. */
     private fun dashboardCalls(core: FakeCore): Int = core.historyCalls.count { (kind, _) -> kind != Local.Kind.KIND_UNSPECIFIED }
 
@@ -1972,6 +2227,7 @@ class AppStateTest {
 
     private companion object {
         const val WINDOW_MS = 180_000L
+        const val DISCOVERY_MS = 900_000L
 
         /** Number of tabs the dashboard loads at once. */
         const val DASHBOARD_TABS = 3
@@ -2029,6 +2285,38 @@ class AppStateTest {
                         .setSize(11)
                         .build(),
                 ).setTotalBytes(11)
+                .build()
+
+        fun mediatedDevice(
+            deviceId: String,
+            name: String,
+        ): Local.MediatedDevice =
+            Local.MediatedDevice
+                .newBuilder()
+                .setDeviceId(deviceId)
+                .setName(name)
+                .setPlatform(Local.Platform.PLATFORM_MACOS)
+                .build()
+
+        fun mediatedOffer(
+            sessionId: String,
+            role: Local.Role = Local.Role.ROLE_FRIENDS,
+        ): Local.MediatedPair =
+            Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setDirection(Local.MediatedPairDirection.MEDIATED_PAIR_DIRECTION_INCOMING)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING)
+                .setRole(role)
+                .setMediator(mediatedDevice("mediator", "Trusted Mac"))
+                .setPeer(mediatedDevice("new-device", "New Windows"))
+                .setSas(
+                    Local.Sas
+                        .newBuilder()
+                        .setDigits("123456")
+                        .addEmoji("A")
+                        .build(),
+                ).setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS)
                 .build()
     }
 }

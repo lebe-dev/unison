@@ -179,6 +179,31 @@ interface CoreApi {
 
     /** Refuses the pairing request of the device. */
     suspend fun rejectPairing(deviceId: String)
+
+    /** Turns the temporary search for Friends devices on or off. */
+    suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery
+
+    /** Exchanges of an introduction through a trusted device that are still active. */
+    suspend fun mediatedPairs(): List<Local.MediatedPair>
+
+    /** Introduces two online devices of this one to each other. */
+    suspend fun startMediatedPair(
+        peerA: String,
+        peerB: String,
+        role: Local.Role,
+    ): Local.MediatedPair
+
+    /** Accepts an offer to introduce this device to another one. */
+    suspend fun confirmMediatedPair(
+        sessionId: String,
+        enableFriendsDiscovery: Boolean,
+    ): Local.MediatedPair
+
+    /** Declines an offer to introduce this device to another one. */
+    suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair
+
+    /** Cancels an introduction this device runs. */
+    suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair
 }
 
 /** Core that starts the service when it does not answer yet. */
@@ -424,6 +449,43 @@ class RunningCore(
     override suspend fun rejectPairing(deviceId: String) {
         ensureRunning()
         client.rejectPairing(deviceId)
+    }
+
+    override suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery {
+        ensureRunning()
+        return client.setFriendsDiscovery(on)
+    }
+
+    override suspend fun mediatedPairs(): List<Local.MediatedPair> {
+        ensureRunning()
+        return client.mediatedPairs()
+    }
+
+    override suspend fun startMediatedPair(
+        peerA: String,
+        peerB: String,
+        role: Local.Role,
+    ): Local.MediatedPair {
+        ensureRunning()
+        return client.startMediatedPair(peerA, peerB, role)
+    }
+
+    override suspend fun confirmMediatedPair(
+        sessionId: String,
+        enableFriendsDiscovery: Boolean,
+    ): Local.MediatedPair {
+        ensureRunning()
+        return client.confirmMediatedPair(sessionId, enableFriendsDiscovery)
+    }
+
+    override suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair {
+        ensureRunning()
+        return client.rejectMediatedPair(sessionId)
+    }
+
+    override suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair {
+        ensureRunning()
+        return client.cancelMediatedPair(sessionId)
     }
 
     /** Stores the whole network policy and returns the resulting settings. */

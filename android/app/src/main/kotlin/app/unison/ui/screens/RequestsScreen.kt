@@ -16,18 +16,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.unison.R
@@ -36,11 +43,17 @@ import app.unison.ui.ErrorCard
 import app.unison.ui.IconTile
 import app.unison.ui.ScreenTitle
 import app.unison.ui.groupItemColor
+import app.unison.ui.mediatedStateLabel
+import app.unison.ui.pairing.SasCode
+import app.unison.ui.platformLabel
+import app.unison.ui.roleLabel
+import app.unison.ui.shortId
 import app.unison.ui.sizeUnits
+import app.unison.ui.state.MediatedState
 import app.unison.ui.state.RequestsState
 import unison.local.v1.Local
 
-/** File offers of Friends that wait for an answer. */
+/** Offers of Friends and introductions through a trusted device that wait for an answer. */
 @Composable
 fun RequestsScreen(
     requests: RequestsState,
@@ -48,6 +61,9 @@ fun RequestsScreen(
     onAccept: (Local.ShareRequest) -> Unit,
     onDecline: (Local.ShareRequest) -> Unit,
     modifier: Modifier = Modifier,
+    mediated: MediatedState = MediatedState(),
+    onAcceptMediated: (Local.MediatedPair, Boolean) -> Unit = { _, _ -> },
+    onDeclineMediated: (Local.MediatedPair) -> Unit = {},
 ) {
     Column(
         modifier =
@@ -61,12 +77,13 @@ fun RequestsScreen(
             }
         }
 
-        requests.failure?.let { failure ->
+        val failure = requests.failure ?: mediated.failure
+        if (failure != null) {
             Spacer(modifier = Modifier.height(16.dp))
             ErrorCard(message = stringResource(failure.message), onRetry = onRefresh)
         }
 
-        if (requests.loading && !requests.loaded) {
+        if (requests.loading && !requests.loaded && mediated.incoming.isEmpty()) {
             Box(
                 modifier =
                     Modifier
@@ -79,9 +96,12 @@ fun RequestsScreen(
             return@Column
         }
 
-        if (requests.isEmpty) {
-            EmptyRequests()
-            return@Column
+        if (requests.isEmpty && mediated.incoming.isEmpty()) {
+            val loaded = requests.loaded || mediated.loaded
+            if (loaded) {
+                EmptyRequests()
+                return@Column
+            }
         }
 
         LazyColumn(
@@ -89,13 +109,171 @@ fun RequestsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            items(requests.requests, key = { it.id }) { request ->
+            items(mediated.incoming, key = { "mediated:${it.sessionId}" }) { pair ->
+                MediatedOfferRow(
+                    pair = pair,
+                    answering = pair.sessionId in mediated.answering,
+                    onAccept = { discovery -> onAcceptMediated(pair, discovery) },
+                    onDecline = { onDeclineMediated(pair) },
+                )
+            }
+            items(requests.requests, key = { "request:${it.id}" }) { request ->
                 RequestRow(
                     request = request,
                     answering = request.id in requests.answering,
                     onAccept = { onAccept(request) },
                     onDecline = { onDecline(request) },
                 )
+            }
+        }
+    }
+}
+
+/** One introduction with its devices, its code and the answer buttons. */
+@Composable
+private fun MediatedOfferRow(
+    pair: Local.MediatedPair,
+    answering: Boolean,
+    onAccept: (Boolean) -> Unit,
+    onDecline: () -> Unit,
+) {
+    var discovery by rememberSaveable(pair.sessionId) {
+        mutableStateOf(pair.role == Local.Role.ROLE_FRIENDS)
+    }
+    val waiting = pair.state == Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING
+    val peer = pair.peer
+    val name = peer.name.ifBlank { shortId(peer.deviceId) }
+    val mediator = pair.mediator.name.ifBlank { shortId(pair.mediator.deviceId) }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            IconTile(
+                icon = R.drawable.ic_nav_devices,
+                container = MaterialTheme.colorScheme.secondaryContainer,
+                content = MaterialTheme.colorScheme.onSecondaryContainer,
+                size = 40.dp,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(R.string.mediated_offer_title, name), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.mediated_offer_from, mediator),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (answering || !waiting) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+        }
+
+        Text(
+            text =
+                stringResource(
+                    R.string.mediated_offer_device,
+                    platformLabel(peer.platform),
+                    shortId(peer.deviceId),
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        roleLabel(pair.role)?.let { role ->
+            Text(
+                text = stringResource(R.string.mediated_offer_role, role),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
+        if (pair.hasSas()) {
+            SasCode(sas = pair.sas)
+        }
+
+        if (pair.alreadyPaired) {
+            Text(
+                text = stringResource(R.string.mediated_offer_already_paired),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        if (!waiting) {
+            Text(
+                text = mediatedStateLabel(pair.state),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@Column
+        }
+
+        if (pair.role == Local.Role.ROLE_FRIENDS) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(value = discovery, role = Role.Checkbox, onValueChange = { discovery = it }),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(checked = discovery, onCheckedChange = null)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.mediated_offer_friends_discovery),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.mediated_offer_friends_discovery_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        if (pair.expiresAtUnixMs > 0) {
+            Text(
+                text =
+                    stringResource(
+                        R.string.requests_expires,
+                        DateUtils
+                            .getRelativeTimeSpanString(
+                                pair.expiresAtUnixMs,
+                                System.currentTimeMillis(),
+                                DateUtils.MINUTE_IN_MILLIS,
+                            ).toString(),
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onDecline,
+                enabled = !answering,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.action_decline))
+            }
+            Button(
+                onClick = { onAccept(discovery) },
+                enabled = !answering,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.action_accept))
             }
         }
     }

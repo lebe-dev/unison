@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -34,11 +36,13 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,16 +75,21 @@ import app.unison.ui.ScreenTitle
 import app.unison.ui.SectionTitle
 import app.unison.ui.groupItemColor
 import app.unison.ui.groupShape
+import app.unison.ui.mediatedStateLabel
 import app.unison.ui.networkLabel
+import app.unison.ui.pairing.SasCode
 import app.unison.ui.pathLabel
 import app.unison.ui.pauseLabel
 import app.unison.ui.platformLabel
 import app.unison.ui.roleLabel
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
+import app.unison.ui.state.Introductions
+import app.unison.ui.state.MediatedState
 import app.unison.ui.state.NetworkIssues
 import unison.local.v1.Local
 import java.util.Date
+import androidx.compose.ui.semantics.Role as SemanticsRole
 
 /** Paired devices and the state of this device; a tap on a device opens its page. */
 @Composable
@@ -97,11 +106,15 @@ fun DevicesScreen(
     modifier: Modifier = Modifier,
     onPause: (PauseRequest) -> Unit = {},
     onAdd: () -> Unit = {},
+    mediated: MediatedState = MediatedState(),
+    onIntroduce: (peerA: String, peerB: String, role: Local.Role) -> Unit = { _, _, _ -> },
+    onCancelMediated: (Local.MediatedPair) -> Unit = {},
 ) {
     var openKey by rememberSaveable { mutableStateOf<String?>(null) }
     var revokeTarget by remember { mutableStateOf<Local.Device?>(null) }
     var renameTarget by remember { mutableStateOf<Local.Device?>(null) }
     var renameDraft by remember { mutableStateOf("") }
+    var introduceTarget by remember { mutableStateOf<Local.Device?>(null) }
     val startRename = { device: Local.Device ->
         renameTarget = device
         renameDraft = device.name
@@ -117,6 +130,7 @@ fun DevicesScreen(
             onSetRemoteSettings = onSetRemoteSettings,
             onRename = startRename,
             onRemove = { revokeTarget = it },
+            onIntroduce = { introduceTarget = it },
             modifier = modifier,
         )
     } else {
@@ -129,6 +143,8 @@ fun DevicesScreen(
                 onDismissClipboard = onDismissClipboard,
                 onPause = onPause,
                 onOpen = { openKey = keyOf(it) },
+                mediated = mediated,
+                onCancelMediated = onCancelMediated,
             )
             ExtendedFloatingActionButton(
                 onClick = onAdd,
@@ -187,6 +203,26 @@ fun DevicesScreen(
             },
         )
     }
+
+    introduceTarget?.let { target ->
+        IntroduceDialog(
+            target = target,
+            candidates =
+                state
+                    .introducibleDevices()
+                    .filter {
+                        Introductions.canIntroduce(it) &&
+                            it.deviceId.isNotEmpty() &&
+                            it.deviceId != target.deviceId
+                    },
+            starting = mediated.starting,
+            onStart = { peer, role ->
+                introduceTarget = null
+                onIntroduce(target.deviceId, peer.deviceId, role)
+            },
+            onDismiss = { introduceTarget = null },
+        )
+    }
 }
 
 /** This device on top, then the paired devices by role. */
@@ -199,6 +235,8 @@ private fun DeviceList(
     onDismissClipboard: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onOpen: (Local.Device) -> Unit,
+    mediated: MediatedState,
+    onCancelMediated: (Local.MediatedPair) -> Unit,
 ) {
     Column(
         modifier =
@@ -228,6 +266,15 @@ private fun DeviceList(
             ) {
                 CircularProgressIndicator()
             }
+        }
+
+        mediated.outgoing.forEach { pair ->
+            IntroduceProgressCard(
+                pair = pair,
+                canceling = pair.sessionId in mediated.canceling,
+                onCancel = { onCancelMediated(pair) },
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         state.status?.let { status ->
@@ -510,6 +557,7 @@ private fun DeviceDetail(
     onSetRemoteSettings: (Local.Device, Boolean) -> Unit,
     onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
+    onIntroduce: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -594,8 +642,24 @@ private fun DeviceDetail(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+        val canIntroduce = Introductions.canIntroduce(device) && device.deviceId.isNotEmpty()
+        val actions = if (canIntroduce) 3 else 2
         ItemGroup {
-            GroupItem(index = 0, count = 2, onClick = { onRename(device) }) {
+            if (canIntroduce) {
+                GroupItem(index = 0, count = actions, onClick = { onIntroduce(device) }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_nav_devices),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(R.string.devices_introduce_action),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            GroupItem(index = actions - 2, count = actions, onClick = { onRename(device) }) {
                 Icon(
                     painter = painterResource(R.drawable.ic_edit),
                     contentDescription = null,
@@ -607,7 +671,7 @@ private fun DeviceDetail(
                     modifier = Modifier.weight(1f),
                 )
             }
-            GroupItem(index = 1, count = 2, onClick = { onRemove(device) }) {
+            GroupItem(index = actions - 1, count = actions, onClick = { onRemove(device) }) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete),
                     contentDescription = null,
@@ -779,6 +843,203 @@ private fun FlagRow(
             onCheckedChange = onChange,
             modifier = Modifier.semantics { contentDescription = description },
         )
+    }
+}
+
+/**
+ * Picks the second device and the role of an introduction. Only an online
+ * device that speaks the feature can be introduced, and a chain with a Friends
+ * device is limited to Friends.
+ */
+@Composable
+private fun IntroduceDialog(
+    target: Local.Device,
+    candidates: List<Local.Device>,
+    starting: Boolean,
+    onStart: (Local.Device, Local.Role) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var peerKey by rememberSaveable { mutableStateOf(candidates.firstOrNull()?.deviceId.orEmpty()) }
+    val peer = candidates.firstOrNull { it.deviceId == peerKey }
+    var roleName by rememberSaveable {
+        mutableStateOf(
+            candidates.firstOrNull()?.let { Introductions.defaultRole(target, it) }?.name
+                ?: Local.Role.ROLE_PERSONAL.name,
+        )
+    }
+    LaunchedEffect(peerKey) {
+        val chosen = candidates.firstOrNull { it.deviceId == peerKey }
+        if (chosen != null) {
+            roleName = Introductions.defaultRole(target, chosen).name
+        }
+    }
+    val roles = peer?.let { Introductions.roles(target, it) } ?: listOf(Local.Role.ROLE_PERSONAL)
+    val role = roles.firstOrNull { it.name == roleName } ?: roles.first()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.devices_introduce_title, displayName(target))) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (candidates.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.devices_introduce_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    return@Column
+                }
+                Text(
+                    text = stringResource(R.string.devices_introduce_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SectionTitle(text = stringResource(R.string.devices_introduce_pick))
+                Column(modifier = Modifier.selectableGroup()) {
+                    candidates.forEach { candidate ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = candidate.deviceId == peerKey,
+                                        onClick = { peerKey = candidate.deviceId },
+                                        role = SemanticsRole.RadioButton,
+                                    ).padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = candidate.deviceId == peerKey, onClick = null)
+                            Column(modifier = Modifier.padding(start = 8.dp)) {
+                                Text(
+                                    text = displayName(candidate),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    text =
+                                        stringResource(
+                                            R.string.device_row_summary,
+                                            statusLabel(candidate),
+                                            detailLabel(candidate),
+                                        ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+                SectionTitle(text = stringResource(R.string.devices_introduce_role))
+                Column(modifier = Modifier.selectableGroup()) {
+                    roles.forEach { option ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = option == role,
+                                        onClick = { roleName = option.name },
+                                        role = SemanticsRole.RadioButton,
+                                    ).padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = option == role, onClick = null)
+                            Text(
+                                text = roleLabel(option).orEmpty(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+                }
+                if (roles.size == 1 && roles.single() == Local.Role.ROLE_FRIENDS) {
+                    Text(
+                        text = stringResource(R.string.devices_introduce_role_locked),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { peer?.let { onStart(it, role) } },
+                enabled = peer != null && !starting,
+            ) {
+                Text(text = stringResource(R.string.devices_introduce_start))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
+/** Progress of an introduction this device runs, with the code and a way to cancel. */
+@Composable
+private fun IntroduceProgressCard(
+    pair: Local.MediatedPair,
+    canceling: Boolean,
+    onCancel: () -> Unit,
+) {
+    val first = pair.peerA.name.ifBlank { pair.peerA.deviceId.take(SHORT_ID_LENGTH) }
+    val second = pair.peerB.name.ifBlank { pair.peerB.deviceId.take(SHORT_ID_LENGTH) }
+    val running =
+        pair.state == Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING ||
+            pair.state == Local.MediatedPairState.MEDIATED_PAIR_STATE_READY ||
+            pair.state == Local.MediatedPairState.MEDIATED_PAIR_STATE_AWAITING_FINISH
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (running) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(
+                    painter = painterResource(R.drawable.ic_nav_devices),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.devices_introduce_progress_title, first, second),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = mediatedStateLabel(pair.state),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (pair.hasSas()) {
+            Text(
+                text = stringResource(R.string.devices_introduce_sas_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SasCode(sas = pair.sas)
+        }
+        if (running) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onCancel, enabled = !canceling) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
+            }
+        }
     }
 }
 

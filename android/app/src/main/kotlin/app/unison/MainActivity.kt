@@ -152,6 +152,7 @@ class MainActivity : ComponentActivity() {
                 val dashboard by appState.dashboard.collectAsState()
                 val pairing by appState.pairing.collectAsState()
                 val requests by appState.requests.collectAsState()
+                val mediated by appState.mediated.collectAsState()
                 val held by HeldItems.shared.ids.collectAsState()
                 val prompts by appState.prompts.collectAsState()
                 val updates by UpdateManager.state.collectAsState()
@@ -192,14 +193,18 @@ class MainActivity : ComponentActivity() {
                         updates = updatePanel,
                         pairing = pairing,
                         requests = requests,
+                        mediated = mediated,
                         held = held,
                         prompts = prompts,
                         onAnswerPrompt = { prompt, answer ->
                             when (answer) {
-                                PromptAnswer.APPLY -> appState.applyHistoryItem(prompt.id)
-                                PromptAnswer.SKIP -> appState.skipHeldItem(prompt.id)
-                                PromptAnswer.ACCEPT -> appState.decideRequest(prompt.id, accept = true)
-                                PromptAnswer.DECLINE -> appState.decideRequest(prompt.id, accept = false)
+                                PromptAnswer.Apply -> appState.applyHistoryItem(prompt.id)
+                                PromptAnswer.Skip -> appState.skipHeldItem(prompt.id)
+                                PromptAnswer.Accept -> appState.decideRequest(prompt.id, accept = true)
+                                PromptAnswer.Decline -> appState.decideRequest(prompt.id, accept = false)
+                                is PromptAnswer.AcceptMediated ->
+                                    appState.confirmMediatedPair(prompt.id, answer.enableFriendsDiscovery)
+                                PromptAnswer.DeclineMediated -> appState.rejectMediatedPair(prompt.id)
                             }
                         },
                         deviceName = deviceName,
@@ -260,6 +265,14 @@ class MainActivity : ComponentActivity() {
                         onRefreshRequests = appState::refreshRequests,
                         onAcceptRequest = { appState.decideRequest(it.id, accept = true) },
                         onDeclineRequest = { appState.decideRequest(it.id, accept = false) },
+                        onFriendsDiscoveryChange = appState::setFriendsDiscovery,
+                        onIntroduceDevices = appState::startMediatedPair,
+                        onCancelMediated = { appState.cancelMediatedPair(it.sessionId) },
+                        onAcceptMediated = { pair, discovery ->
+                            appState.confirmMediatedPair(pair.sessionId, discovery)
+                        },
+                        onDeclineMediated = { appState.rejectMediatedPair(it.sessionId) },
+                        onRefreshMediated = appState::refreshMediated,
                         onPairingRoleChange = appState::setPairingRole,
                         onOpenPairingWindow = appState::openPairingWindow,
                         onExtendPairingWindow = appState::extendPairingWindow,
@@ -290,6 +303,7 @@ class MainActivity : ComponentActivity() {
             appState.refreshHistory()
             appState.refreshDashboard()
             appState.refreshRequests()
+            appState.refreshMediated()
             startRequestsPoll()
             UpdateManager.checkIfDue(this)
         }
@@ -323,6 +337,7 @@ class MainActivity : ComponentActivity() {
             appState.refreshHistory()
             appState.refreshDashboard()
             appState.refreshRequests()
+            appState.refreshMediated()
         }
     }
 
@@ -358,6 +373,7 @@ class MainActivity : ComponentActivity() {
         appState.refreshHistory()
         appState.refreshDashboard()
         appState.refreshRequests()
+        appState.refreshMediated()
         startRequestsPoll()
         offerPairingLink()
     }
@@ -685,6 +701,7 @@ class MainActivity : ComponentActivity() {
                 while (true) {
                     delay(REQUESTS_POLL_MS)
                     appState.refreshRequests()
+                    appState.refreshMediated()
                 }
             }
     }

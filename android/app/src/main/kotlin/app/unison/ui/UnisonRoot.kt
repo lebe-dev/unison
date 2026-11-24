@@ -39,6 +39,7 @@ import app.unison.ui.screens.RequestsScreen
 import app.unison.ui.screens.SettingsScreen
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.HistoryState
+import app.unison.ui.state.MediatedState
 import app.unison.ui.state.PairingState
 import app.unison.ui.state.PendingPrompt
 import app.unison.ui.state.RequestsState
@@ -56,6 +57,7 @@ fun UnisonRoot(
     updates: UpdatePanel,
     pairing: PairingState,
     requests: RequestsState,
+    mediated: MediatedState,
     held: Set<String>,
     prompts: List<PendingPrompt>,
     onAnswerPrompt: (PendingPrompt, PromptAnswer) -> Unit,
@@ -113,6 +115,12 @@ fun UnisonRoot(
     onRefreshRequests: () -> Unit,
     onAcceptRequest: (Local.ShareRequest) -> Unit,
     onDeclineRequest: (Local.ShareRequest) -> Unit,
+    onFriendsDiscoveryChange: (Boolean) -> Unit,
+    onIntroduceDevices: (peerA: String, peerB: String, role: Local.Role) -> Unit,
+    onCancelMediated: (Local.MediatedPair) -> Unit,
+    onAcceptMediated: (Local.MediatedPair, Boolean) -> Unit,
+    onDeclineMediated: (Local.MediatedPair) -> Unit,
+    onRefreshMediated: () -> Unit,
     onPairingRoleChange: (Local.Role) -> Unit,
     onOpenPairingWindow: () -> Unit,
     onExtendPairingWindow: () -> Unit,
@@ -153,7 +161,7 @@ fun UnisonRoot(
             if (destination.inBar) {
                 BottomBar(
                     destination = destination,
-                    pending = requests.pending,
+                    pending = requests.pending + mediated.pending,
                     onSelect = { destination = it },
                 )
             }
@@ -182,6 +190,9 @@ fun UnisonRoot(
                     modifier = content,
                     onPause = onPause,
                     onAdd = { destination = Destination.ADD },
+                    mediated = mediated,
+                    onIntroduce = onIntroduceDevices,
+                    onCancelMediated = onCancelMediated,
                 )
             Destination.ADD ->
                 AddScreen(
@@ -203,12 +214,21 @@ fun UnisonRoot(
                     onClose = { destination = Destination.DEVICES },
                 )
             Destination.REQUESTS -> {
-                LaunchedEffect(Unit) { onRefreshRequests() }
+                LaunchedEffect(Unit) {
+                    onRefreshRequests()
+                    onRefreshMediated()
+                }
                 RequestsScreen(
                     requests = requests,
-                    onRefresh = onRefreshRequests,
+                    mediated = mediated,
+                    onRefresh = {
+                        onRefreshRequests()
+                        onRefreshMediated()
+                    },
                     onAccept = onAcceptRequest,
                     onDecline = onDeclineRequest,
+                    onAcceptMediated = onAcceptMediated,
+                    onDeclineMediated = onDeclineMediated,
                     modifier = content,
                 )
             }
@@ -252,6 +272,7 @@ fun UnisonRoot(
                     onRelayCheck = onRelayCheck,
                     onSelfConfirmationChange = onSelfConfirmationChange,
                     onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
+                    onFriendsDiscoveryChange = onFriendsDiscoveryChange,
                     onLeaveGroup = onLeaveGroup,
                     diagnosticsEnabled = diagnosticsEnabled,
                     onDiagnosticsChange = onDiagnosticsChange,

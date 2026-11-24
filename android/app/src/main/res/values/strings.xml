@@ -148,8 +148,8 @@
     <string name="settings_section_notifications">Categories</string>
     <string name="settings_notification_transfers">Transfers</string>
     <string name="settings_notification_transfers_hint">Progress and the result of the files you send and receive.</string>
-    <string name="settings_notification_requests">File offers</string>
-    <string name="settings_notification_requests_hint">Offers from Friends devices that wait for an answer.</string>
+    <string name="settings_notification_requests">Offers and introductions</string>
+    <string name="settings_notification_requests_hint">File offers and introductions that wait for an answer.</string>
     <string name="settings_notification_clipboard">Clipboard</string>
     <string name="settings_notification_clipboard_hint">Incoming items and the result of a download.</string>
     <string name="settings_notification_confirmations">Questions to answer</string>
@@ -381,7 +381,7 @@
     <string name="dashboard_send_failed">Cannot send this item</string>
 
     <string name="requests_empty">No requests</string>
-    <string name="requests_empty_body">File offers from friends, and from the devices you ask about, wait here until you answer them.</string>
+    <string name="requests_empty_body">File offers and introductions wait here until you answer them.</string>
     <plurals name="request_files">
         <item quantity="one">%1$d file - %2$s</item>
         <item quantity="other">%1$d files - %2$s</item>
@@ -561,4 +561,48 @@
     <string name="onboarding_bullet_background">Unison runs in the background and starts again after a restart.</string>
     <string name="onboarding_bullet_notifications">Allow notifications so Unison can stay on.</string>
     <string name="onboarding_action">Turn on</string>
+
+    <string name="settings_section_friends">Friend discovery</string>
+    <string name="settings_friends_discovery">Look for friends nearby</string>
+    <string name="settings_friends_discovery_hint">Publishes the tags of this device and its friends in the local network for 15 minutes.</string>
+    <string name="settings_friends_discovery_left">On, %1$d min left</string>
+    <string name="settings_friends_discovery_on">Friend discovery is on</string>
+    <string name="settings_friends_discovery_off">Friend discovery is off</string>
+    <string name="settings_friends_discovery_failed">Cannot change friend discovery</string>
+
+    <string name="devices_introduce_action">Introduce to another device</string>
+    <string name="devices_introduce_title">Introduce %1$s to another device</string>
+    <string name="devices_introduce_hint">The other device has to be online and to support introductions. Both devices confirm the introduction.</string>
+    <string name="devices_introduce_pick">Second device</string>
+    <string name="devices_introduce_empty">No other online device can be introduced. Open Unison on the other device and update it if needed.</string>
+    <string name="devices_introduce_role">Role of the new pair</string>
+    <string name="devices_introduce_role_locked">One of the devices is a friend, so the new pair is Friends.</string>
+    <string name="devices_introduce_start">Start</string>
+    <string name="devices_introduce_progress_title">Introducing %1$s and %2$s</string>
+    <string name="devices_introduce_sas_hint">Both devices show the same code. Check it on both before you continue.</string>
+    <string name="devices_introduce_started">Introduction started</string>
+    <string name="devices_introduce_failed">Cannot start the introduction</string>
+    <string name="devices_introduce_canceled">Introduction canceled</string>
+    <string name="devices_introduce_cancel_failed">Cannot cancel the introduction</string>
+
+    <string name="mediated_state_waiting">Waiting for both devices</string>
+    <string name="mediated_state_ready">One device confirmed, waiting for the other one</string>
+    <string name="mediated_state_finishing">Finishing the connection</string>
+    <string name="mediated_state_completed">Introduced</string>
+    <string name="mediated_state_canceled">Canceled</string>
+    <string name="mediated_offer_title">Introduce to %1$s?</string>
+    <string name="mediated_offer_from">From %1$s</string>
+    <string name="mediated_offer_device">%1$s, %2$s</string>
+    <string name="mediated_offer_role">Joins as %1$s</string>
+    <string name="mediated_offer_sas_hint">Both devices show the same code. Check it before you accept.</string>
+    <string name="mediated_offer_already_paired">This device is in the list already but offline. Accepting replaces its connection keys.</string>
+    <string name="mediated_offer_friends_discovery">Turn on friend discovery for 15 minutes</string>
+    <string name="mediated_offer_friends_discovery_hint">Without it the new Friends device cannot reach this one over the local network.</string>
+    <string name="mediated_offer_accepted">Introduction accepted</string>
+    <string name="mediated_offer_declined">Introduction declined</string>
+    <string name="mediated_offer_answer_failed">Cannot answer the introduction</string>
+    <string name="mediated_offer_answering">Answering the introduction</string>
+    <string name="mediated_notification_sas">Code %1$s</string>
+    <string name="mediated_pair_completed_notice">A new device joined the list</string>
+    <string name="mediated_pair_canceled_notice">The introduction ended without a new device</string>
 </resources>

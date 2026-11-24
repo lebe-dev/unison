@@ -110,6 +110,7 @@ fun SettingsScreen(
     onRelayCheck: (url: String, token: String?) -> Unit,
     onSelfConfirmationChange: (Local.ConfirmationScope, Boolean) -> Unit,
     onAllowRemoteSettingsChange: (Boolean) -> Unit,
+    onFriendsDiscoveryChange: (Boolean) -> Unit = {},
     onLeaveGroup: () -> Unit,
     diagnosticsEnabled: Boolean,
     onDiagnosticsChange: (Boolean) -> Unit,
@@ -153,6 +154,13 @@ fun SettingsScreen(
                     }
                     SettingsCard {
                         DashboardSettings(limit = dashboardLimit, onLimitChange = onDashboardLimitChange)
+                    }
+                    SettingsCard {
+                        FriendsDiscoverySection(
+                            search = state.status?.friendsDiscovery,
+                            onRefresh = onRefresh,
+                            onChange = onFriendsDiscoveryChange,
+                        )
                     }
                     SettingsCard {
                         Group(onLeave = { leaving = true })

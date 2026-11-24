@@ -64,3 +64,16 @@ fun pauseLabel(pause: Local.Pause?): String {
     val format = DateFormat.getTimeFormat(LocalContext.current)
     return stringResource(R.string.tile_pause_until, format.format(Date(pause.untilUnixMs)))
 }
+
+/** Progress of an introduction through a trusted device in plain English. */
+@Composable
+fun mediatedStateLabel(state: Local.MediatedPairState): String =
+    stringResource(
+        when (state) {
+            Local.MediatedPairState.MEDIATED_PAIR_STATE_READY -> R.string.mediated_state_ready
+            Local.MediatedPairState.MEDIATED_PAIR_STATE_AWAITING_FINISH -> R.string.mediated_state_finishing
+            Local.MediatedPairState.MEDIATED_PAIR_STATE_COMPLETED -> R.string.mediated_state_completed
+            Local.MediatedPairState.MEDIATED_PAIR_STATE_CANCELED -> R.string.mediated_state_canceled
+            else -> R.string.mediated_state_waiting
+        },
+    )

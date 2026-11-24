@@ -150,8 +150,8 @@
     <string name="settings_section_notifications">Категории</string>
     <string name="settings_notification_transfers">Передачи</string>
     <string name="settings_notification_transfers_hint">Ход и результат отправки и получения файлов.</string>
-    <string name="settings_notification_requests">Запросы файлов</string>
-    <string name="settings_notification_requests_hint">Входящие файлы от друзей, ожидающие ответа.</string>
+    <string name="settings_notification_requests">Запросы и знакомства</string>
+    <string name="settings_notification_requests_hint">Запросы файлов и предложения знакомства, ожидающие ответа.</string>
     <string name="settings_notification_clipboard">Буфер обмена</string>
     <string name="settings_notification_clipboard_hint">Входящие элементы и результат загрузки.</string>
     <string name="settings_notification_confirmations">Вопросы без ответа</string>
@@ -384,7 +384,7 @@
     <string name="dashboard_send_failed">Не удалось отправить элемент</string>
 
     <string name="requests_empty">Запросов нет</string>
-    <string name="requests_empty_body">Предложения файлов от друзей и от устройств, о которых вы спрашиваете, ждут здесь, пока вы не ответите.</string>
+    <string name="requests_empty_body">Предложения файлов и знакомства ждут здесь, пока вы не ответите.</string>
     <plurals name="request_files">
         <item quantity="one">%1$d файл - %2$s</item>
         <item quantity="few">%1$d файла - %2$s</item>
@@ -578,4 +578,48 @@
     <string name="onboarding_bullet_background">Unison работает в фоне и запускается снова после перезапуска.</string>
     <string name="onboarding_bullet_notifications">Разрешите уведомления, чтобы Unison мог оставаться включенным.</string>
     <string name="onboarding_action">Включить</string>
+
+    <string name="settings_section_friends">Поиск друзей</string>
+    <string name="settings_friends_discovery">Искать друзей рядом</string>
+    <string name="settings_friends_discovery_hint">Публикует теги этого устройства и его друзей в локальной сети на 15 минут.</string>
+    <string name="settings_friends_discovery_left">Включен, осталось %1$d мин</string>
+    <string name="settings_friends_discovery_on">Поиск друзей включен</string>
+    <string name="settings_friends_discovery_off">Поиск друзей выключен</string>
+    <string name="settings_friends_discovery_failed">Не удалось изменить поиск друзей</string>
+
+    <string name="devices_introduce_action">Познакомить с другим устройством</string>
+    <string name="devices_introduce_title">Познакомить %1$s с другим устройством</string>
+    <string name="devices_introduce_hint">Второе устройство должно быть в сети и поддерживать знакомство. Оба устройства подтверждают знакомство.</string>
+    <string name="devices_introduce_pick">Второе устройство</string>
+    <string name="devices_introduce_empty">Нет другого устройства в сети, которое можно познакомить. Откройте Unison на втором устройстве и обновите его при необходимости.</string>
+    <string name="devices_introduce_role">Роль новой пары</string>
+    <string name="devices_introduce_role_locked">Одно из устройств является другом, поэтому новая пара будет Friends.</string>
+    <string name="devices_introduce_start">Начать</string>
+    <string name="devices_introduce_progress_title">Знакомим %1$s и %2$s</string>
+    <string name="devices_introduce_sas_hint">Оба устройства показывают одинаковый код. Сверьте его на обоих, прежде чем продолжить.</string>
+    <string name="devices_introduce_started">Знакомство начато</string>
+    <string name="devices_introduce_failed">Не удалось начать знакомство</string>
+    <string name="devices_introduce_canceled">Знакомство отменено</string>
+    <string name="devices_introduce_cancel_failed">Не удалось отменить знакомство</string>
+
+    <string name="mediated_state_waiting">Ожидание обоих устройств</string>
+    <string name="mediated_state_ready">Одно устройство подтвердило, ждем второе</string>
+    <string name="mediated_state_finishing">Завершаем соединение</string>
+    <string name="mediated_state_completed">Знакомство завершено</string>
+    <string name="mediated_state_canceled">Отменено</string>
+    <string name="mediated_offer_title">Познакомить с %1$s?</string>
+    <string name="mediated_offer_from">От %1$s</string>
+    <string name="mediated_offer_device">%1$s, %2$s</string>
+    <string name="mediated_offer_role">Подключается как %1$s</string>
+    <string name="mediated_offer_sas_hint">Оба устройства показывают одинаковый код. Сверьте его, прежде чем принять.</string>
+    <string name="mediated_offer_already_paired">Это устройство уже есть в списке, но не в сети. Принятие заменит его ключи связи.</string>
+    <string name="mediated_offer_friends_discovery">Включить поиск друзей на 15 минут</string>
+    <string name="mediated_offer_friends_discovery_hint">Без него новое устройство Friends не сможет связаться с этим по локальной сети.</string>
+    <string name="mediated_offer_accepted">Знакомство принято</string>
+    <string name="mediated_offer_declined">Знакомство отклонено</string>
+    <string name="mediated_offer_answer_failed">Не удалось ответить на знакомство</string>
+    <string name="mediated_offer_answering">Отвечаем на знакомство</string>
+    <string name="mediated_notification_sas">Код %1$s</string>
+    <string name="mediated_pair_completed_notice">В списке появилось новое устройство</string>
+    <string name="mediated_pair_canceled_notice">Знакомство завершилось без нового устройства</string>
 </resources>
