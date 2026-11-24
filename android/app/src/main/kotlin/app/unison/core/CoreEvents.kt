@@ -5,7 +5,23 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import unison.local.v1.Local
 import unison.mobile.v1.Mobile
+
+/** True on an introduction offer, a change of one, or its end. */
+fun Mobile.Event.isMediatedEvent(): Boolean {
+    if (!hasEvent()) {
+        return false
+    }
+    return when (event.kind) {
+        Local.EventKind.EVENT_KIND_MEDIATED_PAIR_OFFER,
+        Local.EventKind.EVENT_KIND_MEDIATED_PAIR_UPDATED,
+        Local.EventKind.EVENT_KIND_MEDIATED_PAIR_COMPLETED,
+        Local.EventKind.EVENT_KIND_MEDIATED_PAIR_CANCELED,
+        -> true
+        else -> false
+    }
+}
 
 /** Decodes one serialized unison.mobile.v1.Event, or returns null. */
 internal fun decodeEvent(data: ByteArray): Mobile.Event? =

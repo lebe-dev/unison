@@ -114,8 +114,15 @@ internal fun interface UpdateHttp {
 internal class DownloadStream(
     val contentLength: Long,
     val stream: InputStream,
+    private val onClose: () -> Unit = {},
 ) : Closeable {
-    override fun close() = stream.close()
+    override fun close() {
+        try {
+            stream.close()
+        } finally {
+            onClose()
+        }
+    }
 }
 
 /** The download of an artifact, replaced in the tests. */
@@ -171,7 +178,13 @@ internal object HttpsFetch {
                 throw UpdateCheckException(UpdateCheckCode.UNTRUSTED_URL, "the address $target is not HTTPS on GitHub")
             }
             val connection = open(target, headers, readTimeoutMs)
-            val status = connection.responseCode
+            val status =
+                try {
+                    connection.responseCode
+                } catch (e: IOException) {
+                    connection.disconnect()
+                    throw e
+                }
             if (status in REDIRECTS) {
                 val location = connection.getHeaderField("Location")
                 connection.disconnect()
@@ -265,15 +278,28 @@ internal class HttpsReleaseDownloader : ReleaseDownloader {
             } catch (e: IOException) {
                 throw UpdateCheckException(UpdateCheckCode.NETWORK, e.message)
             }
-        val status = connection.responseCode
+        val status =
+            try {
+                connection.responseCode
+            } catch (e: IOException) {
+                connection.disconnect()
+                throw UpdateCheckException(UpdateCheckCode.NETWORK, e.message)
+            }
         if (status !in 200..299) {
             connection.disconnect()
             throw UpdateCheckException(UpdateCheckCode.STATUS, "the download answered with the status $status")
         }
+        val stream =
+            try {
+                connection.inputStream
+            } catch (e: IOException) {
+                connection.disconnect()
+                throw UpdateCheckException(UpdateCheckCode.NETWORK, e.message)
+            }
         return DownloadStream(
             contentLength = connection.contentLengthLong,
-            stream =
-                connection.inputStream,
+            stream = stream,
+            onClose = connection::disconnect,
         )
     }
 }

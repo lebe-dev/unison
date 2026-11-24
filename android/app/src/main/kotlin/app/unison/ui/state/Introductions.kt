@@ -5,7 +5,8 @@ import unison.local.v1.Local
 /** Rules of the introductions through a trusted device. */
 object Introductions {
     /** The device can be introduced: it is paired, online and speaks the feature. */
-    fun canIntroduce(device: Local.Device): Boolean = !device.revoked && device.online && device.supportsMediatedPair
+    fun canIntroduce(device: Local.Device): Boolean =
+        device.deviceId.isNotEmpty() && !device.revoked && device.online && device.supportsMediatedPair
 
     /**
      * Roles the new pair can take. A chain with a Friends device never grants

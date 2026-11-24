@@ -79,5 +79,7 @@ data class CoreState(
                 .filter { it.online && !it.revoked }
 
     /** Online devices that can take part in an introduction through a trusted device. */
-    fun introducibleDevices(): List<Local.Device> = devices(Local.Role.ROLE_PERSONAL) + devices(Local.Role.ROLE_FRIENDS)
+    fun introducibleDevices(): List<Local.Device> =
+        (devices(Local.Role.ROLE_PERSONAL) + devices(Local.Role.ROLE_FRIENDS))
+            .filter(Introductions::canIntroduce)
 }

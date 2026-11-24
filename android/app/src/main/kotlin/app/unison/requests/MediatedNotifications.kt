@@ -5,11 +5,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import app.unison.MainActivity
 import app.unison.R
 import app.unison.service.NotificationChannels
 import app.unison.service.UnisonService
-import app.unison.ui.Destination
 import unison.local.v1.Local
 
 /** Notifications about introductions that another device offers. */
@@ -23,11 +21,8 @@ object MediatedNotifications {
         pair: Local.MediatedPair,
     ): Notification {
         val peer = pair.peer
-        val name = peer.name.ifBlank { context.getString(R.string.app_name) }
-        val mediator =
-            pair.mediator.name.ifBlank {
-                pair.mediator.deviceId.take(SHORT_ID_LENGTH)
-            }
+        val name = peer.name.ifBlank { peer.deviceId.take(SHORT_ID_LENGTH).ifEmpty { context.getString(R.string.app_name) } }
+        val mediator = pair.mediator.name.ifBlank { pair.mediator.deviceId.take(SHORT_ID_LENGTH) }
         val details =
             buildList {
                 add(context.getString(R.string.mediated_offer_from, mediator))
@@ -43,9 +38,9 @@ object MediatedNotifications {
             .setSmallIcon(R.drawable.ic_stat_unison)
             .setContentTitle(context.getString(R.string.mediated_offer_title, name))
             .setContentText(context.getString(R.string.mediated_offer_from, mediator))
-            .setContentIntent(openApp(context))
-            .addAction(0, context.getString(R.string.action_decline), answer(context, pair.sessionId, accept = false))
-            .addAction(0, context.getString(R.string.action_accept), answer(context, pair.sessionId, accept = true))
+            .setContentIntent(openRequestsApp(context))
+            .addAction(0, context.getString(R.string.action_decline), answer(context, pair, accept = false))
+            .addAction(0, context.getString(R.string.action_accept), answer(context, pair, accept = true))
             .setStyle(NotificationCompat.BigTextStyle().bigText(details))
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -58,15 +53,16 @@ object MediatedNotifications {
     /** Sends the answer of an offer to the service. */
     private fun answer(
         context: Context,
-        sessionId: String,
+        pair: Local.MediatedPair,
         accept: Boolean,
     ): PendingIntent {
         val action = if (accept) UnisonService.ACTION_ACCEPT_MEDIATED else UnisonService.ACTION_DECLINE_MEDIATED
-        val code = idOf(sessionId) + if (accept) 0 else REQUEST_CODE_STRIDE
+        val code = idOf(pair.sessionId) + if (accept) 0 else REQUEST_CODE_STRIDE
         val intent =
             Intent(context, UnisonService::class.java)
                 .setAction(action)
-                .putExtra(UnisonService.EXTRA_SESSION_ID, sessionId)
+                .putExtra(UnisonService.EXTRA_SESSION_ID, pair.sessionId)
+                .putExtra(UnisonService.EXTRA_ENABLE_FRIENDS_DISCOVERY, pair.role == Local.Role.ROLE_FRIENDS)
         return PendingIntent.getService(
             context,
             code,
@@ -75,21 +71,11 @@ object MediatedNotifications {
         )
     }
 
-    /** Opens the requests screen from the notification body. */
-    private fun openApp(context: Context): PendingIntent =
-        PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, MainActivity::class.java)
-                .putExtra(MainActivity.EXTRA_SCREEN, Destination.SCREEN_REQUESTS),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-
-    private const val BASE_ID = 500
-    private const val ID_MASK = 0xFFFF
+    private const val BASE_ID = 0x20000
+    private const val ID_MASK = 0x7FFF
 
     /** Keeps the pending intents of the two answers apart. */
-    private const val REQUEST_CODE_STRIDE = 0x10000
+    private const val REQUEST_CODE_STRIDE = 0x8000
 
     /** Characters of a device ID shown when the name is empty. */
     private const val SHORT_ID_LENGTH = 8

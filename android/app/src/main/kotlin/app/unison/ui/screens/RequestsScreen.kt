@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,9 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -34,23 +33,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.history.HistoryText
 import app.unison.ui.ErrorCard
+import app.unison.ui.FriendsDiscoveryChoice
 import app.unison.ui.IconTile
+import app.unison.ui.MediatedOfferDetails
 import app.unison.ui.ScreenTitle
 import app.unison.ui.groupItemColor
 import app.unison.ui.mediatedStateLabel
-import app.unison.ui.pairing.SasCode
-import app.unison.ui.platformLabel
-import app.unison.ui.roleLabel
 import app.unison.ui.shortId
 import app.unison.ui.sizeUnits
 import app.unison.ui.state.MediatedState
 import app.unison.ui.state.RequestsState
+import app.unison.ui.state.isInProgress
 import unison.local.v1.Local
 
 /** Offers of Friends and introductions through a trusted device that wait for an answer. */
@@ -97,8 +95,7 @@ fun RequestsScreen(
         }
 
         if (requests.isEmpty && mediated.incoming.isEmpty()) {
-            val loaded = requests.loaded || mediated.loaded
-            if (loaded) {
+            if (requests.loaded || (mediated.loaded && !requests.loading)) {
                 EmptyRequests()
                 return@Column
             }
@@ -141,19 +138,10 @@ private fun MediatedOfferRow(
         mutableStateOf(pair.role == Local.Role.ROLE_FRIENDS)
     }
     val waiting = pair.state == Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING
-    val peer = pair.peer
-    val name = peer.name.ifBlank { shortId(peer.deviceId) }
+    val name = pair.peer.name.ifBlank { shortId(pair.peer.deviceId) }
     val mediator = pair.mediator.name.ifBlank { shortId(pair.mediator.deviceId) }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(groupItemColor)
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    OfferCard {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -172,38 +160,12 @@ private fun MediatedOfferRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (answering || !waiting) {
+            if (answering || pair.isInProgress) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             }
         }
 
-        Text(
-            text =
-                stringResource(
-                    R.string.mediated_offer_device,
-                    platformLabel(peer.platform),
-                    shortId(peer.deviceId),
-                ),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        roleLabel(pair.role)?.let { role ->
-            Text(
-                text = stringResource(R.string.mediated_offer_role, role),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-
-        if (pair.hasSas()) {
-            SasCode(sas = pair.sas)
-        }
-
-        if (pair.alreadyPaired) {
-            Text(
-                text = stringResource(R.string.mediated_offer_already_paired),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
+        MediatedOfferDetails(pair = pair)
 
         if (!waiting) {
             Text(
@@ -211,71 +173,19 @@ private fun MediatedOfferRow(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            return@Column
+            return@OfferCard
         }
 
         if (pair.role == Local.Role.ROLE_FRIENDS) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .toggleable(value = discovery, role = Role.Checkbox, onValueChange = { discovery = it }),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(checked = discovery, onCheckedChange = null)
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.mediated_offer_friends_discovery),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.mediated_offer_friends_discovery_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            FriendsDiscoveryChoice(checked = discovery, onChange = { discovery = it })
         }
 
-        if (pair.expiresAtUnixMs > 0) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.requests_expires,
-                        DateUtils
-                            .getRelativeTimeSpanString(
-                                pair.expiresAtUnixMs,
-                                System.currentTimeMillis(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                            ).toString(),
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = onDecline,
-                enabled = !answering,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-            ) {
-                Text(text = stringResource(R.string.action_decline))
-            }
-            Button(
-                onClick = { onAccept(discovery) },
-                enabled = !answering,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-            ) {
-                Text(text = stringResource(R.string.action_accept))
-            }
-        }
+        OfferExpiryText(expiresAtUnixMs = pair.expiresAtUnixMs)
+        OfferActionButtons(
+            enabled = !answering,
+            onDecline = onDecline,
+            onAccept = { onAccept(discovery) },
+        )
     }
 }
 
@@ -287,15 +197,7 @@ private fun RequestRow(
     onAccept: () -> Unit,
     onDecline: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(groupItemColor)
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    OfferCard {
         val files = request.filesList
         val size = HistoryText.formatSize(request.totalBytes, sizeUnits())
         Row(
@@ -310,7 +212,7 @@ private fun RequestRow(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = request.deviceName.ifBlank { request.deviceId.take(SHORT_ID_LENGTH) },
+                    text = request.deviceName.ifBlank { shortId(request.deviceId) },
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
@@ -340,44 +242,79 @@ private fun RequestRow(
             )
         }
 
-        if (request.expiresAtUnixMs > 0) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.requests_expires,
-                        DateUtils
-                            .getRelativeTimeSpanString(
-                                request.expiresAtUnixMs,
-                                System.currentTimeMillis(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                            ).toString(),
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        OfferExpiryText(expiresAtUnixMs = request.expiresAtUnixMs)
+        OfferActionButtons(
+            enabled = !answering,
+            onDecline = onDecline,
+            onAccept = onAccept,
+        )
+    }
+}
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = onDecline,
-                enabled = !answering,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-            ) {
-                Text(text = stringResource(R.string.action_decline))
-            }
-            Button(
-                onClick = onAccept,
-                enabled = !answering,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-            ) {
-                Text(text = stringResource(R.string.action_accept))
-            }
+/** Shared card container for file and introduction offers. */
+@Composable
+private fun OfferCard(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        content = content,
+    )
+}
+
+/** Relative expiration label of an offer. */
+@Composable
+private fun OfferExpiryText(expiresAtUnixMs: Long) {
+    if (expiresAtUnixMs <= 0) {
+        return
+    }
+    Text(
+        text =
+            stringResource(
+                R.string.requests_expires,
+                DateUtils
+                    .getRelativeTimeSpanString(
+                        expiresAtUnixMs,
+                        System.currentTimeMillis(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                    ).toString(),
+            ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** Decline and accept button row of an offer card. */
+@Composable
+private fun OfferActionButtons(
+    enabled: Boolean,
+    onDecline: () -> Unit,
+    onAccept: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = onDecline,
+            enabled = enabled,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+        ) {
+            Text(text = stringResource(R.string.action_decline))
+        }
+        Button(
+            onClick = onAccept,
+            enabled = enabled,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+        ) {
+            Text(text = stringResource(R.string.action_accept))
         }
     }
 }
@@ -405,6 +342,3 @@ private fun EmptyRequests() {
         )
     }
 }
-
-/** Characters of a device ID shown when the name is unknown. */
-private const val SHORT_ID_LENGTH = 8

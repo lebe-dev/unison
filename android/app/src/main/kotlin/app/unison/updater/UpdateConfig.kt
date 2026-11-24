@@ -1,6 +1,7 @@
 package app.unison.updater
 
 import android.content.Context
+import androidx.core.content.edit
 import app.unison.service.UnisonSettings
 
 /** How often the app looks for a new release in the background. */
@@ -59,32 +60,43 @@ data class UpdateConfig(
         val DEFAULT = UpdateConfig()
 
         /** The stored settings of the update checks. */
-        fun load(context: Context): UpdateConfig =
-            UpdateConfig(
-                enabled = UnisonSettings.updatesEnabled(context),
-                betaChannel = UnisonSettings.updatesBetaChannel(context),
-                interval = UpdateCheckInterval.fromValue(UnisonSettings.updatesInterval(context)),
-                lastCheckedMs = UnisonSettings.updatesLastCheckedMs(context),
-                dismissedVersion = UnisonSettings.updatesDismissedVersion(context),
-                lastEtag = UnisonSettings.updatesLastEtag(context),
+        fun load(context: Context): UpdateConfig {
+            val prefs = context.getSharedPreferences(UnisonSettings.FILE, Context.MODE_PRIVATE)
+            return UpdateConfig(
+                enabled = prefs.getBoolean(UnisonSettings.KEY_UPDATES_ENABLED, false),
+                betaChannel = prefs.getBoolean(UnisonSettings.KEY_UPDATES_BETA_CHANNEL, false),
+                interval = UpdateCheckInterval.fromValue(prefs.getString(UnisonSettings.KEY_UPDATES_INTERVAL, null)),
+                lastCheckedMs = prefs.getLong(UnisonSettings.KEY_UPDATES_LAST_CHECKED_MS, 0L),
+                dismissedVersion = prefs.getString(UnisonSettings.KEY_UPDATES_DISMISSED_VERSION, null),
+                lastEtag = prefs.getString(UnisonSettings.KEY_UPDATES_LAST_ETAG, null),
                 cachedRelease =
-                    UnisonSettings
-                        .updatesCachedReleaseJson(context)
+                    prefs
+                        .getString(UnisonSettings.KEY_UPDATES_CACHED_RELEASE, null)
                         ?.let(ReleaseInfo::fromJson),
             )
+        }
 
-        /** Stores the settings of the update checks. */
+        /** Stores the settings of the update checks atomically. */
         fun save(
             context: Context,
             config: UpdateConfig,
         ) {
-            UnisonSettings.setUpdatesEnabled(context, config.enabled)
-            UnisonSettings.setUpdatesBetaChannel(context, config.betaChannel)
-            UnisonSettings.setUpdatesInterval(context, config.interval.value)
-            UnisonSettings.setUpdatesLastCheckedMs(context, config.lastCheckedMs)
-            UnisonSettings.setUpdatesDismissedVersion(context, config.dismissedVersion)
-            UnisonSettings.setUpdatesLastEtag(context, config.lastEtag)
-            UnisonSettings.setUpdatesCachedReleaseJson(context, config.cachedRelease?.toJson())
+            context.getSharedPreferences(UnisonSettings.FILE, Context.MODE_PRIVATE).edit {
+                putBoolean(UnisonSettings.KEY_UPDATES_ENABLED, config.enabled)
+                putBoolean(UnisonSettings.KEY_UPDATES_BETA_CHANNEL, config.betaChannel)
+                putString(UnisonSettings.KEY_UPDATES_INTERVAL, config.interval.value)
+                putLong(UnisonSettings.KEY_UPDATES_LAST_CHECKED_MS, config.lastCheckedMs)
+                putOrRemove(UnisonSettings.KEY_UPDATES_DISMISSED_VERSION, config.dismissedVersion)
+                putOrRemove(UnisonSettings.KEY_UPDATES_LAST_ETAG, config.lastEtag)
+                putOrRemove(UnisonSettings.KEY_UPDATES_CACHED_RELEASE, config.cachedRelease?.toJson())
+            }
+        }
+
+        private fun android.content.SharedPreferences.Editor.putOrRemove(
+            key: String,
+            value: String?,
+        ) {
+            if (value == null) remove(key) else putString(key, value)
         }
     }
 }

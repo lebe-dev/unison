@@ -18,7 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -242,11 +242,7 @@ private fun ProgressBlock(status: UpdateStatus) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text =
-                        stringResource(
-                            R.string.updates_percent,
-                            ((status.downloaded * PERCENT) / status.total.coerceAtLeast(1)).toInt(),
-                        ),
+                    text = stringResource(R.string.updates_percent, updatePercent(status)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -301,7 +297,7 @@ private fun publishDate(publishedAt: String): String {
     if (publishedAt.isBlank()) {
         return stringResource(R.string.updates_unknown_date)
     }
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = LocalLocale.current.platformLocale
     val date =
         runCatching {
             DateTimeFormatter
@@ -336,6 +332,3 @@ internal const val UPDATE_DIALOG_LATER_TAG = "updates.dialog.later"
 
 /** Height above which the changelog scrolls. */
 private val NOTES_HEIGHT = 320.dp
-
-/** Percent of a fraction. */
-private const val PERCENT = 100L

@@ -6,6 +6,7 @@ import app.unison.clipboard.HeldItems
 import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
+import app.unison.core.isMediatedEvent
 import app.unison.core.qrCodeAddresses
 import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
@@ -128,7 +129,7 @@ class AppState(
                 if (visible && event.changesRequests()) {
                     refreshRequests()
                 }
-                if (event.isMediated()) {
+                if (event.isMediatedEvent()) {
                     if (visible) {
                         refreshMediated()
                     }
@@ -1383,21 +1384,6 @@ class AppState(
 
     /** Events of an item that waits for the user to apply it. */
     private fun Mobile.Event.isHeld(): Boolean = hasEvent() && event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY
-
-    /** Events of an introduction through a trusted device. */
-    private fun Mobile.Event.isMediated(): Boolean {
-        if (!hasEvent()) {
-            return false
-        }
-        return when (event.kind) {
-            Local.EventKind.EVENT_KIND_MEDIATED_PAIR_OFFER,
-            Local.EventKind.EVENT_KIND_MEDIATED_PAIR_UPDATED,
-            Local.EventKind.EVENT_KIND_MEDIATED_PAIR_COMPLETED,
-            Local.EventKind.EVENT_KIND_MEDIATED_PAIR_CANCELED,
-            -> true
-            else -> false
-        }
-    }
 
     /** The list with [pair] in place of the exchange with its identifier. */
     private fun List<Local.MediatedPair>.replace(pair: Local.MediatedPair): List<Local.MediatedPair> {

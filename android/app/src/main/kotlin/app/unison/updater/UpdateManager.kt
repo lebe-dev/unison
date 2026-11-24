@@ -64,10 +64,6 @@ data class UpdateUiState(
     val busy: Boolean
         get() = status is UpdateStatus.Downloading || status == UpdateStatus.Verifying || status == UpdateStatus.Installing
 
-    /** True while the banner shows progress instead of the buttons. */
-    val showProgress: Boolean
-        get() = status is UpdateStatus.Downloading || status == UpdateStatus.Verifying
-
     /** True when an update waits for the user and was not put away. */
     val showBanner: Boolean
         get() {
@@ -148,7 +144,13 @@ object UpdateManager {
         if (available?.version != _state.value.available?.version) {
             verifiedApk = null
         }
-        _state.update { it.copy(config = config, available = available) }
+        _state.update {
+            it.copy(
+                config = config,
+                available = available,
+                status = if (it.busy) it.status else statusOf(available),
+            )
+        }
         UpdateCheckWorker.syncSchedule(context, config)
     }
 
@@ -256,15 +258,15 @@ object UpdateManager {
 
     /** Continues the installation after the user granted the permission. */
     fun onInstallPermissionResult(context: Context) {
-        if (_state.value.status != UpdateStatus.PermissionRequired) {
+        if (_state.value.status != UpdateStatus.PermissionRequired || installJob?.isActive == true) {
             return
         }
-        val apk = verifiedApk ?: return
+        val apk = verifiedApk?.takeIf { it.isFile } ?: return
         val app = context.applicationContext
         if (!ApkInstaller.canInstall(app)) {
             return
         }
-        scope.launch { startInstaller(app, apk) }
+        installJob = scope.launch { startInstaller(app, apk) }
     }
 
     /** Handles the result the system installer reports to the receiver. */
@@ -382,26 +384,39 @@ object UpdateManager {
     /** Stores the answer of a check and offers its release. */
     private fun applyOutcome(
         context: Context,
-        config: UpdateConfig,
+        checkedConfig: UpdateConfig,
         outcome: CheckOutcome,
     ) {
-        val release = outcome.release ?: config.cachedRelease
+        val current = _state.value.config
+        // Drop the result if the user switched channels while the request was in flight.
+        if (current.betaChannel != checkedConfig.betaChannel) {
+            return
+        }
+        val release = outcome.release ?: current.cachedRelease
         val updated =
-            config.copy(
+            current.copy(
                 lastCheckedMs = System.currentTimeMillis(),
-                lastEtag = outcome.etag ?: config.lastEtag,
+                lastEtag = outcome.etag ?: current.lastEtag,
                 cachedRelease = release,
             )
         val available = updated.cachedUpdate(BuildConfig.VERSION_NAME)
+        val persisted = updated.copy(cachedRelease = available)
         if (available?.version != _state.value.available?.version) {
             verifiedApk = null
         }
-        UpdateConfig.save(context, updated.copy(cachedRelease = available))
+        UpdateConfig.save(context, persisted)
         _state.update {
             it.copy(
-                config = updated.copy(cachedRelease = available),
+                config = persisted,
                 available = available,
-                status = if (available != null) UpdateStatus.Available else UpdateStatus.UpToDate,
+                status =
+                    if (it.busy) {
+                        it.status
+                    } else if (available != null) {
+                        UpdateStatus.Available
+                    } else {
+                        UpdateStatus.UpToDate
+                    },
             )
         }
     }

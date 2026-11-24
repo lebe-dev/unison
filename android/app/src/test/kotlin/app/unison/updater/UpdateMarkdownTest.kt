@@ -94,6 +94,38 @@ internal class UpdateMarkdownTest {
     }
 
     @Test
+    fun `snake case underscores stay plain text`() {
+        val paragraph =
+            UpdateMarkdown
+                .parse("renamed operating_mode_changed to _italic_ text")
+                .single() as MarkdownBlock.Paragraph
+        assertEquals(
+            listOf(
+                MarkdownInline.Plain("renamed operating_mode_changed to "),
+                MarkdownInline.Italic(listOf(MarkdownInline.Plain("italic"))),
+                MarkdownInline.Plain(" text"),
+            ),
+            paragraph.content,
+        )
+    }
+
+    @Test
+    fun `brackets before a link do not swallow text into the link`() {
+        val paragraph =
+            UpdateMarkdown
+                .parse("[note] see [docs](https://example.com) now")
+                .single() as MarkdownBlock.Paragraph
+        assertEquals(
+            listOf(
+                MarkdownInline.Plain("[note] see "),
+                MarkdownInline.Link(listOf(MarkdownInline.Plain("docs")), "https://example.com"),
+                MarkdownInline.Plain(" now"),
+            ),
+            paragraph.content,
+        )
+    }
+
+    @Test
     fun `an empty text has no blocks`() {
         assertTrue(UpdateMarkdown.parse("").isEmpty())
         assertTrue(UpdateMarkdown.parse("   \n\n").isEmpty())

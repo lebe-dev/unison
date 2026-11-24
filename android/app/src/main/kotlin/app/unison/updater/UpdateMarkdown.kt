@@ -150,9 +150,8 @@ object UpdateMarkdown {
         }
 
         while (index < text.length) {
-            val rest = text.substring(index)
             when {
-                rest.startsWith("**") -> {
+                text.startsWith("**", index) -> {
                     val end = text.indexOf("**", index + HOLD)
                     if (end <= index + HOLD) {
                         plain.append(text[index])
@@ -189,10 +188,10 @@ object UpdateMarkdown {
                     }
                     index = next.end
                 }
-                text[index] == '*' || text[index] == '_' -> {
+                text[index] == '*' || (text[index] == '_' && !isWordBoundary(text, index)) -> {
                     val marker = text[index]
-                    val end = text.indexOf(marker, index + 1)
-                    if (end <= index + 1 || rest.startsWith("**")) {
+                    val end = findClosingItalic(text, marker, index + 1)
+                    if (end <= index + 1) {
                         plain.append(text[index])
                         index++
                         continue
@@ -211,6 +210,32 @@ object UpdateMarkdown {
         return result
     }
 
+    /** True when the underscore at [index] sits inside a word (e.g. snake_case). */
+    private fun isWordBoundary(
+        text: String,
+        index: Int,
+    ): Boolean = index > 0 && text[index - 1].isLetterOrDigit()
+
+    private fun findClosingItalic(
+        text: String,
+        marker: Char,
+        from: Int,
+    ): Int {
+        var pos = from
+        while (pos < text.length) {
+            val found = text.indexOf(marker, pos)
+            if (found < 0) {
+                return -1
+            }
+            if (marker == '_' && found + 1 < text.length && text[found + 1].isLetterOrDigit()) {
+                pos = found + 1
+                continue
+            }
+            return found
+        }
+        return -1
+    }
+
     /** One link of the inline text. */
     private data class ParsedLink(
         val label: String,
@@ -223,8 +248,8 @@ object UpdateMarkdown {
         text: String,
         start: Int,
     ): ParsedLink? {
-        val close = text.indexOf("](", start + 1)
-        if (close < 0) {
+        val close = text.indexOf(']', start + 1)
+        if (close < 0 || close + 1 >= text.length || text[close + 1] != '(') {
             return null
         }
         val end = text.indexOf(')', close + 2)
@@ -233,7 +258,7 @@ object UpdateMarkdown {
         }
         val label = text.substring(start + 1, close)
         val url = text.substring(close + 2, end).trim()
-        if (label.isEmpty() || url.isEmpty()) {
+        if (label.isEmpty() || url.isEmpty() || '[' in label) {
             return null
         }
         return ParsedLink(label, url, end + 1)

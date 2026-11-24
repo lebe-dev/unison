@@ -404,41 +404,57 @@ class SettingsScreenTest {
             UnisonTheme(dynamicColor = false) {
                 SettingsScreen(
                     state = CoreState(loading = false, status = status, settings = settings),
-                    deviceName = deviceName,
-                    operatingMode = operatingMode,
-                    policy = PolicyDefaults.config,
-                    ttl = ttl,
-                    dashboardLimit = dashboardLimit,
-                    onDeviceNameChange = onDeviceNameChange,
-                    onOperatingModeChange = onOperatingModeChange,
-                    onDashboardLimitChange = onDashboardLimitChange,
-                    onPolicyChange = {},
-                    onPolicyReset = {},
-                    onTtlSave = onTtlSave,
-                    onTtlReset = onTtlReset,
-                    downloadsFolder = downloadsFolder,
-                    onDownloadsFolderPick = {},
-                    onDownloadsFolderReset = onDownloadsFolderReset,
-                    onPause = onPause,
-                    onRelaySave = onRelaySave,
-                    onRelayOff = onRelayOff,
-                    onRefreshRelay = onRefreshRelay,
-                    onRelayCheck = { _, _ -> },
-                    onSelfConfirmationChange = onSelfConfirmationChange,
-                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
-                    onLeaveGroup = onLeaveGroup,
-                    diagnosticsEnabled = diagnosticsEnabled,
-                    onDiagnosticsChange = onDiagnosticsChange,
-                    notifications = notifications,
-                    onNotificationsChange = onNotificationsChange,
-                    journalEnabled = journalEnabled,
-                    onJournalChange = onJournalChange,
-                    onExportSettings = onExportSettings,
-                    onImportSettings = onImportSettings,
-                    stripTracking = stripTracking,
-                    onStripTrackingChange = onStripTrackingChange,
-                    updates = updates(),
-                    onRefresh = {},
+                    panel =
+                        SettingsPanel(
+                            device =
+                                DeviceSettingsPanel(
+                                    deviceName = deviceName,
+                                    operatingMode = operatingMode,
+                                    dashboardLimit = dashboardLimit,
+                                    onDeviceNameChange = onDeviceNameChange,
+                                    onOperatingModeChange = onOperatingModeChange,
+                                    onDashboardLimitChange = onDashboardLimitChange,
+                                    onLeaveGroup = onLeaveGroup,
+                                ),
+                            clipboard =
+                                ClipboardSettingsPanel(
+                                    stripTracking = stripTracking,
+                                    onPause = onPause,
+                                    onSelfConfirmationChange = onSelfConfirmationChange,
+                                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
+                                    onStripTrackingChange = onStripTrackingChange,
+                                ),
+                            files =
+                                FilesSettingsPanel(
+                                    downloadsFolder = downloadsFolder,
+                                    onDownloadsFolderReset = onDownloadsFolderReset,
+                                ),
+                            history =
+                                HistorySettingsPanel(
+                                    ttl = ttl,
+                                    onTtlSave = onTtlSave,
+                                    onTtlReset = onTtlReset,
+                                ),
+                            network =
+                                NetworkSettingsPanel(
+                                    policy = PolicyDefaults.config,
+                                    onRelaySave = onRelaySave,
+                                    onRelayOff = onRelayOff,
+                                    onRefreshRelay = onRefreshRelay,
+                                ),
+                            app =
+                                AppSettingsPanel(
+                                    notifications = notifications,
+                                    onNotificationsChange = onNotificationsChange,
+                                    diagnosticsEnabled = diagnosticsEnabled,
+                                    onDiagnosticsChange = onDiagnosticsChange,
+                                    journalEnabled = journalEnabled,
+                                    onJournalChange = onJournalChange,
+                                    onExportSettings = onExportSettings,
+                                    onImportSettings = onImportSettings,
+                                    updates = updates(),
+                                ),
+                        ),
                 )
             }
         }
