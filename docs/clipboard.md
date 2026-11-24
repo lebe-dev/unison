@@ -82,7 +82,7 @@ device is dropped without being recorded.
 ## Images and files
 
 Images are sent as PNG; a screenshot keeps its original format as a second flavour when it is small
-enough. Images above 24 megapixels, 8192 pixels on a side or 64 MiB are skipped.
+enough. Images above 56 megapixels, 8192 pixels on a side or 64 MiB are skipped.
 
 A file is announced as its name, size and hash. Copying files in Finder puts them into the
 clipboard of the Mac as file references, which is how they travel. A received file lands in the

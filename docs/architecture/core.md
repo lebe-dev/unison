@@ -185,7 +185,7 @@ Capture:
 - content the platform marks as sensitive is dropped before its payload is read;
 - text keeps plain text and HTML, an image is normalized to PNG, and the original format travels as
   a second representation while it stays below twice the size of the PNG;
-- images above 24 megapixels, 8192 pixels on a side or 64 MiB are skipped;
+- images above 56 megapixels, 8192 pixels on a side or 64 MiB are skipped;
 - a payload up to 64 KiB travels inside the announcement, a bigger one goes to the blob store;
 - a file is hashed on a background queue and announced once its hash is ready.
 

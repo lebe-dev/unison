@@ -198,7 +198,7 @@ the announced MIME type: PNG, JPEG and GIF. The bytes are then handled in a fixe
 
 1. the encoded size is limited to 64 MiB;
 2. the header is decoded first with `DecodeConfig`, and the image is rejected before any pixel
-   buffer is allocated when a side exceeds 8192 pixels or the total exceeds 24 megapixels;
+   buffer is allocated when a side exceeds 8192 pixels or the total exceeds 56 megapixels;
 3. the full image is decoded, with a panic of the decoder turned into an ordinary error;
 4. the decoded size must equal the size the header announced;
 5. the image is encoded again as PNG by this code, and only those bytes reach the platform.
@@ -209,7 +209,7 @@ limited to 1024 pixels on the longer side.
 
 Images that this device captures itself are normalized to PNG on the way out. A PNG source is
 forwarded as is, because it came from the local system rather than from a peer; other formats are
-decoded and re-encoded. An image above 24 megapixels, 8192 pixels on a side or 64 MiB is skipped
+decoded and re-encoded. An image above 56 megapixels, 8192 pixels on a side or 64 MiB is skipped
 instead of being decoded, and the original format is sent as a second representation only when it is
 smaller than twice the PNG.
 
