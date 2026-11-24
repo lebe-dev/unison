@@ -301,6 +301,7 @@
     <string name="pairing_nearby">Устройства рядом</string>
     <string name="pairing_nearby_empty">Устройства пока не найдены</string>
     <string name="pairing_nearby_hint">Откройте окно сопряжения на другом устройстве, чтобы увидеть его здесь.</string>
+    <string name="pairing_via_relay">Через ретранслятор</string>
     <string name="pairing_pair">Сопрячь</string>
     <string name="pairing_dialing">Запуск</string>
     <string name="pairing_start_failed">Не удалось начать сопряжение</string>

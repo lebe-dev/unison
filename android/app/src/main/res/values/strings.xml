@@ -298,6 +298,7 @@
     <string name="pairing_nearby">Devices nearby</string>
     <string name="pairing_nearby_empty">No devices found yet</string>
     <string name="pairing_nearby_hint">Open a pairing window on the other device to see it here.</string>
+    <string name="pairing_via_relay">Via relay</string>
     <string name="pairing_pair">Pair</string>
     <string name="pairing_dialing">Starting</string>
     <string name="pairing_start_failed">Cannot start the pairing</string>

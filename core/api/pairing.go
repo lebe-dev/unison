@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/lebe-dev/unison/core/model"
+	"github.com/lebe-dev/unison/core/pairing"
 	localv1 "github.com/lebe-dev/unison/proto/unison/local/v1"
 )
 
@@ -64,9 +65,19 @@ func (s *Service) ListPairingCandidates(context.Context, *connect.Request[localv
 // StartSas starts a pairing exchange with a candidate. The exchange runs in the
 // background and reports the SAS with the pairing request event.
 func (s *Service) StartSas(_ context.Context, req *connect.Request[localv1.StartSasRequest]) (*connect.Response[localv1.StartSasResponse], error) {
-	addr, addrErr := addrPort(req.Msg.GetAddr())
-	if addrErr != nil {
-		return nil, addrErr
+	raw := strings.TrimSpace(req.Msg.GetAddr())
+	var addr string
+	if strings.HasPrefix(raw, pairing.RelayAddrPrefix) {
+		if !pairing.IsRelayAddr(raw) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid relay address"))
+		}
+		addr = raw
+	} else {
+		var addrErr *connect.Error
+		addr, addrErr = addrPort(raw)
+		if addrErr != nil {
+			return nil, addrErr
+		}
 	}
 	if err := s.node.StartPairing(addr); err != nil {
 		return nil, errorOf(err)

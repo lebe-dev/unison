@@ -110,6 +110,11 @@ type Options struct {
 	RequestTimeout time.Duration
 	// Config tunes the QUIC connections of the window.
 	Config transport.Config
+	// Relay enables pairing discovery and exchanges through the relay when set.
+	Relay Relay
+	// RelayBeaconInterval is how often the window announces itself on the relay
+	// discovery mailbox. One second is used when zero.
+	RelayBeaconInterval time.Duration
 }
 
 // extendRequest asks the timer to restart with a new duration.
@@ -133,6 +138,7 @@ type Window struct {
 	events   chan Event
 	extend   chan extendRequest
 	sink     sink
+	relayID  [8]byte
 
 	mu       sync.Mutex
 	deadline time.Time
@@ -145,6 +151,11 @@ type Window struct {
 	requests map[model.DeviceID]*exchange
 	conns    map[*transport.PairingConn]struct{}
 	closed   bool
+
+	relayDiscovery net.PacketConn
+	relaySeen      map[[8]byte]struct{}
+	relayInvites   map[[8]byte]bool
+	relayReady     map[[8]byte]chan struct{}
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -184,15 +195,23 @@ func Open(ctx context.Context, opts Options) (*Window, error) {
 		opts.RequestTimeout = DefaultRequestTimeout
 	}
 
+	relayID, err := newRelayID()
+	if err != nil {
+		return nil, err
+	}
 	w := &Window{
-		opts:     opts,
-		clock:    opts.Clock,
-		log:      opts.Logger,
-		events:   make(chan Event, eventBuffer),
-		extend:   make(chan extendRequest, 1),
-		requests: make(map[model.DeviceID]*exchange),
-		conns:    make(map[*transport.PairingConn]struct{}),
-		closedCh: make(chan struct{}),
+		opts:         opts,
+		clock:        opts.Clock,
+		log:          opts.Logger,
+		events:       make(chan Event, eventBuffer),
+		extend:       make(chan extendRequest, 1),
+		relayID:      relayID,
+		requests:     make(map[model.DeviceID]*exchange),
+		conns:        make(map[*transport.PairingConn]struct{}),
+		relaySeen:    make(map[[8]byte]struct{}),
+		relayInvites: make(map[[8]byte]bool),
+		relayReady:   make(map[[8]byte]chan struct{}),
+		closedCh:     make(chan struct{}),
 	}
 	token, err := NewToken()
 	if err != nil {
@@ -225,6 +244,10 @@ func Open(ctx context.Context, opts Options) (*Window, error) {
 	go w.runAccept()
 	go w.runBrowse()
 	go w.runTimer()
+	if opts.Relay != nil {
+		w.wg.Add(1)
+		go w.runRelayDiscovery()
+	}
 	return w, nil
 }
 
@@ -384,6 +407,9 @@ func (w *Window) Reject(ctx context.Context, id model.DeviceID) error {
 func (w *Window) Dial(ctx context.Context, addr string) error {
 	if addr == "" {
 		return errors.New("pairing: empty address")
+	}
+	if targetID, ok := ParseRelayAddr(addr); ok {
+		return w.dialRelay(ctx, targetID)
 	}
 	target, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
@@ -605,6 +631,16 @@ func (w *Window) track(conn *transport.PairingConn) error {
 func (w *Window) trackAccepted(conn *transport.PairingConn) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if w.recentAttemptsLocked() >= maxAttempts {
+		return ErrTooManyAttempts
+	}
+	w.attempts = append(w.attempts, w.clock.Now())
+	return w.trackLocked(conn)
+}
+
+// recentAttemptsLocked prunes expired attempt timestamps and returns the count
+// within attemptWindow. The caller must hold mu.
+func (w *Window) recentAttemptsLocked() int {
 	now := w.clock.Now()
 	recent := w.attempts[:0]
 	for _, at := range w.attempts {
@@ -613,11 +649,7 @@ func (w *Window) trackAccepted(conn *transport.PairingConn) error {
 		}
 	}
 	w.attempts = recent
-	if len(w.attempts) >= maxAttempts {
-		return ErrTooManyAttempts
-	}
-	w.attempts = append(w.attempts, now)
-	return w.trackLocked(conn)
+	return len(w.attempts)
 }
 
 // trackLocked registers a connection with mu held.

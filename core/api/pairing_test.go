@@ -148,4 +148,14 @@ func TestStartSas(t *testing.T) {
 
 	_, err = client.StartSas(ctx, connect.NewRequest(&localv1.StartSasRequest{Addr: strings.Repeat("a", 256)}))
 	requireCode(t, err, connect.CodeInvalidArgument)
+
+	_, err = client.StartSas(ctx, connect.NewRequest(&localv1.StartSasRequest{Addr: "relay:1234"}))
+	requireCode(t, err, connect.CodeInvalidArgument)
+
+	_, err = client.StartSas(ctx, connect.NewRequest(&localv1.StartSasRequest{Addr: "relay:0123456789ABCDEF"}))
+	requireCode(t, err, connect.CodeInvalidArgument)
+
+	if _, err := client.StartSas(ctx, connect.NewRequest(&localv1.StartSasRequest{Addr: "relay:0123456789abcdef"})); err != nil {
+		t.Fatalf("StartSas with valid relay addr failed: %v", err)
+	}
 }

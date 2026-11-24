@@ -206,6 +206,7 @@ export const ru: { [K in MessageKey]: Message } = {
     "Устройств пока нет. Откройте окно сопряжения на другом устройстве и подключите оба к одной сети.",
   "pairing.waiting": "Ожидание",
   "pairing.compareCode": "Сравнить код",
+  "pairing.viaRelay": "Через ретранслятор",
   "pairing.severalAddresses":
     "Одно устройство может отображаться под несколькими адресами для IPv4 и IPv6.",
   "pairing.qrHeading": "Сопряжение с телефоном",

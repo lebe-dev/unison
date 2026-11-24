@@ -219,6 +219,7 @@ export const en = {
     "No devices yet. Open the pairing window on the other device and keep both on the same network.",
   "pairing.waiting": "Waiting",
   "pairing.compareCode": "Compare code",
+  "pairing.viaRelay": "Via relay",
   "pairing.severalAddresses": "One device can appear under several addresses for IPv4 and IPv6.",
   "pairing.qrHeading": "Pair with a phone",
   "pairing.qrClosed": "Open the pairing window to show a square that another device can scan.",

@@ -1641,6 +1641,44 @@ class AppStateTest {
         }
 
     @Test
+    fun relayCandidateIsListedAndPassedToStartPairing() =
+        runTest {
+            val relayAddr = "relay:0123456789abcdef"
+            val core = FakeCore()
+            core.candidates =
+                listOf(
+                    Local.PairingCandidate
+                        .newBuilder()
+                        .setAddr(relayAddr)
+                        .putTxt("transport", "relay")
+                        .build(),
+                )
+            val state = appState(core)
+
+            state.openPairingWindow()
+            runCurrent()
+
+            assertEquals(
+                listOf(relayAddr),
+                state.pairing.value.candidates
+                    .map { it.addr },
+            )
+            assertEquals(
+                "relay",
+                state.pairing.value.candidates
+                    .single()
+                    .txtMap["transport"],
+            )
+
+            state.startPairing(relayAddr)
+            runCurrent()
+
+            assertEquals(listOf(relayAddr), core.started)
+            assertEquals(relayAddr, state.pairing.value.dialing)
+            state.close()
+        }
+
+    @Test
     fun requestIsConfirmedThroughTheCore() =
         runTest {
             val core = FakeCore()

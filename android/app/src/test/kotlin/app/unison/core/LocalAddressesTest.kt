@@ -49,6 +49,26 @@ class LocalAddressesTest {
         assertEquals(candidates, withoutOwnService(candidates, "0.0.0.0:41234", emptyList()))
     }
 
+    @Test
+    fun relayCandidateIsNeverFilteredOut() {
+        val relay =
+            Local.PairingCandidate
+                .newBuilder()
+                .setAddr("relay:0123456789abcdef")
+                .putTxt("transport", "relay")
+                .build()
+        val candidates =
+            listOf(
+                candidate("192.168.1.5:41234"),
+                relay,
+            )
+
+        assertEquals(
+            listOf("relay:0123456789abcdef"),
+            withoutOwnService(candidates, "0.0.0.0:41234", listOf("192.168.1.5")).map { it.addr },
+        )
+    }
+
     private companion object {
         fun candidate(addr: String): Local.PairingCandidate =
             Local.PairingCandidate

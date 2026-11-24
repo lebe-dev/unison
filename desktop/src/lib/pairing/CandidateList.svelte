@@ -32,6 +32,12 @@
   const quiet = $derived(
     openedAt > 0 && candidates.length === 0 ? quietWindowIssue(now - openedAt, listenAddr) : null,
   );
+
+  function isRelayCandidate(candidate: PairingCandidate): boolean {
+    return candidate.txt.transport === "relay" || candidate.addr.startsWith("relay:");
+  }
+
+  const hasLocalCandidates = $derived(candidates.some((candidate) => !isRelayCandidate(candidate)));
 </script>
 
 <section class="panel">
@@ -44,7 +50,12 @@
     <ul>
       {#each candidates as candidate (candidate.addr)}
         <li>
-          <span class="addr mono">{candidate.addr}</span>
+          <span class="candidate-info">
+            <span class="addr mono">{candidate.addr}</span>
+            {#if isRelayCandidate(candidate)}
+              <span class="badge">{t("pairing.viaRelay")}</span>
+            {/if}
+          </span>
           {#if dialing === candidate.addr}
             <span class="badge">{t("pairing.waiting")}</span>
           {:else}
@@ -60,7 +71,9 @@
         </li>
       {/each}
     </ul>
-    <p class="muted">{t("pairing.severalAddresses")}</p>
+    {#if hasLocalCandidates}
+      <p class="muted">{t("pairing.severalAddresses")}</p>
+    {/if}
   {/if}
 </section>
 
@@ -87,6 +100,13 @@
 
   li + li {
     border-top: 1px solid var(--separator);
+  }
+
+  .candidate-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
 
   .addr {
