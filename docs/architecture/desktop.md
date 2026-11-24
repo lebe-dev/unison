@@ -47,15 +47,22 @@ before the first one can arrive.
 The i18n layer picks `en` or `ru` from the browser locale. Inline text is not translated: messages
 that come from the daemon are shown as they are.
 
+The Settings screen groups its sections into five tabs: General holds the device name, appearance,
+dashboard, startup and the application log, Clipboard holds the pause, the confirmation of new
+devices, tracking parameters and the history lifetimes, Files holds the received folder and the
+network policy, Network holds the friends search, the remote settings switch and the relay, and
+Privacy holds diagnostics and the keystore warning. The state of the daemon and the notices stay
+above the tabs, so a lost connection is visible from every tab. The screen opens on General.
+
 ### Dashboard
 
 `Dashboard.svelte` is the first section of the sidebar and the screen the window opens on. It shows
 the newest items of the history in three tabs: images as a grid of thumbnails, files as a list with
 names and sizes, and text as snippets. The thumbnails come from the daemon, so the page decodes no
 image itself. The number of items per tab is a local preference (`unison.dashboard.limit` in
-`localStorage`); Settings offers 6, 12, 24 and 48, and 12 is the default. A click opens a preview with
-the full image, the text content, or the files. On macOS an image or a file item can be dragged out of
-the window; text items cannot.
+`localStorage`); Settings > General offers 6, 12, 24 and 48, and 12 is the default. A click opens a
+preview with the full image, the text content, or the files. On macOS an image or a file item can be
+dragged out of the window; text items cannot.
 
 The `dashboard` store follows the events of the daemon and reloads the tabs, capped by the configured
 number. The History screen keeps its own store and is not affected by the Dashboard.
@@ -168,9 +175,10 @@ are older than 24 hours.
 
 ### Application log
 
-Settings > Application log turns on a log for support. The daemon marks it with `logs/journal.on` in
-the data directory of the platform, which is `~/Library/Application Support/Unison` on macOS,
-`%LOCALAPPDATA%\Unison` on Windows and `$XDG_DATA_HOME/unison` on Linux; it writes
+Settings > General > Application log turns on a log for support. The daemon marks it with
+`logs/journal.on` in the data directory of the platform, which is
+`~/Library/Application Support/Unison` on macOS, `%LOCALAPPDATA%\Unison` on Windows and
+`$XDG_DATA_HOME/unison` on Linux; it writes
 `logs/journal.log`, and the shell writes `logs/app.log` next to it. Both files rotate and use the
 same line format: a UTC timestamp with milliseconds, the level, the message and attributes. The
 shell checks the marker for every record, so the toggle applies without a restart, and records only

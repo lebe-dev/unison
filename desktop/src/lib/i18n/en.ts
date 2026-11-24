@@ -418,6 +418,14 @@ export const en = {
   "transfers.rejectFailed": "The offer could not be declined.",
 
   // Settings screen and store.
+  "settings.tabsAria": "Settings sections",
+  "settings.tabGeneral": "General",
+  "settings.tabClipboard": "Clipboard",
+  "settings.tabFiles": "Files",
+  "settings.tabNetwork": "Network",
+  "settings.tabPrivacy": "Privacy",
+  "settings.diagnosticsSection": "Diagnostics",
+  "settings.pairedDevices": "Paired devices",
   "settings.appearance": "Appearance",
   "settings.theme": "Theme",
   "settings.themeAuto": "Auto",

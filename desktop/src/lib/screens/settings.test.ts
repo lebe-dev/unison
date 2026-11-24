@@ -72,6 +72,7 @@ const getRelay = vi.mocked(client.getRelay);
 
 const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
 const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const LINUX_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36";
 const originalUserAgent = navigator.userAgent;
 
 /** setUserAgent makes the platform helpers read the given user agent. */
@@ -153,9 +154,58 @@ beforeEach(() => {
   daemon.error = null;
 });
 
+/** openTab switches the settings to the named tab. */
+async function openTab(name: string): Promise<void> {
+  await fireEvent.click(await screen.findByRole("tab", { name }));
+}
+
 describe("settings screen", () => {
+  it("opens on the General tab", async () => {
+    render(Settings);
+
+    const tab = await screen.findByRole("tab", { name: "General" });
+    expect(tab.getAttribute("aria-selected")).toBe("true");
+    expect(await screen.findByText("Appearance")).toBeTruthy();
+    expect(screen.queryByText("Network policy")).toBeNull();
+  });
+
+  it("moves between the tabs with the keyboard", async () => {
+    render(Settings);
+
+    const general = await screen.findByRole("tab", { name: "General" });
+    await fireEvent.keyDown(general, { key: "ArrowRight" });
+
+    expect(screen.getByRole("tab", { name: "Clipboard" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByText("History")).toBeTruthy();
+  });
+
+  it("shows the sections of every tab", async () => {
+    render(Settings);
+
+    await openTab("Clipboard");
+    expect(await screen.findByText("History")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /Remove tracking parameters/ })).toBeTruthy();
+
+    await openTab("Files");
+    expect(await screen.findByText("Network policy")).toBeTruthy();
+    expect(screen.getByText("Received Files")).toBeTruthy();
+
+    await openTab("Network");
+    expect(await screen.findByText("Relay")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /Find friends/ })).toBeTruthy();
+
+    await openTab("Privacy");
+    expect(
+      await screen.findByRole("checkbox", { name: /Send errors to the developer/ }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Network policy")).toBeNull();
+  });
+
   it("shows the folder of the received files", async () => {
     render(Settings);
+    await openTab("Files");
 
     expect(await screen.findByText("/Users/me/Downloads/Unison")).toBeTruthy();
   });
@@ -177,6 +227,27 @@ describe("settings screen", () => {
     expect(await screen.findByText("This Mac")).toBeTruthy();
   });
 
+  it("names this device on Linux", async () => {
+    setUserAgent(LINUX_UA);
+
+    render(Settings);
+
+    expect(await screen.findByText("This computer")).toBeTruthy();
+  });
+
+  it("keeps a notice visible after switching the tab", async () => {
+    updateSettings.mockRejectedValue(new Error("the daemon is busy"));
+    render(Settings);
+    await openTab("Files");
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
+    expect(await screen.findByText("the daemon is busy")).toBeTruthy();
+
+    await openTab("Network");
+
+    expect(screen.getByText("the daemon is busy")).toBeTruthy();
+  });
+
   it("stores the number of items of the dashboard", async () => {
     localStorage.removeItem("unison.dashboard.limit");
     dashboard.limit = DEFAULT_DASHBOARD_LIMIT;
@@ -193,6 +264,7 @@ describe("settings screen", () => {
   it("saves the folder the user picked", async () => {
     pickFolderMock.mockResolvedValue("/Volumes/Data/Inbox");
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
 
@@ -202,6 +274,7 @@ describe("settings screen", () => {
   it("keeps the folder when the dialog is closed", async () => {
     pickFolderMock.mockResolvedValue(null);
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
 
@@ -218,11 +291,12 @@ describe("settings screen", () => {
 
     await fireEvent.click(screen.getByRole("button", { name: "Back" }));
 
-    expect(await screen.findByText("Network policy")).toBeTruthy();
+    expect(await screen.findByText("Appearance")).toBeTruthy();
   });
 
   it("goes back to the default folder", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Use default folder" }));
 
@@ -231,6 +305,7 @@ describe("settings screen", () => {
 
   it("turns the search for friends on", async () => {
     render(Settings);
+    await openTab("Network");
 
     const toggle = screen.getByRole("checkbox", { name: /Find friends/ });
     expect((toggle as HTMLInputElement).checked).toBe(false);
@@ -242,7 +317,7 @@ describe("settings screen", () => {
     expect(getStatus).toHaveBeenCalled();
   });
 
-  it("shows the remaining time of a running search", () => {
+  it("shows the remaining time of a running search", async () => {
     daemon.status = create(GetStatusResponseSchema, {
       running: true,
       deviceId: "self",
@@ -254,6 +329,7 @@ describe("settings screen", () => {
     });
 
     render(Settings);
+    await openTab("Network");
 
     const toggle = screen.getByRole("checkbox", { name: /Find friends/ });
     expect((toggle as HTMLInputElement).checked).toBe(true);
@@ -279,6 +355,7 @@ describe("settings screen", () => {
     );
 
     render(Settings);
+    await openTab("Network");
 
     await fireEvent.click(screen.getByRole("checkbox", { name: /Find friends/ }));
 
@@ -287,6 +364,7 @@ describe("settings screen", () => {
 
   it("shows the policy table of the daemon", async () => {
     render(Settings);
+    await openTab("Files");
 
     expect(await screen.findByText("Network policy")).toBeTruthy();
     expect(screen.getByLabelText<HTMLSelectElement>("Metered Text action").value).toBe(
@@ -302,6 +380,7 @@ describe("settings screen", () => {
 
   it("saves a new threshold with the whole table", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.change(await screen.findByLabelText("Metered Text limit"), {
       target: { value: "4" },
@@ -316,6 +395,7 @@ describe("settings screen", () => {
 
   it("changes the action of a cell", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.change(await screen.findByLabelText("Roaming Images action"), {
       target: { value: String(PolicyAction.AUTO) },
@@ -327,6 +407,7 @@ describe("settings screen", () => {
 
   it("shows the lifetimes of the history", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     expect((await screen.findByLabelText<HTMLInputElement>("Text lifetime")).value).toBe("7d");
     expect(screen.getByLabelText<HTMLInputElement>("Images lifetime").value).toBe("3d");
@@ -335,6 +416,7 @@ describe("settings screen", () => {
 
   it("saves a new lifetime", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     await fireEvent.change(await screen.findByLabelText("Text lifetime"), {
       target: { value: "30d" },
@@ -345,6 +427,7 @@ describe("settings screen", () => {
 
   it("refuses an unusable lifetime", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     await fireEvent.change(await screen.findByLabelText("Images lifetime"), {
       target: { value: "soon" },
@@ -356,6 +439,7 @@ describe("settings screen", () => {
 
   it("resets the lifetimes to the defaults", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Reset lifetimes" }));
 
@@ -364,6 +448,7 @@ describe("settings screen", () => {
 
   it("resets the policy to the defaults", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
 
@@ -394,13 +479,15 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await openTab("Clipboard");
 
     const clipboard = await screen.findByRole("checkbox", {
       name: /Ask before applying the clipboard/,
     });
-    const files = screen.getByRole("checkbox", { name: /Ask before accepting files/ });
-    await screen.findByDisplayValue("This Mac");
     expect((clipboard as HTMLInputElement).checked).toBe(true);
+
+    await openTab("Files");
+    const files = await screen.findByRole("checkbox", { name: /Ask before accepting files/ });
     expect((files as HTMLInputElement).checked).toBe(false);
 
     await fireEvent.click(files);
@@ -416,11 +503,12 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Network");
 
-    const toggle = await screen.findByRole("checkbox", {
+    const toggle = screen.getByRole("checkbox", {
       name: "Allow paired devices to change these settings",
     });
-    await screen.findByDisplayValue("This Mac");
     expect((toggle as HTMLInputElement).checked).toBe(true);
 
     await fireEvent.click(toggle);
@@ -436,11 +524,12 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Network");
 
-    const toggle = await screen.findByRole("checkbox", {
+    const toggle = screen.getByRole("checkbox", {
       name: "Allow paired devices to change these settings",
     });
-    await screen.findByDisplayValue("This Mac");
     expect((toggle as HTMLInputElement).checked).toBe(false);
 
     await fireEvent.click(toggle);
@@ -451,8 +540,10 @@ describe("settings screen", () => {
 
   it("keeps error reporting off by default", async () => {
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(false);
     expect(setSentryEnabled).toHaveBeenCalledWith(false);
@@ -465,8 +556,10 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(true);
     expect(setSentryEnabled).toHaveBeenCalledWith(true);
@@ -479,8 +572,10 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
     await fireEvent.click(toggle);
 
     expect(updateSettings).toHaveBeenCalledWith({ sentryEnabled: true });
@@ -491,8 +586,10 @@ describe("settings screen", () => {
   it("reverts the error reporting when it cannot be saved", async () => {
     updateSettings.mockRejectedValue(new Error("the daemon is busy"));
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
     await fireEvent.click(toggle);
 
     expect(await screen.findByText("the daemon is busy")).toBeTruthy();
@@ -502,8 +599,10 @@ describe("settings screen", () => {
 
   it("removes the tracking parameters by default", async () => {
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
+    const toggle = screen.getByRole("checkbox", { name: /Remove tracking parameters/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(true);
   });
@@ -515,9 +614,10 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
-
-    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
     await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
+
+    const toggle = screen.getByRole("checkbox", { name: /Remove tracking parameters/ });
     expect((toggle as HTMLInputElement).checked).toBe(false);
 
     await fireEvent.click(toggle);
@@ -534,9 +634,10 @@ describe("settings screen", () => {
     );
     updateSettings.mockRejectedValue(new Error("the daemon is busy"));
     render(Settings);
-
-    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
     await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
+
+    const toggle = screen.getByRole("checkbox", { name: /Remove tracking parameters/ });
     await fireEvent.click(toggle);
 
     expect(await screen.findByText("the daemon is busy")).toBeTruthy();
@@ -589,6 +690,8 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Network");
     await fireEvent.input(await screen.findByLabelText(/Relay address/), {
       target: { value: "relay.mine.example:443" },
     });
@@ -603,6 +706,8 @@ describe("settings screen", () => {
 
   it("keeps the lifetime typed while the status refreshes", async () => {
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
     const input = await screen.findByLabelText("Text lifetime");
     await fireEvent.input(input, { target: { value: "30d" } });
 

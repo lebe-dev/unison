@@ -422,6 +422,14 @@ export const ru: { [K in MessageKey]: Message } = {
   "transfers.rejectFailed": "Не удалось отклонить предложение.",
 
   // Settings screen and store.
+  "settings.tabsAria": "Разделы настроек",
+  "settings.tabGeneral": "Общие",
+  "settings.tabClipboard": "Буфер обмена",
+  "settings.tabFiles": "Файлы",
+  "settings.tabNetwork": "Сеть",
+  "settings.tabPrivacy": "Приватность",
+  "settings.diagnosticsSection": "Диагностика",
+  "settings.pairedDevices": "Сопряженные устройства",
   "settings.appearance": "Внешний вид",
   "settings.theme": "Тема",
   "settings.themeAuto": "Авто",
