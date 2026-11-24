@@ -32,7 +32,7 @@ opens a second small window for questions:
 | Shell glue | `src/lib/*.ts` (tray, notify, files, login, events, network, policy) |
 | Translations | `src/lib/i18n` (English and Russian) |
 
-The stores are Svelte 5 rune classes: `daemon`, `history`, `requests`, `pairing`, `prompts`,
+The stores are Svelte 5 rune classes: `daemon`, `dashboard`, `history`, `requests`, `pairing`, `prompts`,
 `transfers`, `notifications`, `confirmation`, `theme`. A store owns its data and calls the API; a
 screen renders it and dispatches actions.
 
@@ -46,6 +46,19 @@ before the first one can arrive.
 
 The i18n layer picks `en` or `ru` from the browser locale. Inline text is not translated: messages
 that come from the daemon are shown as they are.
+
+### Dashboard
+
+`Dashboard.svelte` is the first section of the sidebar and the screen the window opens on. It shows
+the newest items of the history in three tabs: images as a grid of thumbnails, files as a list with
+names and sizes, and text as snippets. The thumbnails come from the daemon, so the page decodes no
+image itself. The number of items per tab is a local preference (`unison.dashboard.limit` in
+`localStorage`); Settings offers 6, 12, 24 and 48, and 12 is the default. A click opens a preview with
+the full image, the text content, or the files. On macOS an image or a file item can be dragged out of
+the window; text items cannot.
+
+The `dashboard` store follows the events of the daemon and reloads the tabs, capped by the configured
+number. The History screen keeps its own store and is not affected by the Dashboard.
 
 ## Local API proxy
 
@@ -86,6 +99,7 @@ a page that is gone does not keep a `WatchEvents` stream open.
 | `tray.rs` | the tray icon, its menu and the file pickers |
 | `prompt.rs` | the frameless prompt window |
 | `files.rs` | show a file in the folder, open files |
+| `dragout.rs` | stage the content of an item and start a native drag out of the window |
 | `journal.rs` | the application log of the shell and its export |
 | `observability.rs` | error reporting of the shell |
 | `redact.rs` | the paths removed from reports and logs |
@@ -135,6 +149,22 @@ window up, where the request waits.
 The prompt window is a second frameless webview of 360 by 150 pixels in the top right corner, above
 the other windows, without a taskbar entry. It asks whether to apply a clipboard item or to accept
 files, and can be put away with `Later`.
+
+### Dragging items out
+
+On macOS an image or a file item of the Dashboard can be dragged out of the window. When the press
+becomes a drag, the frontend asks `drag_staging_dir` for a new directory under the app cache (`drag/`),
+then fetches the payloads into it with `FetchHistoryItem`. Once the copies are written,
+`start_file_drag` receives their paths and `dragout.rs` starts a macOS drag session with
+`DragItem::Files` and `DragMode::Copy`. A plain click stages nothing and opens the preview instead.
+Several files of one item are dragged together. The drag preview is the first staged image, or the
+icon of the app.
+
+`start_file_drag` canonicalizes every path and accepts only files below the cache directory, so the
+window cannot hand an arbitrary file of the user to another app. The staging directories are private
+to the user. The copies stay after the drop: a terminal inserts the path of the copy, and a command
+line tool can still read the content later. At startup the shell removes the staging directories that
+are older than 24 hours.
 
 ### Application log
 

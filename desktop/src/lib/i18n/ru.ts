@@ -45,6 +45,7 @@ export const ru: { [K in MessageKey]: Message } = {
   "common.item": "Элемент",
 
   // Shape of the main window and its navigation.
+  "nav.dashboard": "Обзор",
   "nav.devices": "Устройства",
   "nav.addDevice": "Добавить устройство",
   "nav.requests": "Запросы",
@@ -267,6 +268,24 @@ export const ru: { [K in MessageKey]: Message } = {
   "history.clearFailed": "Не удалось очистить историю.",
   "history.elapsedSeconds": "{seconds} с",
 
+  // Dashboard screen and store.
+  "dashboard.tabsAria": "Недавние элементы",
+  "dashboard.tabImages": "Изображения",
+  "dashboard.tabFiles": "Файлы",
+  "dashboard.tabText": "Текст",
+  "dashboard.loading": "Загрузка недавних элементов...",
+  "dashboard.emptyImages": "Изображений пока нет.",
+  "dashboard.emptyFiles": "Файлов пока нет.",
+  "dashboard.emptyText": "Текста пока нет.",
+  "dashboard.daemonNotRunning": "Демон не запущен, поэтому недавние элементы недоступны.",
+  "dashboard.loadFailed": "Не удалось загрузить недавние элементы.",
+  "dashboard.copyFailed": "Не удалось скопировать элемент.",
+  "dashboard.downloadFailed": "Не удалось скачать элемент.",
+  "dashboard.dragFailed": "Не удалось перетащить элемент.",
+  "dashboard.dragHint": "Перетащите элемент из окна, чтобы передать его другому приложению.",
+  "dashboard.previewAria": "Просмотр элемента",
+  "dashboard.closePreviewAria": "Закрыть просмотр",
+
   // Names of the values of the local API.
   "format.role.personal": "Личные",
   "format.role.friends": "Друзья",
@@ -408,6 +427,9 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.themeAuto": "Авто",
   "settings.themeLight": "Светлая",
   "settings.themeDark": "Темная",
+  "settings.dashboard": "Обзор",
+  "settings.dashboardItems": "Элементов на вкладке",
+  "settings.dashboardItemsHint": "Сколько новых элементов показывает каждая вкладка обзора.",
   "settings.startup": "Запуск",
   "settings.startAtLogin": "Запускать Unison при входе",
   "settings.loginHint.enabled": "Фоновая служба запускается при входе в систему.",

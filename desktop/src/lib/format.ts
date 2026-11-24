@@ -164,16 +164,22 @@ function decodeText(rep: Representation | undefined): string {
 
 /** textSnippet returns the inline text of an item on a single line. */
 export function textSnippet(item: ClipItem | undefined, limit = 80): string {
-  if (!item) {
-    return "";
-  }
-  const text =
-    decodeText(representation(item, "text/plain")) || decodeText(representation(item, "text/html"));
-  const line = text.replace(/\s+/g, " ").trim();
+  const line = textContent(item).replace(/\s+/g, " ").trim();
   if (line.length <= limit) {
     return line;
   }
   return `${line.slice(0, limit - 1).trimEnd()}...`;
+}
+
+/** textContent returns the inline text of an item, with the HTML flavour as a
+ * fallback. */
+export function textContent(item: ClipItem | undefined): string {
+  if (!item) {
+    return "";
+  }
+  return (
+    decodeText(representation(item, "text/plain")) || decodeText(representation(item, "text/html"))
+  );
 }
 
 /** historyTitle returns a short title of a history entry. It never contains

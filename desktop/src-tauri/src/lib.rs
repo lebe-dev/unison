@@ -1,5 +1,6 @@
 pub mod agent;
 mod daemon;
+mod dragout;
 mod files;
 mod i18n;
 pub mod install;
@@ -241,6 +242,8 @@ pub fn run() {
         // start the app.
         .manage(share::Inbox::default())
         .setup(|app| {
+            // Copies that a user dragged out of the window expire after a day.
+            dragout::purge_staging(app.handle());
             if let Some(Err(err)) = agent::register_at_launch() {
                 eprintln!("unison: the login item could not be registered: {err}");
                 observability::capture_error("the login item could not be registered");
@@ -282,6 +285,8 @@ pub fn run() {
             api_stream,
             api_stream_cancel,
             daemon_status,
+            dragout::drag_staging_dir,
+            dragout::start_file_drag,
             open_local_network_settings,
             files::show_in_folder,
             files::open_files,

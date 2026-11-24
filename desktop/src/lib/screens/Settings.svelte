@@ -38,6 +38,7 @@
   } from "../ttl";
   import JournalSettings from "./JournalSettings.svelte";
   import RelaySection from "./RelaySection.svelte";
+  import { dashboard, DASHBOARD_LIMIT_OPTIONS, isDashboardLimit } from "../dashboard.svelte";
   import { theme } from "../theme.svelte";
 
   const pauses: { choice: PauseChoice; labelKey: MessageKey }[] = [
@@ -136,6 +137,7 @@
       requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
       allowRemoteSettings = response.settings?.allowRemoteSettings ?? true;
       downloadsDir = response.settings?.downloadsDir ?? "";
+      dashboard.downloadsDir = downloadsDir;
       sentryEnabled = response.settings?.sentryEnabled ?? false;
       stripTracking = response.settings?.stripTracking ?? true;
       policy = policyFromSettings(response.settings);
@@ -283,6 +285,7 @@
       const response = await client.updateSettings({ downloadsDir: path });
       downloadsDir = response.settings?.downloadsDir ?? path;
       history.downloadsDir = downloadsDir;
+      dashboard.downloadsDir = downloadsDir;
       notice = { kind: "info", text: t("settings.folderSaved") };
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("settings.folderFailed")) };
@@ -455,6 +458,13 @@
       theme.set(value);
     }
   }
+
+  function changeDashboardLimit(event: Event): void {
+    const value = Number((event.currentTarget as HTMLSelectElement).value);
+    if (isDashboardLimit(value)) {
+      dashboard.setLimit(value);
+    }
+  }
 </script>
 
 {#snippet appearance()}
@@ -467,6 +477,29 @@
           <option value="system">{t("settings.themeAuto")}</option>
           <option value="light">{t("settings.themeLight")}</option>
           <option value="dark">{t("settings.themeDark")}</option>
+        </select>
+      </label>
+    </div>
+  </section>
+{/snippet}
+
+{#snippet dashboardSection()}
+  <section class="section">
+    <h3 class="section-title">{t("settings.dashboard")}</h3>
+    <div class="list">
+      <label class="form-row">
+        <span class="label">
+          {t("settings.dashboardItems")}
+          <small>{t("settings.dashboardItemsHint")}</small>
+        </span>
+        <select
+          aria-label={t("settings.dashboardItems")}
+          value={dashboard.limit}
+          onchange={changeDashboardLimit}
+        >
+          {#each DASHBOARD_LIMIT_OPTIONS as option (option)}
+            <option value={option}>{option}</option>
+          {/each}
         </select>
       </label>
     </div>
@@ -533,6 +566,7 @@
     </section>
 
     {@render appearance()}
+    {@render dashboardSection()}
     {@render startup()}
     {@render applicationLog()}
   {:else}
@@ -612,6 +646,8 @@
     </section>
 
     {@render appearance()}
+
+    {@render dashboardSection()}
 
     <section class="section">
       <h3 class="section-title">{t("settings.receivedFiles")}</h3>

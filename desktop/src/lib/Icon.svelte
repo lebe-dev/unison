@@ -1,6 +1,7 @@
 <script lang="ts" module>
   /** Names of the line icons drawn in the style of SF Symbols. */
   export type IconName =
+    | "dashboard"
     | "devices"
     | "add"
     | "requests"
@@ -49,7 +50,12 @@
   stroke-linecap="round"
   stroke-linejoin="round"
 >
-  {#if name === "devices"}
+  {#if name === "dashboard"}
+    <rect x="2" y="2" width="5" height="5" rx="1" />
+    <rect x="9" y="2" width="5" height="5" rx="1" />
+    <rect x="2" y="9" width="5" height="5" rx="1" />
+    <rect x="9" y="9" width="5" height="5" rx="1" />
+  {:else if name === "devices"}
     <rect x="2" y="3" width="9" height="6.5" rx="1" />
     <path d="M1 11.5h11" />
     <rect x="11.5" y="6" width="3.5" height="7" rx="0.8" />

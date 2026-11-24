@@ -3,6 +3,7 @@
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import { daemon } from "./lib/daemon.svelte";
   import DaemonStatus from "./lib/DaemonStatus.svelte";
+  import { dashboard } from "./lib/dashboard.svelte";
   import { eventKindLabel } from "./lib/events";
   import { history } from "./lib/history.svelte";
   import { openLocalNetworkSettings } from "./lib/localNetwork";
@@ -15,6 +16,7 @@
   import { requests } from "./lib/requests.svelte";
   import { SentrySync } from "./lib/sentry";
   import AddDevice from "./lib/screens/AddDevice.svelte";
+  import Dashboard from "./lib/screens/Dashboard.svelte";
   import Devices from "./lib/screens/Devices.svelte";
   import History from "./lib/screens/History.svelte";
   import Requests from "./lib/screens/Requests.svelte";
@@ -28,6 +30,7 @@
   import { transfers } from "./lib/transfers.svelte";
 
   const sections = [
+    { id: "dashboard", labelKey: "nav.dashboard", icon: "dashboard" },
     { id: "devices", labelKey: "nav.devices", icon: "devices" },
     { id: "add", labelKey: "nav.addDevice", icon: "add" },
     { id: "requests", labelKey: "nav.requests", icon: "requests" },
@@ -41,7 +44,7 @@
   const navigation = sections.filter((section) => section.id !== "settings");
   const settingsSection = sections[sections.length - 1];
 
-  let active = $state<SectionID>("devices");
+  let active = $state<SectionID>("dashboard");
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
   let unlistenTray: UnlistenFn | null = null;
   let unlistenShare: UnlistenFn | null = null;
@@ -64,6 +67,7 @@
 
   onMount(() => {
     pairing.start();
+    dashboard.start();
     history.start();
     transfers.start();
     requests.start();
@@ -82,6 +86,7 @@
 
   onDestroy(() => {
     pairing.stop();
+    dashboard.stop();
     history.stop();
     transfers.stop();
     requests.stop();
@@ -222,7 +227,9 @@
         <p class="error">{daemon.error}</p>
       {/if}
 
-      {#if active === "devices"}
+      {#if active === "dashboard"}
+        <Dashboard />
+      {:else if active === "devices"}
         <Devices onAdd={() => (active = "add")} />
       {:else if active === "add"}
         <AddDevice />

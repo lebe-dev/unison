@@ -1,5 +1,7 @@
 # Clipboard and history
 
+[Русский](clipboard.ru.md) | English
+
 ## What is shared
 
 Text with its HTML flavour, images and files. Text and images are applied to the clipboard of the
@@ -155,6 +157,8 @@ you ask for it, which needs the device that has it to be online.
 Ways to work with the history:
 
 - the History screen of the apps, with filters by type and by device, copy, download and delete;
+- the Dashboard of the desktop app, which shows the newest items of every kind in three tabs and
+  opens a preview of an item;
 - clearing the whole history from the History screen of the macOS and Android apps, after a
   confirmation; the items are removed on the other Personal devices as well;
 - `unison history`, `unison history fetch` and `unison clip get --from`, see
@@ -162,6 +166,18 @@ Ways to work with the history:
 
 Copying an item from the history writes it to the clipboard of this device and does not announce it
 to the others again.
+
+## Dashboard
+
+The Dashboard is the first screen of the desktop app. It shows the newest images, files and text as
+three tabs. The number of items per tab is set in Settings and is 12 by default. A click opens the
+item: the image in full size, the text with a copy button, or the files with copy and download.
+
+On macOS an image or a file can be dragged out of the window into another app: Finder saves the
+copies, a chat app attaches them, and a terminal inserts the path of a copy. Several files of one item
+are dragged together. The copies live in the cache of the app and are removed a day after they were
+written, so a terminal still reads them later. Text items are not dragged out; copy them with the
+button of the preview.
 
 ## Holding items until you apply them
 

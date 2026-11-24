@@ -20,6 +20,7 @@ import {
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
+import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
 import { pickFolder } from "../files";
 import { relayDraft } from "../relayDraft.svelte";
 import { setSentryEnabled } from "../sentry";
@@ -174,6 +175,19 @@ describe("settings screen", () => {
     render(Settings);
 
     expect(await screen.findByText("This Mac")).toBeTruthy();
+  });
+
+  it("stores the number of items of the dashboard", async () => {
+    localStorage.removeItem("unison.dashboard.limit");
+    dashboard.limit = DEFAULT_DASHBOARD_LIMIT;
+    render(Settings);
+
+    await fireEvent.change(await screen.findByLabelText("Items in each tab"), {
+      target: { value: "24" },
+    });
+
+    expect(dashboard.limit).toBe(24);
+    expect(localStorage.getItem("unison.dashboard.limit")).toBe("24");
   });
 
   it("saves the folder the user picked", async () => {

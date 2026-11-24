@@ -61,6 +61,7 @@ export const en = {
   "common.item": "Item",
 
   // Shape of the main window and its navigation.
+  "nav.dashboard": "Dashboard",
   "nav.devices": "Devices",
   "nav.addDevice": "Add Device",
   "nav.requests": "Requests",
@@ -270,6 +271,24 @@ export const en = {
   "history.clearFailed": "The history could not be cleared.",
   "history.elapsedSeconds": "{seconds} s",
 
+  // Dashboard screen and store.
+  "dashboard.tabsAria": "Recent items",
+  "dashboard.tabImages": "Images",
+  "dashboard.tabFiles": "Files",
+  "dashboard.tabText": "Text",
+  "dashboard.loading": "Loading the recent items...",
+  "dashboard.emptyImages": "No images yet.",
+  "dashboard.emptyFiles": "No files yet.",
+  "dashboard.emptyText": "No text yet.",
+  "dashboard.daemonNotRunning": "The daemon is not running, so the recent items are unavailable.",
+  "dashboard.loadFailed": "The recent items could not be loaded.",
+  "dashboard.copyFailed": "The item could not be copied.",
+  "dashboard.downloadFailed": "The item could not be downloaded.",
+  "dashboard.dragFailed": "The item could not be dragged out.",
+  "dashboard.dragHint": "Drag an item out of the window to hand it to another app.",
+  "dashboard.previewAria": "Item preview",
+  "dashboard.closePreviewAria": "Close the preview",
+
   // Names of the values of the local API.
   "format.role.personal": "Personal",
   "format.role.friends": "Friends",
@@ -404,6 +423,9 @@ export const en = {
   "settings.themeAuto": "Auto",
   "settings.themeLight": "Light",
   "settings.themeDark": "Dark",
+  "settings.dashboard": "Dashboard",
+  "settings.dashboardItems": "Items in each tab",
+  "settings.dashboardItemsHint": "How many of the newest items each tab of the dashboard shows.",
   "settings.startup": "Startup",
   "settings.startAtLogin": "Start Unison at login",
   "settings.loginHint.enabled": "The background service starts when you log in.",
