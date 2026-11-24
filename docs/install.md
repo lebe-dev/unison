@@ -108,6 +108,11 @@ the user unit:
 journalctl --user -u unisond -n 50
 ```
 
+Unison can install an update of itself. Settings > General > Updates downloads the release, asks
+for the administrator password through PolicyKit and installs the package with `apt-get`; the app
+then restarts `unisond.service` and opens again with the new version. Only an installation from a
+package can update itself, and a build of a development tree cannot.
+
 Data lives in `$XDG_DATA_HOME/unison` (by default `~/.local/share/unison`): the identity, the
 paired devices, the history and the cached payloads. The keystore is the Secret Service of the
 session (GNOME Keyring, KWallet, KeePassXC); when it is not usable, the keys are stored in
