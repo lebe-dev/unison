@@ -182,7 +182,7 @@ call is not implemented, and the daemon passes the clipboard pipeline of the nod
 | Transfers | `SendFiles`, `ListTransfers`, `CancelTransfer`, `AcceptTransfer`, `RejectTransfer` |
 | Requests | `SetFriendsDiscovery`, `ListRequests`, `DecideRequest` |
 | Pause | `GetPause`, `SetPause` |
-| Settings | `GetSettings`, `UpdateSettings` |
+| Settings | `GetSettings`, `UpdateSettings`, `ExportSettings`, `ImportSettings` |
 | Relay | `GetRelay`, `SetRelay`, `RelayOff`, `TestRelay` |
 
 `WatchEvents` carries the events of the node bus: a peer that comes online or goes offline, a
@@ -196,7 +196,9 @@ instead of only reporting a version number.
 
 Device IDs are lowercase hex and times are unix milliseconds. `GetClip` returns the latest clipboard
 item. The settings hold the device name, the confirmation flags of the local device, the blob store
-limit, the downloads directory, the lifetimes and the network policy; a change applies at once. The
+limit, the downloads directory, the lifetimes and the network policy; a change applies at once.
+`ExportSettings` writes them as a JSON document and `ImportSettings` applies one, with the keys the
+document carries and the stored values for the rest; see [Settings file](settings-file.md). The
 relay settings are reported as a URL, a change time and whether a token is stored, never as the
 token itself. The status names the clipboard backend and the reason of the manual mode, and the
 keystore backend; see [Linux session](#linux-session).

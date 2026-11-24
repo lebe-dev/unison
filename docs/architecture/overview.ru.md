@@ -117,3 +117,4 @@ desktop app (Tauri + Svelte)   CLI (unison)        Android app (Kotlin)
 - [macOS](macos.ru.md) - порты darwin и сборка приложения
 - [Windows](windows.ru.md) - порты windows и установщик
 - [Android](android.ru.md) - мобильная привязка, сервис и приложение
+- [Файл настроек](settings-file.ru.md) - документ JSON, который пользователь сохраняет и восстанавливает
