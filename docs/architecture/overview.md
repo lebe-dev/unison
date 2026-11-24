@@ -117,3 +117,4 @@ See [Security](../security.md) for the model in short and
 - [Windows](windows.md) - the windows ports and the installer
 - [Android](android.md) - the mobile binding, the service and the app
 - [Application log](application-log.md) - the log the user can turn on and share
+- [Settings file](settings-file.md) - the JSON document the user keeps and restores

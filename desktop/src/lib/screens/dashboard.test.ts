@@ -5,26 +5,38 @@ import { tick } from "svelte";
 import {
   ClipItemSchema,
   CopyHistoryItemResponseSchema,
+  DeleteHistoryItemResponseSchema,
   GetSettingsResponseSchema,
   HistoryItemSchema,
   Kind,
   ListHistoryResponseSchema,
 } from "../api/gen/unison/local/v1/local_pb";
 
-const mocks = vi.hoisted(() => ({
-  listHistory: vi.fn(),
-  getSettings: vi.fn(),
-  copyHistoryItem: vi.fn(),
-  fetchHistoryItem: vi.fn(),
-  stageItem: vi.fn(),
-  startStagedDrag: vi.fn(),
-  daemon: {
-    connected: true,
-    loading: false,
-    retry: vi.fn(),
-    onEvent: vi.fn(() => () => {}),
-  },
-}));
+const mocks = vi.hoisted(() => {
+  const transfersNotice: { kind: "info" | "error"; text: string } | null = {
+    kind: "error",
+    text: "The transfer failed.",
+  };
+  return {
+    listHistory: vi.fn(),
+    getSettings: vi.fn(),
+    copyHistoryItem: vi.fn(),
+    fetchHistoryItem: vi.fn(),
+    deleteHistoryItem: vi.fn(),
+    stageItem: vi.fn(),
+    startStagedDrag: vi.fn(),
+    copyStagedFiles: vi.fn(),
+    transfersSend: vi.fn(),
+    transfersNotice,
+    daemon: {
+      connected: true,
+      loading: false,
+      retry: vi.fn(),
+      devices: [] as Array<{ deviceId: string; name: string; online: boolean; revoked: boolean }>,
+      onEvent: vi.fn(() => () => {}),
+    },
+  };
+});
 
 vi.mock("../api/client", () => ({
   client: {
@@ -32,10 +44,20 @@ vi.mock("../api/client", () => ({
     getSettings: mocks.getSettings,
     copyHistoryItem: mocks.copyHistoryItem,
     fetchHistoryItem: mocks.fetchHistoryItem,
+    deleteHistoryItem: mocks.deleteHistoryItem,
   },
 }));
 
 vi.mock("../daemon.svelte", () => ({ daemon: mocks.daemon }));
+
+vi.mock("../transfers.svelte", () => ({
+  transfers: {
+    send: mocks.transfersSend,
+    get notice() {
+      return mocks.transfersNotice;
+    },
+  },
+}));
 
 vi.mock("../thumbnails", () => ({
   loadThumbnail: vi.fn().mockResolvedValue(null),
@@ -47,6 +69,7 @@ vi.mock("../dragOut", () => ({
     Math.hypot(current.x - start.x, current.y - start.y) >= 4,
   stageItem: mocks.stageItem,
   startStagedDrag: mocks.startStagedDrag,
+  copyStagedFiles: mocks.copyStagedFiles,
 }));
 
 import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
@@ -56,6 +79,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.daemon.connected = true;
   mocks.daemon.loading = false;
+  mocks.daemon.devices = [];
+  mocks.transfersNotice = { kind: "error", text: "The transfer failed." };
+  mocks.copyStagedFiles.mockResolvedValue(undefined);
+  mocks.deleteHistoryItem.mockResolvedValue(create(DeleteHistoryItemResponseSchema, {}));
   dashboard.stop();
   dashboard.limit = DEFAULT_DASHBOARD_LIMIT;
   dashboard.items = { images: [], files: [], text: [] };
@@ -193,6 +220,99 @@ describe("dashboard preview", () => {
 
     expect(screen.getByRole("dialog", { name: "Item preview" })).toBeTruthy();
     expect(mocks.stageItem).not.toHaveBeenCalled();
+  });
+});
+
+describe("dashboard menu", () => {
+  it("shows the actions of an item on a right click", async () => {
+    render(Dashboard);
+    const tile = await screen.findByRole("button", { name: "Image - 128 B" });
+
+    await fireEvent.contextMenu(tile);
+
+    expect(screen.getByRole("menu")).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Send" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Copy" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Delete" })).toBeTruthy();
+  });
+
+  it("closes the menu with Escape", async () => {
+    render(Dashboard);
+    const tile = await screen.findByRole("button", { name: "Image - 128 B" });
+    await fireEvent.contextMenu(tile);
+
+    await fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("sends the item to the device the user picks", async () => {
+    mocks.daemon.devices = [{ deviceId: "device-1", name: "Laptop", online: true, revoked: false }];
+    mocks.stageItem.mockResolvedValue(["/staging/clip.png"]);
+    mocks.transfersSend.mockResolvedValue(true);
+    render(Dashboard);
+
+    await fireEvent.contextMenu(await screen.findByRole("button", { name: "Image - 128 B" }));
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Send" }));
+    await fireEvent.click(await screen.findByRole("menuitem", { name: "Laptop" }));
+
+    expect(mocks.stageItem).toHaveBeenCalled();
+    expect(mocks.transfersSend).toHaveBeenCalledWith(["/staging/clip.png"], ["device-1"]);
+    expect(await screen.findByText("Sent to Laptop.")).toBeTruthy();
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("says so when no device is online", async () => {
+    render(Dashboard);
+
+    await fireEvent.contextMenu(await screen.findByRole("button", { name: "Image - 128 B" }));
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Send" }));
+
+    expect(screen.getByText("No device is online right now.")).toBeTruthy();
+  });
+
+  it("copies the files of an image without sending them", async () => {
+    mocks.stageItem.mockResolvedValue(["/staging/clip.png"]);
+    render(Dashboard);
+
+    await fireEvent.contextMenu(await screen.findByRole("button", { name: "Image - 128 B" }));
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
+
+    expect(mocks.copyStagedFiles).toHaveBeenCalledWith(["/staging/clip.png"]);
+    expect(mocks.transfersSend).not.toHaveBeenCalled();
+    expect(await screen.findByText("Copied to the clipboard.")).toBeTruthy();
+  });
+
+  it("copies text through the daemon", async () => {
+    mocks.listHistory.mockImplementation(() =>
+      Promise.resolve(
+        create(ListHistoryResponseSchema, { items: [textHistory("text-1", "hello world")] }),
+      ),
+    );
+    render(Dashboard);
+    await fireEvent.click(await screen.findByRole("tab", { name: "Text" }));
+
+    await fireEvent.contextMenu(await screen.findByRole("button", { name: /hello world/ }));
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
+
+    expect(mocks.copyHistoryItem).toHaveBeenCalledWith({ id: "text-1" });
+    expect(mocks.stageItem).not.toHaveBeenCalled();
+  });
+
+  it("asks before it deletes the item", async () => {
+    render(Dashboard);
+
+    await fireEvent.contextMenu(await screen.findByRole("button", { name: "Image - 128 B" }));
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+
+    expect(screen.getByText("Delete the item?")).toBeTruthy();
+    expect(mocks.deleteHistoryItem).not.toHaveBeenCalled();
+
+    await fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+
+    expect(mocks.deleteHistoryItem).toHaveBeenCalledWith({ id: "image-1" });
+    expect(await screen.findByText("The item was deleted.")).toBeTruthy();
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 });
 

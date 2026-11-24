@@ -398,7 +398,10 @@ with the request and response size limits. The errors of the core are mapped to 
 missing peer is `not_found`, a closed pairing window or a stopped node `failed_precondition`,
 invalid input `invalid_argument` and a refused device `permission_denied`. `ListDevices` and
 `RenameDevice` serve the device list and the local names, the rest of the device management calls
-change the policy or the trust record of the group.
+change the policy or the trust record of the group. `ExportSettings` and `ImportSettings` move the
+settings as the JSON document of `core/settingsfile`, which owns the format and its version: an
+older file is migrated step by step, a newer one is applied with the keys this version knows, and a
+key that is absent keeps the stored value.
 
 `core/api/localconn` serves that API on the endpoint of the daemon: the unix socket
 `~/Library/Application Support/Unison/unisond.sock` on macOS and the named pipe

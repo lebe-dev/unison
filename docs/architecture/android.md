@@ -223,3 +223,11 @@ backups; the live page reads the current files only. The header carries the app 
 the OS, the device, the network condition, the listener addresses and the settings, with
 `downloads_dir` shown as `[path]`; relay tokens and keys are never included. The display level of the
 page filters the live view only: an export always carries the debug records too.
+
+## Settings file
+
+Settings > Settings file keeps the settings of the device in a JSON document and restores them. The
+app asks the core for the document with `ExportSettings`, adds the service mode and the notification
+categories under `app.android`, and writes the file through the system document picker. An import
+reads the picked file, applies the document with `ImportSettings`, then applies the app section and
+reloads the screens. The format is described under [Settings file](settings-file.md).

@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 vi.mock("./api/client", () => ({ client: { fetchHistoryItem: mocks.fetchHistoryItem } }));
 
-import { canDragOut, crossedDragThreshold, dragItem, stageItem } from "./dragOut";
+import { canDragOut, copyStagedFiles, crossedDragThreshold, dragItem, stageItem } from "./dragOut";
 
 const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
 const originalUserAgent = navigator.userAgent;
@@ -82,6 +82,18 @@ describe("drag out", () => {
     await expect(stageItem(imageHistory("item-1"))).rejects.toThrow(
       "The item could not be dragged out.",
     );
+  });
+});
+
+describe("clipboard copy", () => {
+  it("hands the staged files to the shell", async () => {
+    mocks.invoke.mockResolvedValue(undefined);
+
+    await copyStagedFiles(["/cache/drag/item-1/clip.png"]);
+
+    expect(mocks.invoke).toHaveBeenCalledWith("copy_files_to_clipboard", {
+      paths: ["/cache/drag/item-1/clip.png"],
+    });
   });
 });
 

@@ -11,6 +11,7 @@ protobuf-javalite = "4.36.2"
 sentry = "8.64.0"
 coroutines = "1.11.0"
 junit = "4.13.2"
+json = "20250517"
 androidx-test-ext-junit = "1.3.0"
 androidx-test-runner = "1.7.0"
 zxing = "3.5.4"
@@ -41,6 +42,7 @@ protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.
 sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 junit = { module = "junit:junit", version.ref = "junit" }
+json = { module = "org.json:json", version.ref = "json" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

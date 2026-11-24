@@ -1,5 +1,6 @@
 package app.unison.ui.screens
 
+import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -65,6 +66,17 @@ class SettingsScreenTest {
 
         goBack()
         compose.onNodeWithTag(settingsPageTag(SettingsPage.DEVICE)).assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsFilePageOffersExportAndImport() {
+        setContent()
+
+        open(SettingsPage.SETTINGS_FILE)
+
+        compose.onNodeWithTag(SETTINGS_FILE_EXPORT_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(SETTINGS_FILE_IMPORT_TAG).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.settings_file_hint)).assertIsDisplayed()
     }
 
     @Test
@@ -368,6 +380,8 @@ class SettingsScreenTest {
         onNotificationsChange: (NotificationSettings) -> Unit = {},
         journalEnabled: Boolean = false,
         onJournalChange: (Boolean) -> Unit = {},
+        onExportSettings: (Uri) -> Unit = {},
+        onImportSettings: (Uri) -> Unit = {},
         stripTracking: Boolean = true,
         onStripTrackingChange: (Boolean) -> Unit = {},
     ) {
@@ -402,6 +416,8 @@ class SettingsScreenTest {
                     onNotificationsChange = onNotificationsChange,
                     journalEnabled = journalEnabled,
                     onJournalChange = onJournalChange,
+                    onExportSettings = onExportSettings,
+                    onImportSettings = onImportSettings,
                     stripTracking = stripTracking,
                     onStripTrackingChange = onStripTrackingChange,
                     onRefresh = {},

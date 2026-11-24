@@ -9,6 +9,7 @@ pub mod observability;
 mod prompt;
 mod proxy;
 mod redact;
+mod settings;
 mod share;
 mod streams;
 #[cfg(all(test, unix))]
@@ -287,6 +288,7 @@ pub fn run() {
             daemon_status,
             dragout::drag_staging_dir,
             dragout::start_file_drag,
+            dragout::copy_files_to_clipboard,
             open_local_network_settings,
             files::show_in_folder,
             files::open_files,
@@ -302,6 +304,8 @@ pub fn run() {
             install_daemon,
             set_login_item,
             set_sentry_enabled,
+            settings::settings_read,
+            settings::settings_write,
             share::take_shared_files,
             show_window,
             tray::set_tray_state,

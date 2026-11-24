@@ -5,6 +5,7 @@ import app.unison.diagnostics.Diagnostics
 import app.unison.history.HistoryTtlProto
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyProto
+import com.google.protobuf.ByteString
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.MessageLite
 import kotlinx.coroutines.Dispatchers
@@ -197,6 +198,30 @@ class CoreClient(
             )
         return response.settings
     }
+
+    /** The settings of the core as a JSON document the user can keep. */
+    suspend fun exportSettings(appSettings: String): Local.ExportSettingsResponse =
+        call(
+            method = "ExportSettings",
+            request =
+                Local.ExportSettingsRequest
+                    .newBuilder()
+                    .setAppSettings(appSettings)
+                    .build(),
+            parse = { Local.ExportSettingsResponse.parseFrom(it) },
+        )
+
+    /** Applies the settings of a JSON document. */
+    suspend fun importSettings(document: ByteArray): Local.ImportSettingsResponse =
+        call(
+            method = "ImportSettings",
+            request =
+                Local.ImportSettingsRequest
+                    .newBuilder()
+                    .setDocument(ByteString.copyFrom(document))
+                    .build(),
+            parse = { Local.ImportSettingsResponse.parseFrom(it) },
+        )
 
     /** Mirrors the consent to report errors to the developer. */
     override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {

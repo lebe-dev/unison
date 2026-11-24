@@ -6,8 +6,10 @@ import {
   DeviceSchema,
   FriendsDiscoverySchema,
   GetRelayResponseSchema,
+  ExportSettingsResponseSchema,
   GetSettingsResponseSchema,
   GetStatusResponseSchema,
+  ImportSettingsResponseSchema,
   PolicyAction,
   PolicyCellSchema,
   PolicyRowSchema,
@@ -24,6 +26,12 @@ import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
 import { pickFolder } from "../files";
 import { relayDraft } from "../relayDraft.svelte";
 import { setSentryEnabled } from "../sentry";
+import {
+  pickSettingsSource,
+  pickSettingsTarget,
+  readSettingsFile,
+  writeSettingsFile,
+} from "../settingsFileIO";
 import Settings from "./Settings.svelte";
 
 vi.mock("../files", () => ({
@@ -33,6 +41,20 @@ vi.mock("../files", () => ({
 
 vi.mock("../sentry", () => ({
   setSentryEnabled: vi.fn(),
+}));
+
+vi.mock("../login", () => ({
+  loginItemStatus: vi.fn().mockResolvedValue({ status: "enabled" }),
+  setLoginItem: vi.fn((enabled: boolean) =>
+    Promise.resolve({ status: enabled ? "enabled" : "not_registered" }),
+  ),
+}));
+
+vi.mock("../settingsFileIO", () => ({
+  pickSettingsSource: vi.fn(),
+  pickSettingsTarget: vi.fn(),
+  readSettingsFile: vi.fn(),
+  writeSettingsFile: vi.fn(),
 }));
 
 vi.mock("../journalIO", () => ({
@@ -49,6 +71,10 @@ vi.mock("../journalIO", () => ({
 
 const pickFolderMock = vi.mocked(pickFolder);
 const setSentryEnabledMock = vi.mocked(setSentryEnabled);
+const pickSettingsTargetMock = vi.mocked(pickSettingsTarget);
+const pickSettingsSourceMock = vi.mocked(pickSettingsSource);
+const readSettingsFileMock = vi.mocked(readSettingsFile);
+const writeSettingsFileMock = vi.mocked(writeSettingsFile);
 
 vi.mock("../api/client", () => ({
   client: {
@@ -60,6 +86,8 @@ vi.mock("../api/client", () => ({
     getRelay: vi.fn(),
     setRelay: vi.fn(),
     relayOff: vi.fn(),
+    exportSettings: vi.fn(),
+    importSettings: vi.fn(),
   },
 }));
 
@@ -69,6 +97,8 @@ const updateSettings = vi.mocked(client.updateSettings);
 const renameDevice = vi.mocked(client.renameDevice);
 const setFriendsDiscovery = vi.mocked(client.setFriendsDiscovery);
 const getRelay = vi.mocked(client.getRelay);
+const exportSettings = vi.mocked(client.exportSettings);
+const importSettings = vi.mocked(client.importSettings);
 
 const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
 const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
@@ -715,6 +745,93 @@ describe("settings screen", () => {
     await tick();
 
     expect((input as HTMLInputElement).value).toBe("30d");
+  });
+});
+
+describe("settings file", () => {
+  it("saves the settings in the file the user picked", async () => {
+    exportSettings.mockResolvedValue(
+      create(ExportSettingsResponseSchema, {
+        document: new TextEncoder().encode('{"schema":"unison-settings"}'),
+        fileName: "unison-macos-20261124-102030.json",
+      }),
+    );
+    pickSettingsTargetMock.mockResolvedValue("/tmp/unison-settings.json");
+    writeSettingsFileMock.mockResolvedValue();
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+
+    const request = exportSettings.mock.calls[0]?.[0];
+    expect(request?.appSettings).toContain('"desktop"');
+    expect(pickSettingsTargetMock).toHaveBeenCalledWith("unison-macos-20261124-102030.json");
+    expect(writeSettingsFileMock).toHaveBeenCalledWith(
+      "/tmp/unison-settings.json",
+      '{"schema":"unison-settings"}',
+    );
+    expect(await screen.findByText(/saved to \/tmp\/unison-settings.json/)).toBeTruthy();
+  });
+
+  it("writes nothing when the save dialog is closed", async () => {
+    exportSettings.mockResolvedValue(
+      create(ExportSettingsResponseSchema, {
+        document: new TextEncoder().encode("{}"),
+        fileName: "x.json",
+      }),
+    );
+    pickSettingsTargetMock.mockResolvedValue(null);
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+
+    expect(writeSettingsFileMock).not.toHaveBeenCalled();
+  });
+
+  it("applies the settings of the file the user picked", async () => {
+    const text = JSON.stringify({
+      schema: "unison-settings",
+      format_version: 1,
+      core: { strip_tracking: false },
+      app: { desktop: { theme: "dark", login_item: false } },
+    });
+    pickSettingsSourceMock.mockResolvedValue("/tmp/unison-settings.json");
+    readSettingsFileMock.mockResolvedValue(text);
+    importSettings.mockResolvedValue(
+      create(ImportSettingsResponseSchema, { settings: settings() }),
+    );
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(importSettings).toHaveBeenCalledWith({ document: new TextEncoder().encode(text) });
+    expect(await screen.findByText("The settings are imported.")).toBeTruthy();
+  });
+
+  it("reports the notes of a document of a newer app", async () => {
+    pickSettingsSourceMock.mockResolvedValue("/tmp/unison-settings.json");
+    readSettingsFileMock.mockResolvedValue('{"schema":"unison-settings","format_version":99}');
+    importSettings.mockResolvedValue(
+      create(ImportSettingsResponseSchema, {
+        settings: settings(),
+        fromNewerVersion: true,
+        ignored: ["core.future_setting"],
+      }),
+    );
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(await screen.findByText(/newer version of the app/)).toBeTruthy();
+    expect(await screen.findByText(/core.future_setting/)).toBeTruthy();
+  });
+
+  it("imports nothing when the open dialog is closed", async () => {
+    pickSettingsSourceMock.mockResolvedValue(null);
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(importSettings).not.toHaveBeenCalled();
   });
 });
 

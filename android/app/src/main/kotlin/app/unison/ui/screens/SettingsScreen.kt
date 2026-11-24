@@ -65,6 +65,7 @@ internal enum class SettingsPage(
     NETWORK(R.string.settings_page_network, R.drawable.ic_network),
     ABOUT(R.string.settings_section_about, R.drawable.ic_info),
     JOURNAL(R.string.settings_page_journal, R.drawable.ic_log),
+    SETTINGS_FILE(R.string.settings_page_settings_file, R.drawable.ic_kind_file),
 }
 
 /** Pages of the first group of the index; the rest sit in a group of their own. */
@@ -112,6 +113,8 @@ fun SettingsScreen(
     onNotificationsChange: (NotificationSettings) -> Unit,
     journalEnabled: Boolean,
     onJournalChange: (Boolean) -> Unit,
+    onExportSettings: (Uri) -> Unit,
+    onImportSettings: (Uri) -> Unit,
     stripTracking: Boolean,
     onStripTrackingChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
@@ -238,6 +241,11 @@ fun SettingsScreen(
                         )
                     }
                 }
+                SettingsPage.SETTINGS_FILE -> {
+                    SettingsCard {
+                        SettingsFileSection(onExport = onExportSettings, onImport = onImportSettings)
+                    }
+                }
             }
         }
     }
@@ -284,6 +292,7 @@ private fun SettingsIndex(
                     ?: stringResource(R.string.settings_page_about_summary)
             ),
             SettingsPage.JOURNAL to stringResource(R.string.settings_page_journal_summary),
+            SettingsPage.SETTINGS_FILE to stringResource(R.string.settings_page_settings_file_summary),
         )
 
     Column(

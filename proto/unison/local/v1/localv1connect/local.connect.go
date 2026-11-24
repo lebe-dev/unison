@@ -145,6 +145,12 @@ const (
 	// UnisonServiceUpdateSettingsProcedure is the fully-qualified name of the UnisonService's
 	// UpdateSettings RPC.
 	UnisonServiceUpdateSettingsProcedure = "/unison.local.v1.UnisonService/UpdateSettings"
+	// UnisonServiceExportSettingsProcedure is the fully-qualified name of the UnisonService's
+	// ExportSettings RPC.
+	UnisonServiceExportSettingsProcedure = "/unison.local.v1.UnisonService/ExportSettings"
+	// UnisonServiceImportSettingsProcedure is the fully-qualified name of the UnisonService's
+	// ImportSettings RPC.
+	UnisonServiceImportSettingsProcedure = "/unison.local.v1.UnisonService/ImportSettings"
 	// UnisonServiceGetRelayProcedure is the fully-qualified name of the UnisonService's GetRelay RPC.
 	UnisonServiceGetRelayProcedure = "/unison.local.v1.UnisonService/GetRelay"
 	// UnisonServiceSetRelayProcedure is the fully-qualified name of the UnisonService's SetRelay RPC.
@@ -230,6 +236,11 @@ type UnisonServiceClient interface {
 	// Settings of the daemon.
 	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
 	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
+	// Settings as a JSON document the user can keep and restore.
+	ExportSettings(context.Context, *connect.Request[v1.ExportSettingsRequest]) (*connect.Response[v1.ExportSettingsResponse], error)
+	// Apply the settings of a JSON document. Keys that are absent keep the
+	// stored values.
+	ImportSettings(context.Context, *connect.Request[v1.ImportSettingsRequest]) (*connect.Response[v1.ImportSettingsResponse], error)
 	// Relay access of the Personal group and the state of its client.
 	GetRelay(context.Context, *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error)
 	// Store the relay access of the group. The other Personal devices receive it
@@ -493,6 +504,18 @@ func NewUnisonServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(unisonServiceMethods.ByName("UpdateSettings")),
 			connect.WithClientOptions(opts...),
 		),
+		exportSettings: connect.NewClient[v1.ExportSettingsRequest, v1.ExportSettingsResponse](
+			httpClient,
+			baseURL+UnisonServiceExportSettingsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ExportSettings")),
+			connect.WithClientOptions(opts...),
+		),
+		importSettings: connect.NewClient[v1.ImportSettingsRequest, v1.ImportSettingsResponse](
+			httpClient,
+			baseURL+UnisonServiceImportSettingsProcedure,
+			connect.WithSchema(unisonServiceMethods.ByName("ImportSettings")),
+			connect.WithClientOptions(opts...),
+		),
 		getRelay: connect.NewClient[v1.GetRelayRequest, v1.GetRelayResponse](
 			httpClient,
 			baseURL+UnisonServiceGetRelayProcedure,
@@ -562,6 +585,8 @@ type unisonServiceClient struct {
 	setPause                *connect.Client[v1.SetPauseRequest, v1.SetPauseResponse]
 	getSettings             *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
 	updateSettings          *connect.Client[v1.UpdateSettingsRequest, v1.UpdateSettingsResponse]
+	exportSettings          *connect.Client[v1.ExportSettingsRequest, v1.ExportSettingsResponse]
+	importSettings          *connect.Client[v1.ImportSettingsRequest, v1.ImportSettingsResponse]
 	getRelay                *connect.Client[v1.GetRelayRequest, v1.GetRelayResponse]
 	setRelay                *connect.Client[v1.SetRelayRequest, v1.SetRelayResponse]
 	relayOff                *connect.Client[v1.RelayOffRequest, v1.RelayOffResponse]
@@ -768,6 +793,16 @@ func (c *unisonServiceClient) UpdateSettings(ctx context.Context, req *connect.R
 	return c.updateSettings.CallUnary(ctx, req)
 }
 
+// ExportSettings calls unison.local.v1.UnisonService.ExportSettings.
+func (c *unisonServiceClient) ExportSettings(ctx context.Context, req *connect.Request[v1.ExportSettingsRequest]) (*connect.Response[v1.ExportSettingsResponse], error) {
+	return c.exportSettings.CallUnary(ctx, req)
+}
+
+// ImportSettings calls unison.local.v1.UnisonService.ImportSettings.
+func (c *unisonServiceClient) ImportSettings(ctx context.Context, req *connect.Request[v1.ImportSettingsRequest]) (*connect.Response[v1.ImportSettingsResponse], error) {
+	return c.importSettings.CallUnary(ctx, req)
+}
+
 // GetRelay calls unison.local.v1.UnisonService.GetRelay.
 func (c *unisonServiceClient) GetRelay(ctx context.Context, req *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error) {
 	return c.getRelay.CallUnary(ctx, req)
@@ -863,6 +898,11 @@ type UnisonServiceHandler interface {
 	// Settings of the daemon.
 	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
 	UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error)
+	// Settings as a JSON document the user can keep and restore.
+	ExportSettings(context.Context, *connect.Request[v1.ExportSettingsRequest]) (*connect.Response[v1.ExportSettingsResponse], error)
+	// Apply the settings of a JSON document. Keys that are absent keep the
+	// stored values.
+	ImportSettings(context.Context, *connect.Request[v1.ImportSettingsRequest]) (*connect.Response[v1.ImportSettingsResponse], error)
 	// Relay access of the Personal group and the state of its client.
 	GetRelay(context.Context, *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error)
 	// Store the relay access of the group. The other Personal devices receive it
@@ -1122,6 +1162,18 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(unisonServiceMethods.ByName("UpdateSettings")),
 		connect.WithHandlerOptions(opts...),
 	)
+	unisonServiceExportSettingsHandler := connect.NewUnaryHandler(
+		UnisonServiceExportSettingsProcedure,
+		svc.ExportSettings,
+		connect.WithSchema(unisonServiceMethods.ByName("ExportSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	unisonServiceImportSettingsHandler := connect.NewUnaryHandler(
+		UnisonServiceImportSettingsProcedure,
+		svc.ImportSettings,
+		connect.WithSchema(unisonServiceMethods.ByName("ImportSettings")),
+		connect.WithHandlerOptions(opts...),
+	)
 	unisonServiceGetRelayHandler := connect.NewUnaryHandler(
 		UnisonServiceGetRelayProcedure,
 		svc.GetRelay,
@@ -1228,6 +1280,10 @@ func NewUnisonServiceHandler(svc UnisonServiceHandler, opts ...connect.HandlerOp
 			unisonServiceGetSettingsHandler.ServeHTTP(w, r)
 		case UnisonServiceUpdateSettingsProcedure:
 			unisonServiceUpdateSettingsHandler.ServeHTTP(w, r)
+		case UnisonServiceExportSettingsProcedure:
+			unisonServiceExportSettingsHandler.ServeHTTP(w, r)
+		case UnisonServiceImportSettingsProcedure:
+			unisonServiceImportSettingsHandler.ServeHTTP(w, r)
 		case UnisonServiceGetRelayProcedure:
 			unisonServiceGetRelayHandler.ServeHTTP(w, r)
 		case UnisonServiceSetRelayProcedure:
@@ -1403,6 +1459,14 @@ func (UnimplementedUnisonServiceHandler) GetSettings(context.Context, *connect.R
 
 func (UnimplementedUnisonServiceHandler) UpdateSettings(context.Context, *connect.Request[v1.UpdateSettingsRequest]) (*connect.Response[v1.UpdateSettingsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.UpdateSettings is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ExportSettings(context.Context, *connect.Request[v1.ExportSettingsRequest]) (*connect.Response[v1.ExportSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ExportSettings is not implemented"))
+}
+
+func (UnimplementedUnisonServiceHandler) ImportSettings(context.Context, *connect.Request[v1.ImportSettingsRequest]) (*connect.Response[v1.ImportSettingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("unison.local.v1.UnisonService.ImportSettings is not implemented"))
 }
 
 func (UnimplementedUnisonServiceHandler) GetRelay(context.Context, *connect.Request[v1.GetRelayRequest]) (*connect.Response[v1.GetRelayResponse], error) {

@@ -285,6 +285,18 @@ export const ru: { [K in MessageKey]: Message } = {
   "dashboard.dragHint": "Перетащите элемент из окна, чтобы передать его другому приложению.",
   "dashboard.previewAria": "Просмотр элемента",
   "dashboard.closePreviewAria": "Закрыть просмотр",
+  "dashboard.menuAria": "Действия с элементом",
+  "dashboard.closeMenuAria": "Закрыть меню",
+  "dashboard.menuSend": "Отправить",
+  "dashboard.menuCopy": "Скопировать",
+  "dashboard.sendTo": "Отправить на устройство",
+  "dashboard.sendFailed": "Не удалось отправить элемент.",
+  "dashboard.sentTo": "Отправлено на {name}.",
+  "dashboard.copied": "Скопировано в буфер обмена.",
+  "dashboard.deleteTitle": "Удалить элемент?",
+  "dashboard.deleteConfirm": "Элемент будет удален с этого устройства и с других личных устройств.",
+  "dashboard.deleteFailed": "Не удалось удалить элемент.",
+  "dashboard.deleted": "Элемент удален.",
 
   // Names of the values of the local API.
   "format.role.personal": "Личные",
@@ -526,6 +538,19 @@ export const ru: { [K in MessageKey]: Message } = {
   "settings.stripTrackingFailed": "Не удалось изменить настройку параметров отслеживания.",
   "settings.applicationLog": "Журнал приложения",
   "settings.applicationLogHint": "Записи, которые помогают поддержке найти проблему.",
+  "settings.settingsFile": "Файл настроек",
+  "settings.settingsFileHint":
+    "Сохраните настройки этого устройства в файл JSON и восстановите их здесь или на другом устройстве. Имя устройства, папка полученных файлов и доступ к релею в файл не входят.",
+  "settings.exportSettings": "Экспорт",
+  "settings.importSettings": "Импорт",
+  "settings.exportSaved": "Настройки сохранены в {path}.",
+  "settings.exportFailed": "Не удалось экспортировать настройки.",
+  "settings.imported": "Настройки импортированы.",
+  "settings.importFailed": "Не удалось импортировать настройки.",
+  "settings.importNewer":
+    "Файл создан более новой версией приложения, поэтому применены только известные этой версии настройки.",
+  "settings.importIgnored": "Пропущены неизвестные ключи: {keys}.",
+  "settings.importLoginSkipped": "Настройка автозапуска не применена.",
   "journal.enable": "Записывать журнал приложения",
   "journal.enableHint":
     "Журнал помогает поддержке найти причину проблемы. Он не записывает содержимое буфера обмена, имена файлов и пароли.",

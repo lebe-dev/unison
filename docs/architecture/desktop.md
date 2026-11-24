@@ -36,6 +36,10 @@ The stores are Svelte 5 rune classes: `daemon`, `dashboard`, `history`, `request
 `transfers`, `notifications`, `confirmation`, `theme`. A store owns its data and calls the API; a
 screen renders it and dispatches actions.
 
+Settings > General > Settings file exports the settings document of the daemon with the theme and
+the login item under `app.desktop`, and an import applies the document and then the local settings.
+The format is described under [Settings file](settings-file.md).
+
 `daemon.svelte.ts` polls `GetStatus` every 5 seconds, follows `WatchEvents` and reopens the stream
 after 3 seconds when it drops, keeps the recent events and pushes the tray state on every refresh.
 While the daemon is not answering yet, the store polls it every 300 ms for up to 10 seconds and the
@@ -48,11 +52,12 @@ The i18n layer picks `en` or `ru` from the browser locale. Inline text is not tr
 that come from the daemon are shown as they are.
 
 The Settings screen groups its sections into five tabs: General holds the device name, appearance,
-dashboard, startup and the application log, Clipboard holds the pause, the confirmation of new
-devices, tracking parameters and the history lifetimes, Files holds the received folder and the
-network policy, Network holds the friends search, the remote settings switch and the relay, and
-Privacy holds diagnostics and the keystore warning. The state of the daemon and the notices stay
-above the tabs, so a lost connection is visible from every tab. The screen opens on General.
+dashboard, startup, the application log and the settings file, Clipboard holds the pause, the
+confirmation of new devices, tracking parameters and the history lifetimes, Files holds the received
+folder and the network policy, Network holds the friends search, the remote settings switch and the
+relay, and Privacy holds diagnostics and the keystore warning. The state of the daemon and the
+notices stay above the tabs, so a lost connection is visible from every tab. The screen opens on
+General.
 
 ### Dashboard
 
@@ -108,6 +113,7 @@ a page that is gone does not keep a `WatchEvents` stream open.
 | `files.rs` | show a file in the folder, open files |
 | `dragout.rs` | stage the content of an item and start a native drag out of the window |
 | `journal.rs` | the application log of the shell and its export |
+| `settings.rs` | the settings document of the shell, read and written in the file the user picks |
 | `observability.rs` | error reporting of the shell |
 | `redact.rs` | the paths removed from reports and logs |
 | `i18n.rs` | the locale of the shell messages |
@@ -172,6 +178,11 @@ window cannot hand an arbitrary file of the user to another app. The staging dir
 to the user. The copies stay after the drop: a terminal inserts the path of the copy, and a command
 line tool can still read the content later. At startup the shell removes the staging directories that
 are older than 24 hours.
+
+The context menu of an item uses the same staging: `copy_files_to_clipboard` writes the staged paths
+as file URLs to the macOS pasteboard, which is how Finder copies a file. Nothing is sent to a device
+by this call. `Send` stages the content and offers the copies to one online device through
+`SendFiles`; `Delete` removes the item from the history on every Personal device.
 
 ### Application log
 

@@ -45,6 +45,12 @@ export function startStagedDrag(paths: string[]): Promise<void> {
   return invoke("start_file_drag", { paths });
 }
 
+/** copyStagedFiles puts staged files on the system pasteboard without sending
+ * them to any device. */
+export function copyStagedFiles(paths: string[]): Promise<void> {
+  return invoke("copy_files_to_clipboard", { paths });
+}
+
 /** dragItem stages an item and starts its native drag at once. */
 export async function dragItem(item: HistoryItem): Promise<void> {
   const paths = await stageItem(item);

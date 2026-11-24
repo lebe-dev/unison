@@ -1,15 +1,23 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-  import { Kind, type HistoryItem } from "../api/gen/unison/local/v1/local_pb";
+  import { tick, untrack } from "svelte";
+  import { client } from "../api/client";
+  import { Kind, type Device, type HistoryItem } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
   import { dashboard, type DashboardKind } from "../dashboard.svelte";
-  import { canDragOut, crossedDragThreshold, stageItem, startStagedDrag } from "../dragOut";
+  import {
+    canDragOut,
+    copyStagedFiles,
+    crossedDragThreshold,
+    stageItem,
+    startStagedDrag,
+  } from "../dragOut";
   import { errorText } from "../errors";
   import {
     formatBytes,
     formatDateTime,
     historyTitle,
     itemSize,
+    shortDeviceID,
     textContent,
     textSnippet,
   } from "../format";
@@ -17,6 +25,7 @@
   import Icon, { type IconName } from "../Icon.svelte";
   import ImageCanvas from "../ImageCanvas.svelte";
   import Spinner from "../Spinner.svelte";
+  import { transfers } from "../transfers.svelte";
 
   /** Longer side of the pixels of a tile. */
   const THUMB_SIDE = 256;
@@ -44,12 +53,33 @@
     released: boolean;
   }
 
+  /** Step of the context menu of an item. */
+  type MenuStep = "actions" | "devices" | "delete";
+
+  /** Context menu of one item, at the point of the right click. */
+  interface ItemMenu {
+    item: HistoryItem;
+    x: number;
+    y: number;
+    step: MenuStep;
+  }
+
+  /** Width of the menu, used to keep it inside the window. */
+  const MENU_WIDTH = 260;
+
+  /** Approximate height of the menu, used to keep it inside the window. */
+  const MENU_HEIGHT = 220;
+
   let active = $state<DashboardKind>("images");
   let preview = $state<HistoryItem | null>(null);
   let pending: PendingDrag | null = null;
   let suppressClick = false;
+  let menu = $state<ItemMenu | null>(null);
+  let menuBusy = $state(false);
+  let menuElement: HTMLDivElement | null = $state(null);
 
   const items = $derived(dashboard.items[active]);
+  const menuDevices = $derived(daemon.devices.filter((device) => device.online && !device.revoked));
 
   // The lists are loaded when the daemon answers and again after it comes back.
   // The download directory is read here as well, because the start of the app
@@ -188,6 +218,177 @@
     preview = null;
   }
 
+  /** openMenu shows the actions of an item at the point of the right click. */
+  function openMenu(event: MouseEvent, item: HistoryItem): void {
+    event.preventDefault();
+    if (!item.item) {
+      return;
+    }
+    const area = document.documentElement;
+    menu = {
+      item,
+      x: Math.max(8, Math.min(event.clientX, area.clientWidth - MENU_WIDTH - 8)),
+      y: Math.max(8, Math.min(event.clientY, area.clientHeight - MENU_HEIGHT - 8)),
+      step: "actions",
+    };
+    menuBusy = false;
+    void tick().then(focusMenu);
+  }
+
+  /** focusMenu keeps the menu inside the window and focuses its first entry. */
+  function focusMenu(): void {
+    if (!menuElement) {
+      return;
+    }
+    const rect = menuElement.getBoundingClientRect();
+    if (rect.bottom > window.innerHeight - 8) {
+      menuElement.style.top = `${Math.max(8, window.innerHeight - rect.height - 8)}px`;
+    }
+    if (rect.right > window.innerWidth - 8) {
+      menuElement.style.left = `${Math.max(8, window.innerWidth - rect.width - 8)}px`;
+    }
+    menuElement.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }
+
+  function closeMenu(): void {
+    menu = null;
+    menuBusy = false;
+  }
+
+  function showActions(): void {
+    if (menu) {
+      menu.step = "actions";
+    }
+  }
+
+  function showDevices(): void {
+    if (menu) {
+      menu.step = "devices";
+      void tick().then(focusMenu);
+    }
+  }
+
+  function showDelete(): void {
+    if (menu) {
+      menu.step = "delete";
+      void tick().then(focusMenu);
+    }
+  }
+
+  /** handleMenuKey moves the focus of the menu and closes it with Escape. */
+  function handleMenuKey(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const entries = [
+      ...(menuElement?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ??
+        []),
+    ];
+    if (entries.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    const current = entries.indexOf(document.activeElement as HTMLButtonElement);
+    let next = 0;
+    if (event.key === "ArrowDown") {
+      next = current < 0 ? 0 : (current + 1) % entries.length;
+    } else if (event.key === "ArrowUp") {
+      next = current <= 0 ? entries.length - 1 : current - 1;
+    } else if (event.key === "End") {
+      next = entries.length - 1;
+    }
+    entries[next].focus();
+  }
+
+  function deviceName(device: Device): string {
+    return device.name || shortDeviceID(device.deviceId);
+  }
+
+  /** copyItem puts the item on the clipboard without sending it anywhere. The
+   * files of an image or file item are copied as files; text is copied as
+   * text. */
+  async function copyItem(item: HistoryItem): Promise<void> {
+    const info = item.item;
+    if (!info || menuBusy) {
+      return;
+    }
+    menuBusy = true;
+    try {
+      if (info.kind === Kind.TEXT) {
+        await dashboard.copy(info.id);
+      } else {
+        const paths = await stageItem(item);
+        await copyStagedFiles(paths);
+        dashboard.notice = { kind: "info", text: t("dashboard.copied") };
+      }
+    } catch (error) {
+      dashboard.notice = {
+        kind: "error",
+        text: errorText(error, t("dashboard.copyFailed")),
+      };
+    } finally {
+      menuBusy = false;
+      closeMenu();
+    }
+  }
+
+  /** sendItem offers the content of the item to one device as a file. */
+  async function sendItem(item: HistoryItem, device: Device): Promise<void> {
+    if (!item.item || menuBusy) {
+      return;
+    }
+    menuBusy = true;
+    try {
+      const paths = await stageItem(item);
+      if (await transfers.send(paths, [device.deviceId])) {
+        dashboard.notice = {
+          kind: "info",
+          text: t("dashboard.sentTo", { name: deviceName(device) }),
+        };
+      } else {
+        dashboard.notice = {
+          kind: "error",
+          text: transfers.notice?.text ?? t("dashboard.sendFailed"),
+        };
+      }
+    } catch (error) {
+      dashboard.notice = {
+        kind: "error",
+        text: errorText(error, t("dashboard.sendFailed")),
+      };
+    } finally {
+      menuBusy = false;
+      closeMenu();
+    }
+  }
+
+  /** deleteItem removes the item from the history of every Personal device. */
+  async function deleteItem(item: HistoryItem): Promise<void> {
+    const id = item.item?.id;
+    if (!id || menuBusy) {
+      return;
+    }
+    menuBusy = true;
+    try {
+      await client.deleteHistoryItem({ id });
+      dashboard.notice = { kind: "info", text: t("dashboard.deleted") };
+      void dashboard.loadAll(true);
+    } catch (error) {
+      dashboard.notice = {
+        kind: "error",
+        text: errorText(error, t("dashboard.deleteFailed")),
+      };
+    } finally {
+      menuBusy = false;
+      closeMenu();
+    }
+  }
+
   function fileLabel(name: string): string {
     return name || t("common.item");
   }
@@ -264,6 +465,7 @@
                 type="button"
                 aria-label={historyTitle(info)}
                 onclick={(event) => handleClick(event, item)}
+                oncontextmenu={(event) => openMenu(event, item)}
                 onpointerdown={(event) => handlePointerDown(event, item, "images")}
                 onpointermove={handlePointerMove}
                 onpointerup={handlePointerEnd}
@@ -291,6 +493,7 @@
                   class="card"
                   type="button"
                   onclick={(event) => handleClick(event, item)}
+                  oncontextmenu={(event) => openMenu(event, item)}
                   onpointerdown={(event) => handlePointerDown(event, item, "files")}
                   onpointermove={handlePointerMove}
                   onpointerup={handlePointerEnd}
@@ -316,7 +519,12 @@
             {@const info = item.item}
             {#if info}
               <li>
-                <button class="card" type="button" onclick={(event) => handleClick(event, item)}>
+                <button
+                  class="card"
+                  type="button"
+                  onclick={(event) => handleClick(event, item)}
+                  oncontextmenu={(event) => openMenu(event, item)}
+                >
                   <span class="snippet">{textSnippet(info, 180) || t("format.textItem")}</span>
                   <span class="row meta">
                     <span>{formatDateTime(info.createdAtUnixMs)}</span>
@@ -332,6 +540,103 @@
 
     {#if canDragOut() && active !== "text"}
       <p class="hint muted">{t("dashboard.dragHint")}</p>
+    {/if}
+  </div>
+{/if}
+
+{#if menu}
+  {@const target = menu.item}
+  <button
+    class="menu-backdrop"
+    type="button"
+    aria-label={t("dashboard.closeMenuAria")}
+    onclick={closeMenu}
+  ></button>
+  <div
+    class="menu"
+    role="menu"
+    aria-label={t("dashboard.menuAria")}
+    tabindex="-1"
+    bind:this={menuElement}
+    style:left={`${menu.x}px`}
+    style:top={`${menu.y}px`}
+    onkeydown={handleMenuKey}
+  >
+    {#if menu.step === "actions"}
+      <button
+        class="menu-item"
+        type="button"
+        role="menuitem"
+        disabled={menuBusy}
+        onclick={showDevices}
+      >
+        <span>{t("dashboard.menuSend")}</span>
+        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+          <path
+            d="m6 3 5 5-5 5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="menu-item"
+        type="button"
+        role="menuitem"
+        disabled={menuBusy}
+        onclick={() => void copyItem(target)}
+      >
+        {t("dashboard.menuCopy")}
+      </button>
+      <div class="menu-separator"></div>
+      <button
+        class="menu-item danger"
+        type="button"
+        role="menuitem"
+        disabled={menuBusy}
+        onclick={showDelete}
+      >
+        {t("history.delete")}
+      </button>
+    {:else if menu.step === "devices"}
+      <p class="menu-title">{t("dashboard.sendTo")}</p>
+      {#if menuDevices.length === 0}
+        <p class="menu-empty">{t("transfers.noDeviceOnline")}</p>
+      {:else}
+        {#each menuDevices as device (device.deviceId)}
+          <button
+            class="menu-item"
+            type="button"
+            role="menuitem"
+            disabled={menuBusy}
+            onclick={() => void sendItem(target, device)}
+          >
+            {deviceName(device)}
+          </button>
+        {/each}
+      {/if}
+      <div class="menu-separator"></div>
+      <button class="menu-item" type="button" role="menuitem" onclick={showActions}>
+        {t("common.back")}
+      </button>
+    {:else}
+      <p class="menu-title">{t("dashboard.deleteTitle")}</p>
+      <p class="menu-empty">{t("dashboard.deleteConfirm")}</p>
+      <button
+        class="menu-item danger"
+        type="button"
+        role="menuitem"
+        disabled={menuBusy}
+        onclick={() => void deleteItem(target)}
+      >
+        {t("history.delete")}
+      </button>
+      <button class="menu-item" type="button" role="menuitem" onclick={showActions}>
+        {t("common.cancel")}
+      </button>
     {/if}
   </div>
 {/if}
@@ -668,5 +973,89 @@
     display: flex;
     flex: none;
     gap: 0.35rem;
+  }
+
+  .menu-backdrop {
+    position: fixed;
+    inset: 0;
+    border: none;
+    background: transparent;
+    z-index: 20;
+  }
+
+  .menu {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    width: 260px;
+    max-height: calc(100vh - 16px);
+    padding: 4px;
+    border: 1px solid var(--separator);
+    border-radius: 8px;
+    background-color: var(--surface);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    overflow-y: auto;
+    z-index: 21;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 5px;
+    color: var(--foreground);
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: default;
+  }
+
+  .menu-item:hover:not(:disabled),
+  .menu-item:focus-visible {
+    background-color: var(--accent);
+    color: var(--accent-text);
+    outline: none;
+  }
+
+  .menu-item:disabled {
+    color: var(--muted);
+  }
+
+  .menu-item.danger {
+    color: var(--danger);
+  }
+
+  .menu-item.danger:hover:not(:disabled),
+  .menu-item.danger:focus-visible {
+    background-color: var(--danger);
+    color: #fff;
+  }
+
+  .menu-separator {
+    height: 1px;
+    margin: 4px 6px;
+    background-color: var(--separator);
+  }
+
+  .menu-title {
+    margin: 4px 8px 6px;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .menu-empty {
+    margin: 0;
+    padding: 4px 8px 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
   }
 </style>
