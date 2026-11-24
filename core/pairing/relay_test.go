@@ -359,3 +359,260 @@ func TestRelayDialRejectsSelfAndMissingRelay(t *testing.T) {
 	}
 	waitEvent(t, wB, EventFailed)
 }
+
+type countingRelayClient struct {
+	*mockRelayClient
+	mu           sync.Mutex
+	sessionCalls int
+}
+
+func (c *countingRelayClient) OpenSession(ctx context.Context, initiator, responder [8]byte) (net.PacketConn, error) {
+	c.mu.Lock()
+	c.sessionCalls++
+	c.mu.Unlock()
+	return c.mockRelayClient.OpenSession(ctx, initiator, responder)
+}
+
+func (c *countingRelayClient) sessions() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.sessionCalls
+}
+
+func TestRelayDiscoveryCapsCandidates(t *testing.T) {
+	hub := newMockRelayHub()
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 7, 5700)
+	clock := fake.NewClock(time.Unix(1_700_000_000, 0))
+
+	w, err := Open(context.Background(), Options{
+		Identity:            n.identity,
+		Trust:               n.trust,
+		Discovery:           n.discovery,
+		Name:                n.name,
+		Platform:            model.PlatformMacOS,
+		Role:                model.RolePersonal,
+		Clock:               clock,
+		ListenPacket:        n.sockets.ListenPacket,
+		Relay:               &mockRelayClient{hub: hub, token: "cap-token"},
+		RelayBeaconInterval: time.Hour,
+	})
+	if err != nil {
+		t.Fatalf("open window: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Close() })
+
+	// Drain candidates concurrently so the event buffer never stalls the test.
+	var (
+		mu         sync.Mutex
+		candidates int
+	)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for ev := range w.Events() {
+			if ev.Kind == EventCandidate {
+				mu.Lock()
+				candidates++
+				mu.Unlock()
+			}
+		}
+	}()
+
+	attacker := hub.open("disc:cap-token")
+	t.Cleanup(func() { _ = attacker.Close() })
+
+	// Wait until the window has opened the discovery mailbox.
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		w.mu.Lock()
+		ready := w.relayDiscovery != nil
+		w.mu.Unlock()
+		if ready {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	var msg [relayBeaconLen]byte
+	copy(msg[:4], relayMagic[:])
+	msg[4] = relayMsgBeacon
+	for i := 1; i <= maxRelayCandidates+25; i++ {
+		msg[5] = byte(i)
+		msg[6] = byte(i >> 8)
+		if _, err := attacker.WriteTo(msg[:], attacker.LocalAddr()); err != nil {
+			t.Fatalf("send beacon %d: %v", i, err)
+		}
+	}
+
+	deadline = time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		mu.Lock()
+		got := candidates
+		mu.Unlock()
+		if got == maxRelayCandidates {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	// Give any excess datagrams time to be processed.
+	time.Sleep(50 * time.Millisecond)
+
+	w.mu.Lock()
+	seenCount := len(w.relaySeen)
+	w.mu.Unlock()
+	if seenCount != maxRelayCandidates {
+		t.Fatalf("relaySeen = %d, want %d", seenCount, maxRelayCandidates)
+	}
+	mu.Lock()
+	gotCandidates := candidates
+	mu.Unlock()
+	if gotCandidates != maxRelayCandidates {
+		t.Fatalf("candidates emitted = %d, want %d", gotCandidates, maxRelayCandidates)
+	}
+
+	_ = w.Close()
+	<-done
+}
+
+func TestRelayInviteRateLimitAndReadyThrottle(t *testing.T) {
+	hub := newMockRelayHub()
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 8, 5800)
+	clock := fake.NewClock(time.Unix(1_700_000_000, 0))
+	relayClient := &countingRelayClient{mockRelayClient: &mockRelayClient{hub: hub, token: "invite-token"}}
+
+	w, err := Open(context.Background(), Options{
+		Identity:            n.identity,
+		Trust:               n.trust,
+		Discovery:           n.discovery,
+		Name:                n.name,
+		Platform:            model.PlatformMacOS,
+		Role:                model.RolePersonal,
+		Clock:               clock,
+		ListenPacket:        n.sockets.ListenPacket,
+		Config:              transport.Config{HandshakeTimeout: 2 * time.Second},
+		Relay:               relayClient,
+		RelayBeaconInterval: time.Hour,
+	})
+	if err != nil {
+		t.Fatalf("open window: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Close() })
+
+	attacker := hub.open("disc:invite-token")
+	t.Cleanup(func() { _ = attacker.Close() })
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		w.mu.Lock()
+		ready := w.relayDiscovery != nil
+		w.mu.Unlock()
+		if ready {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	sendInvite := func(initiator [8]byte) {
+		var msg [relaySignalLen]byte
+		copy(msg[:4], relayMagic[:])
+		msg[4] = relayMsgInvite
+		copy(msg[5:13], initiator[:])
+		copy(msg[13:21], w.relayID[:])
+		if _, err := attacker.WriteTo(msg[:], attacker.LocalAddr()); err != nil {
+			t.Fatalf("send invite: %v", err)
+		}
+	}
+
+	// Send more unique invites than maxAttempts within the same instant.
+	for i := 1; i <= maxAttempts+4; i++ {
+		sendInvite([8]byte{byte(i), 0xaa})
+	}
+	deadline = time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) && relayClient.sessions() < maxAttempts {
+		time.Sleep(10 * time.Millisecond)
+	}
+	time.Sleep(50 * time.Millisecond)
+	if got := relayClient.sessions(); got != maxAttempts {
+		t.Fatalf("OpenSession calls = %d, want %d", got, maxAttempts)
+	}
+
+	// Drain initial messages, then flood duplicate invites for an active
+	// initiator without advancing the clock: Ready replies must be throttled.
+	_ = attacker.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+	buf := make([]byte, 64)
+	for {
+		if _, _, err := attacker.ReadFrom(buf); err != nil {
+			break
+		}
+	}
+	for range 10 {
+		sendInvite([8]byte{1, 0xaa})
+	}
+	readyCount := 0
+	_ = attacker.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	for {
+		m, _, err := attacker.ReadFrom(buf)
+		if err != nil {
+			break
+		}
+		if m == relaySignalLen && buf[4] == relayMsgReady {
+			readyCount++
+		}
+	}
+	if readyCount != 0 {
+		t.Fatalf("throttled duplicate invites elicited %d Ready replies, want 0", readyCount)
+	}
+}
+
+func TestRelayConcurrentDialDeduplicated(t *testing.T) {
+	hub := newMockRelayHub()
+	n := newNode(t, vnet.NewNetwork(), fake.NewBus(), 9, 5900)
+
+	w, err := Open(context.Background(), Options{
+		Identity:            n.identity,
+		Trust:               n.trust,
+		Discovery:           n.discovery,
+		Name:                n.name,
+		Platform:            model.PlatformMacOS,
+		Role:                model.RolePersonal,
+		Clock:               ports.SystemClock,
+		ListenPacket:        n.sockets.ListenPacket,
+		Config:              transport.Config{HandshakeTimeout: 2 * time.Second},
+		Relay:               &mockRelayClient{hub: hub, token: "dedup-token"},
+		RelayBeaconInterval: time.Hour,
+	})
+	if err != nil {
+		t.Fatalf("open window: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Close() })
+
+	targetID := [8]byte{0xde, 0xad, 0xbe, 0xef, 0x01, 0x02, 0x03, 0x04}
+	target := FormatRelayAddr(targetID)
+
+	ctx1, cancel1 := context.WithCancel(context.Background())
+	defer cancel1()
+	err1 := make(chan error, 1)
+	go func() {
+		err1 <- w.Dial(ctx1, target)
+	}()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		w.mu.Lock()
+		_, dialing := w.relayDials[targetID]
+		w.mu.Unlock()
+		if dialing {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	if err := w.Dial(context.Background(), target); !errors.Is(err, ErrPending) {
+		t.Fatalf("second concurrent Dial = %v, want ErrPending", err)
+	}
+
+	cancel1()
+	if err := <-err1; err == nil {
+		t.Fatal("expected canceled first dial to fail")
+	}
+}

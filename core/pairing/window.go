@@ -152,10 +152,13 @@ type Window struct {
 	conns    map[*transport.PairingConn]struct{}
 	closed   bool
 
-	relayDiscovery net.PacketConn
-	relaySeen      map[[8]byte]struct{}
-	relayInvites   map[[8]byte]bool
-	relayReady     map[[8]byte]chan struct{}
+	relayDiscovery      net.PacketConn
+	relaySeen           map[[8]byte]struct{}
+	relayInvites        map[[8]byte]*relayInvite
+	relayDials          map[[8]byte]struct{}
+	relayReady          map[[8]byte]chan struct{}
+	relayInviteAttempts []time.Time
+	lastRelayBeacon     time.Time
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -209,7 +212,8 @@ func Open(ctx context.Context, opts Options) (*Window, error) {
 		requests:     make(map[model.DeviceID]*exchange),
 		conns:        make(map[*transport.PairingConn]struct{}),
 		relaySeen:    make(map[[8]byte]struct{}),
-		relayInvites: make(map[[8]byte]bool),
+		relayInvites: make(map[[8]byte]*relayInvite),
+		relayDials:   make(map[[8]byte]struct{}),
 		relayReady:   make(map[[8]byte]chan struct{}),
 		closedCh:     make(chan struct{}),
 	}

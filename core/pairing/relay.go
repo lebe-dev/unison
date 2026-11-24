@@ -25,7 +25,15 @@ const (
 	relaySignalLen             = 4 + 1 + relayIDLen + relayIDLen
 	defaultRelayBeaconInterval = time.Second
 	relayInviteInterval        = 250 * time.Millisecond
+	maxRelayCandidates         = 32
 )
+
+// relayInvite tracks an incoming relay pairing invite and throttles Ready
+// replies to repeated Invite datagrams.
+type relayInvite struct {
+	ready     bool
+	lastReady time.Time
+}
 
 const (
 	relayMsgBeacon byte = 1
@@ -181,12 +189,22 @@ func (w *Window) handleRelayDatagram(pc net.PacketConn, data []byte) {
 		}
 		w.mu.Lock()
 		_, seen := w.relaySeen[sender]
-		if !seen {
+		added := false
+		replyBeacon := false
+		if !seen && len(w.relaySeen) < maxRelayCandidates {
 			w.relaySeen[sender] = struct{}{}
+			added = true
+			now := w.clock.Now()
+			if w.lastRelayBeacon.IsZero() || now.Sub(w.lastRelayBeacon) >= relayInviteInterval {
+				w.lastRelayBeacon = now
+				replyBeacon = true
+			}
 		}
 		w.mu.Unlock()
-		if !seen {
-			w.sendRelayBeacon(pc)
+		if added {
+			if replyBeacon {
+				w.sendRelayBeacon(pc)
+			}
 			w.emit(Event{
 				Kind: EventCandidate,
 				Addr: FormatRelayAddr(sender),
@@ -226,27 +244,50 @@ func (w *Window) handleRelayDatagram(pc net.PacketConn, data []byte) {
 // handleRelayInvite deduplicates an incoming relay pairing invite and starts a
 // session listener for initiator.
 func (w *Window) handleRelayInvite(discoveryPC net.PacketConn, initiator [8]byte) {
+	now := w.clock.Now()
 	w.mu.Lock()
 	if w.closed {
 		w.mu.Unlock()
 		return
 	}
-	if ready, exists := w.relayInvites[initiator]; exists {
+	if inv, exists := w.relayInvites[initiator]; exists {
+		sendReady := false
+		if inv.ready && (inv.lastReady.IsZero() || now.Sub(inv.lastReady) >= relayInviteInterval) {
+			inv.lastReady = now
+			sendReady = true
+		}
 		w.mu.Unlock()
-		if ready {
+		if sendReady {
 			w.sendRelayReady(discoveryPC, initiator)
 		}
 		return
 	}
-	if len(w.conns)+len(w.relayInvites) >= maxPending || w.recentAttemptsLocked() >= maxAttempts {
+	if len(w.conns)+len(w.relayInvites) >= maxPending ||
+		w.recentAttemptsLocked() >= maxAttempts ||
+		w.recentRelayInvitesLocked() >= maxAttempts {
 		w.mu.Unlock()
 		return
 	}
-	w.relayInvites[initiator] = false
+	w.relayInviteAttempts = append(w.relayInviteAttempts, now)
+	w.relayInvites[initiator] = &relayInvite{}
 	w.wg.Add(1)
 	w.mu.Unlock()
 
 	go w.acceptRelay(discoveryPC, initiator)
+}
+
+// recentRelayInvitesLocked prunes expired relay invite timestamps and returns
+// the count within attemptWindow. The caller must hold mu.
+func (w *Window) recentRelayInvitesLocked() int {
+	now := w.clock.Now()
+	recent := w.relayInviteAttempts[:0]
+	for _, at := range w.relayInviteAttempts {
+		if now.Sub(at) < attemptWindow {
+			recent = append(recent, at)
+		}
+	}
+	w.relayInviteAttempts = recent
+	return len(w.relayInviteAttempts)
 }
 
 // acceptRelay opens the session mailbox for initiator, signals Ready, accepts
@@ -294,7 +335,10 @@ func (w *Window) acceptRelay(discoveryPC net.PacketConn, initiator [8]byte) {
 		w.mu.Unlock()
 		return
 	}
-	w.relayInvites[initiator] = true
+	if inv := w.relayInvites[initiator]; inv != nil {
+		inv.ready = true
+		inv.lastReady = w.clock.Now()
+	}
 	w.mu.Unlock()
 
 	w.sendRelayReady(discoveryPC, initiator)
@@ -329,31 +373,43 @@ func (w *Window) acceptRelay(discoveryPC net.PacketConn, initiator [8]byte) {
 // dialRelay opens a session mailbox with targetID, invites the peer on the
 // discovery mailbox, and runs the SAS exchange once the peer signals Ready.
 func (w *Window) dialRelay(ctx context.Context, targetID [8]byte) error {
+	fl := flow{method: MethodSAS}
 	w.mu.Lock()
 	if w.closed {
 		w.mu.Unlock()
 		return ErrClosed
 	}
-	w.wg.Add(1)
-	w.mu.Unlock()
-	defer w.wg.Done()
-
-	dialCtx, cancel := context.WithCancel(ctx)
-	stop := context.AfterFunc(w.ctx, cancel)
-	defer stop()
-	defer cancel()
-
-	fl := flow{method: MethodSAS}
 	if w.opts.Relay == nil {
+		w.mu.Unlock()
 		err := errors.New("pairing: relay is not configured")
 		w.reportFailure(peerInfo{}, fl, err)
 		return err
 	}
 	if targetID == w.relayID {
+		w.mu.Unlock()
 		err := errors.New("pairing: cannot dial self over relay")
 		w.reportFailure(peerInfo{}, fl, err)
 		return err
 	}
+	if _, exists := w.relayDials[targetID]; exists {
+		w.mu.Unlock()
+		w.reportFailure(peerInfo{}, fl, ErrPending)
+		return ErrPending
+	}
+	w.relayDials[targetID] = struct{}{}
+	w.wg.Add(1)
+	w.mu.Unlock()
+	defer func() {
+		w.mu.Lock()
+		delete(w.relayDials, targetID)
+		w.mu.Unlock()
+		w.wg.Done()
+	}()
+
+	dialCtx, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(w.ctx, cancel)
+	defer stop()
+	defer cancel()
 
 	sessionPC, err := w.opts.Relay.OpenSession(dialCtx, w.relayID, targetID)
 	if err != nil {
