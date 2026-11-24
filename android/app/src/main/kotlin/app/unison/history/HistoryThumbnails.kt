@@ -35,10 +35,13 @@ object HistoryThumbnails {
     private const val ALPHA_SHIFT = 24
     private const val RED_SHIFT = 16
     private const val GREEN_SHIFT = 8
+    private const val PREMULTIPLY_ROUNDING = 127
+    private const val PREMULTIPLY_DIVISOR = 255
 
     /**
      * Pixels of a thumbnail as ARGB integers, or null when the response does
-     * not describe a whole image. The core sends non-premultiplied RGBA.
+     * not describe a whole image. The core sends non-premultiplied RGBA, and
+     * Android bitmaps are premultiplied, so the colors are multiplied here.
      */
     fun argbPixels(response: Local.GetHistoryThumbnailResponse): IntArray? =
         argbPixels(response.width, response.height, response.rgba.toByteArray())
@@ -62,7 +65,14 @@ object HistoryThumbnails {
             val green = rgba[offset + GREEN_OFFSET].toInt() and BYTE_MASK
             val blue = rgba[offset + BLUE_OFFSET].toInt() and BYTE_MASK
             val alpha = rgba[offset + ALPHA_OFFSET].toInt() and BYTE_MASK
-            pixels[index] = (alpha shl ALPHA_SHIFT) or (red shl RED_SHIFT) or (green shl GREEN_SHIFT) or blue
+            val premultipliedRed = (red * alpha + PREMULTIPLY_ROUNDING) / PREMULTIPLY_DIVISOR
+            val premultipliedGreen = (green * alpha + PREMULTIPLY_ROUNDING) / PREMULTIPLY_DIVISOR
+            val premultipliedBlue = (blue * alpha + PREMULTIPLY_ROUNDING) / PREMULTIPLY_DIVISOR
+            pixels[index] =
+                (alpha shl ALPHA_SHIFT) or
+                (premultipliedRed shl RED_SHIFT) or
+                (premultipliedGreen shl GREEN_SHIFT) or
+                premultipliedBlue
         }
         return pixels
     }
@@ -73,9 +83,6 @@ object HistoryThumbnails {
         val height = response.height
         val pixels = argbPixels(width, height, response.rgba.toByteArray()) ?: return null
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        // The core sends the pixels as they are, so the bitmap tells the
-        // renderer not to premultiply the colors again.
-        bitmap.setPremultiplied(false)
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
         return bitmap.asImageBitmap()
     }

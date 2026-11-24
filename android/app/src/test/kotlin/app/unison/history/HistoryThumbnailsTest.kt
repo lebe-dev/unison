@@ -10,7 +10,7 @@ import unison.local.v1.Local
 
 class HistoryThumbnailsTest {
     @Test
-    fun pixelsBecomeArgb() {
+    fun pixelsBecomePremultipliedArgb() {
         val rgba =
             byteArrayOf(
                 0x10,
@@ -28,19 +28,28 @@ class HistoryThumbnailsTest {
         assertArrayEquals(
             intArrayOf(
                 0xFF102030.toInt(),
-                0x00010203,
+                0x00000000,
             ),
             pixels,
         )
     }
 
     @Test
-    fun transparentPixelsKeepTheirAlpha() {
+    fun transparentPixelsArePremultiplied() {
         val rgba = byteArrayOf(0x7F, 0x7F, 0x7F, 0x7F)
 
         val pixels = HistoryThumbnails.argbPixels(width = 1, height = 1, rgba = rgba)
 
-        assertArrayEquals(intArrayOf(0x7F7F7F7F), pixels)
+        assertArrayEquals(intArrayOf(0x7F3F3F3F), pixels)
+    }
+
+    @Test
+    fun fullyTransparentPixelsCarryNoColor() {
+        val rgba = byteArrayOf(0xFF.toByte(), 0x80.toByte(), 0x40, 0x00)
+
+        val pixels = HistoryThumbnails.argbPixels(width = 1, height = 1, rgba = rgba)
+
+        assertArrayEquals(intArrayOf(0x00000000), pixels)
     }
 
     @Test
