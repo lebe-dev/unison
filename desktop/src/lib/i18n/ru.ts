@@ -359,6 +359,7 @@ export const ru: { [K in MessageKey]: Message } = {
   "dashboard.dragHint": "Перетащите элемент из окна, чтобы передать его другому приложению.",
   "dashboard.previewAria": "Просмотр элемента",
   "dashboard.closePreviewAria": "Закрыть просмотр",
+  "dashboard.previewUnavailable": "Предпросмотр недоступен",
   "dashboard.menuAria": "Действия с элементом",
   "dashboard.closeMenuAria": "Закрыть меню",
   "dashboard.menuSend": "Отправить",

@@ -470,7 +470,18 @@
                 onpointercancel={handlePointerEnd}
               >
                 {#if item.complete}
-                  <ImageCanvas id={info.id} maxSide={THUMB_SIDE} label={historyTitle(info)} />
+                  {#snippet tileFallback()}
+                    <span class="placeholder">
+                      <Icon name="image" size={22} />
+                      <span>{t("dashboard.previewUnavailable")}</span>
+                    </span>
+                  {/snippet}
+                  <ImageCanvas
+                    id={info.id}
+                    maxSide={THUMB_SIDE}
+                    label={historyTitle(info)}
+                    fallback={tileFallback}
+                  />
                 {:else}
                   <span class="placeholder">
                     <Icon name="image" size={22} />
@@ -652,7 +663,7 @@
       <figure>
         {#if info.kind === Kind.IMAGE}
           {#snippet imageFallback()}
-            <p class="muted">{t("history.notDownloaded")}</p>
+            <p class="muted">{t("dashboard.previewUnavailable")}</p>
           {/snippet}
           {#if preview.complete}
             <ImageCanvas
@@ -691,16 +702,15 @@
               >
                 {t("common.copy")}
               </button>
-              {#if !preview.complete}
-                <button
-                  class="button primary small"
-                  type="button"
-                  disabled={dashboard.downloading.includes(info.id)}
-                  onclick={() => void dashboard.download(info.id, Kind.IMAGE)}
-                >
-                  {t("common.download")}
-                </button>
-              {/if}
+              <button
+                class={preview.complete ? "button small" : "button primary small"}
+                type="button"
+                disabled={dashboard.downloading.includes(info.id)}
+                onclick={() =>
+                  void dashboard.download(info.id, preview.complete ? Kind.FILES : Kind.IMAGE)}
+              >
+                {t("common.download")}
+              </button>
             {:else if info.kind === Kind.TEXT}
               <button
                 class="button small"

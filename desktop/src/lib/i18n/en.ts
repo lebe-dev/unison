@@ -362,6 +362,7 @@ export const en = {
   "dashboard.dragHint": "Drag an item out of the window to hand it to another app.",
   "dashboard.previewAria": "Item preview",
   "dashboard.closePreviewAria": "Close the preview",
+  "dashboard.previewUnavailable": "Preview unavailable",
   "dashboard.menuAria": "Item actions",
   "dashboard.closeMenuAria": "Close the menu",
   "dashboard.menuSend": "Send",

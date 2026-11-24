@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"io"
 	"mime"
 	"path/filepath"
 	"strings"
@@ -105,7 +106,7 @@ func (n *Node) recordSharedTransfer(ctx context.Context, transfer share.Transfer
 		return
 	}
 
-	kind, reps := shareHistoryEntry(transfer.Files)
+	kind, reps := n.shareHistoryEntry(ctx, transfer.Files)
 	if len(reps) == 0 {
 		return
 	}
@@ -136,11 +137,11 @@ func (n *Node) recordSharedTransfer(ctx context.Context, transfer share.Transfer
 }
 
 // shareHistoryEntry maps received share files to a history kind and its
-// representations. A single supported image is recorded as an image item; all
-// other transfers are recorded as files.
-func shareHistoryEntry(files []share.File) (model.Kind, []model.Representation) {
+// representations. A single decodable image within clip limits is recorded as
+// an image item; all other transfers are recorded as files.
+func (n *Node) shareHistoryEntry(ctx context.Context, files []share.File) (model.Kind, []model.Representation) {
 	if len(files) == 1 {
-		if mediaType, ok := shareImageMIME(files[0]); ok {
+		if mediaType, ok := n.shareImageMIME(ctx, files[0]); ok {
 			return model.KindImage, []model.Representation{{
 				MIME:     mediaType,
 				Size:     uint64(max(files[0].Size, 0)),
@@ -167,8 +168,8 @@ func shareHistoryEntry(files []share.File) (model.Kind, []model.Representation) 
 }
 
 // shareImageMIME reports the normalized image MIME type when a shared file can
-// be decoded as an image entry.
-func shareImageMIME(file share.File) (string, bool) {
+// be decoded as an image entry by clip.Thumbnail.
+func (n *Node) shareImageMIME(ctx context.Context, file share.File) (string, bool) {
 	if file.Hash == ([32]byte{}) || file.Size <= 0 || file.Size > clip.MaxImageBytes {
 		return "", false
 	}
@@ -183,10 +184,22 @@ func shareImageMIME(file share.File) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	switch strings.ToLower(mediaType) {
-	case "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/tiff":
-		return strings.ToLower(mediaType), true
+	normalized := strings.ToLower(mediaType)
+	switch normalized {
+	case "image/png", "image/jpeg", "image/gif":
 	default:
 		return "", false
 	}
+	if n.blobs == nil {
+		return "", false
+	}
+	reader, err := n.blobs.Open(ctx, file.Hash)
+	if err != nil {
+		return "", false
+	}
+	defer func() { _ = reader.Close() }()
+	if !clip.CanDecodeImage(io.NewSectionReader(reader, 0, reader.Size()), reader.Size()) {
+		return "", false
+	}
+	return normalized, true
 }

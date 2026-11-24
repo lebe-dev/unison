@@ -55,6 +55,28 @@ func receivedCodec(data []byte) (imageCodec, error) {
 	}
 }
 
+// CanDecodeImage reports whether r holds an image accepted by Thumbnail and
+// sanitizeImage within the image size and dimension limits.
+func CanDecodeImage(r io.Reader, size int64) bool {
+	if size <= 0 || size > MaxImageBytes {
+		return false
+	}
+	var header [64]byte
+	n, err := io.ReadFull(r, header[:])
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return false
+	}
+	codec, err := receivedCodec(header[:n])
+	if err != nil {
+		return false
+	}
+	cfg, err := codec.config(io.MultiReader(bytes.NewReader(header[:n]), r))
+	if err != nil {
+		return false
+	}
+	return checkImageBounds(cfg) == nil
+}
+
 // decodeReceived decodes an image of a peer within the image limits. A panic
 // of a decoder is reported as an error.
 func decodeReceived(data []byte) (decoded image.Image, err error) {
