@@ -11,6 +11,8 @@ import {
   TransferState,
 } from "./api/gen/unison/local/v1/local_pb";
 import {
+  deviceLabel,
+  downloadPercent,
   fileCategory,
   fileExtension,
   formatBytes,
@@ -18,6 +20,7 @@ import {
   historyTitle,
   itemSize,
   kindLabel,
+  originLabel,
   pathLabel,
   platformLabel,
   progressPercent,
@@ -59,6 +62,21 @@ describe("shortDeviceID", () => {
     expect(shortDeviceID("0123456789abcdef")).toBe("0123 4567 89AB");
     expect(shortDeviceID("abc")).toBe("ABC");
     expect(shortDeviceID("")).toBe("");
+  });
+});
+
+describe("deviceLabel and originLabel", () => {
+  it("falls back to the short device ID when unnamed", () => {
+    expect(deviceLabel({ deviceId: "0123456789abcdef", name: "MacBook" })).toBe("MacBook");
+    expect(deviceLabel({ deviceId: "0123456789abcdef", name: "" })).toBe("0123 4567 89AB");
+  });
+
+  it("resolves self, known devices and unknown origins", () => {
+    const devices = [{ deviceId: "peer-1", name: "Pixel" }];
+    expect(originLabel("", "self", devices)).toBe("");
+    expect(originLabel("self", "self", devices)).toBe("This device");
+    expect(originLabel("peer-1", "self", devices)).toBe("Pixel");
+    expect(originLabel("0123456789abcdef", "self", devices)).toBe("0123 4567 89AB");
   });
 });
 
@@ -122,6 +140,15 @@ describe("historyTitle", () => {
     });
 
     expect(historyTitle(item)).toBe("report.pdf and 1 more");
+  });
+});
+
+describe("downloadPercent", () => {
+  it("clamps the percentage between 0 and 100", () => {
+    expect(downloadPercent(512, 1024)).toBe(50);
+    expect(downloadPercent(0, 0)).toBe(0);
+    expect(downloadPercent(-10, 100)).toBe(0);
+    expect(downloadPercent(200, 100)).toBe(100);
   });
 });
 

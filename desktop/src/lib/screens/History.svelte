@@ -2,19 +2,22 @@
   import { onMount } from "svelte";
   import { Kind, type HistoryItem } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
+  import DaemonState from "../DaemonState.svelte";
   import {
     fileNames,
     formatBytes,
     formatDateTime,
     itemSize,
     kindLabel,
+    originLabel,
     shortDeviceID,
     textSnippet,
   } from "../format";
   import { history } from "../history.svelte";
   import { t } from "../i18n";
   import ImageCanvas from "../ImageCanvas.svelte";
-  import Spinner from "../Spinner.svelte";
+  import Notice from "../Notice.svelte";
+  import PreviewDialog from "../PreviewDialog.svelte";
 
   /** Height of one row of the feed, in pixels. */
   const ROW_HEIGHT = 88;
@@ -96,11 +99,7 @@
   });
 
   function originName(origin: string): string {
-    if (origin === daemon.deviceID) {
-      return t("common.thisDevice");
-    }
-    const device = daemon.devices.find((candidate) => candidate.deviceId === origin);
-    return device?.name || shortDeviceID(origin);
+    return originLabel(origin, daemon.deviceID, daemon.devices);
   }
 
   function description(item: HistoryItem): string {
@@ -164,17 +163,7 @@
 </script>
 
 {#if !daemon.connected}
-  <section class="state">
-    {#if daemon.loading}
-      <Spinner />
-      <p class="muted">{t("devices.connecting")}</p>
-    {:else}
-      <p class="notice error">{t("history.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.retry()}>
-        {t("common.tryAgain")}
-      </button>
-    {/if}
-  </section>
+  <DaemonState message={t("history.daemonNotRunning")} />
 {:else}
   <div class="history">
     <div class="toolbar">
@@ -247,18 +236,10 @@
       </div>
     {/if}
 
-    {#if history.notice}
-      <p
-        class="notice"
-        class:error={history.notice.kind === "error"}
-        class:info={history.notice.kind === "info"}
-      >
-        {history.notice.text}
-      </p>
-    {/if}
+    <Notice notice={history.notice} />
 
     {#if history.error}
-      <p class="notice error">{history.error}</p>
+      <Notice kind="error" text={history.error} />
     {/if}
 
     {#if history.items.length === 0}
@@ -382,23 +363,14 @@
 {/if}
 
 {#if preview}
-  <div class="overlay" role="dialog" aria-modal="true" aria-label={t("history.previewAria")}>
-    <button
-      class="backdrop"
-      type="button"
-      aria-label={t("history.closePreviewAria")}
-      onclick={() => (preview = null)}
-    ></button>
-    <figure>
-      <ImageCanvas id={preview.id} maxSide={PREVIEW_SIDE} label={preview.title} />
-      <figcaption>
-        <span>{preview.title}</span>
-        <button class="button small" type="button" onclick={() => (preview = null)}>
-          {t("common.close")}
-        </button>
-      </figcaption>
-    </figure>
-  </div>
+  <PreviewDialog
+    ariaLabel={t("history.previewAria")}
+    closeAriaLabel={t("history.closePreviewAria")}
+    title={preview.title}
+    onClose={() => (preview = null)}
+  >
+    <ImageCanvas id={preview.id} maxSide={PREVIEW_SIDE} label={preview.title} />
+  </PreviewDialog>
 {/if}
 
 <style>
@@ -541,52 +513,5 @@
     flex-wrap: nowrap;
     justify-content: flex-end;
     gap: 0.35rem;
-  }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background-color: rgba(0, 0, 0, 0.45);
-    z-index: 10;
-  }
-
-  .backdrop {
-    position: absolute;
-    inset: 0;
-    border: none;
-    background: transparent;
-    cursor: zoom-out;
-  }
-
-  .overlay figure {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-width: 90vw;
-    max-height: 90vh;
-    margin: 0;
-    padding: 0.75rem;
-    border-radius: 12px;
-    background-color: var(--surface);
-  }
-
-  .overlay :global(canvas) {
-    max-width: 100%;
-    max-height: 75vh;
-    object-fit: contain;
-  }
-
-  .overlay figcaption {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    color: var(--muted);
-    font-size: 0.8125rem;
   }
 </style>

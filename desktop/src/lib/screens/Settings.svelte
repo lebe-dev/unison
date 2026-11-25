@@ -1,10 +1,13 @@
 <script lang="ts">
   import { client } from "../api/client";
   import { daemon } from "../daemon.svelte";
+  import DaemonState from "../DaemonState.svelte";
   import { errorText } from "../errors";
   import { history } from "../history.svelte";
   import { formatDateTime, shortDeviceID } from "../format";
   import { t, type MessageKey } from "../i18n";
+  import Notice from "../Notice.svelte";
+  import Tabs from "../Tabs.svelte";
   import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
   import { deviceNameKey } from "../platform";
@@ -49,7 +52,9 @@
   import { theme } from "../theme.svelte";
   import { updater } from "../updater.svelte";
   import type { CheckInterval } from "../updater";
-  import Icon, { type IconName } from "../Icon.svelte";
+  import Icon from "../Icon.svelte";
+  import type { IconName } from "../icons";
+  import type { Settings as SettingsMessage } from "../api/gen/unison/local/v1/local_pb";
 
   type TabID = "general" | "clipboard" | "files" | "network" | "privacy";
 
@@ -92,6 +97,15 @@
   let clock = $state(Date.now());
   let page = $state<"index" | "journal">("index");
   let activeTab = $state<TabID>("general");
+
+  const tabItems = $derived(
+    tabs.map((tab) => ({
+      id: tab.id,
+      label: t(tab.labelKey),
+      icon: tab.icon,
+      controls: "settings-panel",
+    })),
+  );
 
   const loginEnabled = $derived(
     login?.status === "enabled" || login?.status === "requires_approval",
@@ -220,59 +234,69 @@
     }
   }
 
-  /**
-   * setConfirmation changes the default flag for devices paired from now on:
-   * their clipboard items or file transfers wait for the user.
-   */
-  async function setConfirmation(scope: "clipboard" | "files", value: boolean): Promise<void> {
-    const previous = { clipboard: requireConfirmation, files: requireFileConfirmation };
-    if (scope === "clipboard") {
-      requireConfirmation = value;
-    } else {
-      requireFileConfirmation = value;
-    }
+  async function updateToggleSetting(
+    patch: Record<string, boolean>,
+    apply: (value: boolean) => void,
+    readBack: (updated: SettingsMessage | undefined) => boolean | undefined,
+    previous: boolean,
+    value: boolean,
+    errorKey: MessageKey,
+    onApplied?: (confirmed: boolean) => Promise<void>,
+  ): Promise<void> {
+    apply(value);
     busy = true;
     notice = null;
     try {
-      const response = await client.updateSettings(
-        scope === "clipboard" ? { requireConfirmation: value } : { requireFileConfirmation: value },
-      );
-      requireConfirmation = response.settings?.requireConfirmation ?? requireConfirmation;
-      requireFileConfirmation =
-        response.settings?.requireFileConfirmation ?? requireFileConfirmation;
+      const response = await client.updateSettings(patch);
+      const confirmed = readBack(response.settings) ?? value;
+      apply(confirmed);
+      await onApplied?.(confirmed);
     } catch (error) {
-      requireConfirmation = previous.clipboard;
-      requireFileConfirmation = previous.files;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.confirmationFailed")),
-      };
+      apply(previous);
+      notice = { kind: "error", text: errorText(error, t(errorKey)) };
     } finally {
       busy = false;
     }
   }
 
   /**
+   * setConfirmation changes the default flag for devices paired from now on:
+   * their clipboard items or file transfers wait for the user.
+   */
+  function setConfirmation(scope: "clipboard" | "files", value: boolean): Promise<void> {
+    if (scope === "clipboard") {
+      return updateToggleSetting(
+        { requireConfirmation: value },
+        (v) => (requireConfirmation = v),
+        (s) => s?.requireConfirmation,
+        requireConfirmation,
+        value,
+        "settings.confirmationFailed",
+      );
+    }
+    return updateToggleSetting(
+      { requireFileConfirmation: value },
+      (v) => (requireFileConfirmation = v),
+      (s) => s?.requireFileConfirmation,
+      requireFileConfirmation,
+      value,
+      "settings.confirmationFailed",
+    );
+  }
+
+  /**
    * setRemoteSettings lets the paired devices change the confirmation flags of
    * this device. Refusing it here blocks them for every device.
    */
-  async function setRemoteSettings(value: boolean): Promise<void> {
-    const previous = allowRemoteSettings;
-    allowRemoteSettings = value;
-    busy = true;
-    notice = null;
-    try {
-      const response = await client.updateSettings({ allowRemoteSettings: value });
-      allowRemoteSettings = response.settings?.allowRemoteSettings ?? value;
-    } catch (error) {
-      allowRemoteSettings = previous;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.confirmationFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+  function setRemoteSettings(value: boolean): Promise<void> {
+    return updateToggleSetting(
+      { allowRemoteSettings: value },
+      (v) => (allowRemoteSettings = v),
+      (s) => s?.allowRemoteSettings,
+      allowRemoteSettings,
+      value,
+      "settings.confirmationFailed",
+    );
   }
 
   /** syncSentry tells the shell of the app whether it may report its errors. */
@@ -285,44 +309,28 @@
   }
 
   /** setSentryReporting stores the consent and passes it to the shell. */
-  async function setSentryReporting(value: boolean): Promise<void> {
-    const previous = sentryEnabled;
-    sentryEnabled = value;
-    busy = true;
-    notice = null;
-    try {
-      const response = await client.updateSettings({ sentryEnabled: value });
-      sentryEnabled = response.settings?.sentryEnabled ?? value;
-      await syncSentry(sentryEnabled);
-    } catch (error) {
-      sentryEnabled = previous;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.diagnosticsFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+  function setSentryReporting(value: boolean): Promise<void> {
+    return updateToggleSetting(
+      { sentryEnabled: value },
+      (v) => (sentryEnabled = v),
+      (s) => s?.sentryEnabled,
+      sentryEnabled,
+      value,
+      "settings.diagnosticsFailed",
+      syncSentry,
+    );
   }
 
   /** setStripTracking stores whether the links in the clipboard lose their tracking parameters. */
-  async function setStripTracking(value: boolean): Promise<void> {
-    const previous = stripTracking;
-    stripTracking = value;
-    busy = true;
-    notice = null;
-    try {
-      const response = await client.updateSettings({ stripTracking: value });
-      stripTracking = response.settings?.stripTracking ?? value;
-    } catch (error) {
-      stripTracking = previous;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.stripTrackingFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+  function setStripTracking(value: boolean): Promise<void> {
+    return updateToggleSetting(
+      { stripTracking: value },
+      (v) => (stripTracking = v),
+      (s) => s?.stripTracking,
+      stripTracking,
+      value,
+      "settings.stripTrackingFailed",
+    );
   }
 
   /** Stores the folder of the received files; an empty path means the default one. */
@@ -604,34 +612,6 @@
   function selectTab(id: TabID): void {
     activeTab = id;
   }
-
-  /** nextTab returns the tab the key moves to, or -1 for another key. */
-  function nextTab(key: string, index: number): number {
-    const last = tabs.length - 1;
-    switch (key) {
-      case "ArrowRight":
-        return index === last ? 0 : index + 1;
-      case "ArrowLeft":
-        return index === 0 ? last : index - 1;
-      case "Home":
-        return 0;
-      case "End":
-        return last;
-      default:
-        return -1;
-    }
-  }
-
-  function handleTabKey(event: KeyboardEvent, index: number): void {
-    const next = nextTab(event.key, index);
-    if (next < 0) {
-      return;
-    }
-    event.preventDefault();
-    activeTab = tabs[next].id;
-    const list = (event.currentTarget as HTMLElement).parentElement;
-    list?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
-  }
 </script>
 
 {#snippet appearance()}
@@ -778,16 +758,7 @@
           {t("settings.applicationLog")}
           <small>{t("settings.applicationLogHint")}</small>
         </span>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="m6 3 5 5-5 5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <Icon name="chevronRight" size={14} stroke={1.6} />
       </button>
     </div>
   </section>
@@ -826,44 +797,18 @@
   {#if page === "journal"}
     <JournalSettings onback={() => (page = "index")} />
   {:else}
-    <div class="tabs" role="tablist" aria-label={t("settings.tabsAria")}>
-      {#each tabs as tab, index (tab.id)}
-        <button
-          id="settings-tab-{tab.id}"
-          class="tab"
-          class:active={activeTab === tab.id}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === tab.id}
-          aria-controls="settings-panel"
-          tabindex={activeTab === tab.id ? 0 : -1}
-          onclick={() => selectTab(tab.id)}
-          onkeydown={(event) => handleTabKey(event, index)}
-        >
-          <Icon name={tab.icon} size={14} />
-          <span>{t(tab.labelKey)}</span>
-        </button>
-      {/each}
-    </div>
+    <Tabs
+      items={tabItems}
+      active={activeTab}
+      ariaLabel={t("settings.tabsAria")}
+      idPrefix="settings"
+      onSelect={selectTab}
+    />
 
-    {#if notice}
-      <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
-        {notice.text}
-      </p>
-    {/if}
+    <Notice {notice} />
 
     {#if !daemon.connected}
-      <section class="state">
-        {#if daemon.loading}
-          <Spinner />
-          <p class="muted">{t("devices.connecting")}</p>
-        {:else}
-          <p class="notice error">{t("settings.daemonNotRunning")}</p>
-          <button class="button" type="button" onclick={() => void daemon.retry()}>
-            {t("common.tryAgain")}
-          </button>
-        {/if}
-      </section>
+      <DaemonState message={t("settings.daemonNotRunning")} />
     {/if}
 
     <div
@@ -1234,41 +1179,6 @@
     margin: 0 auto;
   }
 
-  .tabs {
-    display: flex;
-    gap: 2px;
-    width: fit-content;
-    padding: 2px;
-    border-radius: 8px;
-    background-color: var(--fill);
-  }
-
-  .tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 26px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 6px;
-    color: var(--secondary);
-    background: transparent;
-    font: inherit;
-    font-size: 13px;
-    cursor: default;
-  }
-
-  .tab.active {
-    color: var(--foreground);
-    background-color: var(--surface);
-    box-shadow: var(--box-shadow);
-  }
-
-  .tab:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
-    outline-offset: 0;
-  }
-
   .panel {
     display: flex;
     flex-direction: column;
@@ -1318,7 +1228,7 @@
     background-color: var(--hover);
   }
 
-  .nav-row svg {
+  .nav-row :global(.icon) {
     flex: none;
     color: var(--muted);
   }

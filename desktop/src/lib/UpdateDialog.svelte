@@ -1,32 +1,17 @@
 <script lang="ts">
   import { formatBytes, formatDateTime } from "./format";
-  import { t, type MessageKey } from "./i18n";
+  import { t } from "./i18n";
   import Markdown from "./Markdown.svelte";
+  import Notice from "./Notice.svelte";
   import Spinner from "./Spinner.svelte";
+  import UpdateProgress from "./UpdateProgress.svelte";
   import { updater } from "./updater.svelte";
-  import type { InstallPhase } from "./updater";
 
   const release = $derived(updater.available);
   const status = $derived(updater.status);
   const locked = $derived(
     status.kind === "verifying" || status.kind === "installing" || status.kind === "restarting",
   );
-
-  const PHASE_KEYS: Record<InstallPhase, MessageKey> = {
-    preparing: "updates.phase.preparing",
-    stopping_daemon: "updates.phase.stoppingDaemon",
-    applying_update: "updates.phase.applyingUpdate",
-    restarting_services: "updates.phase.restartingServices",
-    relaunching: "updates.phase.relaunching",
-  };
-
-  /** percent returns the share of a download that is done. */
-  function percent(downloaded: number, total: number): number {
-    if (total <= 0) {
-      return 0;
-    }
-    return Math.min(100, Math.round((downloaded / total) * 100));
-  }
 
   /** published returns the publish date of a release, or an empty string. */
   function published(value: string): string {
@@ -36,11 +21,7 @@
 
   /** retry runs the action that failed. */
   function retry(): void {
-    if (!release) {
-      void updater.checkNow();
-      return;
-    }
-    if (!updater.supported) {
+    if (!release || !updater.supported) {
       void updater.checkNow();
       return;
     }
@@ -74,7 +55,7 @@
           <span aria-hidden="true">-&gt;</span>
           <span class="version-pill new">{release.version}</span>
           {#if release.prerelease}
-            <span class="badge">{t("updates.beta")}</span>
+            <span class="badge beta">{t("updates.beta")}</span>
           {/if}
         </div>
         <p class="meta">
@@ -86,15 +67,16 @@
       </header>
 
       {#if !updater.supported}
-        <p class="notice warn">
-          {t("updates.unsupported", {
+        <Notice
+          kind="warn"
+          text={t("updates.unsupported", {
             reason: updater.unsupportedReason ?? t("updates.unsupportedUnknown"),
           })}
-        </p>
+        />
       {/if}
 
       {#if status.kind === "error"}
-        <div class="notice error" role="alert">
+        <div class="notice error retry-row" role="alert">
           <p>{t("updates.failed", { message: status.message })}</p>
           <button class="button small" type="button" onclick={retry}>
             {t("updates.retry")}
@@ -110,40 +92,7 @@
         {/if}
       </div>
 
-      {#if status.kind === "downloading"}
-        <div class="progress" role="status">
-          <progress
-            max={status.total || 1}
-            value={status.downloaded}
-            aria-label={t("updates.downloading", {
-              percent: percent(status.downloaded, status.total),
-            })}
-          ></progress>
-          <span>
-            {t("updates.downloading", {
-              percent: percent(status.downloaded, status.total),
-            })}
-            <span class="muted">
-              {formatBytes(status.downloaded)} / {formatBytes(status.total)}
-            </span>
-          </span>
-        </div>
-      {:else if status.kind === "verifying"}
-        <div class="progress" role="status">
-          <Spinner size={14} />
-          <span>{t("updates.verifying")}</span>
-        </div>
-      {:else if status.kind === "installing"}
-        <div class="progress" role="status">
-          <Spinner size={14} />
-          <span>{t(PHASE_KEYS[status.phase])}</span>
-        </div>
-      {:else if status.kind === "restarting"}
-        <div class="progress" role="status">
-          <Spinner size={14} />
-          <span>{t("updates.restarting")}</span>
-        </div>
-      {/if}
+      <UpdateProgress {status} detailed />
 
       <footer class="dialog-footer">
         {#if status.kind === "downloading"}
@@ -223,17 +172,6 @@
     color: var(--accent);
   }
 
-  .badge {
-    padding: 1px 6px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
-    color: var(--accent);
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
   .meta {
     display: flex;
     gap: 12px;
@@ -252,48 +190,16 @@
     background: var(--background);
   }
 
-  .notice {
-    margin: 0;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-  }
-
-  .notice.warn {
-    background: color-mix(in srgb, #d97706 12%, transparent);
-  }
-
-  .notice.error {
+  .retry-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: color-mix(in srgb, #dc2626 12%, transparent);
-  }
-
-  .notice p {
-    margin: 0;
-  }
-
-  .progress {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .progress progress {
-    flex: 1;
   }
 
   .dialog-footer {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-  }
-
-  .muted {
-    color: var(--muted);
   }
 </style>

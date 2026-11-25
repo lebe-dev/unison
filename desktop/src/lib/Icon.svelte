@@ -1,32 +1,9 @@
 <script lang="ts" module>
-  /** Names of the line icons drawn in the style of SF Symbols. */
-  export type IconName =
-    | "dashboard"
-    | "devices"
-    | "add"
-    | "requests"
-    | "transfers"
-    | "history"
-    | "settings"
-    | "laptop"
-    | "desktop"
-    | "phone"
-    | "person"
-    | "file"
-    | "clipboard"
-    | "image"
-    | "plus"
-    | "close"
-    | "refresh"
-    | "upload"
-    | "download"
-    | "copy"
-    | "more"
-    | "shield"
-    | "clock";
+  export type { IconName } from "./icons";
 </script>
 
 <script lang="ts">
+  import type { IconName } from "./icons";
   let {
     name,
     size = 16,
@@ -126,5 +103,9 @@
   {:else if name === "shield"}
     <path d="M8 1.8 13.5 4v4c0 3.2-2.3 5.4-5.5 6.2C4.8 13.4 2.5 11.2 2.5 8V4z" />
     <path d="m5.8 8 1.6 1.6L10.4 6.5" />
+  {:else if name === "chevronLeft"}
+    <path d="M10 3 5 8l5 5" />
+  {:else if name === "chevronRight"}
+    <path d="m6 3 5 5-5 5" />
   {/if}
 </svg>

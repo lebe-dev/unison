@@ -6,6 +6,7 @@
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { t } from "../i18n";
+  import Notice from "../Notice.svelte";
   import { relayDraft } from "../relayDraft.svelte";
 
   const REFRESH_MS = 5000;
@@ -190,13 +191,9 @@
 
 <section class="section">
   <h3 class="section-title">{t("relay.heading")}</h3>
-  {#if notice}
-    <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
-      {notice.text}
-    </p>
-  {/if}
+  <Notice {notice} />
   {#if relay?.protocolNewer}
-    <p class="notice warn" role="alert">{t("relay.protocolNewer")}</p>
+    <Notice kind="warn" role="alert" text={t("relay.protocolNewer")} />
   {/if}
   <div class="list">
     <div class="form-row">
@@ -257,7 +254,7 @@
       {/each}
     </div>
   {/if}
-  <div class="toolbar actions">
+  <div class="toolbar end">
     <button
       class="button"
       type="button"
@@ -288,10 +285,6 @@
 <style>
   .wide {
     width: 240px;
-  }
-
-  .actions {
-    justify-content: flex-end;
   }
 
   .check {

@@ -11,7 +11,9 @@
   import { daemon } from "../daemon.svelte";
   import { errorText } from "../errors";
   import { t } from "../i18n";
+  import Icon from "../Icon.svelte";
   import { composeExport, recordsFrom, visibleRecords, type DisplayLevel } from "../journal";
+  import Notice from "../Notice.svelte";
   import { systemName } from "../platform";
   import {
     copyText,
@@ -201,36 +203,23 @@
 <div class="journal">
   <header class="page-header">
     <button class="back" type="button" aria-label={t("common.back")} onclick={onback}>
-      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-        <path
-          d="M10 3 5 8l5 5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      <Icon name="chevronLeft" size={16} stroke={1.6} />
     </button>
     <h2>{t("settings.applicationLog")}</h2>
   </header>
 
   {#if !daemon.connected}
-    <p class="notice info">{t("journal.daemonOffline")}</p>
+    <Notice kind="info" text={t("journal.daemonOffline")} />
   {/if}
 
-  {#if notice}
-    <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
-      {notice.text}
-    </p>
-  {/if}
+  <Notice {notice} />
 
   {#if readFailed}
-    <p class="notice error">{t("journal.readFailed")}</p>
+    <Notice kind="error" text={t("journal.readFailed")} />
   {/if}
 
   {#if !enabled}
-    <p class="notice info">{t("journal.disabledInfo")}</p>
+    <Notice kind="info" text={t("journal.disabledInfo")} />
   {/if}
 
   <section class="section">

@@ -1,10 +1,11 @@
 <script lang="ts">
   import { Role } from "../api/gen/unison/local/v1/local_pb";
+  import DaemonState from "../DaemonState.svelte";
+  import Notice from "../Notice.svelte";
   import CandidateList from "../pairing/CandidateList.svelte";
   import QrPanel from "../pairing/QrPanel.svelte";
   import WindowTimer from "../pairing/WindowTimer.svelte";
   import NetworkIssue from "../NetworkIssue.svelte";
-  import Spinner from "../Spinner.svelte";
   import { daemon } from "../daemon.svelte";
   import { roleLabel } from "../format";
   import { t } from "../i18n";
@@ -28,18 +29,28 @@
   }
 </script>
 
+{#snippet pairingFeedback(dismissible: boolean)}
+  {#if pairing.error}
+    <Notice kind="error" text={pairing.error} />
+  {/if}
+  {#if pairing.result?.details}
+    <NetworkIssue
+      summary={pairing.result.message}
+      hint={pairing.result.hint}
+      details={pairing.result.details}
+      onDismiss={dismissible ? () => (pairing.result = null) : undefined}
+    />
+  {:else if pairing.result}
+    <Notice
+      kind={pairing.result.paired ? "info" : "error"}
+      text={pairing.result.message}
+      onDismiss={dismissible ? () => (pairing.result = null) : undefined}
+    />
+  {/if}
+{/snippet}
+
 {#if !daemon.connected}
-  <section class="state">
-    {#if daemon.loading}
-      <Spinner />
-      <p class="muted">{t("devices.connecting")}</p>
-    {:else}
-      <p class="notice error">{t("add.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.retry()}>
-        {t("common.tryAgain")}
-      </button>
-    {/if}
-  </section>
+  <DaemonState message={t("add.daemonNotRunning")} />
 {:else if pairing.window}
   <div class="window">
     <div class="panel-header">
@@ -66,25 +77,7 @@
       </button>
     </div>
 
-    {#if pairing.result?.details}
-      <NetworkIssue
-        summary={pairing.result.message}
-        hint={pairing.result.hint}
-        details={pairing.result.details}
-        onDismiss={() => (pairing.result = null)}
-      />
-    {:else if pairing.result}
-      <p class="notice" class:error={!pairing.result.paired} class:info={pairing.result.paired}>
-        {pairing.result.message}
-        <button class="button ghost small" type="button" onclick={() => (pairing.result = null)}>
-          {t("common.dismiss")}
-        </button>
-      </p>
-    {/if}
-
-    {#if pairing.error}
-      <p class="notice error">{pairing.error}</p>
-    {/if}
+    {@render pairingFeedback(true)}
 
     <CandidateList
       candidates={pairing.candidates}
@@ -122,21 +115,7 @@
       </button>
     </div>
 
-    {#if pairing.error}
-      <p class="notice error">{pairing.error}</p>
-    {/if}
-
-    {#if pairing.result?.details}
-      <NetworkIssue
-        summary={pairing.result.message}
-        hint={pairing.result.hint}
-        details={pairing.result.details}
-      />
-    {:else if pairing.result}
-      <p class="notice" class:error={!pairing.result.paired} class:info={pairing.result.paired}>
-        {pairing.result.message}
-      </p>
-    {/if}
+    {@render pairingFeedback(false)}
 
     <QrPanel />
   </div>

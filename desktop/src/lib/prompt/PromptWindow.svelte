@@ -3,6 +3,7 @@
   import { onDestroy, onMount } from "svelte";
   import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { t } from "../i18n";
+  import SasCode from "../pairing/SasCode.svelte";
   import {
     PROMPT_ANSWER_EVENT,
     PROMPT_READY_EVENT,
@@ -87,10 +88,13 @@
         </span>
         <span class="muted">{t("mediated.role")}: {current.mediated.role}</span>
         {#if current.mediated.digits}
-          <span class="sas" aria-label={t("mediated.sasAria")}>
-            <span class="digits mono">{current.mediated.digits}</span>
-            <span class="emoji">{current.mediated.emoji.join(" ")}</span>
-          </span>
+          <SasCode
+            layout="inline"
+            grouped
+            digits={current.mediated.digits}
+            emoji={current.mediated.emoji}
+            ariaLabel={t("mediated.sasAria")}
+          />
         {/if}
         {#if current.mediated.alreadyPaired}
           <span class="small">{t("mediated.alreadyPaired")}</span>
@@ -210,23 +214,6 @@
     flex-wrap: wrap;
     align-items: baseline;
     gap: 6px;
-  }
-
-  .sas {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    color: var(--foreground);
-  }
-
-  .digits {
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.08rem;
-  }
-
-  .emoji {
-    font-size: 15px;
   }
 
   .small {

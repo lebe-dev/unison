@@ -6,6 +6,7 @@ import {
   TransferDirection,
   TransferState,
   type ClipItem,
+  type Device,
   type Representation,
   type Transfer,
 } from "./api/gen/unison/local/v1/local_pb";
@@ -49,6 +50,27 @@ export function pathLabel(path: Path): string {
 export function shortDeviceID(deviceID: string): string {
   const head = deviceID.slice(0, 12).toUpperCase();
   return head.replace(/(.{4})(?=.)/g, "$1 ");
+}
+
+/** deviceLabel returns a device's name or its short ID when unnamed. */
+export function deviceLabel(device: Pick<Device, "deviceId" | "name">): string {
+  return device.name || shortDeviceID(device.deviceId);
+}
+
+/** originLabel resolves an item's origin device ID to a display name. */
+export function originLabel(
+  origin: string,
+  selfDeviceID: string,
+  devices: readonly Pick<Device, "deviceId" | "name">[],
+): string {
+  if (!origin) {
+    return "";
+  }
+  if (selfDeviceID && origin === selfDeviceID) {
+    return translate("common.thisDevice");
+  }
+  const device = devices.find((candidate) => candidate.deviceId === origin);
+  return device?.name || shortDeviceID(origin);
 }
 
 /** formatTime renders a unix millisecond timestamp as the local time of day. */
@@ -360,15 +382,18 @@ export function fileCategory(name: string, mimeType = ""): FileCategory {
   return "other";
 }
 
-/** progressPercent returns the share of the transferred bytes, 0 when the size
- * is unknown. */
-export function progressPercent(transfer: Transfer): number {
-  const total = Number(transfer.totalBytes);
+/** downloadPercent returns the share of a byte download that is done. */
+export function downloadPercent(downloaded: number, total: number): number {
   if (total <= 0) {
     return 0;
   }
-  const done = Number(transfer.bytes);
-  return Math.min(100, Math.max(0, Math.round((done / total) * 100)));
+  return Math.min(100, Math.max(0, Math.round((downloaded / total) * 100)));
+}
+
+/** progressPercent returns the share of the transferred bytes, 0 when the size
+ * is unknown. */
+export function progressPercent(transfer: Transfer): number {
+  return downloadPercent(Number(transfer.bytes), Number(transfer.totalBytes));
 }
 
 /** transferFilesText returns a short description of the files of a

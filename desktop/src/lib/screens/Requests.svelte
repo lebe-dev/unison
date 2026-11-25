@@ -7,6 +7,7 @@
     type ShareRequest,
   } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
+  import DaemonState from "../DaemonState.svelte";
   import {
     filesCountText,
     formatBytes,
@@ -17,9 +18,9 @@
   } from "../format";
   import { t } from "../i18n";
   import { mediated } from "../mediated.svelte";
-  import { groupDigits, sasEmoji } from "../pairing/countdown";
+  import Notice from "../Notice.svelte";
+  import SasCode from "../pairing/SasCode.svelte";
   import { requests } from "../requests.svelte";
-  import Spinner from "../Spinner.svelte";
 
   let now = $state(Date.now());
   // A Friends pair turns the search for friends on after the confirmation, so
@@ -65,17 +66,7 @@
 </script>
 
 {#if !daemon.connected}
-  <section class="state">
-    {#if daemon.loading}
-      <Spinner />
-      <p class="muted">{t("devices.connecting")}</p>
-    {:else}
-      <p class="notice error">{t("requests.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.retry()}>
-        {t("common.tryAgain")}
-      </button>
-    {/if}
-  </section>
+  <DaemonState message={t("requests.daemonNotRunning")} />
 {:else}
   <div class="requests">
     <div class="toolbar intro">
@@ -90,33 +81,17 @@
       </button>
     </div>
 
-    {#if requests.notice}
-      <p
-        class="notice"
-        class:error={requests.notice.kind === "error"}
-        class:info={requests.notice.kind === "info"}
-      >
-        {requests.notice.text}
-      </p>
-    {/if}
+    <Notice notice={requests.notice} />
 
     {#if requests.error}
-      <p class="notice error">{requests.error}</p>
+      <Notice kind="error" text={requests.error} />
     {/if}
 
     {#if mediated.error}
-      <p class="notice error">{mediated.error}</p>
+      <Notice kind="error" text={mediated.error} />
     {/if}
 
-    {#if mediated.notice}
-      <p
-        class="notice"
-        class:error={mediated.notice.kind === "error"}
-        class:info={mediated.notice.kind === "info"}
-      >
-        {mediated.notice.text}
-      </p>
-    {/if}
+    <Notice notice={mediated.notice} />
 
     {#if mediated.incoming.length > 0}
       <section class="introductions" aria-label={t("requests.introductionsHeading")}>
@@ -124,7 +99,7 @@
         <ul class="list">
           {#each mediated.incoming as pair (pair.sessionId)}
             <li class="request">
-              <div class="head">
+              <div class="panel-header">
                 <div class="identity">
                   <strong>{t("mediated.offerHeading", { name: mediatorName(pair) })}</strong>
                   <span
@@ -146,14 +121,16 @@
               </div>
 
               {#if pair.sas?.digits}
-                <div class="code" aria-label={t("mediated.sasAria")}>
-                  <span class="digits mono">{groupDigits(pair.sas.digits)}</span>
-                  <span class="emoji">{sasEmoji(pair.sas.emoji).join(" ")}</span>
-                </div>
+                <SasCode
+                  layout="compact"
+                  digits={pair.sas.digits}
+                  emoji={pair.sas.emoji}
+                  ariaLabel={t("mediated.sasAria")}
+                />
               {/if}
 
               {#if pair.alreadyPaired}
-                <p class="notice info">{t("mediated.alreadyPaired")}</p>
+                <Notice kind="info" text={t("mediated.alreadyPaired")} />
               {/if}
 
               {#if pair.role === Role.FRIENDS}
@@ -168,7 +145,7 @@
                 </label>
               {/if}
 
-              <div class="toolbar answer">
+              <div class="toolbar end">
                 <button
                   class="button primary small"
                   type="button"
@@ -202,7 +179,7 @@
       <ul class="list">
         {#each requests.requests as request (request.id)}
           <li class="request">
-            <div class="head">
+            <div class="panel-header">
               <div class="identity">
                 <strong>{request.deviceName || t("common.unnamedDevice")}</strong>
                 <span class="mono muted">{shortDeviceID(request.deviceId)}</span>
@@ -225,7 +202,7 @@
               {t("requests.arrived", { time: formatDateTime(request.createdAtUnixMs) })}
             </p>
 
-            <div class="toolbar answer">
+            <div class="toolbar end">
               <button
                 class="button primary small"
                 type="button"
@@ -267,14 +244,6 @@
     flex: 1 1 260px;
   }
 
-  .head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
   .identity {
     display: flex;
     flex-wrap: wrap;
@@ -305,10 +274,6 @@
     word-break: break-all;
   }
 
-  .toolbar.answer {
-    justify-content: flex-end;
-  }
-
   .group-heading {
     margin: 0 0 6px;
     font-size: 12px;
@@ -321,26 +286,5 @@
     flex-wrap: wrap;
     align-items: baseline;
     gap: 6px;
-  }
-
-  .code {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    background-color: var(--surface-soft);
-  }
-
-  .digits {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.12rem;
-  }
-
-  .emoji {
-    font-size: 18px;
-    line-height: 1.2;
   }
 </style>
