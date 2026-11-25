@@ -2,9 +2,10 @@
   import Icon from "../Icon.svelte";
   import { PairingMethod } from "../api/gen/unison/local/v1/local_pb";
   import type { PairingRequest } from "../pairing.svelte";
-  import { groupDigits, sasEmoji } from "./countdown";
   import { platformLabel, roleLabel } from "../format";
   import { t } from "../i18n";
+  import Notice from "../Notice.svelte";
+  import SasCode from "./SasCode.svelte";
 
   let {
     request,
@@ -24,8 +25,6 @@
   } = $props();
 
   const scanned = $derived(request.method === PairingMethod.QR);
-  const digits = $derived(request.sas ? groupDigits(request.sas.digits) : "");
-  const emoji = $derived(sasEmoji(request.sas?.emoji ?? []));
   const name = $derived(request.name || t("common.aDevice"));
 </script>
 
@@ -47,25 +46,25 @@
     <p class="muted">{t("pairing.scannedHint")}</p>
   {:else}
     <p class="muted">{t("pairing.sameCodeHint")}</p>
-    <div class="code" aria-label={t("pairing.sasAria")}>
-      {#if digits}
-        <div class="digits mono">{digits}</div>
-        <div class="emoji">
-          {#each emoji as symbol (symbol)}
-            <span>{symbol}</span>
-          {/each}
-        </div>
-      {:else}
+    {#if request.sas?.digits}
+      <SasCode
+        layout="hero"
+        digits={request.sas.digits}
+        emoji={request.sas.emoji}
+        ariaLabel={t("pairing.sasAria")}
+      />
+    {:else}
+      <div class="code-wait" aria-label={t("pairing.sasAria")}>
         <p class="muted">{t("pairing.waitingCode")}</p>
-      {/if}
-    </div>
+      </div>
+    {/if}
   {/if}
 
   {#if confirmed}
-    <p class="notice info">{t("pairing.confirmedWait")}</p>
+    <Notice kind="info" text={t("pairing.confirmedWait")} />
   {/if}
 
-  <div class="toolbar actions">
+  <div class="toolbar end">
     <button class="button large" type="button" onclick={onReject} disabled={busy}>
       {t("pairing.reject")}
     </button>
@@ -120,32 +119,11 @@
     color: var(--secondary);
   }
 
-  .code {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .code-wait {
     padding: 20px 16px;
     border-radius: 10px;
     background-color: var(--surface);
     box-shadow: var(--box-shadow);
     text-align: center;
-  }
-
-  .digits {
-    font-size: 36px;
-    font-weight: 600;
-    letter-spacing: 0.3rem;
-  }
-
-  .emoji {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    font-size: 32px;
-    line-height: 1.2;
-  }
-
-  .actions {
-    justify-content: flex-end;
   }
 </style>

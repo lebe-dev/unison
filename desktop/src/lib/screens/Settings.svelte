@@ -1,10 +1,13 @@
 <script lang="ts">
   import { client } from "../api/client";
   import { daemon } from "../daemon.svelte";
+  import DaemonState from "../DaemonState.svelte";
   import { errorText } from "../errors";
   import { history } from "../history.svelte";
-  import { shortDeviceID } from "../format";
+  import { formatDateTime, shortDeviceID } from "../format";
   import { t, type MessageKey } from "../i18n";
+  import Notice from "../Notice.svelte";
+  import Tabs from "../Tabs.svelte";
   import { pickFolder } from "../files";
   import { loginItemStatus, setLoginItem, type LoginItem } from "../login";
   import { deviceNameKey } from "../platform";
@@ -36,9 +39,38 @@
     type HistoryTTL,
     type TTLKind,
   } from "../ttl";
+  import { appSectionOf, desktopSectionOf, isCheckInterval } from "../settingsFile";
+  import {
+    pickSettingsSource,
+    pickSettingsTarget,
+    readSettingsFile,
+    writeSettingsFile,
+  } from "../settingsFileIO";
   import JournalSettings from "./JournalSettings.svelte";
   import RelaySection from "./RelaySection.svelte";
+  import { dashboard, DASHBOARD_LIMIT_OPTIONS, isDashboardLimit } from "../dashboard.svelte";
   import { theme } from "../theme.svelte";
+  import { updater } from "../updater.svelte";
+  import type { CheckInterval } from "../updater";
+  import Icon from "../Icon.svelte";
+  import type { IconName } from "../icons";
+  import type { Settings as SettingsMessage } from "../api/gen/unison/local/v1/local_pb";
+
+  type TabID = "general" | "clipboard" | "files" | "network" | "privacy";
+
+  const tabs: readonly { id: TabID; labelKey: MessageKey; icon: IconName }[] = [
+    { id: "general", labelKey: "settings.tabGeneral", icon: "settings" },
+    { id: "clipboard", labelKey: "settings.tabClipboard", icon: "clipboard" },
+    { id: "files", labelKey: "settings.tabFiles", icon: "file" },
+    { id: "network", labelKey: "settings.tabNetwork", icon: "devices" },
+    { id: "privacy", labelKey: "settings.tabPrivacy", icon: "shield" },
+  ];
+
+  const updateIntervals: readonly { value: CheckInterval; labelKey: MessageKey }[] = [
+    { value: "six_hours", labelKey: "settings.updatesSixHours" },
+    { value: "daily", labelKey: "settings.updatesDaily" },
+    { value: "weekly", labelKey: "settings.updatesWeekly" },
+  ];
 
   const pauses: { choice: PauseChoice; labelKey: MessageKey }[] = [
     { choice: "five_minutes", labelKey: "settings.pause5" },
@@ -64,6 +96,16 @@
   let notice = $state<{ kind: "info" | "error"; text: string } | null>(null);
   let clock = $state(Date.now());
   let page = $state<"index" | "journal">("index");
+  let activeTab = $state<TabID>("general");
+
+  const tabItems = $derived(
+    tabs.map((tab) => ({
+      id: tab.id,
+      label: t(tab.labelKey),
+      icon: tab.icon,
+      controls: "settings-panel",
+    })),
+  );
 
   const loginEnabled = $derived(
     login?.status === "enabled" || login?.status === "requires_approval",
@@ -80,6 +122,25 @@
     const minutes = Math.floor(left / 60_000);
     const seconds = Math.floor((left % 60_000) / 1000);
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  });
+
+  const updateLastChecked = $derived.by(() => {
+    const time = updater.config.lastCheckedUnixMs;
+    return time ? formatDateTime(time) : t("settings.updatesNeverChecked");
+  });
+
+  const updateState = $derived.by((): string => {
+    const status = updater.status;
+    if (status.kind === "error") {
+      return t("settings.updatesError", { message: status.message });
+    }
+    if (updater.available) {
+      return t("settings.updatesAvailable", { version: updater.available.version });
+    }
+    if (status.kind === "up_to_date") {
+      return t("settings.updatesUpToDate");
+    }
+    return "";
   });
 
   const loginHint = $derived.by((): MessageKey => {
@@ -127,7 +188,7 @@
     }
   }
 
-  async function load(): Promise<void> {
+  async function load(): Promise<boolean> {
     busy = true;
     try {
       const response = await client.getSettings({});
@@ -136,6 +197,7 @@
       requireFileConfirmation = response.settings?.requireFileConfirmation ?? false;
       allowRemoteSettings = response.settings?.allowRemoteSettings ?? true;
       downloadsDir = response.settings?.downloadsDir ?? "";
+      dashboard.downloadsDir = downloadsDir;
       sentryEnabled = response.settings?.sentryEnabled ?? false;
       stripTracking = response.settings?.stripTracking ?? true;
       policy = policyFromSettings(response.settings);
@@ -143,8 +205,10 @@
       loaded = true;
       notice = null;
       void syncSentry(sentryEnabled);
+      return true;
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("settings.loadFailed")) };
+      return false;
     } finally {
       busy = false;
     }
@@ -170,59 +234,69 @@
     }
   }
 
-  /**
-   * setConfirmation changes the default flag for devices paired from now on:
-   * their clipboard items or file transfers wait for the user.
-   */
-  async function setConfirmation(scope: "clipboard" | "files", value: boolean): Promise<void> {
-    const previous = { clipboard: requireConfirmation, files: requireFileConfirmation };
-    if (scope === "clipboard") {
-      requireConfirmation = value;
-    } else {
-      requireFileConfirmation = value;
-    }
+  async function updateToggleSetting(
+    patch: Record<string, boolean>,
+    apply: (value: boolean) => void,
+    readBack: (updated: SettingsMessage | undefined) => boolean | undefined,
+    previous: boolean,
+    value: boolean,
+    errorKey: MessageKey,
+    onApplied?: (confirmed: boolean) => Promise<void>,
+  ): Promise<void> {
+    apply(value);
     busy = true;
     notice = null;
     try {
-      const response = await client.updateSettings(
-        scope === "clipboard" ? { requireConfirmation: value } : { requireFileConfirmation: value },
-      );
-      requireConfirmation = response.settings?.requireConfirmation ?? requireConfirmation;
-      requireFileConfirmation =
-        response.settings?.requireFileConfirmation ?? requireFileConfirmation;
+      const response = await client.updateSettings(patch);
+      const confirmed = readBack(response.settings) ?? value;
+      apply(confirmed);
+      await onApplied?.(confirmed);
     } catch (error) {
-      requireConfirmation = previous.clipboard;
-      requireFileConfirmation = previous.files;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.confirmationFailed")),
-      };
+      apply(previous);
+      notice = { kind: "error", text: errorText(error, t(errorKey)) };
     } finally {
       busy = false;
     }
   }
 
   /**
+   * setConfirmation changes the default flag for devices paired from now on:
+   * their clipboard items or file transfers wait for the user.
+   */
+  function setConfirmation(scope: "clipboard" | "files", value: boolean): Promise<void> {
+    if (scope === "clipboard") {
+      return updateToggleSetting(
+        { requireConfirmation: value },
+        (v) => (requireConfirmation = v),
+        (s) => s?.requireConfirmation,
+        requireConfirmation,
+        value,
+        "settings.confirmationFailed",
+      );
+    }
+    return updateToggleSetting(
+      { requireFileConfirmation: value },
+      (v) => (requireFileConfirmation = v),
+      (s) => s?.requireFileConfirmation,
+      requireFileConfirmation,
+      value,
+      "settings.confirmationFailed",
+    );
+  }
+
+  /**
    * setRemoteSettings lets the paired devices change the confirmation flags of
    * this device. Refusing it here blocks them for every device.
    */
-  async function setRemoteSettings(value: boolean): Promise<void> {
-    const previous = allowRemoteSettings;
-    allowRemoteSettings = value;
-    busy = true;
-    notice = null;
-    try {
-      const response = await client.updateSettings({ allowRemoteSettings: value });
-      allowRemoteSettings = response.settings?.allowRemoteSettings ?? value;
-    } catch (error) {
-      allowRemoteSettings = previous;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.confirmationFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+  function setRemoteSettings(value: boolean): Promise<void> {
+    return updateToggleSetting(
+      { allowRemoteSettings: value },
+      (v) => (allowRemoteSettings = v),
+      (s) => s?.allowRemoteSettings,
+      allowRemoteSettings,
+      value,
+      "settings.confirmationFailed",
+    );
   }
 
   /** syncSentry tells the shell of the app whether it may report its errors. */
@@ -235,44 +309,28 @@
   }
 
   /** setSentryReporting stores the consent and passes it to the shell. */
-  async function setSentryReporting(value: boolean): Promise<void> {
-    const previous = sentryEnabled;
-    sentryEnabled = value;
-    busy = true;
-    notice = null;
-    try {
-      const response = await client.updateSettings({ sentryEnabled: value });
-      sentryEnabled = response.settings?.sentryEnabled ?? value;
-      await syncSentry(sentryEnabled);
-    } catch (error) {
-      sentryEnabled = previous;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.diagnosticsFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+  function setSentryReporting(value: boolean): Promise<void> {
+    return updateToggleSetting(
+      { sentryEnabled: value },
+      (v) => (sentryEnabled = v),
+      (s) => s?.sentryEnabled,
+      sentryEnabled,
+      value,
+      "settings.diagnosticsFailed",
+      syncSentry,
+    );
   }
 
   /** setStripTracking stores whether the links in the clipboard lose their tracking parameters. */
-  async function setStripTracking(value: boolean): Promise<void> {
-    const previous = stripTracking;
-    stripTracking = value;
-    busy = true;
-    notice = null;
-    try {
-      const response = await client.updateSettings({ stripTracking: value });
-      stripTracking = response.settings?.stripTracking ?? value;
-    } catch (error) {
-      stripTracking = previous;
-      notice = {
-        kind: "error",
-        text: errorText(error, t("settings.stripTrackingFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+  function setStripTracking(value: boolean): Promise<void> {
+    return updateToggleSetting(
+      { stripTracking: value },
+      (v) => (stripTracking = v),
+      (s) => s?.stripTracking,
+      stripTracking,
+      value,
+      "settings.stripTrackingFailed",
+    );
   }
 
   /** Stores the folder of the received files; an empty path means the default one. */
@@ -283,6 +341,7 @@
       const response = await client.updateSettings({ downloadsDir: path });
       downloadsDir = response.settings?.downloadsDir ?? path;
       history.downloadsDir = downloadsDir;
+      dashboard.downloadsDir = downloadsDir;
       notice = { kind: "info", text: t("settings.folderSaved") };
     } catch (error) {
       notice = { kind: "error", text: errorText(error, t("settings.folderFailed")) };
@@ -374,6 +433,14 @@
     }
   }
 
+  /** setUpdateInterval changes the interval of the background checks. */
+  function setUpdateInterval(event: Event): void {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (isCheckInterval(value)) {
+      void updater.setInterval(value);
+    }
+  }
+
   /** Shows the lifetimes and fills the fields with them. */
   function showTTL(next: HistoryTTL | null): void {
     ttl = next;
@@ -449,11 +516,101 @@
     }
   }
 
+  /** exportSettingsFile keeps the settings in a file the user picks. */
+  async function exportSettingsFile(): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      const response = await client.exportSettings({
+        appSettings: appSectionOf(theme.mode, loginEnabled, {
+          enabled: updater.config.enabled,
+          betaChannel: updater.config.betaChannel,
+          interval: updater.config.interval,
+        }),
+      });
+      const target = await pickSettingsTarget(response.fileName);
+      if (!target) {
+        return;
+      }
+      await writeSettingsFile(target, new TextDecoder().decode(response.document));
+      notice = { kind: "info", text: t("settings.exportSaved", { path: target }) };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, t("settings.exportFailed")) };
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** importSettingsFile applies the settings of a file the user picks. Keys the
+   * file does not carry keep their values. */
+  async function importSettingsFile(): Promise<void> {
+    busy = true;
+    notice = null;
+    const notes: string[] = [];
+    try {
+      const source = await pickSettingsSource();
+      if (!source) {
+        return;
+      }
+      const text = await readSettingsFile(source);
+      const response = await client.importSettings({
+        document: new TextEncoder().encode(text),
+      });
+
+      const app = desktopSectionOf(text);
+      if (app.theme) {
+        theme.set(app.theme);
+      }
+      if (app.loginItem !== undefined) {
+        try {
+          login = await setLoginItem(app.loginItem);
+        } catch {
+          notes.push(t("settings.importLoginSkipped"));
+        }
+      }
+      if (app.updates) {
+        await updater.setConfig(app.updates);
+      }
+      if (!(await load())) {
+        return;
+      }
+
+      if (response.fromNewerVersion) {
+        notes.unshift(t("settings.importNewer"));
+      }
+      if (response.ignored.length > 0) {
+        notes.push(t("settings.importIgnored", { keys: response.ignored.join(", ") }));
+      }
+      notice = {
+        kind: "info",
+        text:
+          notes.length > 0
+            ? `${t("settings.imported")} ${notes.join(" ")}`
+            : t("settings.imported"),
+      };
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, t("settings.importFailed")) };
+    } finally {
+      busy = false;
+    }
+  }
+
   function changeTheme(event: Event): void {
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value === "system" || value === "light" || value === "dark") {
       theme.set(value);
     }
+  }
+
+  function changeDashboardLimit(event: Event): void {
+    const value = Number((event.currentTarget as HTMLSelectElement).value);
+    if (isDashboardLimit(value)) {
+      dashboard.setLimit(value);
+    }
+  }
+
+  function selectTab(id: TabID): void {
+    activeTab = id;
   }
 </script>
 
@@ -467,6 +624,29 @@
           <option value="system">{t("settings.themeAuto")}</option>
           <option value="light">{t("settings.themeLight")}</option>
           <option value="dark">{t("settings.themeDark")}</option>
+        </select>
+      </label>
+    </div>
+  </section>
+{/snippet}
+
+{#snippet dashboardSection()}
+  <section class="section">
+    <h3 class="section-title">{t("settings.dashboard")}</h3>
+    <div class="list">
+      <label class="form-row">
+        <span class="label">
+          {t("settings.dashboardItems")}
+          <small>{t("settings.dashboardItemsHint")}</small>
+        </span>
+        <select
+          aria-label={t("settings.dashboardItems")}
+          value={dashboard.limit}
+          onchange={changeDashboardLimit}
+        >
+          {#each DASHBOARD_LIMIT_OPTIONS as option (option)}
+            <option value={option}>{option}</option>
+          {/each}
         </select>
       </label>
     </div>
@@ -493,6 +673,83 @@
   </section>
 {/snippet}
 
+{#snippet updates()}
+  <section class="section">
+    <h3 class="section-title">{t("settings.updates")}</h3>
+    <div class="list">
+      <label class="toggle form-row">
+        <input
+          type="checkbox"
+          checked={updater.config.enabled}
+          disabled={updater.busy}
+          onchange={(event) => void updater.setEnabled(event.currentTarget.checked)}
+        />
+        <span>
+          {t("settings.updatesAuto")}
+          <small>{t("settings.updatesAutoHint")}</small>
+        </span>
+      </label>
+      <label class="form-row">
+        <span class="label">{t("settings.updatesInterval")}</span>
+        <select
+          aria-label={t("settings.updatesInterval")}
+          value={updater.config.interval}
+          disabled={!updater.config.enabled || updater.busy}
+          onchange={setUpdateInterval}
+        >
+          {#each updateIntervals as option (option.value)}
+            <option value={option.value}>{t(option.labelKey)}</option>
+          {/each}
+        </select>
+      </label>
+      <label class="toggle form-row">
+        <input
+          type="checkbox"
+          checked={updater.config.betaChannel}
+          disabled={updater.busy}
+          onchange={(event) => void updater.setBetaChannel(event.currentTarget.checked)}
+        />
+        <span>
+          {t("settings.updatesBeta")}
+          <small>{t("settings.updatesBetaHint")}</small>
+        </span>
+      </label>
+    </div>
+    <div class="list">
+      <div class="form-row">
+        <span class="label">
+          {t("settings.updatesVersion", {
+            version: updater.currentVersion || t("updates.unknownVersion"),
+          })}
+          <small>{t("settings.updatesLastChecked", { time: updateLastChecked })}</small>
+          {#if updateState}
+            <small>{updateState}</small>
+          {/if}
+        </span>
+        <div class="toolbar">
+          <button
+            class="button"
+            type="button"
+            disabled={updater.busy}
+            onclick={() => void updater.checkNow()}
+          >
+            {#if updater.status.kind === "checking"}
+              <Spinner size={14} />
+            {:else}
+              {t("settings.updatesCheckNow")}
+            {/if}
+          </button>
+          {#if updater.hasUpdate}
+            <button class="button" type="button" onclick={() => updater.openDialog()}>
+              {t("settings.updatesView")}
+            </button>
+          {/if}
+        </div>
+      </div>
+    </div>
+  </section>
+{/snippet}
+
 {#snippet applicationLog()}
   <section class="section">
     <div class="list">
@@ -501,17 +758,37 @@
           {t("settings.applicationLog")}
           <small>{t("settings.applicationLogHint")}</small>
         </span>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-          <path
-            d="m6 3 5 5-5 5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <Icon name="chevronRight" size={14} stroke={1.6} />
       </button>
+    </div>
+  </section>
+{/snippet}
+
+{#snippet settingsFile()}
+  <section class="section">
+    <h3 class="section-title">{t("settings.settingsFile")}</h3>
+    <div class="list">
+      <div class="form-row">
+        <span class="label">{t("settings.settingsFileHint")}</span>
+        <div class="toolbar">
+          <button
+            class="button"
+            type="button"
+            onclick={() => void exportSettingsFile()}
+            disabled={busy}
+          >
+            {t("settings.exportSettings")}
+          </button>
+          <button
+            class="button"
+            type="button"
+            onclick={() => void importSettingsFile()}
+            disabled={busy}
+          >
+            {t("settings.importSettings")}
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 {/snippet}
@@ -519,353 +796,376 @@
 <div class="settings">
   {#if page === "journal"}
     <JournalSettings onback={() => (page = "index")} />
-  {:else if !daemon.connected}
-    <section class="state">
-      {#if daemon.loading}
-        <Spinner />
-        <p class="muted">{t("devices.connecting")}</p>
-      {:else}
-        <p class="notice error">{t("settings.daemonNotRunning")}</p>
-        <button class="button" type="button" onclick={() => void daemon.retry()}>
-          {t("common.tryAgain")}
-        </button>
-      {/if}
-    </section>
-
-    {@render appearance()}
-    {@render startup()}
-    {@render applicationLog()}
   {:else}
-    {#if notice}
-      <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
-        {notice.text}
-      </p>
+    <Tabs
+      items={tabItems}
+      active={activeTab}
+      ariaLabel={t("settings.tabsAria")}
+      idPrefix="settings"
+      onSelect={selectTab}
+    />
+
+    <Notice {notice} />
+
+    {#if !daemon.connected}
+      <DaemonState message={t("settings.daemonNotRunning")} />
     {/if}
 
-    <section class="section">
-      <h3 class="section-title">
-        <span class="grow">{t(deviceNameKey())}</span>
-        <span class="mono count">{shortDeviceID(daemon.deviceID)}</span>
-      </h3>
-      <div class="list">
-        <div class="form-row">
-          <label class="label" for="device-name">{t("settings.deviceName")}</label>
-          <input
-            id="device-name"
-            class="name-input"
-            type="text"
-            bind:value={name}
-            maxlength="128"
-            disabled={busy || !loaded}
-            onkeydown={(event) => {
-              if (event.key === "Enter") void saveName();
-            }}
-          />
-          <button
-            class="button"
-            type="button"
-            onclick={() => void saveName()}
-            disabled={busy || !loaded}
-          >
-            {t("common.save")}
-          </button>
-        </div>
-        <label class="toggle form-row">
-          <input
-            type="checkbox"
-            checked={requireConfirmation}
-            disabled={busy || !loaded}
-            onchange={(event) => void setConfirmation("clipboard", event.currentTarget.checked)}
-          />
-          <span>
-            {t("settings.askClipboard")}
-            <small>{t("settings.askClipboardHint")}</small>
-          </span>
-        </label>
-        <label class="toggle form-row">
-          <input
-            type="checkbox"
-            checked={requireFileConfirmation}
-            disabled={busy || !loaded}
-            onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
-          />
-          <span>
-            {t("settings.askFiles")}
-            <small>{t("settings.askFilesHint")}</small>
-          </span>
-        </label>
-        <label class="toggle form-row">
-          <input
-            type="checkbox"
-            aria-label={t("settings.allowRemote")}
-            checked={allowRemoteSettings}
-            disabled={busy || !loaded}
-            onchange={(event) => void setRemoteSettings(event.currentTarget.checked)}
-          />
-          <span>
-            {t("settings.allowRemote")}
-            <small>{t("settings.allowRemoteHint")}</small>
-          </span>
-        </label>
-      </div>
-      <p class="section-footer">{t("settings.nameFooter")}</p>
-    </section>
+    <div
+      id="settings-panel"
+      class="panel"
+      role="tabpanel"
+      aria-labelledby="settings-tab-{activeTab}"
+      tabindex="0"
+    >
+      {#if activeTab === "general"}
+        {#if daemon.connected}
+          <section class="section">
+            <h3 class="section-title">
+              <span class="grow">{t(deviceNameKey())}</span>
+              <span class="mono count">{shortDeviceID(daemon.deviceID)}</span>
+            </h3>
+            <div class="list">
+              <div class="form-row">
+                <label class="label" for="device-name">{t("settings.deviceName")}</label>
+                <input
+                  id="device-name"
+                  class="name-input"
+                  type="text"
+                  bind:value={name}
+                  maxlength="128"
+                  disabled={busy || !loaded}
+                  onkeydown={(event) => {
+                    if (event.key === "Enter") void saveName();
+                  }}
+                />
+                <button
+                  class="button"
+                  type="button"
+                  onclick={() => void saveName()}
+                  disabled={busy || !loaded}
+                >
+                  {t("common.save")}
+                </button>
+              </div>
+            </div>
+            <p class="section-footer">{t("settings.nameFooter")}</p>
+          </section>
+        {/if}
 
-    {@render appearance()}
+        {@render appearance()}
 
-    <section class="section">
-      <h3 class="section-title">{t("settings.receivedFiles")}</h3>
-      <div class="list">
-        <div class="form-row">
-          <span class="label">
-            {t("settings.saveTo")}
-            <span class="mono path hint">{downloadsDir}</span>
-          </span>
-          <button
-            class="button"
-            type="button"
-            onclick={() => void saveDownloadsDir("")}
-            disabled={busy || !loaded}
-          >
-            {t("settings.useDefaultFolder")}
-          </button>
-          <button
-            class="button"
-            type="button"
-            onclick={() => void chooseDownloadsDir()}
-            disabled={busy || !loaded}
-          >
-            {t("settings.chooseFolder")}
-          </button>
-        </div>
-      </div>
-      <p class="section-footer">{t("settings.receivedFooter")}</p>
-    </section>
+        {@render dashboardSection()}
 
-    <section class="section">
-      <h3 class="section-title">{t("devices.friends")}</h3>
-      <div class="list">
-        <label class="toggle form-row">
-          <input
-            type="checkbox"
-            checked={friendsOn}
-            disabled={busy || !daemon.connected}
-            onchange={(event) => void setFriends(event.currentTarget.checked)}
-          />
-          <span>
-            {t("settings.findFriends")}
-            <small>
-              {#if friendsOn}
-                {t("settings.searchingFor", { time: friendsLeft })}
-              {:else}
-                {t("settings.searchingOff")}
-              {/if}
-            </small>
-          </span>
-        </label>
-      </div>
-    </section>
+        {@render startup()}
 
-    <section class="section">
-      <h3 class="section-title">{t("common.clipboard")}</h3>
-      {#if daemon.manualClipboard}
-        <p class="notice warn">
-          {t("settings.clipboardManual")}
-          {#if daemon.clipboardNote}
-            <span class="note">{daemon.clipboardNote}</span>
+        {@render updates()}
+
+        {@render applicationLog()}
+
+        {@render settingsFile()}
+      {:else if activeTab === "clipboard"}
+        {#if daemon.connected}
+          <section class="section">
+            <h3 class="section-title">{t("common.clipboard")}</h3>
+            {#if daemon.manualClipboard}
+              <p class="notice warn">
+                {t("settings.clipboardManual")}
+                {#if daemon.clipboardNote}
+                  <span class="note">{daemon.clipboardNote}</span>
+                {/if}
+              </p>
+            {/if}
+            <div class="list">
+              <div class="form-row">
+                <span class="label">{daemon.pauseText}</span>
+                <div class="toolbar">
+                  {#each pauses as option (option.choice)}
+                    <button
+                      class="button small"
+                      class:primary={option.choice === "off" && daemon.paused}
+                      type="button"
+                      onclick={() => void setPause(option.choice)}
+                    >
+                      {t(option.labelKey)}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+              <label class="toggle form-row">
+                <input
+                  type="checkbox"
+                  checked={requireConfirmation}
+                  disabled={busy || !loaded}
+                  onchange={(event) =>
+                    void setConfirmation("clipboard", event.currentTarget.checked)}
+                />
+                <span>
+                  {t("settings.askClipboard")}
+                  <small>{t("settings.askClipboardHint")}</small>
+                </span>
+              </label>
+              <label class="toggle form-row">
+                <input
+                  type="checkbox"
+                  checked={stripTracking}
+                  disabled={busy || !loaded}
+                  onchange={(event) => void setStripTracking(event.currentTarget.checked)}
+                />
+                <span>
+                  {t("settings.stripTracking")}
+                  <small>{t("settings.stripTrackingHint")}</small>
+                </span>
+              </label>
+            </div>
+            {#if daemon.manualClipboard}
+              <p class="section-footer">{t("settings.clipboardManualHint")}</p>
+            {/if}
+          </section>
+
+          {#if ttl}
+            <section class="section">
+              <h3 class="section-title">
+                <span class="grow">{t("nav.history")}</span>
+                <button
+                  class="button small"
+                  type="button"
+                  onclick={() => void resetTTL()}
+                  disabled={busy}
+                >
+                  {t("settings.resetLifetimes")}
+                </button>
+              </h3>
+              <div class="list">
+                {#each ttlKinds as kind (kind.key)}
+                  <label class="form-row">
+                    <span class="label">{t(kind.label)}</span>
+                    <input
+                      class="short"
+                      type="text"
+                      value={ttlDrafts[kind.key]}
+                      aria-label={t("settings.lifetimeAria", { kind: t(kind.label) })}
+                      disabled={busy}
+                      onchange={(event) => {
+                        ttlDrafts = { ...ttlDrafts, [kind.key]: event.currentTarget.value };
+                        void saveTTL(kind.key);
+                      }}
+                    />
+                  </label>
+                {/each}
+              </div>
+              <p class="section-footer">{t("settings.lifetimeFooter")}</p>
+            </section>
           {/if}
-        </p>
-      {/if}
-      <div class="list">
-        <div class="form-row">
-          <span class="label">{daemon.pauseText}</span>
-          <div class="toolbar">
-            {#each pauses as option (option.choice)}
-              <button
-                class="button small"
-                class:primary={option.choice === "off" && daemon.paused}
-                type="button"
-                onclick={() => void setPause(option.choice)}
-              >
-                {t(option.labelKey)}
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
-      {#if daemon.manualClipboard}
-        <p class="section-footer">{t("settings.clipboardManualHint")}</p>
-      {/if}
-    </section>
+        {/if}
+      {:else if activeTab === "files"}
+        {#if daemon.connected}
+          <section class="section">
+            <h3 class="section-title">{t("settings.receivedFiles")}</h3>
+            <div class="list">
+              <div class="form-row">
+                <span class="label">
+                  {t("settings.saveTo")}
+                  <span class="mono path hint">{downloadsDir}</span>
+                </span>
+                <button
+                  class="button"
+                  type="button"
+                  onclick={() => void saveDownloadsDir("")}
+                  disabled={busy || !loaded}
+                >
+                  {t("settings.useDefaultFolder")}
+                </button>
+                <button
+                  class="button"
+                  type="button"
+                  onclick={() => void chooseDownloadsDir()}
+                  disabled={busy || !loaded}
+                >
+                  {t("settings.chooseFolder")}
+                </button>
+              </div>
+              <label class="toggle form-row">
+                <input
+                  type="checkbox"
+                  checked={requireFileConfirmation}
+                  disabled={busy || !loaded}
+                  onchange={(event) => void setConfirmation("files", event.currentTarget.checked)}
+                />
+                <span>
+                  {t("settings.askFiles")}
+                  <small>{t("settings.askFilesHint")}</small>
+                </span>
+              </label>
+            </div>
+            <p class="section-footer">{t("settings.receivedFooter")}</p>
+          </section>
 
-    {#if ttl}
-      <section class="section">
-        <h3 class="section-title">
-          <span class="grow">{t("nav.history")}</span>
-          <button
-            class="button small"
-            type="button"
-            onclick={() => void resetTTL()}
-            disabled={busy}
-          >
-            {t("settings.resetLifetimes")}
-          </button>
-        </h3>
-        <div class="list">
-          {#each ttlKinds as kind (kind.key)}
-            <label class="form-row">
-              <span class="label">{t(kind.label)}</span>
-              <input
-                class="short"
-                type="text"
-                value={ttlDrafts[kind.key]}
-                aria-label={t("settings.lifetimeAria", { kind: t(kind.label) })}
-                disabled={busy}
-                onchange={(event) => {
-                  ttlDrafts = { ...ttlDrafts, [kind.key]: event.currentTarget.value };
-                  void saveTTL(kind.key);
-                }}
-              />
-            </label>
-          {/each}
-        </div>
-        <p class="section-footer">{t("settings.lifetimeFooter")}</p>
-      </section>
-    {/if}
+          {#if policy}
+            {@const table = policy}
+            <section class="section">
+              <h3 class="section-title">
+                <span class="grow">{t("settings.networkPolicy")}</span>
+                <button
+                  class="button small"
+                  type="button"
+                  onclick={() => void resetPolicy()}
+                  disabled={busy}
+                >
+                  {t("settings.resetDefaults")}
+                </button>
+              </h3>
+              {#each conditions as condition (condition.key)}
+                {@const conditionLabel = t(condition.label)}
+                <div class="list">
+                  <label class="toggle form-row">
+                    <input
+                      type="checkbox"
+                      aria-label={t("settings.conditionRelayAria", { condition: conditionLabel })}
+                      checked={table[condition.key].relay}
+                      disabled={busy}
+                      onchange={(event) => setRelay(condition.key, event.currentTarget.checked)}
+                    />
+                    <span class="relay-label">{t("settings.relay")}</span>
+                    <span>
+                      <strong>{conditionLabel}</strong>
+                      <small>{t(condition.hint)}</small>
+                    </span>
+                  </label>
+                  {#each kinds as kind (kind.key)}
+                    {@const cell = table[condition.key][kind.key]}
+                    <div class="form-row">
+                      <span class="label">{t(kind.label)}</span>
+                      <select
+                        value={cell.action}
+                        aria-label={t("settings.kindActionAria", {
+                          condition: conditionLabel,
+                          kind: t(kind.label),
+                        })}
+                        disabled={busy}
+                        onchange={(event) =>
+                          setCell(condition.key, kind.key, {
+                            action: Number(event.currentTarget.value),
+                          })}
+                      >
+                        {#each actions as action (action.value)}
+                          <option value={action.value}>{t(action.label)}</option>
+                        {/each}
+                      </select>
+                      <input
+                        class="short"
+                        type="number"
+                        min="1"
+                        max="102400"
+                        step="1"
+                        aria-label={t("settings.kindLimitAria", {
+                          condition: conditionLabel,
+                          kind: t(kind.label),
+                        })}
+                        value={megabytesOf(cell.maxSizeBytes)}
+                        disabled={busy || cell.action !== PolicyAction.AUTO}
+                        onchange={(event) =>
+                          setSize(condition.key, kind.key, event.currentTarget.valueAsNumber)}
+                      />
+                      <span class="muted">MiB</span>
+                    </div>
+                  {/each}
+                </div>
+              {/each}
+              <div class="list">
+                <label class="form-row">
+                  <span class="label">
+                    {t("settings.relayLimit")}
+                    <small>{t("settings.relayLimitHint")}</small>
+                  </span>
+                  <input
+                    class="short"
+                    type="number"
+                    min="1"
+                    max="102400"
+                    step="1"
+                    aria-label={t("settings.relayLimitAria")}
+                    value={megabytesOf(table.relayMaxSizeBytes)}
+                    disabled={busy}
+                    onchange={(event) => setRelayLimit(event.currentTarget.valueAsNumber)}
+                  />
+                  <span class="muted">MiB</span>
+                </label>
+              </div>
+              <p class="section-footer">{t("settings.policyFooter")}</p>
+            </section>
+          {/if}
+        {/if}
+      {:else if activeTab === "network"}
+        {#if daemon.connected}
+          <section class="section">
+            <h3 class="section-title">{t("devices.friends")}</h3>
+            <div class="list">
+              <label class="toggle form-row">
+                <input
+                  type="checkbox"
+                  checked={friendsOn}
+                  disabled={busy || !daemon.connected}
+                  onchange={(event) => void setFriends(event.currentTarget.checked)}
+                />
+                <span>
+                  {t("settings.findFriends")}
+                  <small>
+                    {#if friendsOn}
+                      {t("settings.searchingFor", { time: friendsLeft })}
+                    {:else}
+                      {t("settings.searchingOff")}
+                    {/if}
+                  </small>
+                </span>
+              </label>
+            </div>
+          </section>
 
-    {#if policy}
-      {@const table = policy}
-      <section class="section">
-        <h3 class="section-title">
-          <span class="grow">{t("settings.networkPolicy")}</span>
-          <button
-            class="button small"
-            type="button"
-            onclick={() => void resetPolicy()}
-            disabled={busy}
-          >
-            {t("settings.resetDefaults")}
-          </button>
-        </h3>
-        {#each conditions as condition (condition.key)}
-          {@const conditionLabel = t(condition.label)}
+          <section class="section">
+            <h3 class="section-title">{t("settings.pairedDevices")}</h3>
+            <div class="list">
+              <label class="toggle form-row">
+                <input
+                  type="checkbox"
+                  aria-label={t("settings.allowRemote")}
+                  checked={allowRemoteSettings}
+                  disabled={busy || !loaded}
+                  onchange={(event) => void setRemoteSettings(event.currentTarget.checked)}
+                />
+                <span>
+                  {t("settings.allowRemote")}
+                  <small>{t("settings.allowRemoteHint")}</small>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <RelaySection />
+        {/if}
+      {:else if daemon.connected}
+        <section class="section">
+          <h3 class="section-title">{t("settings.diagnosticsSection")}</h3>
+          {#if daemon.keystoreInFile}
+            <p class="notice warn">{t("settings.keystoreFile")}</p>
+          {/if}
           <div class="list">
             <label class="toggle form-row">
               <input
                 type="checkbox"
-                aria-label={t("settings.conditionRelayAria", { condition: conditionLabel })}
-                checked={table[condition.key].relay}
-                disabled={busy}
-                onchange={(event) => setRelay(condition.key, event.currentTarget.checked)}
+                checked={sentryEnabled}
+                disabled={busy || !loaded}
+                onchange={(event) => void setSentryReporting(event.currentTarget.checked)}
               />
-              <span class="relay-label">{t("settings.relay")}</span>
               <span>
-                <strong>{conditionLabel}</strong>
-                <small>{t(condition.hint)}</small>
+                {t("settings.diagnostics")}
+                <small>{t("settings.diagnosticsHint")}</small>
               </span>
             </label>
-            {#each kinds as kind (kind.key)}
-              {@const cell = table[condition.key][kind.key]}
-              <div class="form-row">
-                <span class="label">{t(kind.label)}</span>
-                <select
-                  value={cell.action}
-                  aria-label={t("settings.kindActionAria", {
-                    condition: conditionLabel,
-                    kind: t(kind.label),
-                  })}
-                  disabled={busy}
-                  onchange={(event) =>
-                    setCell(condition.key, kind.key, {
-                      action: Number(event.currentTarget.value),
-                    })}
-                >
-                  {#each actions as action (action.value)}
-                    <option value={action.value}>{t(action.label)}</option>
-                  {/each}
-                </select>
-                <input
-                  class="short"
-                  type="number"
-                  min="1"
-                  max="102400"
-                  step="1"
-                  aria-label={t("settings.kindLimitAria", {
-                    condition: conditionLabel,
-                    kind: t(kind.label),
-                  })}
-                  value={megabytesOf(cell.maxSizeBytes)}
-                  disabled={busy || cell.action !== PolicyAction.AUTO}
-                  onchange={(event) =>
-                    setSize(condition.key, kind.key, event.currentTarget.valueAsNumber)}
-                />
-                <span class="muted">MiB</span>
-              </div>
-            {/each}
           </div>
-        {/each}
-        <div class="list">
-          <label class="form-row">
-            <span class="label">
-              {t("settings.relayLimit")}
-              <small>{t("settings.relayLimitHint")}</small>
-            </span>
-            <input
-              class="short"
-              type="number"
-              min="1"
-              max="102400"
-              step="1"
-              aria-label={t("settings.relayLimitAria")}
-              value={megabytesOf(table.relayMaxSizeBytes)}
-              disabled={busy}
-              onchange={(event) => setRelayLimit(event.currentTarget.valueAsNumber)}
-            />
-            <span class="muted">MiB</span>
-          </label>
-        </div>
-        <p class="section-footer">{t("settings.policyFooter")}</p>
-      </section>
-    {/if}
-
-    <section class="section">
-      <h3 class="section-title">{t("settings.sectionPrivacy")}</h3>
-      {#if daemon.keystoreInFile}
-        <p class="notice warn">{t("settings.keystoreFile")}</p>
+        </section>
       {/if}
-      <div class="list">
-        <label class="toggle form-row">
-          <input
-            type="checkbox"
-            checked={stripTracking}
-            disabled={busy || !loaded}
-            onchange={(event) => void setStripTracking(event.currentTarget.checked)}
-          />
-          <span>
-            {t("settings.stripTracking")}
-            <small>{t("settings.stripTrackingHint")}</small>
-          </span>
-        </label>
-        <label class="toggle form-row">
-          <input
-            type="checkbox"
-            checked={sentryEnabled}
-            disabled={busy || !loaded}
-            onchange={(event) => void setSentryReporting(event.currentTarget.checked)}
-          />
-          <span>
-            {t("settings.diagnostics")}
-            <small>{t("settings.diagnosticsHint")}</small>
-          </span>
-        </label>
-      </div>
-    </section>
-
-    {@render applicationLog()}
-
-    {@render startup()}
-
-    <RelaySection />
+    </div>
   {/if}
 </div>
 
@@ -873,10 +1173,16 @@
   .settings {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 16px;
     width: 100%;
     max-width: 680px;
     margin: 0 auto;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
   }
 
   .name-input {
@@ -922,7 +1228,7 @@
     background-color: var(--hover);
   }
 
-  .nav-row svg {
+  .nav-row :global(.icon) {
     flex: none;
     color: var(--muted);
   }

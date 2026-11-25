@@ -5,6 +5,7 @@ import app.unison.diagnostics.Diagnostics
 import app.unison.history.HistoryTtlProto
 import app.unison.policy.PolicyConfig
 import app.unison.policy.PolicyProto
+import com.google.protobuf.ByteString
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.MessageLite
 import kotlinx.coroutines.Dispatchers
@@ -197,6 +198,30 @@ class CoreClient(
             )
         return response.settings
     }
+
+    /** The settings of the core as a JSON document the user can keep. */
+    suspend fun exportSettings(appSettings: String): Local.ExportSettingsResponse =
+        call(
+            method = "ExportSettings",
+            request =
+                Local.ExportSettingsRequest
+                    .newBuilder()
+                    .setAppSettings(appSettings)
+                    .build(),
+            parse = { Local.ExportSettingsResponse.parseFrom(it) },
+        )
+
+    /** Applies the settings of a JSON document. */
+    suspend fun importSettings(document: ByteArray): Local.ImportSettingsResponse =
+        call(
+            method = "ImportSettings",
+            request =
+                Local.ImportSettingsRequest
+                    .newBuilder()
+                    .setDocument(ByteString.copyFrom(document))
+                    .build(),
+            parse = { Local.ImportSettingsResponse.parseFrom(it) },
+        )
 
     /** Mirrors the consent to report errors to the developer. */
     override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
@@ -456,6 +481,24 @@ class CoreClient(
         )
     }
 
+    /** Scaled down pixels of an image entry, decoded by the core. */
+    override suspend fun historyThumbnail(
+        id: String,
+        maxSide: Int,
+    ): Local.GetHistoryThumbnailResponse {
+        val request =
+            Local.GetHistoryThumbnailRequest
+                .newBuilder()
+                .setId(id)
+                .setMaxSide(maxSide)
+                .build()
+        return call(
+            method = "GetHistoryThumbnail",
+            request = request,
+            parse = { Local.GetHistoryThumbnailResponse.parseFrom(it) },
+        )
+    }
+
     /** Writes one history entry back to the clipboard. */
     override suspend fun copyHistoryItem(id: String) {
         val request =
@@ -521,6 +564,24 @@ class CoreClient(
             method = "FetchHistoryItem",
             request = request,
             parse = { Local.FetchHistoryItemResponse.parseFrom(it) },
+        )
+    }
+
+    /** Offers the files at [paths] to the devices as transfers. */
+    override suspend fun sendFiles(
+        paths: List<String>,
+        deviceIds: List<String>,
+    ): Local.SendFilesResponse {
+        val request =
+            Local.SendFilesRequest
+                .newBuilder()
+                .addAllPaths(paths)
+                .addAllDeviceIds(deviceIds)
+                .build()
+        return call(
+            method = "SendFiles",
+            request = request,
+            parse = { Local.SendFilesResponse.parseFrom(it) },
         )
     }
 
@@ -689,5 +750,106 @@ class CoreClient(
             request = request,
             parse = { Local.RejectSasResponse.parseFrom(it) },
         )
+    }
+
+    /** Turns the temporary search for Friends devices on or off. */
+    override suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery {
+        val request =
+            Local.SetFriendsDiscoveryRequest
+                .newBuilder()
+                .setOn(on)
+                .build()
+        val response =
+            call(
+                method = "SetFriendsDiscovery",
+                request = request,
+                parse = { Local.SetFriendsDiscoveryResponse.parseFrom(it) },
+            )
+        return response.friendsDiscovery
+    }
+
+    /** Exchanges of an introduction through a trusted device that are still active. */
+    override suspend fun mediatedPairs(): List<Local.MediatedPair> {
+        val response =
+            call(
+                method = "ListMediatedPairs",
+                request = Local.ListMediatedPairsRequest.getDefaultInstance(),
+                parse = { Local.ListMediatedPairsResponse.parseFrom(it) },
+            )
+        return response.pairsList
+    }
+
+    /** Introduces two online devices of this one to each other. */
+    override suspend fun startMediatedPair(
+        peerA: String,
+        peerB: String,
+        role: Local.Role,
+    ): Local.MediatedPair {
+        val request =
+            Local.StartMediatedPairRequest
+                .newBuilder()
+                .setPeerA(peerA)
+                .setPeerB(peerB)
+                .setRole(role)
+                .build()
+        val response =
+            call(
+                method = "StartMediatedPair",
+                request = request,
+                parse = { Local.StartMediatedPairResponse.parseFrom(it) },
+            )
+        return response.pair
+    }
+
+    /** Accepts an offer to introduce this device to another one. */
+    override suspend fun confirmMediatedPair(
+        sessionId: String,
+        enableFriendsDiscovery: Boolean,
+    ): Local.MediatedPair {
+        val request =
+            Local.ConfirmMediatedPairRequest
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setEnableFriendsDiscovery(enableFriendsDiscovery)
+                .build()
+        val response =
+            call(
+                method = "ConfirmMediatedPair",
+                request = request,
+                parse = { Local.ConfirmMediatedPairResponse.parseFrom(it) },
+            )
+        return response.pair
+    }
+
+    /** Declines an offer to introduce this device to another one. */
+    override suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair {
+        val request =
+            Local.RejectMediatedPairRequest
+                .newBuilder()
+                .setSessionId(sessionId)
+                .build()
+        val response =
+            call(
+                method = "RejectMediatedPair",
+                request = request,
+                parse = { Local.RejectMediatedPairResponse.parseFrom(it) },
+            )
+        return response.pair
+    }
+
+    /** Cancels an introduction this device runs. */
+    override suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair {
+        val request =
+            Local.CancelMediatedPairRequest
+                .newBuilder()
+                .setSessionId(sessionId)
+                .build()
+        val response =
+            call(
+                method = "CancelMediatedPair",
+                request = request,
+                parse = { Local.CancelMediatedPairResponse.parseFrom(it) },
+            )
+        return response.pair
     }
 }

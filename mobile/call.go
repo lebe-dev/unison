@@ -34,7 +34,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ListDevices":
 		call, err := requestOf[localv1.ListDevicesRequest](payload)
 		if err != nil {
@@ -44,7 +44,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "RenameDevice":
 		call, err := requestOf[localv1.RenameDeviceRequest](payload)
 		if err != nil {
@@ -54,7 +54,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "RevokeDevice":
 		call, err := requestOf[localv1.RevokeDeviceRequest](payload)
 		if err != nil {
@@ -64,7 +64,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "SetDeviceConfirmation":
 		call, err := requestOf[localv1.SetDeviceConfirmationRequest](payload)
 		if err != nil {
@@ -74,7 +74,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "SetDeviceRemoteSettings":
 		call, err := requestOf[localv1.SetDeviceRemoteSettingsRequest](payload)
 		if err != nil {
@@ -84,7 +84,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "OpenPairingWindow":
 		call, err := requestOf[localv1.OpenPairingWindowRequest](payload)
 		if err != nil {
@@ -94,7 +94,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ExtendPairingWindow":
 		call, err := requestOf[localv1.ExtendPairingWindowRequest](payload)
 		if err != nil {
@@ -104,7 +104,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ClosePairingWindow":
 		call, err := requestOf[localv1.ClosePairingWindowRequest](payload)
 		if err != nil {
@@ -114,7 +114,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ListPairingCandidates":
 		call, err := requestOf[localv1.ListPairingCandidatesRequest](payload)
 		if err != nil {
@@ -124,7 +124,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "StartSas":
 		call, err := requestOf[localv1.StartSasRequest](payload)
 		if err != nil {
@@ -134,7 +134,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ConfirmSas":
 		call, err := requestOf[localv1.ConfirmSasRequest](payload)
 		if err != nil {
@@ -144,7 +144,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "RejectSas":
 		call, err := requestOf[localv1.RejectSasRequest](payload)
 		if err != nil {
@@ -154,7 +154,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "GetPairingQr":
 		call, err := requestOf[localv1.GetPairingQrRequest](payload)
 		if err != nil {
@@ -164,7 +164,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ScanPairingQr":
 		call, err := requestOf[localv1.ScanPairingQrRequest](payload)
 		if err != nil {
@@ -174,7 +174,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "GetClip":
 		call, err := requestOf[localv1.GetClipRequest](payload)
 		if err != nil {
@@ -184,7 +184,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "SetClip":
 		call, err := requestOf[localv1.SetClipRequest](payload)
 		if err != nil {
@@ -194,7 +194,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ListHistory":
 		call, err := requestOf[localv1.ListHistoryRequest](payload)
 		if err != nil {
@@ -204,7 +204,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "GetHistoryItem":
 		call, err := requestOf[localv1.GetHistoryItemRequest](payload)
 		if err != nil {
@@ -214,7 +214,17 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "GetHistoryThumbnail":
+		call, err := requestOf[localv1.GetHistoryThumbnailRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.GetHistoryThumbnail(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxThumbnailBytes)
 	case "DeleteHistoryItem":
 		call, err := requestOf[localv1.DeleteHistoryItemRequest](payload)
 		if err != nil {
@@ -224,7 +234,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ClearHistory":
 		call, err := requestOf[localv1.ClearHistoryRequest](payload)
 		if err != nil {
@@ -234,7 +244,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "FetchHistoryItem":
 		call, err := requestOf[localv1.FetchHistoryItemRequest](payload)
 		if err != nil {
@@ -244,7 +254,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "CopyHistoryItem":
 		call, err := requestOf[localv1.CopyHistoryItemRequest](payload)
 		if err != nil {
@@ -254,7 +264,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ApplyHistoryItem":
 		call, err := requestOf[localv1.ApplyHistoryItemRequest](payload)
 		if err != nil {
@@ -264,7 +274,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "GetPause":
 		call, err := requestOf[localv1.GetPauseRequest](payload)
 		if err != nil {
@@ -274,7 +284,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "SetPause":
 		call, err := requestOf[localv1.SetPauseRequest](payload)
 		if err != nil {
@@ -284,7 +294,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "GetSettings":
 		call, err := requestOf[localv1.GetSettingsRequest](payload)
 		if err != nil {
@@ -294,7 +304,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "UpdateSettings":
 		call, err := requestOf[localv1.UpdateSettingsRequest](payload)
 		if err != nil {
@@ -304,7 +314,27 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "ExportSettings":
+		call, err := requestOf[localv1.ExportSettingsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ExportSettings(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "ImportSettings":
+		call, err := requestOf[localv1.ImportSettingsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ImportSettings(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "GetRelay":
 		call, err := requestOf[localv1.GetRelayRequest](payload)
 		if err != nil {
@@ -314,7 +344,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "SetRelay":
 		call, err := requestOf[localv1.SetRelayRequest](payload)
 		if err != nil {
@@ -324,7 +354,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "RelayOff":
 		call, err := requestOf[localv1.RelayOffRequest](payload)
 		if err != nil {
@@ -334,7 +364,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "TestRelay":
 		call, err := requestOf[localv1.TestRelayRequest](payload)
 		if err != nil {
@@ -344,7 +374,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "SendFiles":
 		call, err := requestOf[localv1.SendFilesRequest](payload)
 		if err != nil {
@@ -354,7 +384,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ListTransfers":
 		call, err := requestOf[localv1.ListTransfersRequest](payload)
 		if err != nil {
@@ -364,7 +394,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "CancelTransfer":
 		call, err := requestOf[localv1.CancelTransferRequest](payload)
 		if err != nil {
@@ -374,7 +404,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "AcceptTransfer":
 		call, err := requestOf[localv1.AcceptTransferRequest](payload)
 		if err != nil {
@@ -384,7 +414,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "RejectTransfer":
 		call, err := requestOf[localv1.RejectTransferRequest](payload)
 		if err != nil {
@@ -394,7 +424,67 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "SetFriendsDiscovery":
+		call, err := requestOf[localv1.SetFriendsDiscoveryRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.SetFriendsDiscovery(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "StartMediatedPair":
+		call, err := requestOf[localv1.StartMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.StartMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "ConfirmMediatedPair":
+		call, err := requestOf[localv1.ConfirmMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ConfirmMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "RejectMediatedPair":
+		call, err := requestOf[localv1.RejectMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.RejectMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "CancelMediatedPair":
+		call, err := requestOf[localv1.CancelMediatedPairRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.CancelMediatedPair(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
+	case "ListMediatedPairs":
+		call, err := requestOf[localv1.ListMediatedPairsRequest](payload)
+		if err != nil {
+			return invalidRequest(err)
+		}
+		res, err := c.api.ListMediatedPairs(ctx, call)
+		if err != nil {
+			return failure(err)
+		}
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "ListRequests":
 		call, err := requestOf[localv1.ListRequestsRequest](payload)
 		if err != nil {
@@ -404,7 +494,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "DecideRequest":
 		call, err := requestOf[localv1.DecideRequestRequest](payload)
 		if err != nil {
@@ -414,7 +504,7 @@ func (c *core) call(ctx context.Context, req *mobilev1.CallRequest) *mobilev1.Ca
 		if err != nil {
 			return failure(err)
 		}
-		return encodeResponse(res.Msg)
+		return encodeResponse(res.Msg, maxCallBytes)
 	case "WatchEvents":
 		return failureOf(connect.CodeUnimplemented, "mobile: events are delivered through Platform.OnEvent")
 	case "":
@@ -446,13 +536,14 @@ func requestOf[M any, P interface {
 	return connect.NewRequest(msg), nil
 }
 
-// encodeResponse serializes the response of a handler.
-func encodeResponse(msg proto.Message) *mobilev1.CallResponse {
+// encodeResponse serializes the response of a handler. A payload above limit
+// bytes is refused instead of reaching the host.
+func encodeResponse(msg proto.Message, limit int) *mobilev1.CallResponse {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return failureOf(connect.CodeInternal, "mobile: encode response: "+err.Error())
 	}
-	if len(data) > maxCallBytes {
+	if len(data) > limit {
 		return failureOf(connect.CodeResourceExhausted, "mobile: response is too large")
 	}
 	return &mobilev1.CallResponse{Payload: data}

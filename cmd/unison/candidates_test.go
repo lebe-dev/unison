@@ -15,6 +15,10 @@ func TestGroupCandidates(t *testing.T) {
 		"192.168.1.7:54321",
 		"192.168.1.7:54321",
 		"127.0.0.1:54322",
+		"relay:fedcba9876543210",
+		"relay:0123456789abcdef",
+		"relay:0123456789abcdef",
+		"relay:bad",
 		"not-an-address",
 		"127.0.0.1:0",
 	}
@@ -26,14 +30,17 @@ func TestGroupCandidates(t *testing.T) {
 			"[::1]:54321",
 		}},
 		{Port: 54322, Addrs: []string{"127.0.0.1:54322"}},
+		{Relay: true, Addrs: []string{"relay:0123456789abcdef"}},
+		{Relay: true, Addrs: []string{"relay:fedcba9876543210"}},
 	}
 	got := groupCandidates(addrs)
 	if len(got) != len(want) {
 		t.Fatalf("grouped into %d devices, want %d: %v", len(got), len(want), got)
 	}
 	for i := range want {
-		if got[i].Port != want[i].Port {
-			t.Errorf("device %d has port %d, want %d", i+1, got[i].Port, want[i].Port)
+		if got[i].Port != want[i].Port || got[i].Relay != want[i].Relay {
+			t.Errorf("device %d has port=%d relay=%v, want port=%d relay=%v",
+				i+1, got[i].Port, got[i].Relay, want[i].Port, want[i].Relay)
 		}
 		if !slices.Equal(got[i].Addrs, want[i].Addrs) {
 			t.Errorf("device %d has addresses %v, want %v", i+1, got[i].Addrs, want[i].Addrs)
@@ -63,6 +70,7 @@ func TestChooseCandidate(t *testing.T) {
 	candidates := []pairingCandidate{
 		{Port: 54321, Addrs: []string{"192.168.1.7:54321", "127.0.0.1:54321"}},
 		{Port: 54322, Addrs: []string{"192.168.1.7:54322"}},
+		{Relay: true, Addrs: []string{"relay:0123456789abcdef"}},
 	}
 	cases := []struct {
 		line string
@@ -72,11 +80,13 @@ func TestChooseCandidate(t *testing.T) {
 		{"", "", true},
 		{"1", "192.168.1.7:54321", true},
 		{" 2 ", "192.168.1.7:54322", true},
+		{"3", "relay:0123456789abcdef", true},
+		{"3.1", "relay:0123456789abcdef", true},
 		{"1.2", "127.0.0.1:54321", true},
 		{"1.3", "", false},
 		{"2.2", "", false},
 		{"0", "", false},
-		{"3", "", false},
+		{"4", "", false},
 		{"1.x", "", false},
 		{"x", "", false},
 	}

@@ -1,28 +1,9 @@
 <script lang="ts" module>
-  /** Names of the line icons drawn in the style of SF Symbols. */
-  export type IconName =
-    | "devices"
-    | "add"
-    | "requests"
-    | "transfers"
-    | "history"
-    | "settings"
-    | "laptop"
-    | "desktop"
-    | "phone"
-    | "person"
-    | "file"
-    | "clipboard"
-    | "image"
-    | "plus"
-    | "close"
-    | "refresh"
-    | "upload"
-    | "shield"
-    | "clock";
+  export type { IconName } from "./icons";
 </script>
 
 <script lang="ts">
+  import type { IconName } from "./icons";
   let {
     name,
     size = 16,
@@ -49,7 +30,12 @@
   stroke-linecap="round"
   stroke-linejoin="round"
 >
-  {#if name === "devices"}
+  {#if name === "dashboard"}
+    <rect x="2" y="2" width="5" height="5" rx="1" />
+    <rect x="9" y="2" width="5" height="5" rx="1" />
+    <rect x="2" y="9" width="5" height="5" rx="1" />
+    <rect x="9" y="9" width="5" height="5" rx="1" />
+  {:else if name === "devices"}
     <rect x="2" y="3" width="9" height="6.5" rx="1" />
     <path d="M1 11.5h11" />
     <rect x="11.5" y="6" width="3.5" height="7" rx="0.8" />
@@ -102,8 +88,24 @@
   {:else if name === "upload"}
     <path d="M8 11V3M4.5 6.5 8 3l3.5 3.5" />
     <path d="M2.5 10.5v2.5h11v-2.5" />
+  {:else if name === "download"}
+    <path d="M8 3v8M4.5 7.5 8 11l3.5-3.5" />
+    <path d="M2.5 10.5v2.5h11v-2.5" />
+  {:else if name === "copy"}
+    <rect x="5.5" y="5.5" width="8" height="8" rx="1.2" />
+    <path
+      d="M10.5 5.5V3.7a1.2 1.2 0 0 0-1.2-1.2H3.7a1.2 1.2 0 0 0-1.2 1.2v5.6a1.2 1.2 0 0 0 1.2 1.2h1.8"
+    />
+  {:else if name === "more"}
+    <circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12.5" cy="8" r="1" fill="currentColor" stroke="none" />
   {:else if name === "shield"}
     <path d="M8 1.8 13.5 4v4c0 3.2-2.3 5.4-5.5 6.2C4.8 13.4 2.5 11.2 2.5 8V4z" />
     <path d="m5.8 8 1.6 1.6L10.4 6.5" />
+  {:else if name === "chevronLeft"}
+    <path d="M10 3 5 8l5 5" />
+  {:else if name === "chevronRight"}
+    <path d="m6 3 5 5-5 5" />
   {/if}
 </svg>

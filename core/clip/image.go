@@ -26,7 +26,7 @@ import (
 // Image limits. An image above them is left out instead of being decoded.
 const (
 	// MaxImagePixels bounds the pixel count of one image.
-	MaxImagePixels = 24 << 20
+	MaxImagePixels = 56 << 20
 	// MaxImageSide bounds one side of an image in pixels.
 	MaxImageSide = 8192
 	// MaxImageBytes bounds the encoded size of one image.

@@ -1,5 +1,15 @@
 # Troubleshooting
 
+## macOS refuses to open Unison
+
+Unison is developed by a solo developer and is not signed with a paid Apple Developer ID ($99/year)
+or notarized by Apple, so Gatekeeper blocks builds downloaded from the internet. After copying
+`Unison.app` to `/Applications`, clear the quarantine attribute once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Unison.app
+```
+
 ## The devices do not find each other
 
 - Both devices have to be in the same network. A guest network, a network with client isolation and
@@ -53,8 +63,8 @@ error about the keystore.
 
 ## Sending a log to support
 
-The application log is off until you turn it on. Settings > Application log collects the records
-of the app and of the daemon, then `Copy` or `Share` sends a file with the versions and the settings
+The application log is off until you turn it on. Settings > General > Application log collects the
+records of the app and of the daemon, then `Copy` or `Share` sends a file with the versions and the settings
 of this device on top. The log never carries clipboard content, file names, paths, keys or tokens.
 The display switch changes what the window shows only: a shared log always contains the debug
 records.

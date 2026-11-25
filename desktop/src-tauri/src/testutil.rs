@@ -1,10 +1,12 @@
 //! Helpers of the unit tests.
 
+#[cfg(unix)]
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// block_on runs a future on a runtime of the current thread.
+#[cfg(unix)]
 pub fn block_on<F: Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -27,6 +29,7 @@ impl TempDir {
         );
         let path = std::env::temp_dir().join(name);
         std::fs::create_dir_all(&path).expect("create the directory");
+        #[cfg(unix)]
         set_mode(&path, 0o700);
         Self(path)
     }
@@ -47,6 +50,7 @@ impl Drop for TempDir {
 }
 
 /// set_mode changes the permission bits of a path.
+#[cfg(unix)]
 pub fn set_mode(path: &Path, mode: u32) {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)).expect("chmod");
@@ -54,6 +58,7 @@ pub fn set_mode(path: &Path, mode: u32) {
 
 /// bind_socket binds a unix socket that only the owner can reach, like the
 /// daemon does.
+#[cfg(unix)]
 pub fn bind_socket(path: &Path) -> std::os::unix::net::UnixListener {
     let listener = std::os::unix::net::UnixListener::bind(path).expect("bind the socket");
     set_mode(path, 0o600);

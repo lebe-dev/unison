@@ -3,6 +3,7 @@ package app.unison.service
 import android.content.Context
 import android.os.Build
 import androidx.core.content.edit
+import app.unison.ui.state.DashboardLimit
 
 /** How long the core stays running. */
 enum class OperatingMode(
@@ -64,6 +65,30 @@ object UnisonSettings {
 
     /** Show the device name and the online devices in the status notification. */
     const val KEY_NOTIFICATIONS_STATUS_DETAILS = "notifications.status_details"
+
+    /** Number of newest items each tab of the dashboard shows. */
+    const val KEY_DASHBOARD_LIMIT = "dashboard.limit"
+
+    /** True when the app looks for a new release in the background. */
+    const val KEY_UPDATES_ENABLED = "updates.enabled"
+
+    /** True when the release channel includes the pre-releases of GitHub. */
+    const val KEY_UPDATES_BETA_CHANNEL = "updates.beta_channel"
+
+    /** How often the background check runs. */
+    const val KEY_UPDATES_INTERVAL = "updates.interval"
+
+    /** Time of the last finished check in unix milliseconds. */
+    const val KEY_UPDATES_LAST_CHECKED_MS = "updates.last_checked_ms"
+
+    /** Version the user put away in the dashboard banner. */
+    const val KEY_UPDATES_DISMISSED_VERSION = "updates.dismissed_version"
+
+    /** Entity tag of the last answer of GitHub. */
+    const val KEY_UPDATES_LAST_ETAG = "updates.last_etag"
+
+    /** Release of the last background check, so the banner opens without a request. */
+    const val KEY_UPDATES_CACHED_RELEASE = "updates.cached_release_json"
 
     fun operatingMode(context: Context): OperatingMode {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -153,5 +178,20 @@ object UnisonSettings {
         context
             .getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit { putBoolean(KEY_SENTRY_ENABLED, value) }
+    }
+
+    /** Number of newest items each tab of the dashboard shows. */
+    fun dashboardLimit(context: Context): Int {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        return DashboardLimit.normalize(prefs.getInt(KEY_DASHBOARD_LIMIT, DashboardLimit.DEFAULT))
+    }
+
+    fun setDashboardLimit(
+        context: Context,
+        value: Int,
+    ) {
+        context
+            .getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit { putInt(KEY_DASHBOARD_LIMIT, DashboardLimit.normalize(value)) }
     }
 }

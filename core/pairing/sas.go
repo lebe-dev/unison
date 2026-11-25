@@ -80,14 +80,22 @@ func computeSAS(ekm []byte, one, other identity.PublicIdentity) (SAS, error) {
 	_, _ = hash.Write(ekm)
 	_, _ = hash.Write(firstBytes)
 	_, _ = hash.Write(secondBytes)
-	digest := hash.Sum(nil)
+	return SASFromSeed(hash.Sum(nil)), nil
+}
 
-	digits := binary.BigEndian.Uint64(digest[:8]) % sasModulus
+// SASFromSeed derives a SAS from a 32-byte seed. Every device that derives the
+// same seed shows the same code, so a protocol with another handshake uses it
+// instead of the pairing key material.
+func SASFromSeed(seed []byte) SAS {
+	if len(seed) < 8+sasEmojiCount {
+		return SAS{}
+	}
+	digits := binary.BigEndian.Uint64(seed[:8]) % sasModulus
 	emoji := make([]string, 0, sasEmojiCount)
-	for _, b := range digest[8 : 8+sasEmojiCount] {
+	for _, b := range seed[8 : 8+sasEmojiCount] {
 		emoji = append(emoji, emojiTable[b&63])
 	}
-	return SAS{Digits: fmt.Sprintf("%06d", digits), Emoji: emoji}, nil
+	return SAS{Digits: fmt.Sprintf("%06d", digits), Emoji: emoji}
 }
 
 // orderIdentities returns two identities ordered by device ID.

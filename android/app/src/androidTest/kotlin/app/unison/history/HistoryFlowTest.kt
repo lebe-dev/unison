@@ -15,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.unison.core.CoreClient
 import app.unison.core.CoreStarter
 import app.unison.core.coreEvents
+import app.unison.history.HistorySender
 import app.unison.ui.screens.HistoryScreen
 import app.unison.ui.state.AppState
 import app.unison.ui.theme.UnisonTheme
@@ -58,7 +59,7 @@ class HistoryFlowTest {
         val id = sent.item.id
         assertTrue("SetClip returned no id", id.isNotEmpty())
 
-        val state = AppState(core, coreEvents.events, HistoryDownloads(context))
+        val state = AppState(core, coreEvents.events, HistoryDownloads(context), HistorySender { _, _ -> })
         try {
             state.refreshHistory()
             compose.waitUntil(TIMEOUT_MS) {

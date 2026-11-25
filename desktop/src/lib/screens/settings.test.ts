@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { tick } from "svelte";
 import {
   DeviceSchema,
   FriendsDiscoverySchema,
   GetRelayResponseSchema,
+  ExportSettingsResponseSchema,
   GetSettingsResponseSchema,
   GetStatusResponseSchema,
+  ImportSettingsResponseSchema,
   PolicyAction,
   PolicyCellSchema,
   PolicyRowSchema,
@@ -20,9 +22,19 @@ import {
 } from "../api/gen/unison/local/v1/local_pb";
 import { client } from "../api/client";
 import { daemon } from "../daemon.svelte";
+import { dashboard, DEFAULT_DASHBOARD_LIMIT } from "../dashboard.svelte";
 import { pickFolder } from "../files";
+import { checkNow, getUpdaterState, onUpdaterState, setConfig } from "../updater";
+import { updater } from "../updater.svelte";
+import type { UpdaterSnapshot } from "../updater";
 import { relayDraft } from "../relayDraft.svelte";
 import { setSentryEnabled } from "../sentry";
+import {
+  pickSettingsSource,
+  pickSettingsTarget,
+  readSettingsFile,
+  writeSettingsFile,
+} from "../settingsFileIO";
 import Settings from "./Settings.svelte";
 
 vi.mock("../files", () => ({
@@ -32,6 +44,30 @@ vi.mock("../files", () => ({
 
 vi.mock("../sentry", () => ({
   setSentryEnabled: vi.fn(),
+}));
+
+vi.mock("../login", () => ({
+  loginItemStatus: vi.fn().mockResolvedValue({ status: "enabled" }),
+  setLoginItem: vi.fn((enabled: boolean) =>
+    Promise.resolve({ status: enabled ? "enabled" : "not_registered" }),
+  ),
+}));
+
+vi.mock("../settingsFileIO", () => ({
+  pickSettingsSource: vi.fn(),
+  pickSettingsTarget: vi.fn(),
+  readSettingsFile: vi.fn(),
+  writeSettingsFile: vi.fn(),
+}));
+
+vi.mock("../updater", () => ({
+  getUpdaterState: vi.fn(),
+  onUpdaterState: vi.fn().mockResolvedValue(() => {}),
+  setConfig: vi.fn(),
+  checkNow: vi.fn(),
+  dismissUpdate: vi.fn(),
+  installUpdate: vi.fn(),
+  cancelUpdate: vi.fn(),
 }));
 
 vi.mock("../journalIO", () => ({
@@ -48,6 +84,10 @@ vi.mock("../journalIO", () => ({
 
 const pickFolderMock = vi.mocked(pickFolder);
 const setSentryEnabledMock = vi.mocked(setSentryEnabled);
+const pickSettingsTargetMock = vi.mocked(pickSettingsTarget);
+const pickSettingsSourceMock = vi.mocked(pickSettingsSource);
+const readSettingsFileMock = vi.mocked(readSettingsFile);
+const writeSettingsFileMock = vi.mocked(writeSettingsFile);
 
 vi.mock("../api/client", () => ({
   client: {
@@ -59,18 +99,27 @@ vi.mock("../api/client", () => ({
     getRelay: vi.fn(),
     setRelay: vi.fn(),
     relayOff: vi.fn(),
+    exportSettings: vi.fn(),
+    importSettings: vi.fn(),
   },
 }));
 
+const getUpdaterStateMock = vi.mocked(getUpdaterState);
+const onUpdaterStateMock = vi.mocked(onUpdaterState);
+const setConfigMock = vi.mocked(setConfig);
+const checkNowMock = vi.mocked(checkNow);
 const getStatus = vi.mocked(client.getStatus);
 const getSettings = vi.mocked(client.getSettings);
 const updateSettings = vi.mocked(client.updateSettings);
 const renameDevice = vi.mocked(client.renameDevice);
 const setFriendsDiscovery = vi.mocked(client.setFriendsDiscovery);
 const getRelay = vi.mocked(client.getRelay);
+const exportSettings = vi.mocked(client.exportSettings);
+const importSettings = vi.mocked(client.importSettings);
 
 const MAC_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML)";
 const WINDOWS_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const LINUX_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36";
 const originalUserAgent = navigator.userAgent;
 
 /** setUserAgent makes the platform helpers read the given user agent. */
@@ -102,9 +151,9 @@ function settings(): SettingsMessage {
     roaming: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
     dataSaver: row(PolicyAction.AUTO, PolicyAction.METADATA, PolicyAction.METADATA, false),
     relayMaxSizeBytes: megabyte,
-    historyTtlTextSeconds: 7n * 86400n,
-    historyTtlImageSeconds: 3n * 86400n,
-    historyTtlFilesSeconds: 86400n,
+    historyTtlTextSeconds: 86400n,
+    historyTtlImageSeconds: 7n * 86400n,
+    historyTtlFilesSeconds: 7n * 86400n,
     downloadsDir: "/Users/me/Downloads/Unison",
     sentryEnabled: false,
     stripTracking: true,
@@ -112,8 +161,42 @@ function settings(): SettingsMessage {
   });
 }
 
+/** updaterSnapshot returns the state of the updater of a test. */
+function updaterSnapshot(overrides: Partial<UpdaterSnapshot> = {}): UpdaterSnapshot {
+  return {
+    currentVersion: "0.2.5",
+    supported: true,
+    unsupportedReason: null,
+    config: {
+      enabled: false,
+      betaChannel: false,
+      interval: "daily",
+      lastCheckedUnixMs: null,
+      dismissedVersion: null,
+      lastEtag: null,
+    },
+    status: { kind: "idle" },
+    available: null,
+    dismissed: false,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  updater.snapshot = null;
+  updater.dialogOpen = false;
+  updater.failure = null;
+  onUpdaterStateMock.mockResolvedValue(() => {});
+  getUpdaterStateMock.mockResolvedValue(updaterSnapshot());
+  setConfigMock.mockImplementation((changes) =>
+    Promise.resolve(
+      updaterSnapshot({
+        config: { ...updaterSnapshot().config, ...changes },
+      }),
+    ),
+  );
+  checkNowMock.mockResolvedValue(updaterSnapshot({ status: { kind: "up_to_date" } }));
   setSentryEnabledMock.mockResolvedValue();
   relayDraft.url = "";
   relayDraft.token = "";
@@ -152,9 +235,58 @@ beforeEach(() => {
   daemon.error = null;
 });
 
+/** openTab switches the settings to the named tab. */
+async function openTab(name: string): Promise<void> {
+  await fireEvent.click(await screen.findByRole("tab", { name }));
+}
+
 describe("settings screen", () => {
+  it("opens on the General tab", async () => {
+    render(Settings);
+
+    const tab = await screen.findByRole("tab", { name: "General" });
+    expect(tab.getAttribute("aria-selected")).toBe("true");
+    expect(await screen.findByText("Appearance")).toBeTruthy();
+    expect(screen.queryByText("Network policy")).toBeNull();
+  });
+
+  it("moves between the tabs with the keyboard", async () => {
+    render(Settings);
+
+    const general = await screen.findByRole("tab", { name: "General" });
+    await fireEvent.keyDown(general, { key: "ArrowRight" });
+
+    expect(screen.getByRole("tab", { name: "Clipboard" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByText("History")).toBeTruthy();
+  });
+
+  it("shows the sections of every tab", async () => {
+    render(Settings);
+
+    await openTab("Clipboard");
+    expect(await screen.findByText("History")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /Remove tracking parameters/ })).toBeTruthy();
+
+    await openTab("Files");
+    expect(await screen.findByText("Network policy")).toBeTruthy();
+    expect(screen.getByText("Received Files")).toBeTruthy();
+
+    await openTab("Network");
+    expect(await screen.findByText("Relay")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /Find friends/ })).toBeTruthy();
+
+    await openTab("Privacy");
+    expect(
+      await screen.findByRole("checkbox", { name: /Send errors to the developer/ }),
+    ).toBeTruthy();
+    expect(screen.queryByText("Network policy")).toBeNull();
+  });
+
   it("shows the folder of the received files", async () => {
     render(Settings);
+    await openTab("Files");
 
     expect(await screen.findByText("/Users/me/Downloads/Unison")).toBeTruthy();
   });
@@ -176,9 +308,44 @@ describe("settings screen", () => {
     expect(await screen.findByText("This Mac")).toBeTruthy();
   });
 
+  it("names this device on Linux", async () => {
+    setUserAgent(LINUX_UA);
+
+    render(Settings);
+
+    expect(await screen.findByText("This computer")).toBeTruthy();
+  });
+
+  it("keeps a notice visible after switching the tab", async () => {
+    updateSettings.mockRejectedValue(new Error("the daemon is busy"));
+    render(Settings);
+    await openTab("Files");
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
+    expect(await screen.findByText("the daemon is busy")).toBeTruthy();
+
+    await openTab("Network");
+
+    expect(screen.getByText("the daemon is busy")).toBeTruthy();
+  });
+
+  it("stores the number of items of the dashboard", async () => {
+    localStorage.removeItem("unison.dashboard.limit");
+    dashboard.limit = DEFAULT_DASHBOARD_LIMIT;
+    render(Settings);
+
+    await fireEvent.change(await screen.findByLabelText("Items in each tab"), {
+      target: { value: "24" },
+    });
+
+    expect(dashboard.limit).toBe(24);
+    expect(localStorage.getItem("unison.dashboard.limit")).toBe("24");
+  });
+
   it("saves the folder the user picked", async () => {
     pickFolderMock.mockResolvedValue("/Volumes/Data/Inbox");
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
 
@@ -188,6 +355,7 @@ describe("settings screen", () => {
   it("keeps the folder when the dialog is closed", async () => {
     pickFolderMock.mockResolvedValue(null);
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Choose folder" }));
 
@@ -204,11 +372,12 @@ describe("settings screen", () => {
 
     await fireEvent.click(screen.getByRole("button", { name: "Back" }));
 
-    expect(await screen.findByText("Network policy")).toBeTruthy();
+    expect(await screen.findByText("Appearance")).toBeTruthy();
   });
 
   it("goes back to the default folder", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Use default folder" }));
 
@@ -217,6 +386,7 @@ describe("settings screen", () => {
 
   it("turns the search for friends on", async () => {
     render(Settings);
+    await openTab("Network");
 
     const toggle = screen.getByRole("checkbox", { name: /Find friends/ });
     expect((toggle as HTMLInputElement).checked).toBe(false);
@@ -228,7 +398,7 @@ describe("settings screen", () => {
     expect(getStatus).toHaveBeenCalled();
   });
 
-  it("shows the remaining time of a running search", () => {
+  it("shows the remaining time of a running search", async () => {
     daemon.status = create(GetStatusResponseSchema, {
       running: true,
       deviceId: "self",
@@ -240,6 +410,7 @@ describe("settings screen", () => {
     });
 
     render(Settings);
+    await openTab("Network");
 
     const toggle = screen.getByRole("checkbox", { name: /Find friends/ });
     expect((toggle as HTMLInputElement).checked).toBe(true);
@@ -265,6 +436,7 @@ describe("settings screen", () => {
     );
 
     render(Settings);
+    await openTab("Network");
 
     await fireEvent.click(screen.getByRole("checkbox", { name: /Find friends/ }));
 
@@ -273,6 +445,7 @@ describe("settings screen", () => {
 
   it("shows the policy table of the daemon", async () => {
     render(Settings);
+    await openTab("Files");
 
     expect(await screen.findByText("Network policy")).toBeTruthy();
     expect(screen.getByLabelText<HTMLSelectElement>("Metered Text action").value).toBe(
@@ -288,6 +461,7 @@ describe("settings screen", () => {
 
   it("saves a new threshold with the whole table", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.change(await screen.findByLabelText("Metered Text limit"), {
       target: { value: "4" },
@@ -302,6 +476,7 @@ describe("settings screen", () => {
 
   it("changes the action of a cell", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.change(await screen.findByLabelText("Roaming Images action"), {
       target: { value: String(PolicyAction.AUTO) },
@@ -313,14 +488,16 @@ describe("settings screen", () => {
 
   it("shows the lifetimes of the history", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
-    expect((await screen.findByLabelText<HTMLInputElement>("Text lifetime")).value).toBe("7d");
-    expect(screen.getByLabelText<HTMLInputElement>("Images lifetime").value).toBe("3d");
-    expect(screen.getByLabelText<HTMLInputElement>("Files lifetime").value).toBe("1d");
+    expect((await screen.findByLabelText<HTMLInputElement>("Text lifetime")).value).toBe("1d");
+    expect(screen.getByLabelText<HTMLInputElement>("Images lifetime").value).toBe("7d");
+    expect(screen.getByLabelText<HTMLInputElement>("Files lifetime").value).toBe("7d");
   });
 
   it("saves a new lifetime", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     await fireEvent.change(await screen.findByLabelText("Text lifetime"), {
       target: { value: "30d" },
@@ -331,6 +508,7 @@ describe("settings screen", () => {
 
   it("refuses an unusable lifetime", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     await fireEvent.change(await screen.findByLabelText("Images lifetime"), {
       target: { value: "soon" },
@@ -342,6 +520,7 @@ describe("settings screen", () => {
 
   it("resets the lifetimes to the defaults", async () => {
     render(Settings);
+    await openTab("Clipboard");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Reset lifetimes" }));
 
@@ -350,6 +529,7 @@ describe("settings screen", () => {
 
   it("resets the policy to the defaults", async () => {
     render(Settings);
+    await openTab("Files");
 
     await fireEvent.click(await screen.findByRole("button", { name: "Reset to defaults" }));
 
@@ -380,13 +560,15 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await openTab("Clipboard");
 
     const clipboard = await screen.findByRole("checkbox", {
       name: /Ask before applying the clipboard/,
     });
-    const files = screen.getByRole("checkbox", { name: /Ask before accepting files/ });
-    await screen.findByDisplayValue("This Mac");
     expect((clipboard as HTMLInputElement).checked).toBe(true);
+
+    await openTab("Files");
+    const files = await screen.findByRole("checkbox", { name: /Ask before accepting files/ });
     expect((files as HTMLInputElement).checked).toBe(false);
 
     await fireEvent.click(files);
@@ -402,11 +584,12 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Network");
 
-    const toggle = await screen.findByRole("checkbox", {
+    const toggle = screen.getByRole("checkbox", {
       name: "Allow paired devices to change these settings",
     });
-    await screen.findByDisplayValue("This Mac");
     expect((toggle as HTMLInputElement).checked).toBe(true);
 
     await fireEvent.click(toggle);
@@ -422,11 +605,12 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Network");
 
-    const toggle = await screen.findByRole("checkbox", {
+    const toggle = screen.getByRole("checkbox", {
       name: "Allow paired devices to change these settings",
     });
-    await screen.findByDisplayValue("This Mac");
     expect((toggle as HTMLInputElement).checked).toBe(false);
 
     await fireEvent.click(toggle);
@@ -437,8 +621,10 @@ describe("settings screen", () => {
 
   it("keeps error reporting off by default", async () => {
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(false);
     expect(setSentryEnabled).toHaveBeenCalledWith(false);
@@ -451,8 +637,10 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(true);
     expect(setSentryEnabled).toHaveBeenCalledWith(true);
@@ -465,8 +653,10 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
     await fireEvent.click(toggle);
 
     expect(updateSettings).toHaveBeenCalledWith({ sentryEnabled: true });
@@ -477,8 +667,10 @@ describe("settings screen", () => {
   it("reverts the error reporting when it cannot be saved", async () => {
     updateSettings.mockRejectedValue(new Error("the daemon is busy"));
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Privacy");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Send errors to the developer/ });
+    const toggle = screen.getByRole("checkbox", { name: /Send errors to the developer/ });
     await fireEvent.click(toggle);
 
     expect(await screen.findByText("the daemon is busy")).toBeTruthy();
@@ -488,8 +680,10 @@ describe("settings screen", () => {
 
   it("removes the tracking parameters by default", async () => {
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
 
-    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
+    const toggle = screen.getByRole("checkbox", { name: /Remove tracking parameters/ });
 
     expect((toggle as HTMLInputElement).checked).toBe(true);
   });
@@ -501,9 +695,10 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
-
-    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
     await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
+
+    const toggle = screen.getByRole("checkbox", { name: /Remove tracking parameters/ });
     expect((toggle as HTMLInputElement).checked).toBe(false);
 
     await fireEvent.click(toggle);
@@ -520,9 +715,10 @@ describe("settings screen", () => {
     );
     updateSettings.mockRejectedValue(new Error("the daemon is busy"));
     render(Settings);
-
-    const toggle = await screen.findByRole("checkbox", { name: /Remove tracking parameters/ });
     await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
+
+    const toggle = screen.getByRole("checkbox", { name: /Remove tracking parameters/ });
     await fireEvent.click(toggle);
 
     expect(await screen.findByText("the daemon is busy")).toBeTruthy();
@@ -575,6 +771,8 @@ describe("settings screen", () => {
       }),
     );
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Network");
     await fireEvent.input(await screen.findByLabelText(/Relay address/), {
       target: { value: "relay.mine.example:443" },
     });
@@ -589,6 +787,8 @@ describe("settings screen", () => {
 
   it("keeps the lifetime typed while the status refreshes", async () => {
     render(Settings);
+    await screen.findByDisplayValue("This Mac");
+    await openTab("Clipboard");
     const input = await screen.findByLabelText("Text lifetime");
     await fireEvent.input(input, { target: { value: "30d" } });
 
@@ -596,6 +796,174 @@ describe("settings screen", () => {
     await tick();
 
     expect((input as HTMLInputElement).value).toBe("30d");
+  });
+});
+
+describe("settings file", () => {
+  it("saves the settings in the file the user picked", async () => {
+    exportSettings.mockResolvedValue(
+      create(ExportSettingsResponseSchema, {
+        document: new TextEncoder().encode('{"schema":"unison-settings"}'),
+        fileName: "unison-macos-20261124-102030.json",
+      }),
+    );
+    pickSettingsTargetMock.mockResolvedValue("/tmp/unison-settings.json");
+    writeSettingsFileMock.mockResolvedValue();
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+
+    const request = exportSettings.mock.calls[0]?.[0];
+    expect(request?.appSettings).toContain('"desktop"');
+    expect(pickSettingsTargetMock).toHaveBeenCalledWith("unison-macos-20261124-102030.json");
+    expect(writeSettingsFileMock).toHaveBeenCalledWith(
+      "/tmp/unison-settings.json",
+      '{"schema":"unison-settings"}',
+    );
+    expect(await screen.findByText(/saved to \/tmp\/unison-settings.json/)).toBeTruthy();
+  });
+
+  it("writes nothing when the save dialog is closed", async () => {
+    exportSettings.mockResolvedValue(
+      create(ExportSettingsResponseSchema, {
+        document: new TextEncoder().encode("{}"),
+        fileName: "x.json",
+      }),
+    );
+    pickSettingsTargetMock.mockResolvedValue(null);
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+
+    expect(writeSettingsFileMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the updates section with checks off by default", async () => {
+    render(Settings);
+
+    expect(await screen.findByText("Updates")).toBeTruthy();
+    const automatic = screen.getByRole<HTMLInputElement>("checkbox", {
+      name: /Check for updates automatically/,
+    });
+    expect(automatic.checked).toBe(false);
+    const interval = screen.getByRole<HTMLSelectElement>("combobox", { name: "Check interval" });
+    expect(interval.value).toBe("daily");
+    expect(interval.hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByRole<HTMLInputElement>("checkbox", { name: /Include beta releases/ }).checked,
+    ).toBe(false);
+  });
+
+  it("turns the automatic checks on", async () => {
+    render(Settings);
+
+    const automatic = await screen.findByRole("checkbox", {
+      name: /Check for updates automatically/,
+    });
+    await fireEvent.click(automatic);
+
+    expect(setConfigMock).toHaveBeenCalledWith({ enabled: true });
+  });
+
+  it("includes the beta releases on request", async () => {
+    render(Settings);
+
+    const beta = await screen.findByRole("checkbox", { name: /Include beta releases/ });
+    await fireEvent.click(beta);
+
+    expect(setConfigMock).toHaveBeenCalledWith({ betaChannel: true });
+  });
+
+  it("switches the interval of the automatic checks", async () => {
+    updater.snapshot = updaterSnapshot({
+      config: { ...updaterSnapshot().config, enabled: true },
+    });
+    render(Settings);
+
+    const interval = await screen.findByRole("combobox", { name: "Check interval" });
+    await fireEvent.change(interval, { target: { value: "weekly" } });
+
+    expect(setConfigMock).toHaveBeenCalledWith({ interval: "weekly" });
+  });
+
+  it("checks for an update on demand and reports it", async () => {
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Check now" }));
+
+    expect(checkNowMock).toHaveBeenCalled();
+    expect(await screen.findByText("Up to date")).toBeTruthy();
+  });
+
+  it("applies the updater settings of the file the user picked", async () => {
+    const text = JSON.stringify({
+      schema: "unison-settings",
+      format_version: 1,
+      app: { desktop: { updates: { enabled: true, beta_channel: true, interval: "weekly" } } },
+    });
+    pickSettingsSourceMock.mockResolvedValue("/tmp/unison-settings.json");
+    readSettingsFileMock.mockResolvedValue(text);
+    importSettings.mockResolvedValue(
+      create(ImportSettingsResponseSchema, { settings: settings() }),
+    );
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    await waitFor(() =>
+      expect(setConfigMock).toHaveBeenCalledWith({
+        enabled: true,
+        betaChannel: true,
+        interval: "weekly",
+      }),
+    );
+  });
+
+  it("applies the settings of the file the user picked", async () => {
+    const text = JSON.stringify({
+      schema: "unison-settings",
+      format_version: 1,
+      core: { strip_tracking: false },
+      app: { desktop: { theme: "dark", login_item: false } },
+    });
+    pickSettingsSourceMock.mockResolvedValue("/tmp/unison-settings.json");
+    readSettingsFileMock.mockResolvedValue(text);
+    importSettings.mockResolvedValue(
+      create(ImportSettingsResponseSchema, { settings: settings() }),
+    );
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(importSettings).toHaveBeenCalledWith({ document: new TextEncoder().encode(text) });
+    expect(await screen.findByText("The settings are imported.")).toBeTruthy();
+  });
+
+  it("reports the notes of a document of a newer app", async () => {
+    pickSettingsSourceMock.mockResolvedValue("/tmp/unison-settings.json");
+    readSettingsFileMock.mockResolvedValue('{"schema":"unison-settings","format_version":99}');
+    importSettings.mockResolvedValue(
+      create(ImportSettingsResponseSchema, {
+        settings: settings(),
+        fromNewerVersion: true,
+        ignored: ["core.future_setting"],
+      }),
+    );
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(await screen.findByText(/newer version of the app/)).toBeTruthy();
+    expect(await screen.findByText(/core.future_setting/)).toBeTruthy();
+  });
+
+  it("imports nothing when the open dialog is closed", async () => {
+    pickSettingsSourceMock.mockResolvedValue(null);
+    render(Settings);
+
+    await fireEvent.click(await screen.findByRole("button", { name: "Import" }));
+
+    expect(importSettings).not.toHaveBeenCalled();
   });
 });
 

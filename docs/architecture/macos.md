@@ -146,6 +146,45 @@ entitlements, the hardened runtime and the signature, and prints the checks that
 machine: the local network prompt, the daemon after a re-login, and the clipboard between two
 devices.
 
+## Updates
+
+The app installs its updates from the signed disk image of a release. The shared updater verifies
+the signature and the hash of `unison-v<version>-macos.dmg` first; this installer replaces the
+bundle afterwards. The settings and the check of the releases are described in
+[Desktop](desktop.md).
+
+The installer works only from a real bundle on a writable volume. A development build, a copy that
+Gatekeeper translocated, a bundle on a read-only volume and a folder that the current user cannot
+write are refused, and the window explains that the app has to be moved to `/Applications` or
+`~/Applications` first. A standard account cannot write into `/Applications`, so such an account
+updates from `~/Applications`.
+
+The install:
+
+1. mounts the disk image read-only at a private mount point in the cache of the app;
+2. checks `Unison.app` inside it: the layout with the daemon and the login item, the identifier
+   `app.unison` and the version of the release;
+3. copies the bundle with `ditto` to `.Unison.app.new.<pid>` next to the installed app, so the swap
+   is a rename within one file system, and detaches the disk image;
+4. strips `com.apple.quarantine` from the copy, so a build without notarization still starts after
+   an update, and verifies the signature with `codesign --verify --deep --strict`;
+5. unregisters the login item, so launchd stops `unisond`, and stops the daemon that the app
+   started; a daemon of the old bundle that still answers on the endpoint gets `SIGTERM`;
+6. starts a detached copy of the app binary with `--apply-update` and ends the app.
+
+The helper waits for the app to exit and replaces the bundles. The installed bundle becomes
+`.Unison.app.bak.<pid>`, the staged bundle takes its place and the backup is removed. When the
+second rename fails, the backup goes back, so a failed update keeps a working app. The helper then
+refreshes the registration of the bundle with `lsregister`, so Finder, the share extension and the
+URL handlers know the new version, registers the login item again when it was on before the update,
+and opens the app with `open -n`.
+
+The bundle keeps its path, its identifier `app.unison` and, with a stable signing identity, its
+signature, so the local network permission and the Keychain items of `unisond` stay valid across
+updates. An ad-hoc signature is enough to install, but macOS asks for access to the existing
+Keychain items after such an update. A staging directory that a failed update leaves behind is
+removed by the staging sweeper after a day.
+
 ## Share menu
 
 `Contents/PlugIns/UnisonShare.appex` puts Unison into the Share menu of every app for files. The

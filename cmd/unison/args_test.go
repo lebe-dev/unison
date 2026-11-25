@@ -124,6 +124,42 @@ func TestCommandFlagsInAnyPosition(t *testing.T) {
 			[]string{"--json", "--endpoint", endpoint, "requests", "decline", "0123"},
 		},
 		{
+			"introduce after the arguments",
+			[]string{"introduce", "phone", "tablet", "--role", "friends", "--endpoint", endpoint},
+		},
+		{
+			"introduce before the arguments",
+			[]string{"--endpoint", endpoint, "introduce", "--role", "friends", "phone", "tablet"},
+		},
+		{
+			"introduce between the arguments",
+			[]string{"introduce", "phone", "--endpoint", endpoint, "tablet", "--role", "friends"},
+		},
+		{
+			"introduce list after the flags",
+			[]string{"introduce", "list", "--json", "--endpoint", endpoint},
+		},
+		{
+			"introduce list before the subcommand",
+			[]string{"--endpoint", endpoint, "introduce", "--json", "list"},
+		},
+		{
+			"introduce accept after the arguments",
+			[]string{"introduce", "accept", "0123", "--friends-discovery=true", "--endpoint", endpoint},
+		},
+		{
+			"introduce accept before the arguments",
+			[]string{"--endpoint", endpoint, "introduce", "accept", "--friends-discovery=true", "0123"},
+		},
+		{
+			"introduce decline after the arguments",
+			[]string{"introduce", "decline", "0123", "--json", "--endpoint", endpoint},
+		},
+		{
+			"introduce decline before the arguments",
+			[]string{"--json", "--endpoint", endpoint, "introduce", "decline", "0123"},
+		},
+		{
 			"send after the arguments",
 			[]string{"send", payload, "--to", "phone", "--endpoint", endpoint},
 		},
@@ -209,6 +245,13 @@ func TestCommandMissingArguments(t *testing.T) {
 		{[]string{"history", "apply"}, "takes one item id"},
 		{[]string{"requests", "accept"}, "takes one request id"},
 		{[]string{"requests", "decline", "--json"}, "takes one request id"},
+		{[]string{"introduce"}, "needs two devices"},
+		{[]string{"introduce", "phone"}, "needs two devices"},
+		{[]string{"introduce", "--role", "friends"}, "needs two devices"},
+		{[]string{"introduce", "accept"}, "takes one session id"},
+		{[]string{"introduce", "accept", "0123", "4567"}, "takes one session id"},
+		{[]string{"introduce", "decline", "--json"}, "takes one session id"},
+		{[]string{"introduce", "list", "extra"}, "takes no arguments"},
 		{[]string{"send", "--to", "phone"}, "takes one path"},
 		{[]string{"send", "/tmp/report.txt"}, "needs at least one --to"},
 		{[]string{"transfers", "cancel", "--json"}, "takes one transfer id"},
@@ -248,6 +291,10 @@ func TestCommandHelpAfterArguments(t *testing.T) {
 		{[]string{"history", "apply", "0123", "--help"}, "history apply"},
 		{[]string{"requests", "accept", "0123", "-h"}, "requests accept"},
 		{[]string{"requests", "decline", "0123", "-h"}, "requests decline"},
+		{[]string{"introduce", "phone", "tablet", "-h"}, "introduce"},
+		{[]string{"introduce", "accept", "0123", "-h"}, "introduce accept"},
+		{[]string{"introduce", "decline", "0123", "-h"}, "introduce decline"},
+		{[]string{"introduce", "list", "-h"}, "introduce list"},
 		{[]string{"send", "report.txt", "--to", "phone", "-h"}, "send"},
 		{[]string{"transfers", "cancel", "0123", "-h"}, "transfers cancel"},
 		{[]string{"friends", "search", "--off", "-h"}, "friends search"},

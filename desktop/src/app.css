@@ -752,6 +752,10 @@ input[type="checkbox"] {
   gap: 8px;
 }
 
+.toolbar.end {
+  justify-content: flex-end;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -786,6 +790,17 @@ input[type="checkbox"] {
 .badge.confirm {
   color: var(--warn);
   background-color: var(--warn-soft);
+}
+
+.badge.beta {
+  height: auto;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .notice {

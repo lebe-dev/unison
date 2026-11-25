@@ -6,6 +6,7 @@ import {
   TransferDirection,
   TransferState,
   type ClipItem,
+  type Device,
   type Representation,
   type Transfer,
 } from "./api/gen/unison/local/v1/local_pb";
@@ -49,6 +50,27 @@ export function pathLabel(path: Path): string {
 export function shortDeviceID(deviceID: string): string {
   const head = deviceID.slice(0, 12).toUpperCase();
   return head.replace(/(.{4})(?=.)/g, "$1 ");
+}
+
+/** deviceLabel returns a device's name or its short ID when unnamed. */
+export function deviceLabel(device: Pick<Device, "deviceId" | "name">): string {
+  return device.name || shortDeviceID(device.deviceId);
+}
+
+/** originLabel resolves an item's origin device ID to a display name. */
+export function originLabel(
+  origin: string,
+  selfDeviceID: string,
+  devices: readonly Pick<Device, "deviceId" | "name">[],
+): string {
+  if (!origin) {
+    return "";
+  }
+  if (selfDeviceID && origin === selfDeviceID) {
+    return translate("common.thisDevice");
+  }
+  const device = devices.find((candidate) => candidate.deviceId === origin);
+  return device?.name || shortDeviceID(origin);
 }
 
 /** formatTime renders a unix millisecond timestamp as the local time of day. */
@@ -164,16 +186,22 @@ function decodeText(rep: Representation | undefined): string {
 
 /** textSnippet returns the inline text of an item on a single line. */
 export function textSnippet(item: ClipItem | undefined, limit = 80): string {
-  if (!item) {
-    return "";
-  }
-  const text =
-    decodeText(representation(item, "text/plain")) || decodeText(representation(item, "text/html"));
-  const line = text.replace(/\s+/g, " ").trim();
+  const line = textContent(item).replace(/\s+/g, " ").trim();
   if (line.length <= limit) {
     return line;
   }
   return `${line.slice(0, limit - 1).trimEnd()}...`;
+}
+
+/** textContent returns the inline text of an item, with the HTML flavour as a
+ * fallback. */
+export function textContent(item: ClipItem | undefined): string {
+  if (!item) {
+    return "";
+  }
+  return (
+    decodeText(representation(item, "text/plain")) || decodeText(representation(item, "text/html"))
+  );
 }
 
 /** historyTitle returns a short title of a history entry. It never contains
@@ -215,15 +243,157 @@ export function fileNames(item: ClipItem | undefined): string[] {
   return item.representations.map((rep) => rep.fileName).filter((name) => name !== "");
 }
 
-/** progressPercent returns the share of the transferred bytes, 0 when the size
- * is unknown. */
-export function progressPercent(transfer: Transfer): number {
-  const total = Number(transfer.totalBytes);
+/** Visual category of a file, used for its icon tint. */
+export type FileCategory = "image" | "document" | "archive" | "media" | "code" | "other";
+
+const IMAGE_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "heic",
+  "heif",
+  "svg",
+  "bmp",
+  "tif",
+  "tiff",
+  "avif",
+  "ico",
+]);
+
+const DOCUMENT_EXTENSIONS = new Set([
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "txt",
+  "md",
+  "rtf",
+  "csv",
+  "pages",
+  "numbers",
+  "key",
+  "odt",
+  "ods",
+]);
+
+const ARCHIVE_EXTENSIONS = new Set([
+  "zip",
+  "tar",
+  "gz",
+  "tgz",
+  "bz2",
+  "xz",
+  "7z",
+  "rar",
+  "dmg",
+  "pkg",
+  "deb",
+  "rpm",
+  "msi",
+  "exe",
+  "apk",
+  "iso",
+]);
+
+const MEDIA_EXTENSIONS = new Set([
+  "mp4",
+  "mov",
+  "mkv",
+  "webm",
+  "avi",
+  "m4v",
+  "mp3",
+  "wav",
+  "flac",
+  "m4a",
+  "ogg",
+  "aac",
+  "opus",
+]);
+
+const CODE_EXTENSIONS = new Set([
+  "js",
+  "jsx",
+  "ts",
+  "tsx",
+  "py",
+  "go",
+  "rs",
+  "c",
+  "cc",
+  "cpp",
+  "h",
+  "java",
+  "kt",
+  "swift",
+  "rb",
+  "php",
+  "sh",
+  "zsh",
+  "json",
+  "yaml",
+  "yml",
+  "toml",
+  "xml",
+  "html",
+  "css",
+  "scss",
+  "sql",
+]);
+
+/** fileExtension returns the short uppercase extension of a file name, or an
+ * empty string when none is suitable for a badge. */
+export function fileExtension(name: string): string {
+  const base = name.split(/[\\/]/).pop() ?? "";
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0 || dot === base.length - 1) {
+    return "";
+  }
+  const ext = base.slice(dot + 1).toUpperCase();
+  if (ext.length > 4 || !/^[A-Z0-9]+$/.test(ext)) {
+    return "";
+  }
+  return ext;
+}
+
+/** fileCategory classifies a file by its extension or MIME type. */
+export function fileCategory(name: string, mimeType = ""): FileCategory {
+  const ext = fileExtension(name).toLowerCase();
+  if (IMAGE_EXTENSIONS.has(ext) || mimeType.startsWith("image/")) {
+    return "image";
+  }
+  if (DOCUMENT_EXTENSIONS.has(ext) || mimeType === "application/pdf") {
+    return "document";
+  }
+  if (ARCHIVE_EXTENSIONS.has(ext)) {
+    return "archive";
+  }
+  if (MEDIA_EXTENSIONS.has(ext) || mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+    return "media";
+  }
+  if (CODE_EXTENSIONS.has(ext)) {
+    return "code";
+  }
+  return "other";
+}
+
+/** downloadPercent returns the share of a byte download that is done. */
+export function downloadPercent(downloaded: number, total: number): number {
   if (total <= 0) {
     return 0;
   }
-  const done = Number(transfer.bytes);
-  return Math.min(100, Math.max(0, Math.round((done / total) * 100)));
+  return Math.min(100, Math.max(0, Math.round((downloaded / total) * 100)));
+}
+
+/** progressPercent returns the share of the transferred bytes, 0 when the size
+ * is unknown. */
+export function progressPercent(transfer: Transfer): number {
+  return downloadPercent(Number(transfer.bytes), Number(transfer.totalBytes));
 }
 
 /** transferFilesText returns a short description of the files of a

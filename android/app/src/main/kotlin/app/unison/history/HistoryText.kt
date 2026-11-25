@@ -16,11 +16,20 @@ object HistoryText {
         item: Local.ClipItem,
         limit: Int = PREVIEW_LIMIT,
     ): String {
-        val inline =
-            item.representationsList.firstOrNull { it.mimeType == MIME_TEXT_PLAIN }
-                ?: return ""
-        return shorten(inline.inlineBytes.toStringUtf8(), limit)
+        val text = fullText(item)
+        if (text.isEmpty()) {
+            return ""
+        }
+        return shorten(text, limit)
     }
+
+    /** Whole inline text of a text entry, without shortening. */
+    fun fullText(item: Local.ClipItem): String =
+        item.representationsList
+            .firstOrNull { it.mimeType == MIME_TEXT_PLAIN }
+            ?.inlineBytes
+            ?.toStringUtf8()
+            .orEmpty()
 
     /** First names of the files of an entry. */
     fun fileNames(item: Local.ClipItem): FileNames {
@@ -40,15 +49,16 @@ object HistoryText {
         limit: Int = PREVIEW_LIMIT,
     ): String = shorten(text, limit)
 
-    /** Size of every payload of an entry in bytes. */
-    fun size(item: Local.ClipItem): Long =
-        item.representationsList.sumOf { representation ->
-            if (representation.size > 0) {
-                representation.size
-            } else {
-                representation.inlineBytes.size().toLong()
-            }
+    /** Size of one payload of an entry in bytes. */
+    fun size(representation: Local.Representation): Long =
+        if (representation.size > 0) {
+            representation.size
+        } else {
+            representation.inlineBytes.size().toLong()
         }
+
+    /** Size of every payload of an entry in bytes. */
+    fun size(item: Local.ClipItem): Long = item.representationsList.sumOf(::size)
 
     /** Human readable size with one unit. */
     fun formatSize(

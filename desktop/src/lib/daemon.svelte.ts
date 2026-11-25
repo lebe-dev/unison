@@ -9,7 +9,7 @@ import {
 } from "./api/gen/unison/local/v1/local_pb";
 import { updateTray, type PauseChoice } from "./tray";
 import { daemonStatus, installDaemon, type DaemonStatus } from "./daemonStatus";
-import { shortDeviceID } from "./format";
+import { deviceLabel } from "./format";
 import { getLocale, translate } from "./i18n";
 
 /** Times of the shell. */
@@ -301,7 +301,7 @@ class DaemonStore {
         .filter((device) => device.online && !device.revoked)
         .map((device) => ({
           id: device.deviceId,
-          name: device.name || shortDeviceID(device.deviceId),
+          name: deviceLabel(device),
         })),
     };
     void updateTray(state).catch((error: unknown) => {

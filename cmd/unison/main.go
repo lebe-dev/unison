@@ -107,6 +107,8 @@ func (a *app) run(ctx context.Context, args []string) int {
 		err = a.devices(ctx, rest)
 	case "pair":
 		err = a.pair(ctx, rest)
+	case "introduce":
+		err = a.introduce(ctx, rest)
 	case "clip":
 		err = a.clip(ctx, rest)
 	case "history":
@@ -281,6 +283,14 @@ commands:
   pair [--role personal|friends] [--qr <code>]
                               pair a device: print a square to scan, compare the
                               short code, or join the device that shows a code
+  introduce <peer-a> <peer-b> [--role personal|friends]
+                              introduce two paired devices to each other: show
+                              the code and wait until both of them accept
+  introduce list              list the introductions that wait for a decision
+  introduce accept <session> [--friends-discovery=true|false]
+                              accept an introduction of this device; the flag
+                              turns the search for Friends devices on afterwards
+  introduce decline <session> decline an introduction of this device
   clip get [--from <id>]       print the last clipboard item, optionally of one
                               paired device
   clip set [-]                copy standard input to the clipboard
@@ -309,6 +319,10 @@ commands:
   settings ttl reset          back to the default lifetimes
   settings remote on|off      allow paired devices to change the confirmation
                               flags of this device remotely
+  settings export [path]      write the settings as a JSON file, or print the
+                              document when no path is given
+  settings import <path|->    apply the settings of a JSON file; keys the file
+                              does not carry keep their values
   relay [status]              show the relay of the group and its connection
   relay set <url> --token <t> [--files-on-request]
                               store the relay address and token; the other

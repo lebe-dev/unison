@@ -1,5 +1,6 @@
 package app.unison.core
 
+import com.google.protobuf.ByteString
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -258,6 +259,31 @@ class CoreClientTest {
         }
 
     @Test
+    fun exportSendsTheLocalSettings() =
+        runBlocking {
+            val transport = FakeTransport { null }
+
+            CoreClient(transport).exportSettings("""{"android": {}}""")
+
+            assertEquals("ExportSettings", transport.lastRequest?.method)
+            val request = Local.ExportSettingsRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals("""{"android": {}}""", request.appSettings)
+        }
+
+    @Test
+    fun importSendsTheDocument() =
+        runBlocking {
+            val transport = FakeTransport { null }
+            val document = """{"schema": "unison-settings"}""".toByteArray()
+
+            CoreClient(transport).importSettings(document)
+
+            assertEquals("ImportSettings", transport.lastRequest?.method)
+            val request = Local.ImportSettingsRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals("""{"schema": "unison-settings"}""", request.document.toStringUtf8())
+        }
+
+    @Test
     fun applySendsTheItemId() =
         runBlocking {
             val transport = FakeTransport { null }
@@ -266,5 +292,46 @@ class CoreClientTest {
 
             assertEquals("ApplyHistoryItem", transport.lastRequest?.method)
             assertEquals("item", Local.ApplyHistoryItemRequest.parseFrom(transport.lastRequest?.payload).id)
+        }
+
+    @Test
+    fun thumbnailSendsTheItemAndTheSide() =
+        runBlocking {
+            val response =
+                Local.GetHistoryThumbnailResponse
+                    .newBuilder()
+                    .setWidth(2)
+                    .setHeight(1)
+                    .setRgba(ByteString.copyFrom(ByteArray(8)))
+                    .build()
+            val transport =
+                FakeTransport {
+                    Mobile.CallResponse
+                        .newBuilder()
+                        .setPayload(response.toByteString())
+                        .build()
+                }
+
+            val thumbnail = CoreClient(transport).historyThumbnail("item", maxSide = 256)
+
+            assertEquals("GetHistoryThumbnail", transport.lastRequest?.method)
+            val request = Local.GetHistoryThumbnailRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals("item", request.id)
+            assertEquals(256, request.maxSide)
+            assertEquals(2, thumbnail.width)
+            assertEquals(1, thumbnail.height)
+        }
+
+    @Test
+    fun sendFilesSendsThePathsAndTheDevices() =
+        runBlocking {
+            val transport = FakeTransport { null }
+
+            CoreClient(transport).sendFiles(listOf("/cache/outbox/a/report.pdf"), listOf("abcd"))
+
+            assertEquals("SendFiles", transport.lastRequest?.method)
+            val request = Local.SendFilesRequest.parseFrom(transport.lastRequest?.payload)
+            assertEquals(listOf("/cache/outbox/a/report.pdf"), request.pathsList)
+            assertEquals(listOf("abcd"), request.deviceIdsList)
         }
 }

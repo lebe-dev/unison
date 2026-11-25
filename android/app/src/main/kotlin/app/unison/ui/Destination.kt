@@ -13,6 +13,7 @@ enum class Destination(
     @DrawableRes val icon: Int,
     val inBar: Boolean = true,
 ) {
+    DASHBOARD(R.string.nav_dashboard, R.drawable.ic_nav_dashboard),
     DEVICES(R.string.nav_devices, R.drawable.ic_nav_devices),
     ADD(R.string.nav_add, R.drawable.ic_nav_add, inBar = false),
     REQUESTS(R.string.nav_requests, R.drawable.ic_nav_requests),
@@ -21,7 +22,7 @@ enum class Destination(
     ;
 
     companion object {
-        val DEFAULT = DEVICES
+        val DEFAULT = DASHBOARD
 
         /** Destination of a screen name sent by a notification, or null. */
         fun ofScreen(name: String?): Destination? =

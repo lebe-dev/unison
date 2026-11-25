@@ -57,6 +57,11 @@ func (n *Node) OpenPairing(role model.Role) error {
 	n.pairing = pw
 	n.mu.Unlock()
 
+	var pairRelay pairing.Relay
+	if n.relayOn.Load() && n.relayAllowed() {
+		pairRelay = &pairingRelay{node: n}
+	}
+
 	window, err := pairing.Open(ctx, pairing.Options{
 		Identity:     n.identity,
 		Trust:        n.announcedTrust(),
@@ -68,6 +73,7 @@ func (n *Node) OpenPairing(role model.Role) error {
 		Logger:       n.log,
 		ListenPacket: n.listenPairing,
 		Config:       n.cfg.Transport,
+		Relay:        pairRelay,
 	})
 	if err != nil {
 		cancel()
@@ -298,6 +304,7 @@ func (n *Node) pairingEvent(event pairing.Event) {
 			SAS:      event.SAS,
 			Method:   event.Method,
 		})
+		n.advertise(n.ctx)
 		n.syncLinks()
 		if n.gossip != nil {
 			n.gossip.Notify(n.ctx)

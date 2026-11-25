@@ -17,10 +17,11 @@ import (
 	"github.com/lebe-dev/unison/proto/unison/local/v1/localv1connect"
 )
 
-// Request and response size limits.
+// Request and response size limits. The response limit accommodates a full
+// MaxThumbnailSide RGBA thumbnail (1024x1024x4 = 4 MiB) plus framing.
 const (
 	maxRequestBytes  = 1 << 20
-	maxResponseBytes = 1 << 20
+	maxResponseBytes = 8 << 20
 )
 
 // ErrNotRunning reports a call that needs a started node.
@@ -165,7 +166,7 @@ func (s *Service) devices(ctx context.Context, includeRevoked bool) ([]*localv1.
 
 	devices := make([]*localv1.Device, 0, len(peers))
 	for _, peer := range peers {
-		devices = append(devices, deviceToProto(peer, live[peer.DeviceID()]))
+		devices = append(devices, deviceToProto(peer, live[peer.DeviceID()], s.node.MediatedPeerSupported(peer.DeviceID())))
 	}
 	return devices, nil
 }

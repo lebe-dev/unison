@@ -1,5 +1,6 @@
 package app.unison.ui.screens
 
+import android.net.Uri
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -22,8 +23,10 @@ import app.unison.policy.PolicyDefaults
 import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.testString
+import app.unison.ui.UpdatePanel
 import app.unison.ui.state.CoreState
 import app.unison.ui.theme.UnisonTheme
+import app.unison.updater.UpdateUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -68,6 +71,17 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun settingsFilePageOffersExportAndImport() {
+        setContent()
+
+        open(SettingsPage.SETTINGS_FILE)
+
+        compose.onNodeWithTag(SETTINGS_FILE_EXPORT_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(SETTINGS_FILE_IMPORT_TAG).assertIsDisplayed()
+        compose.onNodeWithText(testString(R.string.settings_file_hint)).assertIsDisplayed()
+    }
+
+    @Test
     fun aboutPageShowsTheVersion() {
         setContent()
 
@@ -85,6 +99,17 @@ class SettingsScreenTest {
         compose.onNodeWithText(testString(R.string.mode_wifi_only)).performClick()
 
         assertEquals(OperatingMode.WIFI_ONLY, selected)
+    }
+
+    @Test
+    fun dashboardLimitIsSelected() {
+        var limit: Int? = null
+        setContent(dashboardLimit = 12, onDashboardLimitChange = { limit = it })
+        open(SettingsPage.DEVICE)
+
+        compose.onNodeWithTag(dashboardLimitTag(48)).performScrollTo().performClick()
+
+        assertEquals(48, limit)
     }
 
     @Test
@@ -349,8 +374,10 @@ class SettingsScreenTest {
                 .build(),
         settings: Local.Settings = Local.Settings.getDefaultInstance(),
         ttl: HistoryTtl = HistoryTtlDefaults.values,
+        dashboardLimit: Int = app.unison.ui.state.DashboardLimit.DEFAULT,
         onDeviceNameChange: (String) -> Unit = {},
         onOperatingModeChange: (OperatingMode) -> Unit = {},
+        onDashboardLimitChange: (Int) -> Unit = {},
         onPause: (PauseRequest) -> Unit = {},
         onRelaySave: (url: String, token: String?, filesOnRequest: Boolean?) -> Unit = { _, _, _ -> },
         onRelayOff: () -> Unit = {},
@@ -368,6 +395,8 @@ class SettingsScreenTest {
         onNotificationsChange: (NotificationSettings) -> Unit = {},
         journalEnabled: Boolean = false,
         onJournalChange: (Boolean) -> Unit = {},
+        onExportSettings: (Uri) -> Unit = {},
+        onImportSettings: (Uri) -> Unit = {},
         stripTracking: Boolean = true,
         onStripTrackingChange: (Boolean) -> Unit = {},
     ) {
@@ -375,38 +404,75 @@ class SettingsScreenTest {
             UnisonTheme(dynamicColor = false) {
                 SettingsScreen(
                     state = CoreState(loading = false, status = status, settings = settings),
-                    deviceName = deviceName,
-                    operatingMode = operatingMode,
-                    policy = PolicyDefaults.config,
-                    ttl = ttl,
-                    onDeviceNameChange = onDeviceNameChange,
-                    onOperatingModeChange = onOperatingModeChange,
-                    onPolicyChange = {},
-                    onPolicyReset = {},
-                    onTtlSave = onTtlSave,
-                    onTtlReset = onTtlReset,
-                    downloadsFolder = downloadsFolder,
-                    onDownloadsFolderPick = {},
-                    onDownloadsFolderReset = onDownloadsFolderReset,
-                    onPause = onPause,
-                    onRelaySave = onRelaySave,
-                    onRelayOff = onRelayOff,
-                    onRefreshRelay = onRefreshRelay,
-                    onRelayCheck = { _, _ -> },
-                    onSelfConfirmationChange = onSelfConfirmationChange,
-                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
-                    onLeaveGroup = onLeaveGroup,
-                    diagnosticsEnabled = diagnosticsEnabled,
-                    onDiagnosticsChange = onDiagnosticsChange,
-                    notifications = notifications,
-                    onNotificationsChange = onNotificationsChange,
-                    journalEnabled = journalEnabled,
-                    onJournalChange = onJournalChange,
-                    stripTracking = stripTracking,
-                    onStripTrackingChange = onStripTrackingChange,
-                    onRefresh = {},
+                    panel =
+                        SettingsPanel(
+                            device =
+                                DeviceSettingsPanel(
+                                    deviceName = deviceName,
+                                    operatingMode = operatingMode,
+                                    dashboardLimit = dashboardLimit,
+                                    onDeviceNameChange = onDeviceNameChange,
+                                    onOperatingModeChange = onOperatingModeChange,
+                                    onDashboardLimitChange = onDashboardLimitChange,
+                                    onLeaveGroup = onLeaveGroup,
+                                ),
+                            clipboard =
+                                ClipboardSettingsPanel(
+                                    stripTracking = stripTracking,
+                                    onPause = onPause,
+                                    onSelfConfirmationChange = onSelfConfirmationChange,
+                                    onAllowRemoteSettingsChange = onAllowRemoteSettingsChange,
+                                    onStripTrackingChange = onStripTrackingChange,
+                                ),
+                            files =
+                                FilesSettingsPanel(
+                                    downloadsFolder = downloadsFolder,
+                                    onDownloadsFolderReset = onDownloadsFolderReset,
+                                ),
+                            history =
+                                HistorySettingsPanel(
+                                    ttl = ttl,
+                                    onTtlSave = onTtlSave,
+                                    onTtlReset = onTtlReset,
+                                ),
+                            network =
+                                NetworkSettingsPanel(
+                                    policy = PolicyDefaults.config,
+                                    onRelaySave = onRelaySave,
+                                    onRelayOff = onRelayOff,
+                                    onRefreshRelay = onRefreshRelay,
+                                ),
+                            app =
+                                AppSettingsPanel(
+                                    notifications = notifications,
+                                    onNotificationsChange = onNotificationsChange,
+                                    diagnosticsEnabled = diagnosticsEnabled,
+                                    onDiagnosticsChange = onDiagnosticsChange,
+                                    journalEnabled = journalEnabled,
+                                    onJournalChange = onJournalChange,
+                                    onExportSettings = onExportSettings,
+                                    onImportSettings = onImportSettings,
+                                    updates = updates(),
+                                ),
+                        ),
                 )
             }
         }
     }
+
+    /** The update panel of a test whose actions change nothing. */
+    private fun updates(): UpdatePanel =
+        UpdatePanel(
+            state = UpdateUiState(currentVersion = "0.2.0"),
+            onOpenDialog = {},
+            onCloseDialog = {},
+            onDismissBanner = {},
+            onCheckNow = {},
+            onInstall = {},
+            onCancel = {},
+            onRequestInstallPermission = {},
+            onSetEnabled = {},
+            onSetBetaChannel = {},
+            onSetInterval = {},
+        )
 }

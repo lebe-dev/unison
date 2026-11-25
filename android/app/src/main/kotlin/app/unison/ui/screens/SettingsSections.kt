@@ -18,6 +18,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,10 +33,13 @@ import app.unison.R
 import app.unison.clipboard.PauseOption
 import app.unison.clipboard.PauseRequest
 import app.unison.service.OperatingMode
+import app.unison.settingsfile.SettingsFile
 import app.unison.ui.SectionTitle
 import app.unison.ui.pauseLabel
 import app.unison.ui.state.CoreState
+import app.unison.ui.state.DashboardLimit
 import app.unison.ui.state.DeviceNames
+import kotlinx.coroutines.delay
 import unison.local.v1.Local
 
 /** Name announced to the other devices. */
@@ -115,6 +119,54 @@ internal fun ServiceMode(
 }
 
 /**
+ * Number of newest items each tab of the dashboard shows.
+ */
+@Composable
+internal fun DashboardSettings(
+    limit: Int,
+    onLimitChange: (Int) -> Unit,
+) {
+    SectionTitle(text = stringResource(R.string.settings_section_dashboard))
+    Text(
+        text = stringResource(R.string.settings_dashboard_items),
+        style = MaterialTheme.typography.bodyLarge,
+    )
+    Text(
+        text = stringResource(R.string.settings_dashboard_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Column(
+        modifier =
+            Modifier
+                .padding(top = 4.dp)
+                .selectableGroup(),
+    ) {
+        DashboardLimit.OPTIONS.forEach { option ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = option == limit,
+                            onClick = { onLimitChange(option) },
+                            role = Role.RadioButton,
+                        ).testTag(dashboardLimitTag(option))
+                        .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = option == limit, onClick = null)
+                Text(
+                    text = option.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
  * Folder of the received files. The system picker grants access to the picked
  * folder only; the app asks for no storage permission.
  */
@@ -160,6 +212,57 @@ internal fun DownloadsFolderSection(
             modifier = Modifier.testTag(DOWNLOADS_RESET_TAG),
         ) {
             Text(text = stringResource(R.string.settings_downloads_reset))
+        }
+    }
+}
+
+/**
+ * Settings file: the user keeps the settings in a document and restores them.
+ * The document is written and read through the system picker, so the app needs
+ * no storage permission.
+ */
+@Composable
+internal fun SettingsFileSection(
+    onExport: (Uri) -> Unit,
+    onImport: (Uri) -> Unit,
+) {
+    val create =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(SettingsFile.MIME)) { uri ->
+            if (uri != null) {
+                onExport(uri)
+            }
+        }
+    val open =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                onImport(uri)
+            }
+        }
+
+    SectionTitle(text = stringResource(R.string.settings_section_settings_file))
+    Text(
+        text = stringResource(R.string.settings_file_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(
+            onClick = { create.launch(SettingsFile.fileName()) },
+            modifier = Modifier.testTag(SETTINGS_FILE_EXPORT_TAG),
+        ) {
+            Text(text = stringResource(R.string.settings_file_export))
+        }
+        OutlinedButton(
+            onClick = { open.launch(SETTINGS_FILE_TYPES) },
+            modifier = Modifier.testTag(SETTINGS_FILE_IMPORT_TAG),
+        ) {
+            Text(text = stringResource(R.string.settings_file_import))
         }
     }
 }
@@ -264,6 +367,46 @@ internal fun Links(
     )
 }
 
+/**
+ * Temporary search for Friends devices. The core publishes and browses the
+ * Friends tags for 15 minutes, and only then can a new Friends pair connect
+ * through the local network.
+ */
+@Composable
+internal fun FriendsDiscoverySection(
+    search: Local.FriendsDiscovery?,
+    onRefresh: () -> Unit,
+    onChange: (Boolean) -> Unit,
+) {
+    val on = search?.on == true
+    val until = search?.untilUnixMs ?: 0
+    LaunchedEffect(until) {
+        if (!on || until <= 0) {
+            return@LaunchedEffect
+        }
+        delay((until - System.currentTimeMillis()).coerceAtLeast(0) + EXPIRY_MARGIN_MS)
+        onRefresh()
+    }
+    val minutes = if (on && until > 0) ((until - System.currentTimeMillis()) / 60_000).coerceAtLeast(1) else 0
+    val hint =
+        if (minutes > 0) {
+            stringResource(R.string.settings_friends_discovery_left, minutes)
+        } else {
+            stringResource(R.string.settings_friends_discovery_hint)
+        }
+    SectionTitle(text = stringResource(R.string.settings_section_friends))
+    SettingsSwitch(
+        title = stringResource(R.string.settings_friends_discovery),
+        hint = hint,
+        checked = on,
+        tag = FRIENDS_DISCOVERY_TAG,
+        onChange = onChange,
+    )
+}
+
+/** Time after the end of the search before the screen reads the state again. */
+private const val EXPIRY_MARGIN_MS = 500L
+
 /** Reporting of the crashes and the errors of this device to the developer. */
 @Composable
 internal fun Diagnostics(
@@ -361,6 +504,9 @@ internal const val DIAGNOSTICS_TAG = "settings.diagnostics"
 /** Tag of the switch of the tracking parameters removal. */
 internal const val STRIP_TRACKING_TAG = "settings.strip_tracking"
 
+/** Tag of the switch of the search for Friends devices. */
+internal const val FRIENDS_DISCOVERY_TAG = "settings.friends_discovery"
+
 /** Tag of the button that opens the folder picker for received files. */
 internal const val DOWNLOADS_PICK_TAG = "settings.downloads.pick"
 
@@ -369,3 +515,20 @@ internal const val DOWNLOADS_RESET_TAG = "settings.downloads.reset"
 
 /** Tag of the button that saves the device name. */
 internal const val NAME_SAVE_TAG = "settings.name.save"
+
+/** Tag of the button that keeps the settings in a file. */
+internal const val SETTINGS_FILE_EXPORT_TAG = "settings.file.export"
+
+/** Tag of the button that restores the settings of a file. */
+internal const val SETTINGS_FILE_IMPORT_TAG = "settings.file.import"
+
+/** Tag of the number of items of a dashboard tab. */
+internal fun dashboardLimitTag(option: Int): String = "settings.dashboard.limit.$option"
+
+/** Types the system picker offers for an imported document. */
+private val SETTINGS_FILE_TYPES =
+    arrayOf(
+        SettingsFile.MIME,
+        "text/plain",
+        "application/octet-stream",
+    )

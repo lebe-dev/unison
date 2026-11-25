@@ -8,6 +8,9 @@ fn main() {
     if let Some(code) = unison_desktop_lib::install::run_arg() {
         std::process::exit(code);
     }
+    if let Some(code) = unison_desktop_lib::updater::run_arg() {
+        std::process::exit(code);
+    }
     unison_desktop_lib::observability::init();
     unison_desktop_lib::run()
 }

@@ -78,6 +78,14 @@ enum EventKind {
   // An offline paired device stopped answering on its known addresses. The
   // error field lists the addresses and the failures.
   EVENT_KIND_PEER_UNREACHABLE = 15;
+  // A trusted device offers to introduce this device to another one.
+  EVENT_KIND_MEDIATED_PAIR_OFFER = 16;
+  // A mediated pairing exchange changed its state.
+  EVENT_KIND_MEDIATED_PAIR_UPDATED = 17;
+  // A mediated pairing exchange added a new device.
+  EVENT_KIND_MEDIATED_PAIR_COMPLETED = 18;
+  // A mediated pairing exchange ended without a new device.
+  EVENT_KIND_MEDIATED_PAIR_CANCELED = 19;
 }
 
 // Why an operation failed, so a client can show a short message in plain
@@ -221,6 +229,14 @@ service UnisonService {
   // for the devices to find each other.
   rpc SetFriendsDiscovery(SetFriendsDiscoveryRequest) returns (SetFriendsDiscoveryResponse);
 
+  // Introductions through a trusted device. The mediator starts an exchange
+  // for two devices it already trusts, each of the two devices confirms it.
+  rpc StartMediatedPair(StartMediatedPairRequest) returns (StartMediatedPairResponse);
+  rpc ConfirmMediatedPair(ConfirmMediatedPairRequest) returns (ConfirmMediatedPairResponse);
+  rpc RejectMediatedPair(RejectMediatedPairRequest) returns (RejectMediatedPairResponse);
+  rpc CancelMediatedPair(CancelMediatedPairRequest) returns (CancelMediatedPairResponse);
+  rpc ListMediatedPairs(ListMediatedPairsRequest) returns (ListMediatedPairsResponse);
+
   // Incoming file transfer requests that wait for a decision.
   rpc ListRequests(ListRequestsRequest) returns (ListRequestsResponse);
   // Accept or decline a request and tell the sender.
@@ -233,6 +249,11 @@ service UnisonService {
   // Settings of the daemon.
   rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
   rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
+  // Settings as a JSON document the user can keep and restore.
+  rpc ExportSettings(ExportSettingsRequest) returns (ExportSettingsResponse);
+  // Apply the settings of a JSON document. Keys that are absent keep the
+  // stored values.
+  rpc ImportSettings(ImportSettingsRequest) returns (ImportSettingsResponse);
 
   // Relay access of the Personal group and the state of its client.
   rpc GetRelay(GetRelayRequest) returns (GetRelayResponse);
@@ -302,6 +323,8 @@ message Device {
   // The device speaks a newer protocol version than this device, so this client
   // has to be updated.
   bool protocol_newer = 21;
+  // The device can take part in an introduction through a trusted device.
+  bool supports_mediated_pair = 22;
 }
 
 // State of the clipboard pause.
@@ -397,6 +420,8 @@ message Event {
   // The peer speaks a newer protocol version than this device, so this client
   // has to be updated. Set on EVENT_KIND_PEER_INCOMPATIBLE.
   bool protocol_newer = 17;
+  // Mediated pairing exchange, set on the mediated pair events.
+  MediatedPair mediated_pair = 18;
 }
 
 // State of the pairing window.
@@ -943,6 +968,36 @@ message UpdateSettingsResponse {
   Settings settings = 1;
 }
 
+message ExportSettingsRequest {
+  // Local settings of the app as a JSON object. It is written under the app
+  // key of the document without being interpreted. Empty for an app without
+  // local settings.
+  string app_settings = 1;
+}
+
+message ExportSettingsResponse {
+  // The document, formatted as JSON.
+  bytes document = 1;
+  // Name of the file, unison-<platform>-<date>-<time>.json. It carries the
+  // platform and the time of the document.
+  string file_name = 2;
+}
+
+message ImportSettingsRequest {
+  // The document.
+  bytes document = 1;
+}
+
+message ImportSettingsResponse {
+  // Settings after the import.
+  Settings settings = 1;
+  // Keys of the document this version does not know and did not apply, in
+  // dotted form.
+  repeated string ignored = 2;
+  // The document comes from a newer app, so only the known keys were applied.
+  bool from_newer_version = 3;
+}
+
 // Transport of the connection to the relay.
 enum RelayTransport {
   RELAY_TRANSPORT_UNSPECIFIED = 0;
@@ -1068,3 +1123,118 @@ message RetryDeviceRequest {
 }
 
 message RetryDeviceResponse {}
+
+// Side of a mediated pairing exchange the local device is on.
+enum MediatedPairDirection {
+  MEDIATED_PAIR_DIRECTION_UNSPECIFIED = 0;
+  // This device started the exchange for two of its devices.
+  MEDIATED_PAIR_DIRECTION_MEDIATOR = 1;
+  // Another device offers to introduce this one to a third one.
+  MEDIATED_PAIR_DIRECTION_INCOMING = 2;
+}
+
+// Progress of a mediated pairing exchange.
+enum MediatedPairState {
+  MEDIATED_PAIR_STATE_UNSPECIFIED = 0;
+  // The exchange waits for the users.
+  MEDIATED_PAIR_STATE_WAITING = 1;
+  // One device accepted and waits for the other one.
+  MEDIATED_PAIR_STATE_READY = 2;
+  // The lower device sent its keys and waits for the answer.
+  MEDIATED_PAIR_STATE_AWAITING_FINISH = 3;
+  MEDIATED_PAIR_STATE_COMPLETED = 4;
+  MEDIATED_PAIR_STATE_CANCELED = 5;
+}
+
+// Why a mediated pairing exchange ended without a new device.
+enum MediatedPairCancelReason {
+  MEDIATED_PAIR_CANCEL_REASON_UNSPECIFIED = 0;
+  MEDIATED_PAIR_CANCEL_REASON_USER_REJECTED = 1;
+  MEDIATED_PAIR_CANCEL_REASON_MEDIATOR_CANCELED = 2;
+  MEDIATED_PAIR_CANCEL_REASON_EXPIRED = 3;
+  MEDIATED_PAIR_CANCEL_REASON_REVOKED = 4;
+  MEDIATED_PAIR_CANCEL_REASON_ROLE_MISMATCH = 5;
+  MEDIATED_PAIR_CANCEL_REASON_ALREADY_PAIRED = 6;
+  MEDIATED_PAIR_CANCEL_REASON_BUSY = 7;
+  MEDIATED_PAIR_CANCEL_REASON_PEER_OFFLINE = 8;
+  MEDIATED_PAIR_CANCEL_REASON_FAILED = 9;
+}
+
+// One device of a mediated pairing exchange.
+message MediatedDevice {
+  // Device ID in lowercase hex.
+  string device_id = 1;
+  string name = 2;
+  Platform platform = 3;
+}
+
+// A mediated pairing exchange.
+message MediatedPair {
+  // Identifier of the exchange, lowercase hex.
+  string session_id = 1;
+  MediatedPairDirection direction = 2;
+  MediatedPairState state = 3;
+  Role role = 4;
+  // The device that runs the exchange, set on an incoming exchange.
+  MediatedDevice mediator = 5;
+  // The two devices a mediator introduces.
+  MediatedDevice peer_a = 6;
+  MediatedDevice peer_b = 7;
+  // The other device of an incoming exchange that is introduced to this one.
+  MediatedDevice peer = 8;
+  Sas sas = 9;
+  // The other device is paired already and offline: confirming the exchange
+  // replaces its connection keys.
+  bool already_paired = 10;
+  // Deadline of the exchange, unix milliseconds.
+  int64 expires_at_unix_ms = 11;
+  MediatedPairCancelReason cancel_reason = 12;
+  // The user asked to turn the search for Friends devices on after the pair
+  // completes.
+  bool enable_friends_discovery = 13;
+}
+
+message StartMediatedPairRequest {
+  // First device to introduce, device ID in lowercase hex.
+  string peer_a = 1;
+  // Second device to introduce, device ID in lowercase hex.
+  string peer_b = 2;
+  Role role = 3;
+}
+
+message StartMediatedPairResponse {
+  MediatedPair pair = 1;
+}
+
+message ConfirmMediatedPairRequest {
+  string session_id = 1;
+  // Turn the search for Friends devices on when the pair is Friends and the
+  // user asked for it.
+  bool enable_friends_discovery = 2;
+}
+
+message ConfirmMediatedPairResponse {
+  MediatedPair pair = 1;
+}
+
+message RejectMediatedPairRequest {
+  string session_id = 1;
+}
+
+message RejectMediatedPairResponse {
+  MediatedPair pair = 1;
+}
+
+message CancelMediatedPairRequest {
+  string session_id = 1;
+}
+
+message CancelMediatedPairResponse {
+  MediatedPair pair = 1;
+}
+
+message ListMediatedPairsRequest {}
+
+message ListMediatedPairsResponse {
+  repeated MediatedPair pairs = 1;
+}

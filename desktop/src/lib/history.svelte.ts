@@ -246,6 +246,7 @@ class HistoryStore {
     switch (event.kind) {
       case EventKind.CLIPBOARD:
       case EventKind.CLIP_DOWNLOAD:
+      case EventKind.HISTORY:
         void this.load(true);
         void this.refreshRecent();
         break;

@@ -27,14 +27,14 @@ func TestSettings(t *testing.T) {
 			t.Errorf("settings does not report %q:\n%s", want, stdout)
 		}
 	}
-	if got := ttlOf(t, stdout, "text"); got != "7d" {
-		t.Errorf("the text lifetime is %q, want 7d", got)
+	if got := ttlOf(t, stdout, "text"); got != "1d" {
+		t.Errorf("the text lifetime is %q, want 1d", got)
 	}
-	if got := ttlOf(t, stdout, "images"); got != "3d" {
-		t.Errorf("the image lifetime is %q, want 3d", got)
+	if got := ttlOf(t, stdout, "images"); got != "7d" {
+		t.Errorf("the image lifetime is %q, want 7d", got)
 	}
-	if got := ttlOf(t, stdout, "files"); got != "1d" {
-		t.Errorf("the file lifetime is %q, want 1d", got)
+	if got := ttlOf(t, stdout, "files"); got != "7d" {
+		t.Errorf("the file lifetime is %q, want 7d", got)
 	}
 }
 
@@ -73,16 +73,16 @@ func TestSettingsTTL(t *testing.T) {
 	if got := ttlOf(t, stdout, "text"); got != "30d" {
 		t.Errorf("the stored text lifetime is %q, want 30d", got)
 	}
-	if got := ttlOf(t, stdout, "images"); got != "3d" {
-		t.Errorf("the stored image lifetime is %q, want 3d", got)
+	if got := ttlOf(t, stdout, "images"); got != "7d" {
+		t.Errorf("the stored image lifetime is %q, want 7d", got)
 	}
 
 	code, stdout, stderr = runCommand(t, "", "--endpoint", device.endpoint, "settings", "ttl", "reset")
 	if code != exitOK {
 		t.Fatalf("settings ttl reset exited with %d, stderr %q", code, stderr)
 	}
-	if got := ttlOf(t, stdout, "text"); got != "7d" {
-		t.Errorf("the text lifetime is %q after the reset, want 7d", got)
+	if got := ttlOf(t, stdout, "text"); got != "1d" {
+		t.Errorf("the text lifetime is %q after the reset, want 1d", got)
 	}
 }
 

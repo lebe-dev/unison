@@ -180,18 +180,20 @@ pipe дает доступ только текущему пользовател�
 | Устройства | `ListDevices`, `RenameDevice`, `RevokeDevice`, `SetDeviceConfirmation`, `SetDeviceRemoteSettings`, `SetPeerAddress`, `RetryDevice` |
 | Спаривание | `OpenPairingWindow`, `ExtendPairingWindow`, `ClosePairingWindow`, `ListPairingCandidates`, `StartSas`, `ConfirmSas`, `RejectSas` |
 | Спаривание по QR | `GetPairingQr`, `ScanPairingQr` |
+| Знакомства | `StartMediatedPair`, `ConfirmMediatedPair`, `RejectMediatedPair`, `CancelMediatedPair`, `ListMediatedPairs` |
 | Буфер обмена | `GetClip`, `SetClip` |
 | История | `ListHistory`, `GetHistoryItem`, `GetHistoryThumbnail`, `DeleteHistoryItem`, `ClearHistory`, `FetchHistoryItem`, `CopyHistoryItem`, `ApplyHistoryItem` |
 | Передачи | `SendFiles`, `ListTransfers`, `CancelTransfer`, `AcceptTransfer`, `RejectTransfer` |
 | Запросы | `SetFriendsDiscovery`, `ListRequests`, `DecideRequest` |
 | Пауза | `GetPause`, `SetPause` |
-| Настройки | `GetSettings`, `UpdateSettings` |
+| Настройки | `GetSettings`, `UpdateSettings`, `ExportSettings`, `ImportSettings` |
 | Ретранслятор | `GetRelay`, `SetRelay`, `RelayOff`, `TestRelay` |
 
 `WatchEvents` несет события шины узла: пир, который вышел онлайн или ушел офлайн, элемент буфера
 обмена, пир, которому нужно обновиться, и события спаривания с адресом кандидата и коротким
-кодом. Ответ серверного потока приходит с первым событием, поэтому клиент открывает поток до
-того, как ему понадобятся события.
+кодом. События знакомства несут снимок знакомства через доверенное устройство. Ответ серверного
+потока приходит с первым событием, поэтому клиент открывает поток до того, как ему понадобятся
+события.
 
 Статус, устройство и ретранслятор несут версию протокола, которую объявила другая сторона. События и
 список устройств также сообщают, новее ли другая сторона, поэтому клиент может сказать пользователю
@@ -200,8 +202,10 @@ pipe дает доступ только текущему пользовател�
 ID устройств - шестнадцатеричные в нижнем регистре, время - unix-миллисекунды. `GetClip`
 возвращает последний элемент буфера обмена. Настройки держат имя устройства, флаги подтверждения
 локального устройства, лимит blob-хранилища, каталог загрузок, время жизни и сетевую политику;
-изменение применяется сразу. Настройки ретранслятора отдаются как URL, время изменения и признак
-того, сохранен ли токен, но никогда как сам токен. Статус называет бэкенд буфера обмена и причину
+изменение применяется сразу. `ExportSettings` пишет их документом JSON, а `ImportSettings`
+применяет такой документ ключами, которые в нем есть, и оставляет записанные значения для
+остальных; см. [Файл настроек](settings-file.ru.md). Настройки ретранслятора отдаются как URL,
+время изменения и признак того, сохранен ли токен, но никогда как сам токен. Статус называет бэкенд буфера обмена и причину
 ручного режима, а также бэкенд хранилища ключей; см. раздел [Сеанс Linux](#сеанс-linux).
 
 Десктопное приложение не работает с сокетом напрямую: его оболочка на Rust проксирует тот же API

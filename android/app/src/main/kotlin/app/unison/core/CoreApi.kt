@@ -108,6 +108,12 @@ interface CoreApi {
         limit: Int = 0,
     ): Local.ListHistoryResponse
 
+    /** Scaled down pixels of an image entry, decoded by the core. */
+    suspend fun historyThumbnail(
+        id: String,
+        maxSide: Int,
+    ): Local.GetHistoryThumbnailResponse
+
     /** Writes one history entry back to the clipboard. */
     suspend fun copyHistoryItem(id: String)
 
@@ -125,6 +131,12 @@ interface CoreApi {
         id: String,
         path: String,
     ): Local.FetchHistoryItemResponse
+
+    /** Offers the files at [paths] to the devices as transfers. */
+    suspend fun sendFiles(
+        paths: List<String>,
+        deviceIds: List<String>,
+    ): Local.SendFilesResponse
 
     /** Every file transfer of this device, newest first. */
     suspend fun listTransfers(): Local.ListTransfersResponse
@@ -167,6 +179,31 @@ interface CoreApi {
 
     /** Refuses the pairing request of the device. */
     suspend fun rejectPairing(deviceId: String)
+
+    /** Turns the temporary search for Friends devices on or off. */
+    suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery
+
+    /** Exchanges of an introduction through a trusted device that are still active. */
+    suspend fun mediatedPairs(): List<Local.MediatedPair>
+
+    /** Introduces two online devices of this one to each other. */
+    suspend fun startMediatedPair(
+        peerA: String,
+        peerB: String,
+        role: Local.Role,
+    ): Local.MediatedPair
+
+    /** Accepts an offer to introduce this device to another one. */
+    suspend fun confirmMediatedPair(
+        sessionId: String,
+        enableFriendsDiscovery: Boolean,
+    ): Local.MediatedPair
+
+    /** Declines an offer to introduce this device to another one. */
+    suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair
+
+    /** Cancels an introduction this device runs. */
+    suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair
 }
 
 /** Core that starts the service when it does not answer yet. */
@@ -187,6 +224,16 @@ class RunningCore(
     override suspend fun settings(): Local.Settings {
         ensureRunning()
         return client.settings()
+    }
+
+    suspend fun exportSettings(appSettings: String): Local.ExportSettingsResponse {
+        ensureRunning()
+        return client.exportSettings(appSettings)
+    }
+
+    suspend fun importSettings(document: ByteArray): Local.ImportSettingsResponse {
+        ensureRunning()
+        return client.importSettings(document)
     }
 
     override suspend fun setSentryEnabled(enabled: Boolean): Local.Settings {
@@ -292,6 +339,14 @@ class RunningCore(
         return client.listHistory(kind, deviceId, limit)
     }
 
+    override suspend fun historyThumbnail(
+        id: String,
+        maxSide: Int,
+    ): Local.GetHistoryThumbnailResponse {
+        ensureRunning()
+        return client.historyThumbnail(id, maxSide)
+    }
+
     override suspend fun copyHistoryItem(id: String) {
         ensureRunning()
         client.copyHistoryItem(id)
@@ -318,6 +373,14 @@ class RunningCore(
     ): Local.FetchHistoryItemResponse {
         ensureRunning()
         return client.fetchHistoryItem(id, path)
+    }
+
+    override suspend fun sendFiles(
+        paths: List<String>,
+        deviceIds: List<String>,
+    ): Local.SendFilesResponse {
+        ensureRunning()
+        return client.sendFiles(paths, deviceIds)
     }
 
     override suspend fun listTransfers(): Local.ListTransfersResponse {
@@ -386,6 +449,43 @@ class RunningCore(
     override suspend fun rejectPairing(deviceId: String) {
         ensureRunning()
         client.rejectPairing(deviceId)
+    }
+
+    override suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery {
+        ensureRunning()
+        return client.setFriendsDiscovery(on)
+    }
+
+    override suspend fun mediatedPairs(): List<Local.MediatedPair> {
+        ensureRunning()
+        return client.mediatedPairs()
+    }
+
+    override suspend fun startMediatedPair(
+        peerA: String,
+        peerB: String,
+        role: Local.Role,
+    ): Local.MediatedPair {
+        ensureRunning()
+        return client.startMediatedPair(peerA, peerB, role)
+    }
+
+    override suspend fun confirmMediatedPair(
+        sessionId: String,
+        enableFriendsDiscovery: Boolean,
+    ): Local.MediatedPair {
+        ensureRunning()
+        return client.confirmMediatedPair(sessionId, enableFriendsDiscovery)
+    }
+
+    override suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair {
+        ensureRunning()
+        return client.rejectMediatedPair(sessionId)
+    }
+
+    override suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair {
+        ensureRunning()
+        return client.cancelMediatedPair(sessionId)
     }
 
     /** Stores the whole network policy and returns the resulting settings. */

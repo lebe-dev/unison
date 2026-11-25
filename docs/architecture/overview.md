@@ -37,7 +37,7 @@ The repository is split by layer, and the dependencies only point downwards:
 |-------|-------|------|
 | Entry points | `cmd/`, `mobile/`, `desktop/`, `android/app` | start a process and wire the core |
 | Composition | `core/node` | builds the domains into a running device |
-| Domains | `core/*` | trust, pairing, discovery, clipboard, blobs, history, share, relay |
+| Domains | `core/*` | trust, pairing, mediate, discovery, clipboard, blobs, history, share, relay |
 | Protocol | `core/session`, `core/transport`, `proto/` | frames, streams, capabilities on the wire |
 | Ports | `core/ports` | keystore, clipboard, discovery, clock |
 | Platform | `platform/darwin`, `platform/windows` | the ports for a real OS |
@@ -117,3 +117,4 @@ See [Security](../security.md) for the model in short and
 - [Windows](windows.md) - the windows ports and the installer
 - [Android](android.md) - the mobile binding, the service and the app
 - [Application log](application-log.md) - the log the user can turn on and share
+- [Settings file](settings-file.md) - the JSON document the user keeps and restores

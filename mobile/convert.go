@@ -251,6 +251,14 @@ func eventTypeOf(kind node.EventKind) mobilev1.EventType {
 		return mobilev1.EventType_EVENT_TYPE_PAIRING_CLOSED
 	case node.EventHistory:
 		return mobilev1.EventType_EVENT_TYPE_HISTORY
+	case node.EventMediatedPairOffer:
+		return mobilev1.EventType_EVENT_TYPE_MEDIATED_PAIR_OFFER
+	case node.EventMediatedPairUpdated:
+		return mobilev1.EventType_EVENT_TYPE_MEDIATED_PAIR_UPDATED
+	case node.EventMediatedPairCompleted:
+		return mobilev1.EventType_EVENT_TYPE_MEDIATED_PAIR_COMPLETED
+	case node.EventMediatedPairCanceled:
+		return mobilev1.EventType_EVENT_TYPE_MEDIATED_PAIR_CANCELED
 	default:
 		return mobilev1.EventType_EVENT_TYPE_UNSPECIFIED
 	}

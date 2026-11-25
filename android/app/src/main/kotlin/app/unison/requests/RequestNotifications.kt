@@ -37,7 +37,7 @@ object RequestNotifications {
                 .setSmallIcon(R.drawable.ic_stat_unison)
                 .setContentTitle(request.deviceName.ifBlank { context.getString(R.string.app_name) })
                 .setContentText(context.resources.getQuantityString(R.plurals.request_files, files.size, files.size, size))
-                .setContentIntent(openApp(context))
+                .setContentIntent(openRequestsApp(context))
                 .addAction(0, context.getString(R.string.action_decline), answer(context, request.id, accept = false))
                 .addAction(0, context.getString(R.string.action_accept), answer(context, request.id, accept = true))
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
@@ -62,7 +62,7 @@ object RequestNotifications {
             .setSmallIcon(R.drawable.ic_stat_unison)
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText(text)
-            .setContentIntent(openApp(context))
+            .setContentIntent(openRequestsApp(context))
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
@@ -89,19 +89,19 @@ object RequestNotifications {
         )
     }
 
-    /** Opens the requests screen from the notification body. */
-    private fun openApp(context: Context): PendingIntent =
-        PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, MainActivity::class.java)
-                .putExtra(MainActivity.EXTRA_SCREEN, Destination.SCREEN_REQUESTS),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-
-    private const val BASE_ID = 300
-    private const val ID_MASK = 0xFFFF
+    private const val BASE_ID = 0x10000
+    private const val ID_MASK = 0x7FFF
 
     /** Keeps the pending intents of the two answers apart. */
-    private const val REQUEST_CODE_STRIDE = 0x10000
+    private const val REQUEST_CODE_STRIDE = 0x8000
 }
+
+/** Opens the requests screen from a request or introduction notification. */
+internal fun openRequestsApp(context: Context): PendingIntent =
+    PendingIntent.getActivity(
+        context,
+        0,
+        Intent(context, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_SCREEN, Destination.SCREEN_REQUESTS),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )

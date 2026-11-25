@@ -1,7 +1,8 @@
 # Application log
 
 The app keeps a log the user can send to support. It is off by default and the user turns it on in
-Settings > Application log. While it is off the app writes no journal records.
+Settings > General > Application log, or Settings > Application log in the Android app. While it is
+off the app writes no journal records.
 
 ## Files
 

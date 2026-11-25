@@ -163,10 +163,10 @@ it as `UNISON_VERSION` to the packaging scripts and to Gradle. The `-desktop` ar
 `package-macos`, `package-windows` or `package-windows-cross` and `package-linux`, so the signing
 and notarization variables of those scripts apply as well.
 
-The Android release APK is signed when `UNISON_ANDROID_KEYSTORE`, `UNISON_ANDROID_STORE_PASSWORD`,
-`UNISON_ANDROID_KEY_ALIAS` and `UNISON_ANDROID_KEY_PASSWORD` are set in `.env` or the environment.
-A relative keystore path is resolved against the repository root. Without the keystore Gradle
-writes an unsigned APK and the recipe warns about it.
+The Android release APK requires `UNISON_ANDROID_KEYSTORE`, `UNISON_ANDROID_STORE_PASSWORD`,
+`UNISON_ANDROID_KEY_ALIAS` and `UNISON_ANDROID_KEY_PASSWORD` to be set in `.env` or the environment.
+A relative keystore path is resolved against the repository root. Without a signing configuration
+`assembleRelease` and `just release-android` fail.
 
 Binaries are built without cgo so every target can be cross-compiled from any host.
 
@@ -346,8 +346,8 @@ tombstone with the id of the deleted item to the log of the device that deletes,
 the other devices like any other entry. Expiry is decided by the origin device and carried in the
 item: the queries skip entries past their expiry and a cleanup every ten minutes removes them, so
 an expired item disappears on every device without a network exchange. The lifetimes are the
-`history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, seven days, three days and
-one day by default; `UpdateSettings` stores them and `ReloadTTLs` passes them to the pipeline, so a
+`history.ttl.text`, `history.ttl.image` and `history.ttl.files` settings, one day, seven days and
+seven days by default; `UpdateSettings` stores them and `ReloadTTLs` passes them to the pipeline, so a
 change applies to the next captured item without a restart. Every write to the log reports itself
 through `history.Options.OnChange`, which the node publishes as the `history` event, so a reader
 refreshes its list whoever recorded the entry: the pipeline, the local API or the exchange.
@@ -398,7 +398,10 @@ with the request and response size limits. The errors of the core are mapped to 
 missing peer is `not_found`, a closed pairing window or a stopped node `failed_precondition`,
 invalid input `invalid_argument` and a refused device `permission_denied`. `ListDevices` and
 `RenameDevice` serve the device list and the local names, the rest of the device management calls
-change the policy or the trust record of the group.
+change the policy or the trust record of the group. `ExportSettings` and `ImportSettings` move the
+settings as the JSON document of `core/settingsfile`, which owns the format and its version: an
+older file is migrated step by step, a newer one is applied with the keys this version knows, and a
+key that is absent keeps the stored value.
 
 `core/api/localconn` serves that API on the endpoint of the daemon: the unix socket
 `~/Library/Application Support/Unison/unisond.sock` on macOS and the named pipe

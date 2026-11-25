@@ -212,12 +212,9 @@ fn firewall_steps(binary: &Path) -> [Vec<String>; 2] {
 
 /// netsh_path returns the absolute path of netsh. An elevated process must not
 /// run a program of the directory it starts from.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 fn netsh_path(system_root: Option<OsString>) -> PathBuf {
-    let root = system_root
-        .filter(|root| !root.is_empty())
-        .unwrap_or_else(|| OsString::from(r"C:\Windows"));
-    PathBuf::from(root).join("System32").join("netsh.exe")
+    crate::winutil::system32_binary(system_root, "netsh.exe")
 }
 
 /// last_line returns the last line of a report that carries text.
@@ -298,31 +295,11 @@ pub fn install() -> Result<(), String> {
 /// platform installs the daemon on Windows.
 #[cfg(windows)]
 mod platform {
-    use std::ffi::OsStr;
     use std::io::Write;
-    use std::os::windows::ffi::OsStrExt;
-    use std::os::windows::process::CommandExt;
     use std::path::{Path, PathBuf};
-    use std::process::{Command, Stdio};
-
-    use windows_sys::Win32::Foundation::{CloseHandle, ERROR_CANCELLED, GetLastError};
-    use windows_sys::Win32::System::Com::{
-        COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize,
-    };
-    use windows_sys::Win32::System::Threading::{
-        GetExitCodeProcess, INFINITE, WaitForSingleObject,
-    };
-    use windows_sys::Win32::UI::Shell::{
-        SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW, ShellExecuteExW,
-    };
 
     use super::*;
-
-    /// NO_WINDOW keeps the console programs of the installation from opening a
-    /// window of their own.
-    const NO_WINDOW: u32 = 0x0800_0000;
-    /// HIDE is the `SW_HIDE` value of the window state.
-    const HIDE: i32 = 0;
+    use crate::winutil::{ElevateError, run_elevated, run_system_tool};
 
     /// hidden runs the steps of the installation and returns the exit code.
     pub fn hidden(options: Options) -> i32 {
@@ -381,8 +358,8 @@ mod platform {
     fn firewall(binary: &Path, options: &Options) -> Result<(), String> {
         let [delete, add] = firewall_steps(binary);
         // A rule that does not exist yet is the normal first installation.
-        let _ = netsh(&delete);
-        let code = netsh(&add)?;
+        let _ = run_system_tool("netsh.exe", &delete);
+        let code = run_system_tool("netsh.exe", &add)?;
         if code != 0 {
             return Err(format!(
                 "the firewall rule {FIREWALL_RULE} cannot be added, netsh exited with {code}"
@@ -393,19 +370,6 @@ mod platform {
             &format!("unison: the firewall rule {FIREWALL_RULE} is set"),
         );
         Ok(())
-    }
-
-    /// netsh runs one netsh call and returns its exit code.
-    fn netsh(args: &[String]) -> Result<i32, String> {
-        let status = Command::new(netsh_path(std::env::var_os("SystemRoot")))
-            .args(args)
-            .creation_flags(NO_WINDOW)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map_err(|err| format!("cannot run netsh: {err}"))?;
-        Ok(status.code().unwrap_or(-1))
     }
 
     /// report writes one step of the installation to the log file and the
@@ -455,106 +419,25 @@ mod platform {
     /// elevate runs the hidden mode of the app with the elevation prompt and
     /// returns its exit code.
     fn elevate(exe: &Path, source: &Path, log: &Path) -> Result<i32, String> {
-        // The shell runs the verb through COM, so the calling thread
-        // initializes it first.
-        // SAFETY: the call takes no other arguments than the model.
-        let initialized =
-            unsafe { CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED as u32) } >= 0;
-        let result = elevate_with(exe, source, log);
-        if initialized {
-            // SAFETY: the thread initialized COM above and does not use it
-            // afterwards.
-            unsafe { CoUninitialize() };
-        }
-        result
-    }
-
-    /// elevate_with starts the hidden mode and waits for its exit code.
-    fn elevate_with(exe: &Path, source: &Path, log: &Path) -> Result<i32, String> {
-        let file = wide(&exe.to_string_lossy());
-        let verb = wide("runas");
-        let params = wide(&elevated_args(source, log));
-        let mut info = SHELLEXECUTEINFOW {
-            cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
-            fMask: SEE_MASK_NOCLOSEPROCESS,
-            lpVerb: verb.as_ptr(),
-            lpFile: file.as_ptr(),
-            lpParameters: params.as_ptr(),
-            nShow: HIDE,
-            ..Default::default()
-        };
-        // SAFETY: the strings live until the call returns and the process
-        // handle is closed below.
-        if unsafe { ShellExecuteExW(&mut info) } == 0 {
-            let code = unsafe { GetLastError() };
-            if code == ERROR_CANCELLED {
-                return Err(
-                    "the installation was cancelled in the elevation prompt; nothing was changed"
-                        .to_string(),
-                );
+        run_elevated(exe, &elevated_args(source, log)).map_err(|err| match err {
+            ElevateError::Cancelled => {
+                "the installation was cancelled in the elevation prompt; nothing was changed"
+                    .to_string()
             }
-            return Err(format!("cannot start the installation: error {code}"));
-        }
-        if info.hProcess.is_null() {
-            return Err("cannot wait for the installation".to_string());
-        }
-        // SAFETY: the handle comes from the call above and is closed here.
-        unsafe {
-            WaitForSingleObject(info.hProcess, INFINITE);
-            let mut code = 0u32;
-            let ok = GetExitCodeProcess(info.hProcess, &mut code);
-            CloseHandle(info.hProcess);
-            if ok == 0 {
-                return Err("cannot read the result of the installation".to_string());
-            }
-            Ok(code as i32)
-        }
-    }
-
-    /// wide returns the UTF-16 form of a string with a terminating null.
-    fn wide(value: &str) -> Vec<u16> {
-        OsStr::new(value)
-            .encode_wide()
-            .chain(std::iter::once(0))
-            .collect()
+            ElevateError::Start(code) => format!("cannot start the installation: error {code}"),
+            ElevateError::NoProcessHandle => "cannot wait for the installation".to_string(),
+            ElevateError::ReadExitCode => "cannot read the result of the installation".to_string(),
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testutil::TempDir;
 
     /// HOOKS is the installer script that writes the same names.
     const HOOKS: &str = include_str!("../installer-hooks.nsh");
-
-    /// TempDir is a directory of a test that removes itself.
-    struct TempDir(PathBuf);
-
-    impl TempDir {
-        fn new() -> Self {
-            use std::sync::atomic::{AtomicUsize, Ordering};
-            static NEXT: AtomicUsize = AtomicUsize::new(0);
-            let name = format!(
-                "unison-install-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            );
-            let path = std::env::temp_dir().join(name);
-            let _ = std::fs::remove_dir_all(&path);
-            std::fs::create_dir_all(&path).expect("create the directory");
-            Self(path)
-        }
-
-        fn join(&self, name: &str) -> PathBuf {
-            self.0.join(name)
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
 
     fn args(list: &[&str]) -> Vec<OsString> {
         list.iter().map(OsString::from).collect()
@@ -872,6 +755,29 @@ mod tests {
         assert!(
             HOOKS.contains(&format!(r"$INSTDIR\{BINARY}")),
             "the installer puts another daemon into the installation directory"
+        );
+    }
+
+    /// hook returns the body of one macro of the installer script.
+    fn hook(name: &str) -> &'static str {
+        let start = format!("!macro {name}");
+        let begin = HOOKS.find(&start).expect("the hook exists") + start.len();
+        let end = HOOKS[begin..].find("!macroend").expect("the hook ends");
+        &HOOKS[begin..begin + end]
+    }
+
+    #[test]
+    fn the_installer_stops_the_daemon_before_the_copy() {
+        let preinstall = hook("NSIS_HOOK_PREINSTALL");
+        assert!(
+            preinstall.contains(&format!("taskkill /F /IM {BINARY}")),
+            "an upgrade over a running daemon cannot replace it"
+        );
+
+        let postinstall = hook("NSIS_HOOK_POSTINSTALL");
+        assert!(
+            !postinstall.contains("taskkill"),
+            "the installer kills the daemon after the copy"
         );
     }
 

@@ -692,6 +692,38 @@ public final class Local {
      * <code>EVENT_KIND_PEER_UNREACHABLE = 15;</code>
      */
     EVENT_KIND_PEER_UNREACHABLE(15),
+    /**
+     * <pre>
+     * A trusted device offers to introduce this device to another one.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_OFFER = 16;</code>
+     */
+    EVENT_KIND_MEDIATED_PAIR_OFFER(16),
+    /**
+     * <pre>
+     * A mediated pairing exchange changed its state.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_UPDATED = 17;</code>
+     */
+    EVENT_KIND_MEDIATED_PAIR_UPDATED(17),
+    /**
+     * <pre>
+     * A mediated pairing exchange added a new device.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_COMPLETED = 18;</code>
+     */
+    EVENT_KIND_MEDIATED_PAIR_COMPLETED(18),
+    /**
+     * <pre>
+     * A mediated pairing exchange ended without a new device.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_CANCELED = 19;</code>
+     */
+    EVENT_KIND_MEDIATED_PAIR_CANCELED(19),
     UNRECOGNIZED(-1),
     ;
 
@@ -821,6 +853,38 @@ public final class Local {
      * <code>EVENT_KIND_PEER_UNREACHABLE = 15;</code>
      */
     public static final int EVENT_KIND_PEER_UNREACHABLE_VALUE = 15;
+    /**
+     * <pre>
+     * A trusted device offers to introduce this device to another one.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_OFFER = 16;</code>
+     */
+    public static final int EVENT_KIND_MEDIATED_PAIR_OFFER_VALUE = 16;
+    /**
+     * <pre>
+     * A mediated pairing exchange changed its state.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_UPDATED = 17;</code>
+     */
+    public static final int EVENT_KIND_MEDIATED_PAIR_UPDATED_VALUE = 17;
+    /**
+     * <pre>
+     * A mediated pairing exchange added a new device.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_COMPLETED = 18;</code>
+     */
+    public static final int EVENT_KIND_MEDIATED_PAIR_COMPLETED_VALUE = 18;
+    /**
+     * <pre>
+     * A mediated pairing exchange ended without a new device.
+     * </pre>
+     *
+     * <code>EVENT_KIND_MEDIATED_PAIR_CANCELED = 19;</code>
+     */
+    public static final int EVENT_KIND_MEDIATED_PAIR_CANCELED_VALUE = 19;
 
 
     @java.lang.Override
@@ -859,6 +923,10 @@ public final class Local {
         case 13: return EVENT_KIND_HISTORY;
         case 14: return EVENT_KIND_DEVICE_UPDATED;
         case 15: return EVENT_KIND_PEER_UNREACHABLE;
+        case 16: return EVENT_KIND_MEDIATED_PAIR_OFFER;
+        case 17: return EVENT_KIND_MEDIATED_PAIR_UPDATED;
+        case 18: return EVENT_KIND_MEDIATED_PAIR_COMPLETED;
+        case 19: return EVENT_KIND_MEDIATED_PAIR_CANCELED;
         default: return null;
       }
     }
@@ -2325,6 +2393,442 @@ public final class Local {
     // @@protoc_insertion_point(enum_scope:unison.local.v1.RelayCheckFailure)
   }
 
+  /**
+   * <pre>
+   * Side of a mediated pairing exchange the local device is on.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.MediatedPairDirection}
+   */
+  public enum MediatedPairDirection
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>MEDIATED_PAIR_DIRECTION_UNSPECIFIED = 0;</code>
+     */
+    MEDIATED_PAIR_DIRECTION_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * This device started the exchange for two of its devices.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_DIRECTION_MEDIATOR = 1;</code>
+     */
+    MEDIATED_PAIR_DIRECTION_MEDIATOR(1),
+    /**
+     * <pre>
+     * Another device offers to introduce this one to a third one.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_DIRECTION_INCOMING = 2;</code>
+     */
+    MEDIATED_PAIR_DIRECTION_INCOMING(2),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>MEDIATED_PAIR_DIRECTION_UNSPECIFIED = 0;</code>
+     */
+    public static final int MEDIATED_PAIR_DIRECTION_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * This device started the exchange for two of its devices.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_DIRECTION_MEDIATOR = 1;</code>
+     */
+    public static final int MEDIATED_PAIR_DIRECTION_MEDIATOR_VALUE = 1;
+    /**
+     * <pre>
+     * Another device offers to introduce this one to a third one.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_DIRECTION_INCOMING = 2;</code>
+     */
+    public static final int MEDIATED_PAIR_DIRECTION_INCOMING_VALUE = 2;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static MediatedPairDirection valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static MediatedPairDirection forNumber(int value) {
+      switch (value) {
+        case 0: return MEDIATED_PAIR_DIRECTION_UNSPECIFIED;
+        case 1: return MEDIATED_PAIR_DIRECTION_MEDIATOR;
+        case 2: return MEDIATED_PAIR_DIRECTION_INCOMING;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<MediatedPairDirection>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        MediatedPairDirection> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<MediatedPairDirection>() {
+            @java.lang.Override
+            public MediatedPairDirection findValueByNumber(int number) {
+              return MediatedPairDirection.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return MediatedPairDirectionVerifier.INSTANCE;
+    }
+
+    private static final class MediatedPairDirectionVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new MediatedPairDirectionVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return MediatedPairDirection.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private MediatedPairDirection(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.MediatedPairDirection)
+  }
+
+  /**
+   * <pre>
+   * Progress of a mediated pairing exchange.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.MediatedPairState}
+   */
+  public enum MediatedPairState
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>MEDIATED_PAIR_STATE_UNSPECIFIED = 0;</code>
+     */
+    MEDIATED_PAIR_STATE_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * The exchange waits for the users.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_STATE_WAITING = 1;</code>
+     */
+    MEDIATED_PAIR_STATE_WAITING(1),
+    /**
+     * <pre>
+     * One device accepted and waits for the other one.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_STATE_READY = 2;</code>
+     */
+    MEDIATED_PAIR_STATE_READY(2),
+    /**
+     * <pre>
+     * The lower device sent its keys and waits for the answer.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_STATE_AWAITING_FINISH = 3;</code>
+     */
+    MEDIATED_PAIR_STATE_AWAITING_FINISH(3),
+    /**
+     * <code>MEDIATED_PAIR_STATE_COMPLETED = 4;</code>
+     */
+    MEDIATED_PAIR_STATE_COMPLETED(4),
+    /**
+     * <code>MEDIATED_PAIR_STATE_CANCELED = 5;</code>
+     */
+    MEDIATED_PAIR_STATE_CANCELED(5),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>MEDIATED_PAIR_STATE_UNSPECIFIED = 0;</code>
+     */
+    public static final int MEDIATED_PAIR_STATE_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * The exchange waits for the users.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_STATE_WAITING = 1;</code>
+     */
+    public static final int MEDIATED_PAIR_STATE_WAITING_VALUE = 1;
+    /**
+     * <pre>
+     * One device accepted and waits for the other one.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_STATE_READY = 2;</code>
+     */
+    public static final int MEDIATED_PAIR_STATE_READY_VALUE = 2;
+    /**
+     * <pre>
+     * The lower device sent its keys and waits for the answer.
+     * </pre>
+     *
+     * <code>MEDIATED_PAIR_STATE_AWAITING_FINISH = 3;</code>
+     */
+    public static final int MEDIATED_PAIR_STATE_AWAITING_FINISH_VALUE = 3;
+    /**
+     * <code>MEDIATED_PAIR_STATE_COMPLETED = 4;</code>
+     */
+    public static final int MEDIATED_PAIR_STATE_COMPLETED_VALUE = 4;
+    /**
+     * <code>MEDIATED_PAIR_STATE_CANCELED = 5;</code>
+     */
+    public static final int MEDIATED_PAIR_STATE_CANCELED_VALUE = 5;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static MediatedPairState valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static MediatedPairState forNumber(int value) {
+      switch (value) {
+        case 0: return MEDIATED_PAIR_STATE_UNSPECIFIED;
+        case 1: return MEDIATED_PAIR_STATE_WAITING;
+        case 2: return MEDIATED_PAIR_STATE_READY;
+        case 3: return MEDIATED_PAIR_STATE_AWAITING_FINISH;
+        case 4: return MEDIATED_PAIR_STATE_COMPLETED;
+        case 5: return MEDIATED_PAIR_STATE_CANCELED;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<MediatedPairState>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        MediatedPairState> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<MediatedPairState>() {
+            @java.lang.Override
+            public MediatedPairState findValueByNumber(int number) {
+              return MediatedPairState.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return MediatedPairStateVerifier.INSTANCE;
+    }
+
+    private static final class MediatedPairStateVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new MediatedPairStateVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return MediatedPairState.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private MediatedPairState(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.MediatedPairState)
+  }
+
+  /**
+   * <pre>
+   * Why a mediated pairing exchange ended without a new device.
+   * </pre>
+   *
+   * Protobuf enum {@code unison.local.v1.MediatedPairCancelReason}
+   */
+  public enum MediatedPairCancelReason
+      implements com.google.protobuf.Internal.EnumLite {
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_UNSPECIFIED = 0;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_UNSPECIFIED(0),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_USER_REJECTED = 1;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_USER_REJECTED(1),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_MEDIATOR_CANCELED = 2;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_MEDIATOR_CANCELED(2),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_EXPIRED = 3;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_EXPIRED(3),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_REVOKED = 4;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_REVOKED(4),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_ROLE_MISMATCH = 5;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_ROLE_MISMATCH(5),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_ALREADY_PAIRED = 6;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_ALREADY_PAIRED(6),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_BUSY = 7;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_BUSY(7),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_PEER_OFFLINE = 8;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_PEER_OFFLINE(8),
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_FAILED = 9;</code>
+     */
+    MEDIATED_PAIR_CANCEL_REASON_FAILED(9),
+    UNRECOGNIZED(-1),
+    ;
+
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_UNSPECIFIED = 0;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_UNSPECIFIED_VALUE = 0;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_USER_REJECTED = 1;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_USER_REJECTED_VALUE = 1;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_MEDIATOR_CANCELED = 2;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_MEDIATOR_CANCELED_VALUE = 2;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_EXPIRED = 3;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_EXPIRED_VALUE = 3;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_REVOKED = 4;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_REVOKED_VALUE = 4;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_ROLE_MISMATCH = 5;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_ROLE_MISMATCH_VALUE = 5;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_ALREADY_PAIRED = 6;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_ALREADY_PAIRED_VALUE = 6;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_BUSY = 7;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_BUSY_VALUE = 7;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_PEER_OFFLINE = 8;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_PEER_OFFLINE_VALUE = 8;
+    /**
+     * <code>MEDIATED_PAIR_CANCEL_REASON_FAILED = 9;</code>
+     */
+    public static final int MEDIATED_PAIR_CANCEL_REASON_FAILED_VALUE = 9;
+
+
+    @java.lang.Override
+    public final int getNumber() {
+      if (this == UNRECOGNIZED) {
+        return com.google.protobuf.Internal.throwCannotGetNumberOfUnrecognized();
+      }
+      return value;
+    }
+
+    /**
+     * @param value The number of the enum to look for.
+     * @return The enum associated with the given number.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static MediatedPairCancelReason valueOf(int value) {
+      return forNumber(value);
+    }
+
+    public static MediatedPairCancelReason forNumber(int value) {
+      switch (value) {
+        case 0: return MEDIATED_PAIR_CANCEL_REASON_UNSPECIFIED;
+        case 1: return MEDIATED_PAIR_CANCEL_REASON_USER_REJECTED;
+        case 2: return MEDIATED_PAIR_CANCEL_REASON_MEDIATOR_CANCELED;
+        case 3: return MEDIATED_PAIR_CANCEL_REASON_EXPIRED;
+        case 4: return MEDIATED_PAIR_CANCEL_REASON_REVOKED;
+        case 5: return MEDIATED_PAIR_CANCEL_REASON_ROLE_MISMATCH;
+        case 6: return MEDIATED_PAIR_CANCEL_REASON_ALREADY_PAIRED;
+        case 7: return MEDIATED_PAIR_CANCEL_REASON_BUSY;
+        case 8: return MEDIATED_PAIR_CANCEL_REASON_PEER_OFFLINE;
+        case 9: return MEDIATED_PAIR_CANCEL_REASON_FAILED;
+        default: return null;
+      }
+    }
+
+    public static com.google.protobuf.Internal.EnumLiteMap<MediatedPairCancelReason>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static final com.google.protobuf.Internal.EnumLiteMap<
+        MediatedPairCancelReason> internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<MediatedPairCancelReason>() {
+            @java.lang.Override
+            public MediatedPairCancelReason findValueByNumber(int number) {
+              return MediatedPairCancelReason.forNumber(number);
+            }
+          };
+
+    public static com.google.protobuf.Internal.EnumVerifier 
+        internalGetVerifier() {
+      return MediatedPairCancelReasonVerifier.INSTANCE;
+    }
+
+    private static final class MediatedPairCancelReasonVerifier implements 
+         com.google.protobuf.Internal.EnumVerifier { 
+            static final com.google.protobuf.Internal.EnumVerifier
+                INSTANCE = new MediatedPairCancelReasonVerifier();
+            @java.lang.Override
+            public boolean isInRange(int number) {
+              return MediatedPairCancelReason.forNumber(number) != null;
+            }
+          };
+
+    private final int value;
+
+    private MediatedPairCancelReason(int value) {
+      this.value = value;
+    }
+
+    // @@protoc_insertion_point(enum_scope:unison.local.v1.MediatedPairCancelReason)
+  }
+
   public interface NetworkStateOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.NetworkState)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -3186,6 +3690,16 @@ public final class Local {
      * @return The protocolNewer.
      */
     boolean getProtocolNewer();
+
+    /**
+     * <pre>
+     * The device can take part in an introduction through a trusted device.
+     * </pre>
+     *
+     * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+     * @return The supportsMediatedPair.
+     */
+    boolean getSupportsMediatedPair();
   }
   /**
    * <pre>
@@ -4027,7 +4541,7 @@ public final class Local {
      * @param value The protocolVersion to set.
      */
     private void setProtocolVersion(int value) {
-
+      
       protocolVersion_ = value;
     }
     /**
@@ -4067,7 +4581,7 @@ public final class Local {
      * @param value The protocolNewer to set.
      */
     private void setProtocolNewer(boolean value) {
-
+      
       protocolNewer_ = value;
     }
     /**
@@ -4081,6 +4595,44 @@ public final class Local {
     private void clearProtocolNewer() {
 
       protocolNewer_ = false;
+    }
+
+    public static final int SUPPORTS_MEDIATED_PAIR_FIELD_NUMBER = 22;
+    private boolean supportsMediatedPair_;
+    /**
+     * <pre>
+     * The device can take part in an introduction through a trusted device.
+     * </pre>
+     *
+     * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+     * @return The supportsMediatedPair.
+     */
+    @java.lang.Override
+    public boolean getSupportsMediatedPair() {
+      return supportsMediatedPair_;
+    }
+    /**
+     * <pre>
+     * The device can take part in an introduction through a trusted device.
+     * </pre>
+     *
+     * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+     * @param value The supportsMediatedPair to set.
+     */
+    private void setSupportsMediatedPair(boolean value) {
+      
+      supportsMediatedPair_ = value;
+    }
+    /**
+     * <pre>
+     * The device can take part in an introduction through a trusted device.
+     * </pre>
+     *
+     * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+     */
+    private void clearSupportsMediatedPair() {
+
+      supportsMediatedPair_ = false;
     }
 
     public static unison.local.v1.Local.Device parseFrom(
@@ -5108,6 +5660,46 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * The device can take part in an introduction through a trusted device.
+       * </pre>
+       *
+       * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+       * @return The supportsMediatedPair.
+       */
+      @java.lang.Override
+      public boolean getSupportsMediatedPair() {
+        return instance.getSupportsMediatedPair();
+      }
+      /**
+       * <pre>
+       * The device can take part in an introduction through a trusted device.
+       * </pre>
+       *
+       * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+       * @param value The supportsMediatedPair to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSupportsMediatedPair(boolean value) {
+        copyOnWrite();
+        instance.setSupportsMediatedPair(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device can take part in an introduction through a trusted device.
+       * </pre>
+       *
+       * <code>bool supports_mediated_pair = 22 [json_name = "supportsMediatedPair"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSupportsMediatedPair() {
+        copyOnWrite();
+        instance.clearSupportsMediatedPair();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Device)
     }
     @java.lang.Override
@@ -5144,12 +5736,13 @@ public final class Local {
               "allowRemoteSettings_",
               "protocolVersion_",
               "protocolNewer_",
+              "supportsMediatedPair_",
             };
             java.lang.String info =
-                "\u0000\u0014\u0000\u0000\u0001\u0015\u0014\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0000\u0015\u0000\u0000\u0001\u0016\u0015\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
                 "\u0003\f\u0004\f\u0005\u0007\u0006\f\u0007\u0007\b\u0007\t\u0002\n\u0002\u000b\u0007" +
                 "\r\u0208\u000e\u0007\u000f\u0007\u0010\u0007\u0011\u0002\u0012\u0208\u0013\u0007" +
-                "\u0014\u000b\u0015\u0007";
+                "\u0014\u000b\u0015\u0007\u0016\u0007";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -9080,6 +9673,25 @@ public final class Local {
      * @return The protocolNewer.
      */
     boolean getProtocolNewer();
+
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     * @return Whether the mediatedPair field is set.
+     */
+    boolean hasMediatedPair();
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     * @return The mediatedPair.
+     */
+    unison.local.v1.Local.MediatedPair getMediatedPair();
   }
   /**
    * <pre>
@@ -9994,7 +10606,7 @@ public final class Local {
      * @param value The protocolNewer to set.
      */
     private void setProtocolNewer(boolean value) {
-
+      
       protocolNewer_ = value;
     }
     /**
@@ -10008,6 +10620,73 @@ public final class Local {
     private void clearProtocolNewer() {
 
       protocolNewer_ = false;
+    }
+
+    public static final int MEDIATED_PAIR_FIELD_NUMBER = 18;
+    private unison.local.v1.Local.MediatedPair mediatedPair_;
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     */
+    @java.lang.Override
+    public boolean hasMediatedPair() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPair getMediatedPair() {
+      return mediatedPair_ == null ? unison.local.v1.Local.MediatedPair.getDefaultInstance() : mediatedPair_;
+    }
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     */
+    private void setMediatedPair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      mediatedPair_ = value;
+      bitField0_ |= 0x00000008;
+    }
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeMediatedPair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      if (mediatedPair_ != null &&
+          mediatedPair_ != unison.local.v1.Local.MediatedPair.getDefaultInstance()) {
+        mediatedPair_ =
+          unison.local.v1.Local.MediatedPair.newBuilder(mediatedPair_).mergeFrom(value).buildPartial();
+      } else {
+        mediatedPair_ = value;
+      }
+      bitField0_ |= 0x00000008;
+    }
+    /**
+     * <pre>
+     * Mediated pairing exchange, set on the mediated pair events.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+     */
+    private void clearMediatedPair() {
+      mediatedPair_ = null;
+      bitField0_ = (bitField0_ & ~0x00000008);
     }
 
     public static unison.local.v1.Local.Event parseFrom(
@@ -11073,6 +11752,77 @@ public final class Local {
         return this;
       }
 
+      /**
+       * <pre>
+       * Mediated pairing exchange, set on the mediated pair events.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+       */
+      @java.lang.Override
+      public boolean hasMediatedPair() {
+        return instance.hasMediatedPair();
+      }
+      /**
+       * <pre>
+       * Mediated pairing exchange, set on the mediated pair events.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPair getMediatedPair() {
+        return instance.getMediatedPair();
+      }
+      /**
+       * <pre>
+       * Mediated pairing exchange, set on the mediated pair events.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+       */
+      public Builder setMediatedPair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.setMediatedPair(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Mediated pairing exchange, set on the mediated pair events.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+       */
+      public Builder setMediatedPair(
+          unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.setMediatedPair(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Mediated pairing exchange, set on the mediated pair events.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+       */
+      public Builder mergeMediatedPair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.mergeMediatedPair(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Mediated pairing exchange, set on the mediated pair events.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedPair mediated_pair = 18 [json_name = "mediatedPair"];</code>
+       */
+      public Builder clearMediatedPair() {  copyOnWrite();
+        instance.clearMediatedPair();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:unison.local.v1.Event)
     }
     @java.lang.Override
@@ -11107,11 +11857,13 @@ public final class Local {
               "pairingMethod_",
               "failureReason_",
               "protocolNewer_",
+              "mediatedPair_",
             };
             java.lang.String info =
-                "\u0000\u0011\u0000\u0001\u0001\u0011\u0011\u0000\u0000\u0000\u0001\f\u0002\u0208" +
+                "\u0000\u0012\u0000\u0001\u0001\u0012\u0012\u0000\u0000\u0000\u0001\f\u0002\u0208" +
                 "\u0003\u0208\u0004\f\u0005\f\u0006\f\u0007\u0007\b\u1009\u0000\t\u0208\n\u1009\u0001" +
-                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f\u0010\f\u0011\u0007";
+                "\u000b\u000b\f\u0208\r\u0002\u000e\u1009\u0002\u000f\f\u0010\f\u0011\u0007\u0012" +
+                "\u1009\u0003";
             return newMessageInfo(DEFAULT_INSTANCE, info, objects);
         }
         case GET_DEFAULT_INSTANCE: {
@@ -17454,7 +18206,7 @@ java.lang.String defaultValue) {
      * @param value The protocolVersion to set.
      */
     private void setProtocolVersion(int value) {
-
+      
       protocolVersion_ = value;
     }
     /**
@@ -48673,6 +49425,1849 @@ java.lang.String defaultValue) {
     }
   }
 
+  public interface ExportSettingsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ExportSettingsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The appSettings.
+     */
+    java.lang.String getAppSettings();
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The bytes for appSettings.
+     */
+    com.google.protobuf.ByteString
+        getAppSettingsBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ExportSettingsRequest}
+   */
+  public  static final class ExportSettingsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ExportSettingsRequest, ExportSettingsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ExportSettingsRequest)
+      ExportSettingsRequestOrBuilder {
+    private ExportSettingsRequest() {
+      appSettings_ = "";
+    }
+    public static final int APP_SETTINGS_FIELD_NUMBER = 1;
+    private java.lang.String appSettings_;
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The appSettings.
+     */
+    @java.lang.Override
+    public java.lang.String getAppSettings() {
+      return appSettings_;
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @return The bytes for appSettings.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getAppSettingsBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(appSettings_);
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @param value The appSettings to set.
+     */
+    private void setAppSettings(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      appSettings_ = value;
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     */
+    private void clearAppSettings() {
+
+      appSettings_ = getDefaultInstance().getAppSettings();
+    }
+    /**
+     * <pre>
+     * Local settings of the app as a JSON object. It is written under the app
+     * key of the document without being interpreted. Empty for an app without
+     * local settings.
+     * </pre>
+     *
+     * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+     * @param value The bytes for appSettings to set.
+     */
+    private void setAppSettingsBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      appSettings_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ExportSettingsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ExportSettingsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ExportSettingsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ExportSettingsRequest)
+        unison.local.v1.Local.ExportSettingsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ExportSettingsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @return The appSettings.
+       */
+      @java.lang.Override
+      public java.lang.String getAppSettings() {
+        return instance.getAppSettings();
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @return The bytes for appSettings.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getAppSettingsBytes() {
+        return instance.getAppSettingsBytes();
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @param value The appSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppSettings(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setAppSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAppSettings() {
+        copyOnWrite();
+        instance.clearAppSettings();
+        return this;
+      }
+      /**
+       * <pre>
+       * Local settings of the app as a JSON object. It is written under the app
+       * key of the document without being interpreted. Empty for an app without
+       * local settings.
+       * </pre>
+       *
+       * <code>string app_settings = 1 [json_name = "appSettings"];</code>
+       * @param value The bytes for appSettings to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppSettingsBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setAppSettingsBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ExportSettingsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ExportSettingsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "appSettings_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ExportSettingsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ExportSettingsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ExportSettingsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ExportSettingsRequest)
+    private static final unison.local.v1.Local.ExportSettingsRequest DEFAULT_INSTANCE;
+    static {
+      ExportSettingsRequest defaultInstance = new ExportSettingsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ExportSettingsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ExportSettingsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ExportSettingsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ExportSettingsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ExportSettingsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    com.google.protobuf.ByteString getDocument();
+
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The fileName.
+     */
+    java.lang.String getFileName();
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The bytes for fileName.
+     */
+    com.google.protobuf.ByteString
+        getFileNameBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ExportSettingsResponse}
+   */
+  public  static final class ExportSettingsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ExportSettingsResponse, ExportSettingsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ExportSettingsResponse)
+      ExportSettingsResponseOrBuilder {
+    private ExportSettingsResponse() {
+      document_ = com.google.protobuf.ByteString.EMPTY;
+      fileName_ = "";
+    }
+    public static final int DOCUMENT_FIELD_NUMBER = 1;
+    private com.google.protobuf.ByteString document_;
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getDocument() {
+      return document_;
+    }
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @param value The document to set.
+     */
+    private void setDocument(com.google.protobuf.ByteString value) {
+      java.util.Objects.requireNonNull(value);
+  
+      document_ = value;
+    }
+    /**
+     * <pre>
+     * The document, formatted as JSON.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     */
+    private void clearDocument() {
+
+      document_ = getDefaultInstance().getDocument();
+    }
+
+    public static final int FILE_NAME_FIELD_NUMBER = 2;
+    private java.lang.String fileName_;
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The fileName.
+     */
+    @java.lang.Override
+    public java.lang.String getFileName() {
+      return fileName_;
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @return The bytes for fileName.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getFileNameBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(fileName_);
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @param value The fileName to set.
+     */
+    private void setFileName(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      fileName_ = value;
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     */
+    private void clearFileName() {
+
+      fileName_ = getDefaultInstance().getFileName();
+    }
+    /**
+     * <pre>
+     * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+     * platform and the time of the document.
+     * </pre>
+     *
+     * <code>string file_name = 2 [json_name = "fileName"];</code>
+     * @param value The bytes for fileName to set.
+     */
+    private void setFileNameBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      fileName_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ExportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ExportSettingsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ExportSettingsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ExportSettingsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ExportSettingsResponse)
+        unison.local.v1.Local.ExportSettingsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ExportSettingsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The document, formatted as JSON.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return The document.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getDocument() {
+        return instance.getDocument();
+      }
+      /**
+       * <pre>
+       * The document, formatted as JSON.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @param value The document to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDocument(com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDocument(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The document, formatted as JSON.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDocument() {
+        copyOnWrite();
+        instance.clearDocument();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @return The fileName.
+       */
+      @java.lang.Override
+      public java.lang.String getFileName() {
+        return instance.getFileName();
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @return The bytes for fileName.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getFileNameBytes() {
+        return instance.getFileNameBytes();
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @param value The fileName to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFileName(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setFileName(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFileName() {
+        copyOnWrite();
+        instance.clearFileName();
+        return this;
+      }
+      /**
+       * <pre>
+       * Name of the file, unison-&lt;platform&gt;-&lt;date&gt;-&lt;time&gt;.json. It carries the
+       * platform and the time of the document.
+       * </pre>
+       *
+       * <code>string file_name = 2 [json_name = "fileName"];</code>
+       * @param value The bytes for fileName to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFileNameBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setFileNameBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ExportSettingsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ExportSettingsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "document_",
+              "fileName_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\n\u0002\u0208" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ExportSettingsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ExportSettingsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ExportSettingsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ExportSettingsResponse)
+    private static final unison.local.v1.Local.ExportSettingsResponse DEFAULT_INSTANCE;
+    static {
+      ExportSettingsResponse defaultInstance = new ExportSettingsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ExportSettingsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ExportSettingsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ExportSettingsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ExportSettingsResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ImportSettingsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ImportSettingsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    com.google.protobuf.ByteString getDocument();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ImportSettingsRequest}
+   */
+  public  static final class ImportSettingsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ImportSettingsRequest, ImportSettingsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ImportSettingsRequest)
+      ImportSettingsRequestOrBuilder {
+    private ImportSettingsRequest() {
+      document_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    public static final int DOCUMENT_FIELD_NUMBER = 1;
+    private com.google.protobuf.ByteString document_;
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @return The document.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getDocument() {
+      return document_;
+    }
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     * @param value The document to set.
+     */
+    private void setDocument(com.google.protobuf.ByteString value) {
+      java.util.Objects.requireNonNull(value);
+  
+      document_ = value;
+    }
+    /**
+     * <pre>
+     * The document.
+     * </pre>
+     *
+     * <code>bytes document = 1 [json_name = "document"];</code>
+     */
+    private void clearDocument() {
+
+      document_ = getDefaultInstance().getDocument();
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ImportSettingsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ImportSettingsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ImportSettingsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ImportSettingsRequest)
+        unison.local.v1.Local.ImportSettingsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ImportSettingsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * The document.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return The document.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getDocument() {
+        return instance.getDocument();
+      }
+      /**
+       * <pre>
+       * The document.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @param value The document to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDocument(com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDocument(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The document.
+       * </pre>
+       *
+       * <code>bytes document = 1 [json_name = "document"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDocument() {
+        copyOnWrite();
+        instance.clearDocument();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ImportSettingsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ImportSettingsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "document_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\n";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ImportSettingsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ImportSettingsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ImportSettingsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ImportSettingsRequest)
+    private static final unison.local.v1.Local.ImportSettingsRequest DEFAULT_INSTANCE;
+    static {
+      ImportSettingsRequest defaultInstance = new ImportSettingsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ImportSettingsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ImportSettingsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ImportSettingsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ImportSettingsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ImportSettingsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     * @return Whether the settings field is set.
+     */
+    boolean hasSettings();
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     * @return The settings.
+     */
+    unison.local.v1.Local.Settings getSettings();
+
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return A list containing the ignored.
+     */
+    java.util.List<java.lang.String>
+        getIgnoredList();
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return The count of ignored.
+     */
+    int getIgnoredCount();
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the element to return.
+     * @return The ignored at the given index.
+     */
+    java.lang.String getIgnored(int index);
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the element to return.
+     * @return The ignored at the given index.
+     */
+    com.google.protobuf.ByteString
+        getIgnoredBytes(int index);
+
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     * @return The fromNewerVersion.
+     */
+    boolean getFromNewerVersion();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ImportSettingsResponse}
+   */
+  public  static final class ImportSettingsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ImportSettingsResponse, ImportSettingsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ImportSettingsResponse)
+      ImportSettingsResponseOrBuilder {
+    private ImportSettingsResponse() {
+      ignored_ = emptyProtobufList();
+    }
+    private int bitField0_;
+    public static final int SETTINGS_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.Settings settings_;
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    @java.lang.Override
+    public boolean hasSettings() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Settings getSettings() {
+      return settings_ == null ? unison.local.v1.Local.Settings.getDefaultInstance() : settings_;
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    private void setSettings(unison.local.v1.Local.Settings value) {
+      java.util.Objects.requireNonNull(value);
+      settings_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeSettings(unison.local.v1.Local.Settings value) {
+      java.util.Objects.requireNonNull(value);
+      if (settings_ != null &&
+          settings_ != unison.local.v1.Local.Settings.getDefaultInstance()) {
+        settings_ =
+          unison.local.v1.Local.Settings.newBuilder(settings_).mergeFrom(value).buildPartial();
+      } else {
+        settings_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * Settings after the import.
+     * </pre>
+     *
+     * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+     */
+    private void clearSettings() {
+      settings_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int IGNORED_FIELD_NUMBER = 2;
+    private com.google.protobuf.Internal.ProtobufList<java.lang.String> ignored_;
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return A list containing the ignored.
+     */
+    @java.lang.Override
+    public java.util.List<java.lang.String> getIgnoredList() {
+      return ignored_;
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @return The count of ignored.
+     */
+    @java.lang.Override
+    public int getIgnoredCount() {
+      return ignored_.size();
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the element to return.
+     * @return The ignored at the given index.
+     */
+    @java.lang.Override
+    public java.lang.String getIgnored(int index) {
+      return ignored_.get(index);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the ignored at the given index.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getIgnoredBytes(int index) {
+      return com.google.protobuf.ByteString.copyFromUtf8(
+          ignored_.get(index));
+    }
+    private void ensureIgnoredIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<java.lang.String> tmp =
+          ignored_;  if (!tmp.isModifiable()) {
+        ignored_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param index The index to set the value at.
+     * @param value The ignored to set.
+     */
+    private void setIgnored(
+        int index, java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureIgnoredIsMutable();
+      ignored_.set(index, value);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param value The ignored to add.
+     */
+    private void addIgnored(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+      ensureIgnoredIsMutable();
+      ignored_.add(value);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param values The ignored to add.
+     */
+    private void addAllIgnored(
+        java.lang.Iterable<java.lang.String> values) {
+      ensureIgnoredIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, ignored_);
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     */
+    private void clearIgnored() {
+      ignored_ = emptyProtobufList();
+    }
+    /**
+     * <pre>
+     * Keys of the document this version does not know and did not apply, in
+     * dotted form.
+     * </pre>
+     *
+     * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+     * @param value The bytes of the ignored to add.
+     */
+    private void addIgnoredBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      ensureIgnoredIsMutable();
+      ignored_.add(value.toStringUtf8());
+    }
+
+    public static final int FROM_NEWER_VERSION_FIELD_NUMBER = 3;
+    private boolean fromNewerVersion_;
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     * @return The fromNewerVersion.
+     */
+    @java.lang.Override
+    public boolean getFromNewerVersion() {
+      return fromNewerVersion_;
+    }
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     * @param value The fromNewerVersion to set.
+     */
+    private void setFromNewerVersion(boolean value) {
+      
+      fromNewerVersion_ = value;
+    }
+    /**
+     * <pre>
+     * The document comes from a newer app, so only the known keys were applied.
+     * </pre>
+     *
+     * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+     */
+    private void clearFromNewerVersion() {
+
+      fromNewerVersion_ = false;
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ImportSettingsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ImportSettingsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ImportSettingsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ImportSettingsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ImportSettingsResponse)
+        unison.local.v1.Local.ImportSettingsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ImportSettingsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      @java.lang.Override
+      public boolean hasSettings() {
+        return instance.hasSettings();
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Settings getSettings() {
+        return instance.getSettings();
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder setSettings(unison.local.v1.Local.Settings value) {
+        copyOnWrite();
+        instance.setSettings(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder setSettings(
+          unison.local.v1.Local.Settings.Builder builderForValue) {
+        copyOnWrite();
+        instance.setSettings(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder mergeSettings(unison.local.v1.Local.Settings value) {
+        copyOnWrite();
+        instance.mergeSettings(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Settings after the import.
+       * </pre>
+       *
+       * <code>.unison.local.v1.Settings settings = 1 [json_name = "settings"];</code>
+       */
+      public Builder clearSettings() {  copyOnWrite();
+        instance.clearSettings();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @return A list containing the ignored.
+       */
+      @java.lang.Override
+      public java.util.List<java.lang.String>
+          getIgnoredList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getIgnoredList());
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @return The count of ignored.
+       */
+      @java.lang.Override
+      public int getIgnoredCount() {
+        return instance.getIgnoredCount();
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param index The index of the element to return.
+       * @return The ignored at the given index.
+       */
+      @java.lang.Override
+      public java.lang.String getIgnored(int index) {
+        return instance.getIgnored(index);
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the ignored at the given index.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getIgnoredBytes(int index) {
+        return instance.getIgnoredBytes(index);
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param index The index to set the value at.
+       * @param value The ignored to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIgnored(
+          int index, java.lang.String value) {
+        copyOnWrite();
+        instance.setIgnored(index, value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param value The ignored to add.
+       * @return This builder for chaining.
+       */
+      public Builder addIgnored(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.addIgnored(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param values The ignored to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllIgnored(
+          java.lang.Iterable<java.lang.String> values) {
+        copyOnWrite();
+        instance.addAllIgnored(values);
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearIgnored() {
+        copyOnWrite();
+        instance.clearIgnored();
+        return this;
+      }
+      /**
+       * <pre>
+       * Keys of the document this version does not know and did not apply, in
+       * dotted form.
+       * </pre>
+       *
+       * <code>repeated string ignored = 2 [json_name = "ignored"];</code>
+       * @param value The bytes of the ignored to add.
+       * @return This builder for chaining.
+       */
+      public Builder addIgnoredBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.addIgnoredBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The document comes from a newer app, so only the known keys were applied.
+       * </pre>
+       *
+       * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+       * @return The fromNewerVersion.
+       */
+      @java.lang.Override
+      public boolean getFromNewerVersion() {
+        return instance.getFromNewerVersion();
+      }
+      /**
+       * <pre>
+       * The document comes from a newer app, so only the known keys were applied.
+       * </pre>
+       *
+       * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+       * @param value The fromNewerVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFromNewerVersion(boolean value) {
+        copyOnWrite();
+        instance.setFromNewerVersion(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The document comes from a newer app, so only the known keys were applied.
+       * </pre>
+       *
+       * <code>bool from_newer_version = 3 [json_name = "fromNewerVersion"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFromNewerVersion() {
+        copyOnWrite();
+        instance.clearFromNewerVersion();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ImportSettingsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ImportSettingsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "settings_",
+              "ignored_",
+              "fromNewerVersion_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0001\u0000\u0001\u1009\u0000\u0002" +
+                "\u021a\u0003\u0007";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ImportSettingsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ImportSettingsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ImportSettingsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ImportSettingsResponse)
+    private static final unison.local.v1.Local.ImportSettingsResponse DEFAULT_INSTANCE;
+    static {
+      ImportSettingsResponse defaultInstance = new ImportSettingsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ImportSettingsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ImportSettingsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ImportSettingsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ImportSettingsResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
   public interface RelayOrBuilder extends
       // @@protoc_insertion_point(interface_extends:unison.local.v1.Relay)
       com.google.protobuf.MessageLiteOrBuilder {
@@ -49080,7 +51675,7 @@ java.lang.String defaultValue) {
      * @param value The protocolVersion to set.
      */
     private void setProtocolVersion(int value) {
-
+      
       protocolVersion_ = value;
     }
     /**
@@ -49120,7 +51715,7 @@ java.lang.String defaultValue) {
      * @param value The protocolNewer to set.
      */
     private void setProtocolNewer(boolean value) {
-
+      
       protocolNewer_ = value;
     }
     /**
@@ -53943,6 +56538,5628 @@ java.lang.String defaultValue) {
     private static volatile com.google.protobuf.Parser<RetryDeviceResponse> PARSER;
 
     public static com.google.protobuf.Parser<RetryDeviceResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface MediatedDeviceOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.MediatedDevice)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    java.lang.String getDeviceId();
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    com.google.protobuf.ByteString
+        getDeviceIdBytes();
+
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     * @return The name.
+     */
+    java.lang.String getName();
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     * @return The bytes for name.
+     */
+    com.google.protobuf.ByteString
+        getNameBytes();
+
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     * @return The enum numeric value on the wire for platform.
+     */
+    int getPlatformValue();
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     * @return The platform.
+     */
+    unison.local.v1.Local.Platform getPlatform();
+  }
+  /**
+   * <pre>
+   * One device of a mediated pairing exchange.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.MediatedDevice}
+   */
+  public  static final class MediatedDevice extends
+      com.google.protobuf.GeneratedMessageLite<
+          MediatedDevice, MediatedDevice.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.MediatedDevice)
+      MediatedDeviceOrBuilder {
+    private MediatedDevice() {
+      deviceId_ = "";
+      name_ = "";
+    }
+    public static final int DEVICE_ID_FIELD_NUMBER = 1;
+    private java.lang.String deviceId_;
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The deviceId.
+     */
+    @java.lang.Override
+    public java.lang.String getDeviceId() {
+      return deviceId_;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @return The bytes for deviceId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDeviceIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(deviceId_);
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The deviceId to set.
+     */
+    private void setDeviceId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      deviceId_ = value;
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     */
+    private void clearDeviceId() {
+
+      deviceId_ = getDefaultInstance().getDeviceId();
+    }
+    /**
+     * <pre>
+     * Device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string device_id = 1 [json_name = "deviceId"];</code>
+     * @param value The bytes for deviceId to set.
+     */
+    private void setDeviceIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      deviceId_ = value.toStringUtf8();
+
+    }
+
+    public static final int NAME_FIELD_NUMBER = 2;
+    private java.lang.String name_;
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     * @return The name.
+     */
+    @java.lang.Override
+    public java.lang.String getName() {
+      return name_;
+    }
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     * @return The bytes for name.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getNameBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(name_);
+    }
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     * @param value The name to set.
+     */
+    private void setName(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      name_ = value;
+    }
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     */
+    private void clearName() {
+
+      name_ = getDefaultInstance().getName();
+    }
+    /**
+     * <code>string name = 2 [json_name = "name"];</code>
+     * @param value The bytes for name to set.
+     */
+    private void setNameBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      name_ = value.toStringUtf8();
+
+    }
+
+    public static final int PLATFORM_FIELD_NUMBER = 3;
+    private int platform_;
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     * @return The enum numeric value on the wire for platform.
+     */
+    @java.lang.Override
+    public int getPlatformValue() {
+      return platform_;
+    }
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     * @return The platform.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Platform getPlatform() {
+      unison.local.v1.Local.Platform result = unison.local.v1.Local.Platform.forNumber(platform_);
+      return result == null ? unison.local.v1.Local.Platform.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     * @param value The enum numeric value on the wire for platform to set.
+     */
+    private void setPlatformValue(int value) {
+        platform_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     * @param value The platform to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setPlatform(unison.local.v1.Local.Platform value) {
+      platform_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+     */
+    private void clearPlatform() {
+
+      platform_ = 0;
+    }
+
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.MediatedDevice parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.MediatedDevice parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.MediatedDevice parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.MediatedDevice prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * One device of a mediated pairing exchange.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.MediatedDevice}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.MediatedDevice, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.MediatedDevice)
+        unison.local.v1.Local.MediatedDeviceOrBuilder {
+      // Construct using unison.local.v1.Local.MediatedDevice.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The deviceId.
+       */
+      @java.lang.Override
+      public java.lang.String getDeviceId() {
+        return instance.getDeviceId();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return The bytes for deviceId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getDeviceIdBytes() {
+        return instance.getDeviceIdBytes();
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setDeviceId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDeviceId() {
+        copyOnWrite();
+        instance.clearDeviceId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string device_id = 1 [json_name = "deviceId"];</code>
+       * @param value The bytes for deviceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDeviceIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setDeviceIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <code>string name = 2 [json_name = "name"];</code>
+       * @return The name.
+       */
+      @java.lang.Override
+      public java.lang.String getName() {
+        return instance.getName();
+      }
+      /**
+       * <code>string name = 2 [json_name = "name"];</code>
+       * @return The bytes for name.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getNameBytes() {
+        return instance.getNameBytes();
+      }
+      /**
+       * <code>string name = 2 [json_name = "name"];</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
+       */
+      public Builder setName(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setName(value);
+        return this;
+      }
+      /**
+       * <code>string name = 2 [json_name = "name"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearName() {
+        copyOnWrite();
+        instance.clearName();
+        return this;
+      }
+      /**
+       * <code>string name = 2 [json_name = "name"];</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
+       */
+      public Builder setNameBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setNameBytes(value);
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+       * @return The enum numeric value on the wire for platform.
+       */
+      @java.lang.Override
+      public int getPlatformValue() {
+        return instance.getPlatformValue();
+      }
+      /**
+       * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+       * @param value The platform to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setPlatformValue(int value) {
+        copyOnWrite();
+        instance.setPlatformValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+       * @return The platform.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Platform getPlatform() {
+        return instance.getPlatform();
+      }
+      /**
+       * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+       * @param value The enum numeric value on the wire for platform to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPlatform(unison.local.v1.Local.Platform value) {
+        copyOnWrite();
+        instance.setPlatform(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Platform platform = 3 [json_name = "platform"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPlatform() {
+        copyOnWrite();
+        instance.clearPlatform();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.MediatedDevice)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.MediatedDevice();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "deviceId_",
+              "name_",
+              "platform_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\f";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.MediatedDevice> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.MediatedDevice.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.MediatedDevice>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.MediatedDevice)
+    private static final unison.local.v1.Local.MediatedDevice DEFAULT_INSTANCE;
+    static {
+      MediatedDevice defaultInstance = new MediatedDevice();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        MediatedDevice.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.MediatedDevice getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<MediatedDevice> PARSER;
+
+    public static com.google.protobuf.Parser<MediatedDevice> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface MediatedPairOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.MediatedPair)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    java.lang.String getSessionId();
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    com.google.protobuf.ByteString
+        getSessionIdBytes();
+
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     * @return The enum numeric value on the wire for direction.
+     */
+    int getDirectionValue();
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     * @return The direction.
+     */
+    unison.local.v1.Local.MediatedPairDirection getDirection();
+
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     * @return The enum numeric value on the wire for state.
+     */
+    int getStateValue();
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     * @return The state.
+     */
+    unison.local.v1.Local.MediatedPairState getState();
+
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     * @return The enum numeric value on the wire for role.
+     */
+    int getRoleValue();
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     * @return The role.
+     */
+    unison.local.v1.Local.Role getRole();
+
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     * @return Whether the mediator field is set.
+     */
+    boolean hasMediator();
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     * @return The mediator.
+     */
+    unison.local.v1.Local.MediatedDevice getMediator();
+
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     * @return Whether the peerA field is set.
+     */
+    boolean hasPeerA();
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     * @return The peerA.
+     */
+    unison.local.v1.Local.MediatedDevice getPeerA();
+
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     * @return Whether the peerB field is set.
+     */
+    boolean hasPeerB();
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     * @return The peerB.
+     */
+    unison.local.v1.Local.MediatedDevice getPeerB();
+
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     * @return Whether the peer field is set.
+     */
+    boolean hasPeer();
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     * @return The peer.
+     */
+    unison.local.v1.Local.MediatedDevice getPeer();
+
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     * @return Whether the sas field is set.
+     */
+    boolean hasSas();
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     * @return The sas.
+     */
+    unison.local.v1.Local.Sas getSas();
+
+    /**
+     * <pre>
+     * The other device is paired already and offline: confirming the exchange
+     * replaces its connection keys.
+     * </pre>
+     *
+     * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+     * @return The alreadyPaired.
+     */
+    boolean getAlreadyPaired();
+
+    /**
+     * <pre>
+     * Deadline of the exchange, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+     * @return The expiresAtUnixMs.
+     */
+    long getExpiresAtUnixMs();
+
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     * @return The enum numeric value on the wire for cancelReason.
+     */
+    int getCancelReasonValue();
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     * @return The cancelReason.
+     */
+    unison.local.v1.Local.MediatedPairCancelReason getCancelReason();
+
+    /**
+     * <pre>
+     * The user asked to turn the search for Friends devices on after the pair
+     * completes.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+     * @return The enableFriendsDiscovery.
+     */
+    boolean getEnableFriendsDiscovery();
+  }
+  /**
+   * <pre>
+   * A mediated pairing exchange.
+   * </pre>
+   *
+   * Protobuf type {@code unison.local.v1.MediatedPair}
+   */
+  public  static final class MediatedPair extends
+      com.google.protobuf.GeneratedMessageLite<
+          MediatedPair, MediatedPair.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.MediatedPair)
+      MediatedPairOrBuilder {
+    private MediatedPair() {
+      sessionId_ = "";
+    }
+    private int bitField0_;
+    public static final int SESSION_ID_FIELD_NUMBER = 1;
+    private java.lang.String sessionId_;
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    @java.lang.Override
+    public java.lang.String getSessionId() {
+      return sessionId_;
+    }
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSessionIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(sessionId_);
+    }
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The sessionId to set.
+     */
+    private void setSessionId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      sessionId_ = value;
+    }
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     */
+    private void clearSessionId() {
+
+      sessionId_ = getDefaultInstance().getSessionId();
+    }
+    /**
+     * <pre>
+     * Identifier of the exchange, lowercase hex.
+     * </pre>
+     *
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The bytes for sessionId to set.
+     */
+    private void setSessionIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      sessionId_ = value.toStringUtf8();
+
+    }
+
+    public static final int DIRECTION_FIELD_NUMBER = 2;
+    private int direction_;
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     * @return The enum numeric value on the wire for direction.
+     */
+    @java.lang.Override
+    public int getDirectionValue() {
+      return direction_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     * @return The direction.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPairDirection getDirection() {
+      unison.local.v1.Local.MediatedPairDirection result = unison.local.v1.Local.MediatedPairDirection.forNumber(direction_);
+      return result == null ? unison.local.v1.Local.MediatedPairDirection.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     * @param value The enum numeric value on the wire for direction to set.
+     */
+    private void setDirectionValue(int value) {
+        direction_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     * @param value The direction to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setDirection(unison.local.v1.Local.MediatedPairDirection value) {
+      direction_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+     */
+    private void clearDirection() {
+
+      direction_ = 0;
+    }
+
+    public static final int STATE_FIELD_NUMBER = 3;
+    private int state_;
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     * @return The enum numeric value on the wire for state.
+     */
+    @java.lang.Override
+    public int getStateValue() {
+      return state_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     * @return The state.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPairState getState() {
+      unison.local.v1.Local.MediatedPairState result = unison.local.v1.Local.MediatedPairState.forNumber(state_);
+      return result == null ? unison.local.v1.Local.MediatedPairState.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     * @param value The enum numeric value on the wire for state to set.
+     */
+    private void setStateValue(int value) {
+        state_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     * @param value The state to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setState(unison.local.v1.Local.MediatedPairState value) {
+      state_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+     */
+    private void clearState() {
+
+      state_ = 0;
+    }
+
+    public static final int ROLE_FIELD_NUMBER = 4;
+    private int role_;
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     * @return The enum numeric value on the wire for role.
+     */
+    @java.lang.Override
+    public int getRoleValue() {
+      return role_;
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     * @return The role.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Role getRole() {
+      unison.local.v1.Local.Role result = unison.local.v1.Local.Role.forNumber(role_);
+      return result == null ? unison.local.v1.Local.Role.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     * @param value The enum numeric value on the wire for role to set.
+     */
+    private void setRoleValue(int value) {
+        role_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     * @param value The role to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setRole(unison.local.v1.Local.Role value) {
+      role_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+     */
+    private void clearRole() {
+
+      role_ = 0;
+    }
+
+    public static final int MEDIATOR_FIELD_NUMBER = 5;
+    private unison.local.v1.Local.MediatedDevice mediator_;
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     */
+    @java.lang.Override
+    public boolean hasMediator() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedDevice getMediator() {
+      return mediator_ == null ? unison.local.v1.Local.MediatedDevice.getDefaultInstance() : mediator_;
+    }
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     */
+    private void setMediator(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      mediator_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeMediator(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      if (mediator_ != null &&
+          mediator_ != unison.local.v1.Local.MediatedDevice.getDefaultInstance()) {
+        mediator_ =
+          unison.local.v1.Local.MediatedDevice.newBuilder(mediator_).mergeFrom(value).buildPartial();
+      } else {
+        mediator_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <pre>
+     * The device that runs the exchange, set on an incoming exchange.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+     */
+    private void clearMediator() {
+      mediator_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static final int PEER_A_FIELD_NUMBER = 6;
+    private unison.local.v1.Local.MediatedDevice peerA_;
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPeerA() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedDevice getPeerA() {
+      return peerA_ == null ? unison.local.v1.Local.MediatedDevice.getDefaultInstance() : peerA_;
+    }
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     */
+    private void setPeerA(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      peerA_ = value;
+      bitField0_ |= 0x00000002;
+    }
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePeerA(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      if (peerA_ != null &&
+          peerA_ != unison.local.v1.Local.MediatedDevice.getDefaultInstance()) {
+        peerA_ =
+          unison.local.v1.Local.MediatedDevice.newBuilder(peerA_).mergeFrom(value).buildPartial();
+      } else {
+        peerA_ = value;
+      }
+      bitField0_ |= 0x00000002;
+    }
+    /**
+     * <pre>
+     * The two devices a mediator introduces.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+     */
+    private void clearPeerA() {
+      peerA_ = null;
+      bitField0_ = (bitField0_ & ~0x00000002);
+    }
+
+    public static final int PEER_B_FIELD_NUMBER = 7;
+    private unison.local.v1.Local.MediatedDevice peerB_;
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPeerB() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedDevice getPeerB() {
+      return peerB_ == null ? unison.local.v1.Local.MediatedDevice.getDefaultInstance() : peerB_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     */
+    private void setPeerB(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      peerB_ = value;
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePeerB(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      if (peerB_ != null &&
+          peerB_ != unison.local.v1.Local.MediatedDevice.getDefaultInstance()) {
+        peerB_ =
+          unison.local.v1.Local.MediatedDevice.newBuilder(peerB_).mergeFrom(value).buildPartial();
+      } else {
+        peerB_ = value;
+      }
+      bitField0_ |= 0x00000004;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+     */
+    private void clearPeerB() {
+      peerB_ = null;
+      bitField0_ = (bitField0_ & ~0x00000004);
+    }
+
+    public static final int PEER_FIELD_NUMBER = 8;
+    private unison.local.v1.Local.MediatedDevice peer_;
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPeer() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedDevice getPeer() {
+      return peer_ == null ? unison.local.v1.Local.MediatedDevice.getDefaultInstance() : peer_;
+    }
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     */
+    private void setPeer(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      peer_ = value;
+      bitField0_ |= 0x00000008;
+    }
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePeer(unison.local.v1.Local.MediatedDevice value) {
+      java.util.Objects.requireNonNull(value);
+      if (peer_ != null &&
+          peer_ != unison.local.v1.Local.MediatedDevice.getDefaultInstance()) {
+        peer_ =
+          unison.local.v1.Local.MediatedDevice.newBuilder(peer_).mergeFrom(value).buildPartial();
+      } else {
+        peer_ = value;
+      }
+      bitField0_ |= 0x00000008;
+    }
+    /**
+     * <pre>
+     * The other device of an incoming exchange that is introduced to this one.
+     * </pre>
+     *
+     * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+     */
+    private void clearPeer() {
+      peer_ = null;
+      bitField0_ = (bitField0_ & ~0x00000008);
+    }
+
+    public static final int SAS_FIELD_NUMBER = 9;
+    private unison.local.v1.Local.Sas sas_;
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     */
+    @java.lang.Override
+    public boolean hasSas() {
+      return ((bitField0_ & 0x00000010) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Sas getSas() {
+      return sas_ == null ? unison.local.v1.Local.Sas.getDefaultInstance() : sas_;
+    }
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     */
+    private void setSas(unison.local.v1.Local.Sas value) {
+      java.util.Objects.requireNonNull(value);
+      sas_ = value;
+      bitField0_ |= 0x00000010;
+    }
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergeSas(unison.local.v1.Local.Sas value) {
+      java.util.Objects.requireNonNull(value);
+      if (sas_ != null &&
+          sas_ != unison.local.v1.Local.Sas.getDefaultInstance()) {
+        sas_ =
+          unison.local.v1.Local.Sas.newBuilder(sas_).mergeFrom(value).buildPartial();
+      } else {
+        sas_ = value;
+      }
+      bitField0_ |= 0x00000010;
+    }
+    /**
+     * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+     */
+    private void clearSas() {
+      sas_ = null;
+      bitField0_ = (bitField0_ & ~0x00000010);
+    }
+
+    public static final int ALREADY_PAIRED_FIELD_NUMBER = 10;
+    private boolean alreadyPaired_;
+    /**
+     * <pre>
+     * The other device is paired already and offline: confirming the exchange
+     * replaces its connection keys.
+     * </pre>
+     *
+     * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+     * @return The alreadyPaired.
+     */
+    @java.lang.Override
+    public boolean getAlreadyPaired() {
+      return alreadyPaired_;
+    }
+    /**
+     * <pre>
+     * The other device is paired already and offline: confirming the exchange
+     * replaces its connection keys.
+     * </pre>
+     *
+     * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+     * @param value The alreadyPaired to set.
+     */
+    private void setAlreadyPaired(boolean value) {
+      
+      alreadyPaired_ = value;
+    }
+    /**
+     * <pre>
+     * The other device is paired already and offline: confirming the exchange
+     * replaces its connection keys.
+     * </pre>
+     *
+     * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+     */
+    private void clearAlreadyPaired() {
+
+      alreadyPaired_ = false;
+    }
+
+    public static final int EXPIRES_AT_UNIX_MS_FIELD_NUMBER = 11;
+    private long expiresAtUnixMs_;
+    /**
+     * <pre>
+     * Deadline of the exchange, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+     * @return The expiresAtUnixMs.
+     */
+    @java.lang.Override
+    public long getExpiresAtUnixMs() {
+      return expiresAtUnixMs_;
+    }
+    /**
+     * <pre>
+     * Deadline of the exchange, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+     * @param value The expiresAtUnixMs to set.
+     */
+    private void setExpiresAtUnixMs(long value) {
+      
+      expiresAtUnixMs_ = value;
+    }
+    /**
+     * <pre>
+     * Deadline of the exchange, unix milliseconds.
+     * </pre>
+     *
+     * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+     */
+    private void clearExpiresAtUnixMs() {
+
+      expiresAtUnixMs_ = 0L;
+    }
+
+    public static final int CANCEL_REASON_FIELD_NUMBER = 12;
+    private int cancelReason_;
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     * @return The enum numeric value on the wire for cancelReason.
+     */
+    @java.lang.Override
+    public int getCancelReasonValue() {
+      return cancelReason_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     * @return The cancelReason.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPairCancelReason getCancelReason() {
+      unison.local.v1.Local.MediatedPairCancelReason result = unison.local.v1.Local.MediatedPairCancelReason.forNumber(cancelReason_);
+      return result == null ? unison.local.v1.Local.MediatedPairCancelReason.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     * @param value The enum numeric value on the wire for cancelReason to set.
+     */
+    private void setCancelReasonValue(int value) {
+        cancelReason_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     * @param value The cancelReason to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setCancelReason(unison.local.v1.Local.MediatedPairCancelReason value) {
+      cancelReason_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+     */
+    private void clearCancelReason() {
+
+      cancelReason_ = 0;
+    }
+
+    public static final int ENABLE_FRIENDS_DISCOVERY_FIELD_NUMBER = 13;
+    private boolean enableFriendsDiscovery_;
+    /**
+     * <pre>
+     * The user asked to turn the search for Friends devices on after the pair
+     * completes.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+     * @return The enableFriendsDiscovery.
+     */
+    @java.lang.Override
+    public boolean getEnableFriendsDiscovery() {
+      return enableFriendsDiscovery_;
+    }
+    /**
+     * <pre>
+     * The user asked to turn the search for Friends devices on after the pair
+     * completes.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+     * @param value The enableFriendsDiscovery to set.
+     */
+    private void setEnableFriendsDiscovery(boolean value) {
+      
+      enableFriendsDiscovery_ = value;
+    }
+    /**
+     * <pre>
+     * The user asked to turn the search for Friends devices on after the pair
+     * completes.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+     */
+    private void clearEnableFriendsDiscovery() {
+
+      enableFriendsDiscovery_ = false;
+    }
+
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.MediatedPair parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.MediatedPair parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.MediatedPair parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.MediatedPair prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * <pre>
+     * A mediated pairing exchange.
+     * </pre>
+     *
+     * Protobuf type {@code unison.local.v1.MediatedPair}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.MediatedPair, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.MediatedPair)
+        unison.local.v1.Local.MediatedPairOrBuilder {
+      // Construct using unison.local.v1.Local.MediatedPair.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * Identifier of the exchange, lowercase hex.
+       * </pre>
+       *
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The sessionId.
+       */
+      @java.lang.Override
+      public java.lang.String getSessionId() {
+        return instance.getSessionId();
+      }
+      /**
+       * <pre>
+       * Identifier of the exchange, lowercase hex.
+       * </pre>
+       *
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The bytes for sessionId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getSessionIdBytes() {
+        return instance.getSessionIdBytes();
+      }
+      /**
+       * <pre>
+       * Identifier of the exchange, lowercase hex.
+       * </pre>
+       *
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setSessionId(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Identifier of the exchange, lowercase hex.
+       * </pre>
+       *
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSessionId() {
+        copyOnWrite();
+        instance.clearSessionId();
+        return this;
+      }
+      /**
+       * <pre>
+       * Identifier of the exchange, lowercase hex.
+       * </pre>
+       *
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The bytes for sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setSessionIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+       * @return The enum numeric value on the wire for direction.
+       */
+      @java.lang.Override
+      public int getDirectionValue() {
+        return instance.getDirectionValue();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+       * @param value The direction to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setDirectionValue(int value) {
+        copyOnWrite();
+        instance.setDirectionValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+       * @return The direction.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPairDirection getDirection() {
+        return instance.getDirection();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+       * @param value The enum numeric value on the wire for direction to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDirection(unison.local.v1.Local.MediatedPairDirection value) {
+        copyOnWrite();
+        instance.setDirection(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairDirection direction = 2 [json_name = "direction"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDirection() {
+        copyOnWrite();
+        instance.clearDirection();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+       * @return The enum numeric value on the wire for state.
+       */
+      @java.lang.Override
+      public int getStateValue() {
+        return instance.getStateValue();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+       * @param value The state to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setStateValue(int value) {
+        copyOnWrite();
+        instance.setStateValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+       * @return The state.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPairState getState() {
+        return instance.getState();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+       * @param value The enum numeric value on the wire for state to set.
+       * @return This builder for chaining.
+       */
+      public Builder setState(unison.local.v1.Local.MediatedPairState value) {
+        copyOnWrite();
+        instance.setState(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairState state = 3 [json_name = "state"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearState() {
+        copyOnWrite();
+        instance.clearState();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+       * @return The enum numeric value on the wire for role.
+       */
+      @java.lang.Override
+      public int getRoleValue() {
+        return instance.getRoleValue();
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+       * @param value The role to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setRoleValue(int value) {
+        copyOnWrite();
+        instance.setRoleValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+       * @return The role.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Role getRole() {
+        return instance.getRole();
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+       * @param value The enum numeric value on the wire for role to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRole(unison.local.v1.Local.Role value) {
+        copyOnWrite();
+        instance.setRole(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 4 [json_name = "role"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRole() {
+        copyOnWrite();
+        instance.clearRole();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The device that runs the exchange, set on an incoming exchange.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+       */
+      @java.lang.Override
+      public boolean hasMediator() {
+        return instance.hasMediator();
+      }
+      /**
+       * <pre>
+       * The device that runs the exchange, set on an incoming exchange.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedDevice getMediator() {
+        return instance.getMediator();
+      }
+      /**
+       * <pre>
+       * The device that runs the exchange, set on an incoming exchange.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+       */
+      public Builder setMediator(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.setMediator(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The device that runs the exchange, set on an incoming exchange.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+       */
+      public Builder setMediator(
+          unison.local.v1.Local.MediatedDevice.Builder builderForValue) {
+        copyOnWrite();
+        instance.setMediator(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The device that runs the exchange, set on an incoming exchange.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+       */
+      public Builder mergeMediator(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.mergeMediator(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The device that runs the exchange, set on an incoming exchange.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice mediator = 5 [json_name = "mediator"];</code>
+       */
+      public Builder clearMediator() {  copyOnWrite();
+        instance.clearMediator();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The two devices a mediator introduces.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPeerA() {
+        return instance.hasPeerA();
+      }
+      /**
+       * <pre>
+       * The two devices a mediator introduces.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedDevice getPeerA() {
+        return instance.getPeerA();
+      }
+      /**
+       * <pre>
+       * The two devices a mediator introduces.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+       */
+      public Builder setPeerA(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.setPeerA(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The two devices a mediator introduces.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+       */
+      public Builder setPeerA(
+          unison.local.v1.Local.MediatedDevice.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPeerA(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The two devices a mediator introduces.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+       */
+      public Builder mergePeerA(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.mergePeerA(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The two devices a mediator introduces.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer_a = 6 [json_name = "peerA"];</code>
+       */
+      public Builder clearPeerA() {  copyOnWrite();
+        instance.clearPeerA();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPeerB() {
+        return instance.hasPeerB();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedDevice getPeerB() {
+        return instance.getPeerB();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+       */
+      public Builder setPeerB(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.setPeerB(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+       */
+      public Builder setPeerB(
+          unison.local.v1.Local.MediatedDevice.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPeerB(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+       */
+      public Builder mergePeerB(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.mergePeerB(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedDevice peer_b = 7 [json_name = "peerB"];</code>
+       */
+      public Builder clearPeerB() {  copyOnWrite();
+        instance.clearPeerB();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The other device of an incoming exchange that is introduced to this one.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPeer() {
+        return instance.hasPeer();
+      }
+      /**
+       * <pre>
+       * The other device of an incoming exchange that is introduced to this one.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedDevice getPeer() {
+        return instance.getPeer();
+      }
+      /**
+       * <pre>
+       * The other device of an incoming exchange that is introduced to this one.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+       */
+      public Builder setPeer(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.setPeer(value);
+        return this;
+        }
+      /**
+       * <pre>
+       * The other device of an incoming exchange that is introduced to this one.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+       */
+      public Builder setPeer(
+          unison.local.v1.Local.MediatedDevice.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPeer(builderForValue.build());
+        return this;
+      }
+      /**
+       * <pre>
+       * The other device of an incoming exchange that is introduced to this one.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+       */
+      public Builder mergePeer(unison.local.v1.Local.MediatedDevice value) {
+        copyOnWrite();
+        instance.mergePeer(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The other device of an incoming exchange that is introduced to this one.
+       * </pre>
+       *
+       * <code>.unison.local.v1.MediatedDevice peer = 8 [json_name = "peer"];</code>
+       */
+      public Builder clearPeer() {  copyOnWrite();
+        instance.clearPeer();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+       */
+      @java.lang.Override
+      public boolean hasSas() {
+        return instance.hasSas();
+      }
+      /**
+       * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Sas getSas() {
+        return instance.getSas();
+      }
+      /**
+       * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+       */
+      public Builder setSas(unison.local.v1.Local.Sas value) {
+        copyOnWrite();
+        instance.setSas(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+       */
+      public Builder setSas(
+          unison.local.v1.Local.Sas.Builder builderForValue) {
+        copyOnWrite();
+        instance.setSas(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+       */
+      public Builder mergeSas(unison.local.v1.Local.Sas value) {
+        copyOnWrite();
+        instance.mergeSas(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Sas sas = 9 [json_name = "sas"];</code>
+       */
+      public Builder clearSas() {  copyOnWrite();
+        instance.clearSas();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The other device is paired already and offline: confirming the exchange
+       * replaces its connection keys.
+       * </pre>
+       *
+       * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+       * @return The alreadyPaired.
+       */
+      @java.lang.Override
+      public boolean getAlreadyPaired() {
+        return instance.getAlreadyPaired();
+      }
+      /**
+       * <pre>
+       * The other device is paired already and offline: confirming the exchange
+       * replaces its connection keys.
+       * </pre>
+       *
+       * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+       * @param value The alreadyPaired to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAlreadyPaired(boolean value) {
+        copyOnWrite();
+        instance.setAlreadyPaired(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The other device is paired already and offline: confirming the exchange
+       * replaces its connection keys.
+       * </pre>
+       *
+       * <code>bool already_paired = 10 [json_name = "alreadyPaired"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAlreadyPaired() {
+        copyOnWrite();
+        instance.clearAlreadyPaired();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Deadline of the exchange, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+       * @return The expiresAtUnixMs.
+       */
+      @java.lang.Override
+      public long getExpiresAtUnixMs() {
+        return instance.getExpiresAtUnixMs();
+      }
+      /**
+       * <pre>
+       * Deadline of the exchange, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+       * @param value The expiresAtUnixMs to set.
+       * @return This builder for chaining.
+       */
+      public Builder setExpiresAtUnixMs(long value) {
+        copyOnWrite();
+        instance.setExpiresAtUnixMs(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Deadline of the exchange, unix milliseconds.
+       * </pre>
+       *
+       * <code>int64 expires_at_unix_ms = 11 [json_name = "expiresAtUnixMs"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearExpiresAtUnixMs() {
+        copyOnWrite();
+        instance.clearExpiresAtUnixMs();
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+       * @return The enum numeric value on the wire for cancelReason.
+       */
+      @java.lang.Override
+      public int getCancelReasonValue() {
+        return instance.getCancelReasonValue();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+       * @param value The cancelReason to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setCancelReasonValue(int value) {
+        copyOnWrite();
+        instance.setCancelReasonValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+       * @return The cancelReason.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPairCancelReason getCancelReason() {
+        return instance.getCancelReason();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+       * @param value The enum numeric value on the wire for cancelReason to set.
+       * @return This builder for chaining.
+       */
+      public Builder setCancelReason(unison.local.v1.Local.MediatedPairCancelReason value) {
+        copyOnWrite();
+        instance.setCancelReason(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPairCancelReason cancel_reason = 12 [json_name = "cancelReason"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearCancelReason() {
+        copyOnWrite();
+        instance.clearCancelReason();
+        return this;
+      }
+
+      /**
+       * <pre>
+       * The user asked to turn the search for Friends devices on after the pair
+       * completes.
+       * </pre>
+       *
+       * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+       * @return The enableFriendsDiscovery.
+       */
+      @java.lang.Override
+      public boolean getEnableFriendsDiscovery() {
+        return instance.getEnableFriendsDiscovery();
+      }
+      /**
+       * <pre>
+       * The user asked to turn the search for Friends devices on after the pair
+       * completes.
+       * </pre>
+       *
+       * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+       * @param value The enableFriendsDiscovery to set.
+       * @return This builder for chaining.
+       */
+      public Builder setEnableFriendsDiscovery(boolean value) {
+        copyOnWrite();
+        instance.setEnableFriendsDiscovery(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * The user asked to turn the search for Friends devices on after the pair
+       * completes.
+       * </pre>
+       *
+       * <code>bool enable_friends_discovery = 13 [json_name = "enableFriendsDiscovery"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearEnableFriendsDiscovery() {
+        copyOnWrite();
+        instance.clearEnableFriendsDiscovery();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.MediatedPair)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.MediatedPair();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "sessionId_",
+              "direction_",
+              "state_",
+              "role_",
+              "mediator_",
+              "peerA_",
+              "peerB_",
+              "peer_",
+              "sas_",
+              "alreadyPaired_",
+              "expiresAtUnixMs_",
+              "cancelReason_",
+              "enableFriendsDiscovery_",
+            };
+            java.lang.String info =
+                "\u0000\r\u0000\u0001\u0001\r\r\u0000\u0000\u0000\u0001\u0208\u0002\f\u0003\f\u0004" +
+                "\f\u0005\u1009\u0000\u0006\u1009\u0001\u0007\u1009\u0002\b\u1009\u0003\t\u1009\u0004" +
+                "\n\u0007\u000b\u0002\f\f\r\u0007";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.MediatedPair> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.MediatedPair.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.MediatedPair>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.MediatedPair)
+    private static final unison.local.v1.Local.MediatedPair DEFAULT_INSTANCE;
+    static {
+      MediatedPair defaultInstance = new MediatedPair();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        MediatedPair.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.MediatedPair getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<MediatedPair> PARSER;
+
+    public static com.google.protobuf.Parser<MediatedPair> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface StartMediatedPairRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.StartMediatedPairRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     * @return The peerA.
+     */
+    java.lang.String getPeerA();
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     * @return The bytes for peerA.
+     */
+    com.google.protobuf.ByteString
+        getPeerABytes();
+
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     * @return The peerB.
+     */
+    java.lang.String getPeerB();
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     * @return The bytes for peerB.
+     */
+    com.google.protobuf.ByteString
+        getPeerBBytes();
+
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     * @return The enum numeric value on the wire for role.
+     */
+    int getRoleValue();
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     * @return The role.
+     */
+    unison.local.v1.Local.Role getRole();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.StartMediatedPairRequest}
+   */
+  public  static final class StartMediatedPairRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          StartMediatedPairRequest, StartMediatedPairRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.StartMediatedPairRequest)
+      StartMediatedPairRequestOrBuilder {
+    private StartMediatedPairRequest() {
+      peerA_ = "";
+      peerB_ = "";
+    }
+    public static final int PEER_A_FIELD_NUMBER = 1;
+    private java.lang.String peerA_;
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     * @return The peerA.
+     */
+    @java.lang.Override
+    public java.lang.String getPeerA() {
+      return peerA_;
+    }
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     * @return The bytes for peerA.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getPeerABytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(peerA_);
+    }
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     * @param value The peerA to set.
+     */
+    private void setPeerA(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      peerA_ = value;
+    }
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     */
+    private void clearPeerA() {
+
+      peerA_ = getDefaultInstance().getPeerA();
+    }
+    /**
+     * <pre>
+     * First device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_a = 1 [json_name = "peerA"];</code>
+     * @param value The bytes for peerA to set.
+     */
+    private void setPeerABytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      peerA_ = value.toStringUtf8();
+
+    }
+
+    public static final int PEER_B_FIELD_NUMBER = 2;
+    private java.lang.String peerB_;
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     * @return The peerB.
+     */
+    @java.lang.Override
+    public java.lang.String getPeerB() {
+      return peerB_;
+    }
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     * @return The bytes for peerB.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getPeerBBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(peerB_);
+    }
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     * @param value The peerB to set.
+     */
+    private void setPeerB(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      peerB_ = value;
+    }
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     */
+    private void clearPeerB() {
+
+      peerB_ = getDefaultInstance().getPeerB();
+    }
+    /**
+     * <pre>
+     * Second device to introduce, device ID in lowercase hex.
+     * </pre>
+     *
+     * <code>string peer_b = 2 [json_name = "peerB"];</code>
+     * @param value The bytes for peerB to set.
+     */
+    private void setPeerBBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      peerB_ = value.toStringUtf8();
+
+    }
+
+    public static final int ROLE_FIELD_NUMBER = 3;
+    private int role_;
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     * @return The enum numeric value on the wire for role.
+     */
+    @java.lang.Override
+    public int getRoleValue() {
+      return role_;
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     * @return The role.
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.Role getRole() {
+      unison.local.v1.Local.Role result = unison.local.v1.Local.Role.forNumber(role_);
+      return result == null ? unison.local.v1.Local.Role.UNRECOGNIZED : result;
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     * @param value The enum numeric value on the wire for role to set.
+     */
+    private void setRoleValue(int value) {
+        role_ = value;
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     * @param value The role to set.
+     * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+     */
+    private void setRole(unison.local.v1.Local.Role value) {
+      role_ = value.getNumber();
+
+    }
+    /**
+     * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+     */
+    private void clearRole() {
+
+      role_ = 0;
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.StartMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.StartMediatedPairRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.StartMediatedPairRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.StartMediatedPairRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.StartMediatedPairRequest)
+        unison.local.v1.Local.StartMediatedPairRequestOrBuilder {
+      // Construct using unison.local.v1.Local.StartMediatedPairRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <pre>
+       * First device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_a = 1 [json_name = "peerA"];</code>
+       * @return The peerA.
+       */
+      @java.lang.Override
+      public java.lang.String getPeerA() {
+        return instance.getPeerA();
+      }
+      /**
+       * <pre>
+       * First device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_a = 1 [json_name = "peerA"];</code>
+       * @return The bytes for peerA.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getPeerABytes() {
+        return instance.getPeerABytes();
+      }
+      /**
+       * <pre>
+       * First device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_a = 1 [json_name = "peerA"];</code>
+       * @param value The peerA to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPeerA(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setPeerA(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * First device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_a = 1 [json_name = "peerA"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPeerA() {
+        copyOnWrite();
+        instance.clearPeerA();
+        return this;
+      }
+      /**
+       * <pre>
+       * First device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_a = 1 [json_name = "peerA"];</code>
+       * @param value The bytes for peerA to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPeerABytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setPeerABytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Second device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_b = 2 [json_name = "peerB"];</code>
+       * @return The peerB.
+       */
+      @java.lang.Override
+      public java.lang.String getPeerB() {
+        return instance.getPeerB();
+      }
+      /**
+       * <pre>
+       * Second device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_b = 2 [json_name = "peerB"];</code>
+       * @return The bytes for peerB.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getPeerBBytes() {
+        return instance.getPeerBBytes();
+      }
+      /**
+       * <pre>
+       * Second device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_b = 2 [json_name = "peerB"];</code>
+       * @param value The peerB to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPeerB(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setPeerB(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Second device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_b = 2 [json_name = "peerB"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPeerB() {
+        copyOnWrite();
+        instance.clearPeerB();
+        return this;
+      }
+      /**
+       * <pre>
+       * Second device to introduce, device ID in lowercase hex.
+       * </pre>
+       *
+       * <code>string peer_b = 2 [json_name = "peerB"];</code>
+       * @param value The bytes for peerB to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPeerBBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setPeerBBytes(value);
+        return this;
+      }
+
+      /**
+       * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+       * @return The enum numeric value on the wire for role.
+       */
+      @java.lang.Override
+      public int getRoleValue() {
+        return instance.getRoleValue();
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+       * @param value The role to set.
+       * @throws IllegalArgumentException if UNRECOGNIZED is provided.
+       * @return This builder for chaining.
+       */
+      public Builder setRoleValue(int value) {
+        copyOnWrite();
+        instance.setRoleValue(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+       * @return The role.
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.Role getRole() {
+        return instance.getRole();
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+       * @param value The enum numeric value on the wire for role to set.
+       * @return This builder for chaining.
+       */
+      public Builder setRole(unison.local.v1.Local.Role value) {
+        copyOnWrite();
+        instance.setRole(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.Role role = 3 [json_name = "role"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearRole() {
+        copyOnWrite();
+        instance.clearRole();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.StartMediatedPairRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.StartMediatedPairRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "peerA_",
+              "peerB_",
+              "role_",
+            };
+            java.lang.String info =
+                "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0208\u0002\u0208" +
+                "\u0003\f";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.StartMediatedPairRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.StartMediatedPairRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.StartMediatedPairRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.StartMediatedPairRequest)
+    private static final unison.local.v1.Local.StartMediatedPairRequest DEFAULT_INSTANCE;
+    static {
+      StartMediatedPairRequest defaultInstance = new StartMediatedPairRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        StartMediatedPairRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<StartMediatedPairRequest> PARSER;
+
+    public static com.google.protobuf.Parser<StartMediatedPairRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface StartMediatedPairResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.StartMediatedPairResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return Whether the pair field is set.
+     */
+    boolean hasPair();
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return The pair.
+     */
+    unison.local.v1.Local.MediatedPair getPair();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.StartMediatedPairResponse}
+   */
+  public  static final class StartMediatedPairResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          StartMediatedPairResponse, StartMediatedPairResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.StartMediatedPairResponse)
+      StartMediatedPairResponseOrBuilder {
+    private StartMediatedPairResponse() {
+    }
+    private int bitField0_;
+    public static final int PAIR_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.MediatedPair pair_;
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPair() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPair getPair() {
+      return pair_ == null ? unison.local.v1.Local.MediatedPair.getDefaultInstance() : pair_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void setPair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      pair_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      if (pair_ != null &&
+          pair_ != unison.local.v1.Local.MediatedPair.getDefaultInstance()) {
+        pair_ =
+          unison.local.v1.Local.MediatedPair.newBuilder(pair_).mergeFrom(value).buildPartial();
+      } else {
+        pair_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void clearPair() {
+      pair_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.StartMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.StartMediatedPairResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.StartMediatedPairResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.StartMediatedPairResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.StartMediatedPairResponse)
+        unison.local.v1.Local.StartMediatedPairResponseOrBuilder {
+      // Construct using unison.local.v1.Local.StartMediatedPairResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPair() {
+        return instance.hasPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPair getPair() {
+        return instance.getPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.setPair(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(
+          unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPair(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder mergePair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.mergePair(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder clearPair() {  copyOnWrite();
+        instance.clearPair();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.StartMediatedPairResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.StartMediatedPairResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "pair_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.StartMediatedPairResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.StartMediatedPairResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.StartMediatedPairResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.StartMediatedPairResponse)
+    private static final unison.local.v1.Local.StartMediatedPairResponse DEFAULT_INSTANCE;
+    static {
+      StartMediatedPairResponse defaultInstance = new StartMediatedPairResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        StartMediatedPairResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.StartMediatedPairResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<StartMediatedPairResponse> PARSER;
+
+    public static com.google.protobuf.Parser<StartMediatedPairResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ConfirmMediatedPairRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ConfirmMediatedPairRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    java.lang.String getSessionId();
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    com.google.protobuf.ByteString
+        getSessionIdBytes();
+
+    /**
+     * <pre>
+     * Turn the search for Friends devices on when the pair is Friends and the
+     * user asked for it.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+     * @return The enableFriendsDiscovery.
+     */
+    boolean getEnableFriendsDiscovery();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ConfirmMediatedPairRequest}
+   */
+  public  static final class ConfirmMediatedPairRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ConfirmMediatedPairRequest, ConfirmMediatedPairRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ConfirmMediatedPairRequest)
+      ConfirmMediatedPairRequestOrBuilder {
+    private ConfirmMediatedPairRequest() {
+      sessionId_ = "";
+    }
+    public static final int SESSION_ID_FIELD_NUMBER = 1;
+    private java.lang.String sessionId_;
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    @java.lang.Override
+    public java.lang.String getSessionId() {
+      return sessionId_;
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSessionIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(sessionId_);
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The sessionId to set.
+     */
+    private void setSessionId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      sessionId_ = value;
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     */
+    private void clearSessionId() {
+
+      sessionId_ = getDefaultInstance().getSessionId();
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The bytes for sessionId to set.
+     */
+    private void setSessionIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      sessionId_ = value.toStringUtf8();
+
+    }
+
+    public static final int ENABLE_FRIENDS_DISCOVERY_FIELD_NUMBER = 2;
+    private boolean enableFriendsDiscovery_;
+    /**
+     * <pre>
+     * Turn the search for Friends devices on when the pair is Friends and the
+     * user asked for it.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+     * @return The enableFriendsDiscovery.
+     */
+    @java.lang.Override
+    public boolean getEnableFriendsDiscovery() {
+      return enableFriendsDiscovery_;
+    }
+    /**
+     * <pre>
+     * Turn the search for Friends devices on when the pair is Friends and the
+     * user asked for it.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+     * @param value The enableFriendsDiscovery to set.
+     */
+    private void setEnableFriendsDiscovery(boolean value) {
+      
+      enableFriendsDiscovery_ = value;
+    }
+    /**
+     * <pre>
+     * Turn the search for Friends devices on when the pair is Friends and the
+     * user asked for it.
+     * </pre>
+     *
+     * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+     */
+    private void clearEnableFriendsDiscovery() {
+
+      enableFriendsDiscovery_ = false;
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ConfirmMediatedPairRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ConfirmMediatedPairRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ConfirmMediatedPairRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ConfirmMediatedPairRequest)
+        unison.local.v1.Local.ConfirmMediatedPairRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ConfirmMediatedPairRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The sessionId.
+       */
+      @java.lang.Override
+      public java.lang.String getSessionId() {
+        return instance.getSessionId();
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The bytes for sessionId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getSessionIdBytes() {
+        return instance.getSessionIdBytes();
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setSessionId(value);
+        return this;
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSessionId() {
+        copyOnWrite();
+        instance.clearSessionId();
+        return this;
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The bytes for sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setSessionIdBytes(value);
+        return this;
+      }
+
+      /**
+       * <pre>
+       * Turn the search for Friends devices on when the pair is Friends and the
+       * user asked for it.
+       * </pre>
+       *
+       * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+       * @return The enableFriendsDiscovery.
+       */
+      @java.lang.Override
+      public boolean getEnableFriendsDiscovery() {
+        return instance.getEnableFriendsDiscovery();
+      }
+      /**
+       * <pre>
+       * Turn the search for Friends devices on when the pair is Friends and the
+       * user asked for it.
+       * </pre>
+       *
+       * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+       * @param value The enableFriendsDiscovery to set.
+       * @return This builder for chaining.
+       */
+      public Builder setEnableFriendsDiscovery(boolean value) {
+        copyOnWrite();
+        instance.setEnableFriendsDiscovery(value);
+        return this;
+      }
+      /**
+       * <pre>
+       * Turn the search for Friends devices on when the pair is Friends and the
+       * user asked for it.
+       * </pre>
+       *
+       * <code>bool enable_friends_discovery = 2 [json_name = "enableFriendsDiscovery"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearEnableFriendsDiscovery() {
+        copyOnWrite();
+        instance.clearEnableFriendsDiscovery();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ConfirmMediatedPairRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ConfirmMediatedPairRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "sessionId_",
+              "enableFriendsDiscovery_",
+            };
+            java.lang.String info =
+                "\u0000\u0002\u0000\u0000\u0001\u0002\u0002\u0000\u0000\u0000\u0001\u0208\u0002\u0007" +
+                "";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ConfirmMediatedPairRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ConfirmMediatedPairRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ConfirmMediatedPairRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ConfirmMediatedPairRequest)
+    private static final unison.local.v1.Local.ConfirmMediatedPairRequest DEFAULT_INSTANCE;
+    static {
+      ConfirmMediatedPairRequest defaultInstance = new ConfirmMediatedPairRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ConfirmMediatedPairRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ConfirmMediatedPairRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ConfirmMediatedPairRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ConfirmMediatedPairResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ConfirmMediatedPairResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return Whether the pair field is set.
+     */
+    boolean hasPair();
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return The pair.
+     */
+    unison.local.v1.Local.MediatedPair getPair();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ConfirmMediatedPairResponse}
+   */
+  public  static final class ConfirmMediatedPairResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ConfirmMediatedPairResponse, ConfirmMediatedPairResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ConfirmMediatedPairResponse)
+      ConfirmMediatedPairResponseOrBuilder {
+    private ConfirmMediatedPairResponse() {
+    }
+    private int bitField0_;
+    public static final int PAIR_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.MediatedPair pair_;
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPair() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPair getPair() {
+      return pair_ == null ? unison.local.v1.Local.MediatedPair.getDefaultInstance() : pair_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void setPair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      pair_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      if (pair_ != null &&
+          pair_ != unison.local.v1.Local.MediatedPair.getDefaultInstance()) {
+        pair_ =
+          unison.local.v1.Local.MediatedPair.newBuilder(pair_).mergeFrom(value).buildPartial();
+      } else {
+        pair_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void clearPair() {
+      pair_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ConfirmMediatedPairResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ConfirmMediatedPairResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ConfirmMediatedPairResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ConfirmMediatedPairResponse)
+        unison.local.v1.Local.ConfirmMediatedPairResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ConfirmMediatedPairResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPair() {
+        return instance.hasPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPair getPair() {
+        return instance.getPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.setPair(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(
+          unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPair(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder mergePair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.mergePair(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder clearPair() {  copyOnWrite();
+        instance.clearPair();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ConfirmMediatedPairResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ConfirmMediatedPairResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "pair_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ConfirmMediatedPairResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ConfirmMediatedPairResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ConfirmMediatedPairResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ConfirmMediatedPairResponse)
+    private static final unison.local.v1.Local.ConfirmMediatedPairResponse DEFAULT_INSTANCE;
+    static {
+      ConfirmMediatedPairResponse defaultInstance = new ConfirmMediatedPairResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ConfirmMediatedPairResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ConfirmMediatedPairResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ConfirmMediatedPairResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ConfirmMediatedPairResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RejectMediatedPairRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.RejectMediatedPairRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    java.lang.String getSessionId();
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    com.google.protobuf.ByteString
+        getSessionIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.RejectMediatedPairRequest}
+   */
+  public  static final class RejectMediatedPairRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          RejectMediatedPairRequest, RejectMediatedPairRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.RejectMediatedPairRequest)
+      RejectMediatedPairRequestOrBuilder {
+    private RejectMediatedPairRequest() {
+      sessionId_ = "";
+    }
+    public static final int SESSION_ID_FIELD_NUMBER = 1;
+    private java.lang.String sessionId_;
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    @java.lang.Override
+    public java.lang.String getSessionId() {
+      return sessionId_;
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSessionIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(sessionId_);
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The sessionId to set.
+     */
+    private void setSessionId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      sessionId_ = value;
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     */
+    private void clearSessionId() {
+
+      sessionId_ = getDefaultInstance().getSessionId();
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The bytes for sessionId to set.
+     */
+    private void setSessionIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      sessionId_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.RejectMediatedPairRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.RejectMediatedPairRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.RejectMediatedPairRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.RejectMediatedPairRequest)
+        unison.local.v1.Local.RejectMediatedPairRequestOrBuilder {
+      // Construct using unison.local.v1.Local.RejectMediatedPairRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The sessionId.
+       */
+      @java.lang.Override
+      public java.lang.String getSessionId() {
+        return instance.getSessionId();
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The bytes for sessionId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getSessionIdBytes() {
+        return instance.getSessionIdBytes();
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setSessionId(value);
+        return this;
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSessionId() {
+        copyOnWrite();
+        instance.clearSessionId();
+        return this;
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The bytes for sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setSessionIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.RejectMediatedPairRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.RejectMediatedPairRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "sessionId_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.RejectMediatedPairRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.RejectMediatedPairRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.RejectMediatedPairRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.RejectMediatedPairRequest)
+    private static final unison.local.v1.Local.RejectMediatedPairRequest DEFAULT_INSTANCE;
+    static {
+      RejectMediatedPairRequest defaultInstance = new RejectMediatedPairRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        RejectMediatedPairRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<RejectMediatedPairRequest> PARSER;
+
+    public static com.google.protobuf.Parser<RejectMediatedPairRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface RejectMediatedPairResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.RejectMediatedPairResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return Whether the pair field is set.
+     */
+    boolean hasPair();
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return The pair.
+     */
+    unison.local.v1.Local.MediatedPair getPair();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.RejectMediatedPairResponse}
+   */
+  public  static final class RejectMediatedPairResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          RejectMediatedPairResponse, RejectMediatedPairResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.RejectMediatedPairResponse)
+      RejectMediatedPairResponseOrBuilder {
+    private RejectMediatedPairResponse() {
+    }
+    private int bitField0_;
+    public static final int PAIR_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.MediatedPair pair_;
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPair() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPair getPair() {
+      return pair_ == null ? unison.local.v1.Local.MediatedPair.getDefaultInstance() : pair_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void setPair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      pair_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      if (pair_ != null &&
+          pair_ != unison.local.v1.Local.MediatedPair.getDefaultInstance()) {
+        pair_ =
+          unison.local.v1.Local.MediatedPair.newBuilder(pair_).mergeFrom(value).buildPartial();
+      } else {
+        pair_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void clearPair() {
+      pair_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.RejectMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.RejectMediatedPairResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.RejectMediatedPairResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.RejectMediatedPairResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.RejectMediatedPairResponse)
+        unison.local.v1.Local.RejectMediatedPairResponseOrBuilder {
+      // Construct using unison.local.v1.Local.RejectMediatedPairResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPair() {
+        return instance.hasPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPair getPair() {
+        return instance.getPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.setPair(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(
+          unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPair(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder mergePair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.mergePair(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder clearPair() {  copyOnWrite();
+        instance.clearPair();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.RejectMediatedPairResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.RejectMediatedPairResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "pair_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.RejectMediatedPairResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.RejectMediatedPairResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.RejectMediatedPairResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.RejectMediatedPairResponse)
+    private static final unison.local.v1.Local.RejectMediatedPairResponse DEFAULT_INSTANCE;
+    static {
+      RejectMediatedPairResponse defaultInstance = new RejectMediatedPairResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        RejectMediatedPairResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.RejectMediatedPairResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<RejectMediatedPairResponse> PARSER;
+
+    public static com.google.protobuf.Parser<RejectMediatedPairResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface CancelMediatedPairRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.CancelMediatedPairRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    java.lang.String getSessionId();
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    com.google.protobuf.ByteString
+        getSessionIdBytes();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.CancelMediatedPairRequest}
+   */
+  public  static final class CancelMediatedPairRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          CancelMediatedPairRequest, CancelMediatedPairRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.CancelMediatedPairRequest)
+      CancelMediatedPairRequestOrBuilder {
+    private CancelMediatedPairRequest() {
+      sessionId_ = "";
+    }
+    public static final int SESSION_ID_FIELD_NUMBER = 1;
+    private java.lang.String sessionId_;
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The sessionId.
+     */
+    @java.lang.Override
+    public java.lang.String getSessionId() {
+      return sessionId_;
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @return The bytes for sessionId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSessionIdBytes() {
+      return com.google.protobuf.ByteString.copyFromUtf8(sessionId_);
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The sessionId to set.
+     */
+    private void setSessionId(
+        java.lang.String value) {
+      java.util.Objects.requireNonNull(value);
+
+      sessionId_ = value;
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     */
+    private void clearSessionId() {
+
+      sessionId_ = getDefaultInstance().getSessionId();
+    }
+    /**
+     * <code>string session_id = 1 [json_name = "sessionId"];</code>
+     * @param value The bytes for sessionId to set.
+     */
+    private void setSessionIdBytes(
+        com.google.protobuf.ByteString value) {
+      checkByteStringIsUtf8(value);
+      sessionId_ = value.toStringUtf8();
+
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.CancelMediatedPairRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.CancelMediatedPairRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.CancelMediatedPairRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.CancelMediatedPairRequest)
+        unison.local.v1.Local.CancelMediatedPairRequestOrBuilder {
+      // Construct using unison.local.v1.Local.CancelMediatedPairRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The sessionId.
+       */
+      @java.lang.Override
+      public java.lang.String getSessionId() {
+        return instance.getSessionId();
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return The bytes for sessionId.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString
+          getSessionIdBytes() {
+        return instance.getSessionIdBytes();
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionId(
+          java.lang.String value) {
+        copyOnWrite();
+        instance.setSessionId(value);
+        return this;
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSessionId() {
+        copyOnWrite();
+        instance.clearSessionId();
+        return this;
+      }
+      /**
+       * <code>string session_id = 1 [json_name = "sessionId"];</code>
+       * @param value The bytes for sessionId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSessionIdBytes(
+          com.google.protobuf.ByteString value) {
+        copyOnWrite();
+        instance.setSessionIdBytes(value);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.CancelMediatedPairRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.CancelMediatedPairRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "sessionId_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u0208";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.CancelMediatedPairRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.CancelMediatedPairRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.CancelMediatedPairRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.CancelMediatedPairRequest)
+    private static final unison.local.v1.Local.CancelMediatedPairRequest DEFAULT_INSTANCE;
+    static {
+      CancelMediatedPairRequest defaultInstance = new CancelMediatedPairRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        CancelMediatedPairRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<CancelMediatedPairRequest> PARSER;
+
+    public static com.google.protobuf.Parser<CancelMediatedPairRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface CancelMediatedPairResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.CancelMediatedPairResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return Whether the pair field is set.
+     */
+    boolean hasPair();
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     * @return The pair.
+     */
+    unison.local.v1.Local.MediatedPair getPair();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.CancelMediatedPairResponse}
+   */
+  public  static final class CancelMediatedPairResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          CancelMediatedPairResponse, CancelMediatedPairResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.CancelMediatedPairResponse)
+      CancelMediatedPairResponseOrBuilder {
+    private CancelMediatedPairResponse() {
+    }
+    private int bitField0_;
+    public static final int PAIR_FIELD_NUMBER = 1;
+    private unison.local.v1.Local.MediatedPair pair_;
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public boolean hasPair() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPair getPair() {
+      return pair_ == null ? unison.local.v1.Local.MediatedPair.getDefaultInstance() : pair_;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void setPair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      pair_ = value;
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    @java.lang.SuppressWarnings("ReferenceEquality")
+    private void mergePair(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      if (pair_ != null &&
+          pair_ != unison.local.v1.Local.MediatedPair.getDefaultInstance()) {
+        pair_ =
+          unison.local.v1.Local.MediatedPair.newBuilder(pair_).mergeFrom(value).buildPartial();
+      } else {
+        pair_ = value;
+      }
+      bitField0_ |= 0x00000001;
+    }
+    /**
+     * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+     */
+    private void clearPair() {
+      pair_ = null;
+      bitField0_ = (bitField0_ & ~0x00000001);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.CancelMediatedPairResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.CancelMediatedPairResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.CancelMediatedPairResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.CancelMediatedPairResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.CancelMediatedPairResponse)
+        unison.local.v1.Local.CancelMediatedPairResponseOrBuilder {
+      // Construct using unison.local.v1.Local.CancelMediatedPairResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public boolean hasPair() {
+        return instance.hasPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPair getPair() {
+        return instance.getPair();
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.setPair(value);
+        return this;
+        }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder setPair(
+          unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPair(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder mergePair(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.mergePair(value);
+        return this;
+      }
+      /**
+       * <code>.unison.local.v1.MediatedPair pair = 1 [json_name = "pair"];</code>
+       */
+      public Builder clearPair() {  copyOnWrite();
+        instance.clearPair();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.CancelMediatedPairResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.CancelMediatedPairResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "bitField0_",
+              "pair_",
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000\u0000\u0001\u1009\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.CancelMediatedPairResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.CancelMediatedPairResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.CancelMediatedPairResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.CancelMediatedPairResponse)
+    private static final unison.local.v1.Local.CancelMediatedPairResponse DEFAULT_INSTANCE;
+    static {
+      CancelMediatedPairResponse defaultInstance = new CancelMediatedPairResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        CancelMediatedPairResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.CancelMediatedPairResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<CancelMediatedPairResponse> PARSER;
+
+    public static com.google.protobuf.Parser<CancelMediatedPairResponse> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ListMediatedPairsRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ListMediatedPairsRequest)
+      com.google.protobuf.MessageLiteOrBuilder {
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ListMediatedPairsRequest}
+   */
+  public  static final class ListMediatedPairsRequest extends
+      com.google.protobuf.GeneratedMessageLite<
+          ListMediatedPairsRequest, ListMediatedPairsRequest.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ListMediatedPairsRequest)
+      ListMediatedPairsRequestOrBuilder {
+    private ListMediatedPairsRequest() {
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ListMediatedPairsRequest prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ListMediatedPairsRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ListMediatedPairsRequest, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ListMediatedPairsRequest)
+        unison.local.v1.Local.ListMediatedPairsRequestOrBuilder {
+      // Construct using unison.local.v1.Local.ListMediatedPairsRequest.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ListMediatedPairsRequest)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ListMediatedPairsRequest();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = null;
+            java.lang.String info =
+                "\u0000\u0000";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ListMediatedPairsRequest> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ListMediatedPairsRequest.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ListMediatedPairsRequest>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ListMediatedPairsRequest)
+    private static final unison.local.v1.Local.ListMediatedPairsRequest DEFAULT_INSTANCE;
+    static {
+      ListMediatedPairsRequest defaultInstance = new ListMediatedPairsRequest();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ListMediatedPairsRequest.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ListMediatedPairsRequest> PARSER;
+
+    public static com.google.protobuf.Parser<ListMediatedPairsRequest> parser() {
+      return DEFAULT_INSTANCE.getParserForType();
+    }
+  }
+
+  public interface ListMediatedPairsResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:unison.local.v1.ListMediatedPairsResponse)
+      com.google.protobuf.MessageLiteOrBuilder {
+
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    java.util.List<unison.local.v1.Local.MediatedPair> 
+        getPairsList();
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    unison.local.v1.Local.MediatedPair getPairs(int index);
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    int getPairsCount();
+  }
+  /**
+   * Protobuf type {@code unison.local.v1.ListMediatedPairsResponse}
+   */
+  public  static final class ListMediatedPairsResponse extends
+      com.google.protobuf.GeneratedMessageLite<
+          ListMediatedPairsResponse, ListMediatedPairsResponse.Builder> implements
+      // @@protoc_insertion_point(message_implements:unison.local.v1.ListMediatedPairsResponse)
+      ListMediatedPairsResponseOrBuilder {
+    private ListMediatedPairsResponse() {
+      pairs_ = emptyProtobufList();
+    }
+    public static final int PAIRS_FIELD_NUMBER = 1;
+    private com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.MediatedPair> pairs_;
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    @java.lang.Override
+    public java.util.List<unison.local.v1.Local.MediatedPair> getPairsList() {
+      return pairs_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    public java.util.List<? extends unison.local.v1.Local.MediatedPairOrBuilder> 
+        getPairsOrBuilderList() {
+      return pairs_;
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    @java.lang.Override
+    public int getPairsCount() {
+      return pairs_.size();
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    @java.lang.Override
+    public unison.local.v1.Local.MediatedPair getPairs(int index) {
+      return pairs_.get(index);
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    public unison.local.v1.Local.MediatedPairOrBuilder getPairsOrBuilder(
+        int index) {
+      return pairs_.get(index);
+    }
+    private void ensurePairsIsMutable() {
+      com.google.protobuf.Internal.ProtobufList<unison.local.v1.Local.MediatedPair> tmp = pairs_;
+      if (!tmp.isModifiable()) {
+        pairs_ =
+            com.google.protobuf.GeneratedMessageLite.mutableCopy(tmp);
+       }
+    }
+
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    private void setPairs(
+        int index, unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      ensurePairsIsMutable();
+      pairs_.set(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    private void addPairs(unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      ensurePairsIsMutable();
+      pairs_.add(value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    private void addPairs(
+        int index, unison.local.v1.Local.MediatedPair value) {
+      java.util.Objects.requireNonNull(value);
+      ensurePairsIsMutable();
+      pairs_.add(index, value);
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    private void addAllPairs(
+        java.lang.Iterable<? extends unison.local.v1.Local.MediatedPair> values) {
+      ensurePairsIsMutable();
+      com.google.protobuf.AbstractMessageLite.addAll(
+          values, pairs_);
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    private void clearPairs() {
+      pairs_ = emptyProtobufList();
+    }
+    /**
+     * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+     */
+    private void removePairs(int index) {
+      ensurePairsIsMutable();
+      pairs_.remove(index);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, data, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return parseDelimitedFrom(DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input);
+    }
+    public static unison.local.v1.Local.ListMediatedPairsResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageLite.parseFrom(
+          DEFAULT_INSTANCE, input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() {
+      return (Builder) DEFAULT_INSTANCE.createBuilder();
+    }
+    public static Builder newBuilder(unison.local.v1.Local.ListMediatedPairsResponse prototype) {
+      return DEFAULT_INSTANCE.createBuilder(prototype);
+    }
+
+    /**
+     * Protobuf type {@code unison.local.v1.ListMediatedPairsResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageLite.Builder<
+          unison.local.v1.Local.ListMediatedPairsResponse, Builder> implements
+        // @@protoc_insertion_point(builder_implements:unison.local.v1.ListMediatedPairsResponse)
+        unison.local.v1.Local.ListMediatedPairsResponseOrBuilder {
+      // Construct using unison.local.v1.Local.ListMediatedPairsResponse.newBuilder()
+      private Builder() {
+        super(DEFAULT_INSTANCE);
+      }
+
+
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      @java.lang.Override
+      public java.util.List<unison.local.v1.Local.MediatedPair> getPairsList() {
+        return java.util.Collections.unmodifiableList(
+            instance.getPairsList());
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      @java.lang.Override
+      public int getPairsCount() {
+        return instance.getPairsCount();
+      }/**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      @java.lang.Override
+      public unison.local.v1.Local.MediatedPair getPairs(int index) {
+        return instance.getPairs(index);
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder setPairs(
+          int index, unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.setPairs(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder setPairs(
+          int index, unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.setPairs(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder addPairs(unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.addPairs(value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder addPairs(
+          int index, unison.local.v1.Local.MediatedPair value) {
+        copyOnWrite();
+        instance.addPairs(index, value);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder addPairs(
+          unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.addPairs(builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder addPairs(
+          int index, unison.local.v1.Local.MediatedPair.Builder builderForValue) {
+        copyOnWrite();
+        instance.addPairs(index,
+            builderForValue.build());
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder addAllPairs(
+          java.lang.Iterable<? extends unison.local.v1.Local.MediatedPair> values) {
+        copyOnWrite();
+        instance.addAllPairs(values);
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder clearPairs() {
+        copyOnWrite();
+        instance.clearPairs();
+        return this;
+      }
+      /**
+       * <code>repeated .unison.local.v1.MediatedPair pairs = 1 [json_name = "pairs"];</code>
+       */
+      public Builder removePairs(int index) {
+        copyOnWrite();
+        instance.removePairs(index);
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:unison.local.v1.ListMediatedPairsResponse)
+    }
+    @java.lang.Override
+    @java.lang.SuppressWarnings({"ThrowNull"})
+    protected final java.lang.Object dynamicMethod(
+        com.google.protobuf.GeneratedMessageLite.MethodToInvoke method,
+        java.lang.Object arg0, java.lang.Object arg1) {
+      switch (method) {
+        case NEW_MUTABLE_INSTANCE: {
+          return new unison.local.v1.Local.ListMediatedPairsResponse();
+        }
+        case NEW_BUILDER: {
+          return new Builder();
+        }
+        case BUILD_MESSAGE_INFO: {
+            java.lang.Object[] objects = new java.lang.Object[] {
+              "pairs_",
+              unison.local.v1.Local.MediatedPair.class,
+            };
+            java.lang.String info =
+                "\u0000\u0001\u0000\u0000\u0001\u0001\u0001\u0000\u0001\u0000\u0001\u001b";
+            return newMessageInfo(DEFAULT_INSTANCE, info, objects);
+        }
+        case GET_DEFAULT_INSTANCE: {
+          return DEFAULT_INSTANCE;
+        }
+        case GET_PARSER: {
+          com.google.protobuf.Parser<unison.local.v1.Local.ListMediatedPairsResponse> parser = PARSER;
+          if (parser == null) {
+            synchronized (unison.local.v1.Local.ListMediatedPairsResponse.class) {
+              parser = PARSER;
+              if (parser == null) {
+                parser =
+                    new DefaultInstanceBasedParser<unison.local.v1.Local.ListMediatedPairsResponse>(
+                        DEFAULT_INSTANCE);
+                PARSER = parser;
+              }
+            }
+          }
+          return parser;
+        }
+        case GET_MEMOIZED_IS_INITIALIZED: {
+          return (byte) 1;
+        }
+        // SET_MEMOIZED_IS_INITIALIZED is never called for this message.
+        // So it can do anything. Combine with default case for smaller codegen.
+        case SET_MEMOIZED_IS_INITIALIZED:
+      }
+      // Should never happen. Generates tight code to throw an exception.
+      throw null;
+    }
+
+
+    // @@protoc_insertion_point(class_scope:unison.local.v1.ListMediatedPairsResponse)
+    private static final unison.local.v1.Local.ListMediatedPairsResponse DEFAULT_INSTANCE;
+    static {
+      ListMediatedPairsResponse defaultInstance = new ListMediatedPairsResponse();
+      // New instances are implicitly immutable so no need to make
+      // immutable.
+      DEFAULT_INSTANCE = defaultInstance;
+      com.google.protobuf.GeneratedMessageLite.registerDefaultInstance(
+        ListMediatedPairsResponse.class, defaultInstance);
+    }
+
+    public static unison.local.v1.Local.ListMediatedPairsResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static volatile com.google.protobuf.Parser<ListMediatedPairsResponse> PARSER;
+
+    public static com.google.protobuf.Parser<ListMediatedPairsResponse> parser() {
       return DEFAULT_INSTANCE.getParserForType();
     }
   }

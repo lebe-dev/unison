@@ -6,6 +6,7 @@
     type Transfer,
   } from "../api/gen/unison/local/v1/local_pb";
   import { daemon } from "../daemon.svelte";
+  import DaemonState from "../DaemonState.svelte";
   import { pickFiles } from "../files";
   import {
     formatBytes,
@@ -16,8 +17,8 @@
     transferStateLabel,
   } from "../format";
   import { t } from "../i18n";
+  import Notice from "../Notice.svelte";
   import { isActiveTransfer, transfers } from "../transfers.svelte";
-  import Spinner from "../Spinner.svelte";
 
   let busy = $state(false);
   let picking = $state(false);
@@ -76,17 +77,7 @@
 </script>
 
 {#if !daemon.connected}
-  <section class="state">
-    {#if daemon.loading}
-      <Spinner />
-      <p class="muted">{t("devices.connecting")}</p>
-    {:else}
-      <p class="notice error">{t("transfers.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.retry()}>
-        {t("common.tryAgain")}
-      </button>
-    {/if}
-  </section>
+  <DaemonState message={t("transfers.daemonNotRunning")} />
 {:else}
   <div class="transfers">
     <section class="panel send">
@@ -140,18 +131,10 @@
       {/if}
     </section>
 
-    {#if transfers.notice}
-      <p
-        class="notice"
-        class:error={transfers.notice.kind === "error"}
-        class:info={transfers.notice.kind === "info"}
-      >
-        {transfers.notice.text}
-      </p>
-    {/if}
+    <Notice notice={transfers.notice} />
 
     {#if transfers.error}
-      <p class="notice error">{transfers.error}</p>
+      <Notice kind="error" text={transfers.error} />
     {/if}
 
     <section class="section">
@@ -174,7 +157,7 @@
         <ul class="list">
           {#each active as transfer (transfer.id)}
             <li class="transfer">
-              <div class="head">
+              <div class="panel-header">
                 <div class="identity">
                   <strong>{transferFilesText(transfer)}</strong>
                   <span
@@ -210,7 +193,7 @@
               {/if}
 
               {#if transfer.error}
-                <p class="notice error">{transfer.error}</p>
+                <Notice kind="error" text={transfer.error} />
               {/if}
 
               <div class="toolbar">
@@ -255,7 +238,7 @@
         <ul class="list">
           {#each finished as transfer (transfer.id)}
             <li class="transfer">
-              <div class="head">
+              <div class="panel-header">
                 <div class="identity">
                   <strong>{transferFilesText(transfer)}</strong>
                   <span class="badge">{transferStateLabel(transfer.state)}</span>
@@ -277,7 +260,7 @@
                 </p>
               {/if}
               {#if transfer.error}
-                <p class="notice error">{transfer.error}</p>
+                <Notice kind="error" text={transfer.error} />
               {/if}
             </li>
           {/each}
@@ -303,14 +286,6 @@
   h3 {
     font-size: 13px;
     font-weight: 600;
-  }
-
-  .head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
   }
 
   .identity {

@@ -655,7 +655,49 @@ func (w *Window) acceptResponse(ctx context.Context, reader *frameReader, peer p
 		return err
 	}
 	w.applyIntroductions(ctx, peer, message.Introductions)
+	w.publishIntroductions(ctx, peer)
 	return nil
+}
+
+// publishIntroductions signs the introductions of every Personal peer of this
+// device, including the one of the exchange. The device that started the
+// exchange sends none over the wire, so it records them locally; gossip then
+// spreads them to the group, and the devices of the group reach the new one.
+func (w *Window) publishIntroductions(ctx context.Context, peer peerInfo) {
+	if peer.role != model.RolePersonal {
+		return
+	}
+	now := w.clock.Now()
+	subjects := []trust.IntroductionInfo{{
+		Subject:  peer.public,
+		Name:     peer.name,
+		Platform: peer.platform,
+	}}
+	known, err := w.opts.Trust.List(ctx, trust.ListFilter{Role: model.RolePersonal})
+	if err != nil {
+		w.logIntroductionRefused(peer, fmt.Errorf("list peers: %w", err))
+		return
+	}
+	for _, stored := range known {
+		if stored.DeviceID() == peer.id || stored.DeviceID() == w.opts.Identity.DeviceID() {
+			continue
+		}
+		subjects = append(subjects, trust.IntroductionInfo{
+			Subject:  stored.Public,
+			Name:     stored.Name,
+			Platform: stored.Platform,
+		})
+	}
+	for _, subject := range subjects {
+		intro, err := trust.NewIntroduction(w.opts.Identity, subject, now)
+		if err != nil {
+			w.logIntroductionRefused(peer, err)
+			continue
+		}
+		if _, err := w.opts.Trust.AddIntroduction(ctx, intro); err != nil {
+			w.logIntroductionRefused(peer, err)
+		}
+	}
 }
 
 // checkAcceptSignature verifies that the device that showed the code accepted

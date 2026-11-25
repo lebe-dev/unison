@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -34,6 +35,16 @@ func (a *app) info(format string, args ...any) {
 // value, so scripts see the same keys for every response.
 func (a *app) writeJSON(message proto.Message) error {
 	data, err := protojson.MarshalOptions{EmitDefaultValues: true, Indent: "  "}.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("encode the answer: %w", err)
+	}
+	_, err = fmt.Fprintf(a.stdout, "%s\n", data)
+	return err
+}
+
+// writeJSONValue writes a value that is not a protobuf message as JSON.
+func (a *app) writeJSONValue(value any) error {
+	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode the answer: %w", err)
 	}

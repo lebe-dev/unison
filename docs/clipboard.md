@@ -1,5 +1,7 @@
 # Clipboard and history
 
+[Русский](clipboard.ru.md) | English
+
 ## What is shared
 
 Text with its HTML flavour, images and files. Text and images are applied to the clipboard of the
@@ -80,7 +82,7 @@ device is dropped without being recorded.
 ## Images and files
 
 Images are sent as PNG; a screenshot keeps its original format as a second flavour when it is small
-enough. Images above 24 megapixels, 8192 pixels on a side or 64 MiB are skipped.
+enough. Images above 56 megapixels, 8192 pixels on a side or 64 MiB are skipped.
 
 A file is announced as its name, size and hash. Copying files in Finder puts them into the
 clipboard of the Mac as file references, which is how they travel. A received file lands in the
@@ -129,9 +131,9 @@ An item lives for a fixed time from the moment it was captured:
 
 | Type | Lifetime |
 |------|----------|
-| text | 7 days |
-| images | 3 days |
-| files | 24 hours |
+| text | 24 hours |
+| images | 7 days |
+| files | 7 days |
 
 Expired items are removed every ten minutes and when the daemon starts. Deleting an item removes it
 on the other Personal devices as well, so it does not come back from them.
@@ -155,6 +157,8 @@ you ask for it, which needs the device that has it to be online.
 Ways to work with the history:
 
 - the History screen of the apps, with filters by type and by device, copy, download and delete;
+- the Dashboard of the desktop app, which shows the newest items of every kind in three tabs and
+  opens a preview of an item;
 - clearing the whole history from the History screen of the macOS and Android apps, after a
   confirmation; the items are removed on the other Personal devices as well;
 - `unison history`, `unison history fetch` and `unison clip get --from`, see
@@ -162,6 +166,25 @@ Ways to work with the history:
 
 Copying an item from the history writes it to the clipboard of this device and does not announce it
 to the others again.
+
+## Dashboard
+
+The Dashboard is the first screen of the desktop app. It shows the newest images, files and text as
+three tabs. The number of items per tab is set in Settings and is 12 by default. A click opens the
+item: the image in full size, the text with a copy button, or the files with copy and download.
+
+In the desktop app an image or a file can be dragged out of the window into another app: a file
+manager saves the copies, a chat app attaches them, and a terminal inserts the path of a copy.
+Several files of one item are dragged together. The copies live in the cache of the app and are
+removed a day after they were written, so a terminal still reads them later. Text items are not
+dragged out; copy them with the button of the preview.
+
+A right click on an item opens its actions: `Send` offers the content to one online device as a file,
+`Copy` puts it on the clipboard of this device without sending it anywhere, and `Delete` removes it
+from this device and from the other Personal devices after a confirmation. `Copy` goes through the
+daemon, which marks its own clipboard write, so the copy is not announced to the other devices. Text
+and images are copied as their content, and a file item is saved to the received files folder and
+put on the clipboard as the files themselves.
 
 ## Holding items until you apply them
 

@@ -18,6 +18,7 @@ import app.unison.clipboard.HeldNotifications
 import app.unison.core.CoreClient
 import app.unison.core.CoreException
 import app.unison.core.coreEvents
+import app.unison.core.isMediatedEvent
 import app.unison.core.mobile.Mobile
 import app.unison.diagnostics.Diagnostics
 import app.unison.diagnostics.Journal
@@ -26,11 +27,13 @@ import app.unison.history.HistoryDownloads
 import app.unison.history.HistoryNotifications
 import app.unison.network.NetworkConditions
 import app.unison.network.NetworkMonitor
+import app.unison.requests.MediatedNotifications
 import app.unison.requests.RequestNotifications
 import app.unison.share.ReceiveNotifications
 import app.unison.share.TransferNotifications
 import app.unison.share.TransferProgress
 import app.unison.storage.BlobSink
+import app.unison.ui.state.isWaitingOffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -67,14 +70,10 @@ class UnisonService : Service() {
     private var statusDismissed = false
 
     private var eventsJob: Job? = null
-    private var requestsDirty = false
     private var statusJob: Job? = null
     private var transfersJob: Job? = null
-    private var requestsJob: Job? = null
-    private var requestsTimer: Job? = null
     private val watchedTransfers = mutableSetOf<String>()
     private val reportedTransfers = mutableSetOf<String>()
-    private val notifiedRequests = mutableSetOf<String>()
     private val receipts = IncomingFiles.Receipts(RECEIVE_PROGRESS_MS)
     private var transferNames = emptyList<String>()
     private var transfersCanceled = false
@@ -82,6 +81,8 @@ class UnisonService : Service() {
     private lateinit var network: NetworkMonitor
     private lateinit var blobs: BlobSink
     private lateinit var downloads: HistoryDownloads
+    private lateinit var requestsSync: OfferNotificationSync<Local.ShareRequest>
+    private lateinit var mediatedSync: OfferNotificationSync<Local.MediatedPair>
 
     override fun onCreate() {
         super.onCreate()
@@ -91,6 +92,24 @@ class UnisonService : Service() {
         network = NetworkMonitor(this, ::onNetworkConditions)
         blobs = BlobSink(this, scope)
         downloads = HistoryDownloads(this, client)
+        requestsSync =
+            OfferNotificationSync(
+                scope = scope,
+                refreshIntervalMs = REQUESTS_REFRESH_MS,
+                fetch = ::listRequests,
+                keyOf = { it.id },
+                post = ::showRequest,
+                cancel = { NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(it)) },
+            )
+        mediatedSync =
+            OfferNotificationSync(
+                scope = scope,
+                refreshIntervalMs = REQUESTS_REFRESH_MS,
+                fetch = { listMediatedPairs()?.filter { it.isWaitingOffer } },
+                keyOf = { it.sessionId },
+                post = ::showMediatedOffer,
+                cancel = { NotificationManagerCompat.from(this).cancel(MediatedNotifications.idOf(it)) },
+            )
     }
 
     override fun onStartCommand(
@@ -130,6 +149,16 @@ class UnisonService : Service() {
                 answerRequest(requestId, accept = intent.action == ACTION_ACCEPT_REQUEST)
             }
         }
+        if (intent?.action == ACTION_ACCEPT_MEDIATED || intent?.action == ACTION_DECLINE_MEDIATED) {
+            val sessionId = intent.getStringExtra(EXTRA_SESSION_ID)
+            if (sessionId != null) {
+                answerMediated(
+                    sessionId = sessionId,
+                    accept = intent.action == ACTION_ACCEPT_MEDIATED,
+                    enableFriendsDiscovery = intent.getBooleanExtra(EXTRA_ENABLE_FRIENDS_DISCOVERY, false),
+                )
+            }
+        }
         return START_STICKY
     }
 
@@ -148,10 +177,8 @@ class UnisonService : Service() {
         for (id in receipts.running()) {
             NotificationManagerCompat.from(this).cancel(ReceiveNotifications.idOf(id))
         }
-        for (requestId in notifiedRequests) {
-            NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(requestId))
-        }
-        notifiedRequests.clear()
+        requestsSync.clear()
+        mediatedSync.clear()
         coreRunning = false
         statusPosted = false
         if (coreStarted) {
@@ -218,6 +245,7 @@ class UnisonService : Service() {
         reportNetwork()
         watchEvents()
         refreshStatus()
+        mediatedSync.refresh()
     }
 
     /** Stops the core until the operating mode or the network allows it again. */
@@ -317,10 +345,11 @@ class UnisonService : Service() {
                 if (IncomingFiles.leaves(event.event)) {
                     refreshTransfers()
                 }
-                if (IncomingFiles.changesRequests(event.event, notifiedRequests)) {
-                    refreshRequests()
+                if (IncomingFiles.changesRequests(event.event, requestsSync.notifiedIds)) {
+                    requestsSync.refresh()
                 }
             }
+            event.isMediatedEvent() -> mediatedSync.refresh()
         }
     }
 
@@ -574,57 +603,6 @@ class UnisonService : Service() {
         )
     }
 
-    /** Keeps the request notifications in step with the offers of the core. */
-    private fun refreshRequests() {
-        if (requestsJob?.isActive == true) {
-            // An offer may have arrived after the running read; read once more when it ends.
-            requestsDirty = true
-            return
-        }
-        requestsDirty = false
-        requestsJob =
-            scope
-                .launch {
-                    val requests = listRequests()
-                    if (requests != null) {
-                        showRequests(requests)
-                        scheduleRequestsRefresh()
-                    }
-                }.also { job ->
-                    job.invokeOnCompletion { cause ->
-                        if (cause == null && requestsDirty) {
-                            scope.launch { refreshRequests() }
-                        }
-                    }
-                }
-    }
-
-    /** Shows the offers that wait and removes the notifications of the answered ones. */
-    private fun showRequests(requests: List<Local.ShareRequest>) {
-        val current = requests.map { it.id }.toSet()
-        for (gone in notifiedRequests - current) {
-            NotificationManagerCompat.from(this).cancel(RequestNotifications.idOf(gone))
-            notifiedRequests -= gone
-        }
-        for (request in requests) {
-            notifiedRequests += request.id
-            showRequest(request)
-        }
-    }
-
-    /** Reads the offers again while some of them still wait for an answer. */
-    private fun scheduleRequestsRefresh() {
-        requestsTimer?.cancel()
-        if (notifiedRequests.isEmpty()) {
-            return
-        }
-        requestsTimer =
-            scope.launch {
-                delay(REQUESTS_REFRESH_MS)
-                refreshRequests()
-            }
-    }
-
     /** Offers of Friends that wait for an answer, or null when the core does not answer. */
     private suspend fun listRequests(): List<Local.ShareRequest>? =
         try {
@@ -659,35 +637,92 @@ class UnisonService : Service() {
                 try {
                     withContext(Dispatchers.IO) { client.decideRequest(requestId, accept) }
                     true
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "cannot answer the request: ${e.message}")
                     false
                 }
-            NotificationManagerCompat
-                .from(this@UnisonService)
-                .cancel(RequestNotifications.idOf(requestId))
-            notifiedRequests -= requestId
-            showRequestResult(answered, accept)
-            refreshRequests()
+            requestsSync.remove(requestId)
+            showOfferResult(
+                when {
+                    !answered -> getString(R.string.requests_answer_failed)
+                    accept -> getString(R.string.requests_accepted)
+                    else -> getString(R.string.requests_declined)
+                },
+            )
+            requestsSync.refresh()
+            // The answer replaced the text of the persistent notification.
+            refreshStatus()
+        }
+    }
+
+    /** Introductions of this device, or null when the core does not answer. */
+    private suspend fun listMediatedPairs(): List<Local.MediatedPair>? =
+        try {
+            withContext(Dispatchers.IO) { client.mediatedPairs() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "cannot read the introductions: ${e.message}")
+            null
+        }
+
+    @SuppressLint("MissingPermission")
+    private fun showMediatedOffer(pair: Local.MediatedPair) {
+        if (!NotificationSettings.load(this).requests) {
+            return
+        }
+        // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
+        NotificationManagerCompat.from(this).notify(
+            MediatedNotifications.idOf(pair.sessionId),
+            MediatedNotifications.offer(this, pair),
+        )
+    }
+
+    /** Answers the introduction of the notification action. */
+    private fun answerMediated(
+        sessionId: String,
+        accept: Boolean,
+        enableFriendsDiscovery: Boolean,
+    ) {
+        show(getString(R.string.mediated_offer_answering))
+        scope.launch {
+            val answered =
+                try {
+                    if (accept) {
+                        withContext(Dispatchers.IO) {
+                            client.confirmMediatedPair(sessionId, enableFriendsDiscovery = enableFriendsDiscovery)
+                        }
+                    } else {
+                        withContext(Dispatchers.IO) { client.rejectMediatedPair(sessionId) }
+                    }
+                    true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "cannot answer the introduction: ${e.message}")
+                    false
+                }
+            mediatedSync.remove(sessionId)
+            showOfferResult(
+                when {
+                    !answered -> getString(R.string.mediated_offer_answer_failed)
+                    accept -> getString(R.string.mediated_offer_accepted)
+                    else -> getString(R.string.mediated_offer_declined)
+                },
+            )
+            mediatedSync.refresh()
             // The answer replaced the text of the persistent notification.
             refreshStatus()
         }
     }
 
     @SuppressLint("MissingPermission")
-    private fun showRequestResult(
-        answered: Boolean,
-        accept: Boolean,
-    ) {
+    private fun showOfferResult(text: CharSequence) {
         if (!NotificationSettings.load(this).requests) {
             return
         }
-        val text =
-            when {
-                !answered -> getString(R.string.requests_answer_failed)
-                accept -> getString(R.string.requests_accepted)
-                else -> getString(R.string.requests_declined)
-            }
         // The service runs without POST_NOTIFICATIONS; the notification is just hidden.
         NotificationManagerCompat.from(this).notify(
             RequestNotifications.RESULT_ID,
@@ -818,11 +853,23 @@ class UnisonService : Service() {
         /** Declines the file offer of a Friends device. */
         const val ACTION_DECLINE_REQUEST = "app.unison.action.DECLINE_REQUEST"
 
+        /** Accepts an offer to introduce this device to another one. */
+        const val ACTION_ACCEPT_MEDIATED = "app.unison.action.ACCEPT_MEDIATED"
+
+        /** Declines an offer to introduce this device to another one. */
+        const val ACTION_DECLINE_MEDIATED = "app.unison.action.DECLINE_MEDIATED"
+
         /** Entry the download action refers to. */
         const val EXTRA_ITEM_ID = "app.unison.extra.ITEM_ID"
 
         /** File offer the answer actions refer to. */
         const val EXTRA_REQUEST_ID = "app.unison.extra.REQUEST_ID"
+
+        /** Introduction the answer actions refer to. */
+        const val EXTRA_SESSION_ID = "app.unison.extra.SESSION_ID"
+
+        /** Whether accepting an introduction turns on temporary Friends discovery. */
+        const val EXTRA_ENABLE_FRIENDS_DISCOVERY = "app.unison.extra.ENABLE_FRIENDS_DISCOVERY"
 
         fun start(context: Context) {
             val intent = Intent(context, UnisonService::class.java).setAction(ACTION_START)

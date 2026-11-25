@@ -3,8 +3,10 @@
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import { daemon } from "./lib/daemon.svelte";
   import DaemonStatus from "./lib/DaemonStatus.svelte";
+  import { dashboard } from "./lib/dashboard.svelte";
   import { eventKindLabel } from "./lib/events";
   import { history } from "./lib/history.svelte";
+  import { mediated } from "./lib/mediated.svelte";
   import { openLocalNetworkSettings } from "./lib/localNetwork";
   import { isMac } from "./lib/platform";
   import { notifications } from "./lib/notifications.svelte";
@@ -15,6 +17,7 @@
   import { requests } from "./lib/requests.svelte";
   import { SentrySync } from "./lib/sentry";
   import AddDevice from "./lib/screens/AddDevice.svelte";
+  import Dashboard from "./lib/screens/Dashboard.svelte";
   import Devices from "./lib/screens/Devices.svelte";
   import History from "./lib/screens/History.svelte";
   import Requests from "./lib/screens/Requests.svelte";
@@ -26,8 +29,11 @@
   import { onSharedFiles } from "./lib/share";
   import { onTrayAction, type TrayAction } from "./lib/tray";
   import { transfers } from "./lib/transfers.svelte";
+  import UpdateDialog from "./lib/UpdateDialog.svelte";
+  import { updater } from "./lib/updater.svelte";
 
   const sections = [
+    { id: "dashboard", labelKey: "nav.dashboard", icon: "dashboard" },
     { id: "devices", labelKey: "nav.devices", icon: "devices" },
     { id: "add", labelKey: "nav.addDevice", icon: "add" },
     { id: "requests", labelKey: "nav.requests", icon: "requests" },
@@ -41,13 +47,15 @@
   const navigation = sections.filter((section) => section.id !== "settings");
   const settingsSection = sections[sections.length - 1];
 
-  let active = $state<SectionID>("devices");
+  let active = $state<SectionID>("dashboard");
   const current = $derived(sections.find((section) => section.id === active) ?? sections[0]);
   let unlistenTray: UnlistenFn | null = null;
   let unlistenShare: UnlistenFn | null = null;
   // The prompt window asks the questions that wait for the user, so a held
   // item or an offer does not stay unnoticed while this window is hidden.
-  const promptHost = new PromptHost((answer) => void prompts.answer(answer.id, answer.action));
+  const promptHost = new PromptHost(
+    (answer) => void prompts.answer(answer.id, answer.action, answer.enableFriendsDiscovery),
+  );
   const sentry = new SentrySync();
 
   $effect(() => {
@@ -64,10 +72,13 @@
 
   onMount(() => {
     pairing.start();
+    dashboard.start();
     history.start();
     transfers.start();
     requests.start();
+    mediated.start();
     prompts.start();
+    updater.start();
     void promptHost.start();
     // A notification shows its buttons while the shell listens to them, so the
     // events of the daemon start after the subscription.
@@ -82,10 +93,13 @@
 
   onDestroy(() => {
     pairing.stop();
+    dashboard.stop();
     history.stop();
     transfers.stop();
     requests.stop();
+    mediated.stop();
     prompts.stop();
+    updater.stop();
     promptHost.stop();
     notifications.stop();
     daemon.stop();
@@ -149,9 +163,19 @@
     }
   }
 
+  /** suppressContextMenu hides the menu of the webview, which belongs to a
+   * browser. Editable fields keep their own menu with copy and paste. */
+  function suppressContextMenu(event: MouseEvent): void {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (target?.closest("input, textarea, [contenteditable='true']")) {
+      return;
+    }
+    event.preventDefault();
+  }
+
   function trailing(id: SectionID): number {
     if (id === "requests") {
-      return requests.pending;
+      return requests.pending + mediated.pending;
     }
     if (id === "devices") {
       return daemon.devices.length;
@@ -160,7 +184,7 @@
   }
 </script>
 
-<svelte:window onkeydown={handleShortcut} />
+<svelte:window onkeydown={handleShortcut} oncontextmenu={suppressContextMenu} />
 
 <div class="app">
   <aside class="sidebar" data-tauri-drag-region>
@@ -222,7 +246,9 @@
         <p class="error">{daemon.error}</p>
       {/if}
 
-      {#if active === "devices"}
+      {#if active === "dashboard"}
+        <Dashboard />
+      {:else if active === "devices"}
         <Devices onAdd={() => (active = "add")} />
       {:else if active === "add"}
         <AddDevice />
@@ -274,6 +300,8 @@
     </div>
   </div>
 {/if}
+
+<UpdateDialog />
 
 {#snippet navItem(section: (typeof sections)[number])}
   {@const count = trailing(section.id)}

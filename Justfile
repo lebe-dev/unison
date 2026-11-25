@@ -403,8 +403,8 @@ release-macos-cli ver=release_version:
             cc_arch=x86_64
         fi
         echo "release: building the command line tools for darwin/$arch"
-        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build -trimpath -ldflags "$ldflags" -o "$stage/unison-$arch" ./cmd/unison
-        GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build -trimpath -ldflags "$ldflags" -o "$stage/unisond-$arch" ./cmd/unisond
+        MACOSX_DEPLOYMENT_TARGET=13.0 GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build -trimpath -ldflags "$ldflags" -o "$stage/unison-$arch" ./cmd/unison
+        MACOSX_DEPLOYMENT_TARGET=13.0 GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build -trimpath -ldflags "$ldflags" -o "$stage/unisond-$arch" ./cmd/unisond
     done
     lipo -create -output "$stage/unison/unison" "$stage/unison-arm64" "$stage/unison-amd64"
     lipo -create -output "$stage/unison/unisond" "$stage/unisond-arm64" "$stage/unisond-amd64"
@@ -545,20 +545,17 @@ release-android ver=release_version:
     set -euo pipefail
     root="{{justfile_directory()}}"
     just --justfile "$root/Justfile" aar "{{ver}}" release
+    rm -f "$root/android/app/build/outputs/apk/release/"*.apk
     UNISON_VERSION="{{ver}}" "$root/android/gradlew" -p "$root/android" assembleRelease
-    apk_dir="$root/android/app/build/outputs/apk/release"
-    apk="$(ls -t "$apk_dir"/*.apk 2>/dev/null | head -n 1 || true)"
-    if [ -z "$apk" ]; then
-        echo "release: no APK in $apk_dir" >&2
+    apk="$root/android/app/build/outputs/apk/release/app-release.apk"
+    if [ ! -f "$apk" ]; then
+        echo "release: signed APK not found at $apk; configure UNISON_ANDROID_KEYSTORE," >&2
+        echo "release: UNISON_ANDROID_STORE_PASSWORD, UNISON_ANDROID_KEY_ALIAS and UNISON_ANDROID_KEY_PASSWORD" >&2
         exit 1
     fi
     mkdir -p "$root/{{release_dir}}"
     target="$root/{{release_dir}}/unison-v{{ver}}-android.apk"
     cp "$apk" "$target"
-    if [[ "$apk" == *unsigned.apk ]]; then
-        echo "release: $target is unsigned, set UNISON_ANDROID_KEYSTORE, UNISON_ANDROID_STORE_PASSWORD," >&2
-        echo "release: UNISON_ANDROID_KEY_ALIAS and UNISON_ANDROID_KEY_PASSWORD to sign it" >&2
-    fi
     echo "release: $target"
 
 # Build the Android release APK of the current commit into release/.
@@ -571,10 +568,29 @@ release-all ver=release_version:
     just release-windows "{{ver}}"
     just release-linux "{{ver}}"
     just release-android "{{ver}}"
+    @if [ -n "${UNISON_RELEASE_SIGN_KEY:-}${UNISON_RELEASE_SIGN_KEY_FILE:-}" ]; then \
+        just --justfile "{{justfile_directory()}}/Justfile" release-sign; \
+    else \
+        echo "release: WARNING the release is not signed, set UNISON_RELEASE_SIGN_KEY or UNISON_RELEASE_SIGN_KEY_FILE"; \
+    fi
 
 # Build every artifact of the current commit into release/.
 release-all-dev:
     just release-all "{{release_dev_version}}"
+
+# Write release/SHA256SUMS and its Ed25519 signature.
+release-checksums:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=(--dir "{{release_dir}}")
+    if [ -n "${UNISON_RELEASE_SIGN_KEY_FILE:-}" ]; then
+        args+=(--key "$UNISON_RELEASE_SIGN_KEY_FILE")
+    fi
+    go run ./cmd/unison-release-sign sign "${args[@]}"
+
+# Verify the signature and every artifact hash of release/.
+release-sign: release-checksums
+    go run ./cmd/unison-release-sign verify --pubkey packaging/release-public-key.txt --dir {{release_dir}}
 
 # Build the Windows installer and the test kit that runs on a Windows host.
 windows-kit: package-windows-cross
@@ -666,7 +682,7 @@ desktop-test:
 aar ver=version env="debug": lint-go
     mkdir -p android/core bin
     go build -o bin/gobind golang.org/x/mobile/cmd/gobind
-    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-X github.com/lebe-dev/unison/mobile.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment={{env}}" -trimpath -o android/core/core.aar ./mobile
+    PATH="{{justfile_directory()}}/bin:$PATH" go tool gomobile bind -target=android/arm64,android/arm,android/amd64 -androidapi 29 -javapkg=app.unison.core -ldflags "-s -w -X github.com/lebe-dev/unison/mobile.version={{ver}} {{sentry_ldflags}} -X github.com/lebe-dev/unison/internal/observability.buildEnvironment={{env}}" -trimpath -o android/core/core.aar ./mobile
     rm -f android/core/core-sources.jar
 
 # Build the Android debug APK.

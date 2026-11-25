@@ -6,9 +6,11 @@ import app.unison.clipboard.HeldItems
 import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
+import app.unison.core.isMediatedEvent
 import app.unison.core.qrCodeAddresses
 import app.unison.core.withoutOwnService
 import app.unison.history.HistorySaver
+import app.unison.history.HistorySender
 import app.unison.pairing.PairingLink
 import app.unison.service.IncomingFiles
 import kotlinx.coroutines.CoroutineScope
@@ -40,9 +42,11 @@ class AppState(
     private val core: CoreApi,
     events: Flow<Mobile.Event>,
     private val saver: HistorySaver,
+    private val sender: HistorySender,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
     private val localAddresses: () -> List<String> = { emptyList() },
     private val held: HeldItems = HeldItems.shared,
+    dashboardLimit: Int = DashboardLimit.DEFAULT,
 ) {
     private val mutableState = MutableStateFlow(CoreState())
 
@@ -54,6 +58,11 @@ class AppState(
     /** What the history screen renders. */
     val history: StateFlow<HistoryState> = mutableHistory.asStateFlow()
 
+    private val mutableDashboard = MutableStateFlow(DashboardState(limit = DashboardLimit.normalize(dashboardLimit)))
+
+    /** What the dashboard screen renders. */
+    val dashboard: StateFlow<DashboardState> = mutableDashboard.asStateFlow()
+
     private val mutablePairing = MutableStateFlow(PairingState())
 
     /** What the add screen renders. */
@@ -63,6 +72,11 @@ class AppState(
 
     /** What the requests screen renders. */
     val requests: StateFlow<RequestsState> = mutableRequests.asStateFlow()
+
+    private val mutableMediated = MutableStateFlow(MediatedState())
+
+    /** What the devices and the requests screens render for introductions. */
+    val mediated: StateFlow<MediatedState> = mutableMediated.asStateFlow()
 
     private val mutableNotices =
         MutableSharedFlow<Int>(
@@ -77,19 +91,22 @@ class AppState(
     private val heldPrompts = MutableStateFlow<Map<String, PendingPrompt>>(emptyMap())
 
     /**
-     * Questions that wait for the user, oldest first: the held clipboard items
-     * and then the file offers. An item applied or an offer answered anywhere
-     * leaves the list.
+     * Questions that wait for the user, oldest first: the held clipboard items,
+     * the file offers and then the introductions. An item applied or an offer
+     * answered anywhere leaves the list.
      */
     val prompts: StateFlow<List<PendingPrompt>> =
-        combine(heldPrompts, held.ids, mutableRequests) { clips, ids, offers ->
+        combine(heldPrompts, held.ids, mutableRequests, mutableMediated) { clips, ids, offers, mediated ->
             clips.values.filter { it.id in ids } +
-                offers.requests.asReversed().map(PendingPrompt::files)
+                offers.requests.asReversed().map(PendingPrompt::files) +
+                mediated.offers.map(PendingPrompt::mediated)
         }.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     private var load: Job? = null
     private var loadHistory: Job? = null
+    private var loadDashboard: Job? = null
     private var loadRequests: Job? = null
+    private var loadMediated: Job? = null
     private var pollCandidates: Job? = null
     private var closeWindow: Job? = null
     private var loadingCandidates = false
@@ -107,9 +124,16 @@ class AppState(
                 }
                 if (visible && event.changesHistory()) {
                     refreshHistory()
+                    refreshDashboard()
                 }
                 if (visible && event.changesRequests()) {
                     refreshRequests()
+                }
+                if (event.isMediatedEvent()) {
+                    if (visible) {
+                        refreshMediated()
+                    }
+                    onMediatedEvent(event)
                 }
                 if (event.isHeld()) {
                     rememberHeld(event.event)
@@ -138,6 +162,7 @@ class AppState(
                     val status = core.status()
                     val settings = loadSettings()
                     val relay = loadRelay()
+                    val mediated = loadMediated()
                     mutableState.update {
                         it.copy(
                             loading = false,
@@ -146,6 +171,9 @@ class AppState(
                             relay = relay ?: it.relay,
                             failure = null,
                         )
+                    }
+                    if (mediated != null) {
+                        mutableMediated.update { it.copy(pairs = mediated, loaded = true, failure = null) }
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -175,6 +203,48 @@ class AppState(
             }
     }
 
+    /**
+     * Reloads the newest items of every kind that the dashboard shows. The
+     * lists keep the current entries while the call runs.
+     */
+    fun refreshDashboard() {
+        loadDashboard?.cancel()
+        val limit = mutableDashboard.value.limit
+        loadDashboard =
+            scope.launch {
+                mutableDashboard.update { it.copy(loading = true, failure = null) }
+                try {
+                    val images = core.listHistory(Local.Kind.KIND_IMAGE, limit = limit)
+                    val files = core.listHistory(Local.Kind.KIND_FILES, limit = limit)
+                    val text = core.listHistory(Local.Kind.KIND_TEXT, limit = limit)
+                    mutableDashboard.update {
+                        it.copy(
+                            loading = false,
+                            loaded = true,
+                            images = images.itemsList.take(limit),
+                            files = files.itemsList.take(limit),
+                            text = text.itemsList.take(limit),
+                            failure = null,
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    mutableDashboard.update { it.copy(loading = false, failure = failureOf(e)) }
+                }
+            }
+    }
+
+    /** Keeps the number of items each tab shows and reloads the lists. */
+    fun setDashboardLimit(limit: Int) {
+        val normalized = DashboardLimit.normalize(limit)
+        if (mutableDashboard.value.limit == normalized) {
+            return
+        }
+        mutableDashboard.update { it.copy(limit = normalized) }
+        refreshDashboard()
+    }
+
     /** Shows entries of one kind only, KIND_UNSPECIFIED shows every kind. */
     fun setHistoryKind(kind: Local.Kind) {
         if (mutableHistory.value.kind == kind) {
@@ -202,6 +272,7 @@ class AppState(
             core.copyHistoryItem(itemId)
             mutableNotices.tryEmit(R.string.history_copied)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Saves the payloads of an entry into the Downloads collection. */
@@ -215,7 +286,21 @@ class AppState(
             }
             mutableNotices.tryEmit(R.string.history_downloaded)
             refreshHistory()
+            refreshDashboard()
         }
+
+    /** Offers the payloads of an entry to one device as files. */
+    fun sendHistoryItem(
+        itemId: String,
+        deviceId: String,
+    ) = runHistoryAction(
+        itemId = itemId,
+        failure = R.string.dashboard_send_failed,
+    ) {
+        sender.send(itemId, deviceId)
+        mutableNotices.tryEmit(R.string.dashboard_sent)
+        refreshDashboard()
+    }
 
     /** Deletes an entry on every device. */
     fun deleteHistoryItem(itemId: String) =
@@ -226,6 +311,7 @@ class AppState(
             core.deleteHistoryItem(itemId)
             mutableNotices.tryEmit(R.string.history_deleted)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Deletes every entry on every device. */
@@ -241,6 +327,7 @@ class AppState(
                 heldPrompts.update { emptyMap() }
                 mutableNotices.tryEmit(R.string.history_cleared)
                 refreshHistory()
+                refreshDashboard()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -261,6 +348,7 @@ class AppState(
             held.remove(itemId)
             mutableNotices.tryEmit(R.string.history_applied)
             refreshHistory()
+            refreshDashboard()
         }
 
     /** Changes the pause of the clipboard synchronization. */
@@ -311,6 +399,146 @@ class AppState(
                 loadRequestsBlocking()
             } finally {
                 mutableRequests.update { it.copy(answering = it.answering - id) }
+            }
+        }
+    }
+
+    /** Turns the temporary search for Friends devices on or off. */
+    fun setFriendsDiscovery(on: Boolean) {
+        scope.launch {
+            try {
+                val search = core.setFriendsDiscovery(on)
+                mutableState.update { state ->
+                    val status =
+                        state.status
+                            ?.toBuilder()
+                            ?.setFriendsDiscovery(search)
+                            ?.build() ?: return@update state
+                    state.copy(status = status)
+                }
+                mutableNotices.tryEmit(
+                    if (search.on) R.string.settings_friends_discovery_on else R.string.settings_friends_discovery_off,
+                )
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.settings_friends_discovery_failed)
+            }
+        }
+    }
+
+    /** Reloads the introductions that are still active. */
+    fun refreshMediated() {
+        loadMediated?.cancel()
+        loadMediated = scope.launch { loadMediatedBlocking() }
+    }
+
+    /** Introduces two online devices of this one to each other. */
+    fun startMediatedPair(
+        peerA: String,
+        peerB: String,
+        role: Local.Role,
+    ) {
+        if (peerA.isEmpty() || peerB.isEmpty() || peerA == peerB) {
+            return
+        }
+        if (mutableMediated.value.starting) {
+            return
+        }
+        mutableMediated.update { it.copy(starting = true) }
+        scope.launch {
+            try {
+                val pair = core.startMediatedPair(peerA, peerB, role)
+                mutableMediated.update {
+                    it.copy(
+                        pairs = it.pairs.replace(pair),
+                        loaded = true,
+                        failure = null,
+                    )
+                }
+                mutableNotices.tryEmit(R.string.devices_introduce_started)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.devices_introduce_failed)
+                loadMediatedBlocking()
+            } finally {
+                mutableMediated.update { it.copy(starting = false) }
+            }
+        }
+    }
+
+    /** Accepts an offer to introduce this device to another one. */
+    fun confirmMediatedPair(
+        sessionId: String,
+        enableFriendsDiscovery: Boolean,
+    ) {
+        if (sessionId.isEmpty() || sessionId in mutableMediated.value.answering) {
+            return
+        }
+        mutableMediated.update { it.copy(answering = it.answering + sessionId) }
+        scope.launch {
+            try {
+                core.confirmMediatedPair(sessionId, enableFriendsDiscovery)
+                mutableNotices.tryEmit(R.string.mediated_offer_accepted)
+                loadMediatedBlocking()
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.mediated_offer_answer_failed)
+                loadMediatedBlocking()
+            } finally {
+                mutableMediated.update { it.copy(answering = it.answering - sessionId) }
+            }
+        }
+    }
+
+    /** Declines an offer to introduce this device to another one. */
+    fun rejectMediatedPair(sessionId: String) {
+        if (sessionId.isEmpty() || sessionId in mutableMediated.value.answering) {
+            return
+        }
+        mutableMediated.update { it.copy(answering = it.answering + sessionId) }
+        scope.launch {
+            try {
+                core.rejectMediatedPair(sessionId)
+                mutableMediated.update {
+                    it.copy(pairs = it.pairs.filter { pair -> pair.sessionId != sessionId })
+                }
+                mutableNotices.tryEmit(R.string.mediated_offer_declined)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.mediated_offer_answer_failed)
+                loadMediatedBlocking()
+            } finally {
+                mutableMediated.update { it.copy(answering = it.answering - sessionId) }
+            }
+        }
+    }
+
+    /** Cancels an introduction this device runs. */
+    fun cancelMediatedPair(sessionId: String) {
+        if (sessionId.isEmpty() || sessionId in mutableMediated.value.canceling) {
+            return
+        }
+        mutableMediated.update { it.copy(canceling = it.canceling + sessionId) }
+        scope.launch {
+            try {
+                core.cancelMediatedPair(sessionId)
+                mutableMediated.update {
+                    it.copy(pairs = it.pairs.filter { pair -> pair.sessionId != sessionId })
+                }
+                mutableNotices.tryEmit(R.string.devices_introduce_canceled)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mutableNotices.tryEmit(R.string.devices_introduce_cancel_failed)
+                loadMediatedBlocking()
+            } finally {
+                mutableMediated.update { it.copy(canceling = it.canceling - sessionId) }
             }
         }
     }
@@ -445,6 +673,7 @@ class AppState(
                 mutableNotices.tryEmit(R.string.settings_left_group)
                 refresh()
                 refreshHistory()
+                refreshDashboard()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -836,6 +1065,28 @@ class AppState(
         }
     }
 
+    /** Reads the introductions, keeping the list on screen meanwhile. */
+    private suspend fun loadMediatedBlocking() {
+        try {
+            val pairs = core.mediatedPairs()
+            mutableMediated.update { it.copy(pairs = pairs, loaded = true, failure = null) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            mutableMediated.update { it.copy(failure = failureOf(e)) }
+        }
+    }
+
+    /** Reads the introductions, null when they are not available. */
+    private suspend fun loadMediated(): List<Local.MediatedPair>? =
+        try {
+            core.mediatedPairs()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+
     /** Reads the settings of the core, null when they are not available. */
     private suspend fun loadSettings(): Local.Settings? =
         try {
@@ -997,6 +1248,20 @@ class AppState(
         )
     }
 
+    /** Tells the user how an introduction ended. */
+    private fun onMediatedEvent(event: Mobile.Event) {
+        if (!event.hasEvent()) {
+            return
+        }
+        when (event.event.kind) {
+            Local.EventKind.EVENT_KIND_MEDIATED_PAIR_COMPLETED ->
+                mutableNotices.tryEmit(R.string.mediated_pair_completed_notice)
+            Local.EventKind.EVENT_KIND_MEDIATED_PAIR_CANCELED ->
+                mutableNotices.tryEmit(R.string.mediated_pair_canceled_notice)
+            else -> Unit
+        }
+    }
+
     /** Follows the pairing events of the core. */
     private fun onPairingEvent(event: Mobile.Event) {
         if (!event.hasEvent()) {
@@ -1086,6 +1351,7 @@ class AppState(
             Mobile.EventType.EVENT_TYPE_PEER_ONLINE,
             Mobile.EventType.EVENT_TYPE_PEER_OFFLINE,
             Mobile.EventType.EVENT_TYPE_PAIRING_PAIRED,
+            Mobile.EventType.EVENT_TYPE_MEDIATED_PAIR_COMPLETED,
             -> true
             else ->
                 hasEvent() &&
@@ -1118,6 +1384,15 @@ class AppState(
 
     /** Events of an item that waits for the user to apply it. */
     private fun Mobile.Event.isHeld(): Boolean = hasEvent() && event.kind == Local.EventKind.EVENT_KIND_CLIP_APPLY
+
+    /** The list with [pair] in place of the exchange with its identifier. */
+    private fun List<Local.MediatedPair>.replace(pair: Local.MediatedPair): List<Local.MediatedPair> {
+        val index = indexOfFirst { it.sessionId == pair.sessionId }
+        if (index < 0) {
+            return this + pair
+        }
+        return toMutableList().also { it[index] = pair }
+    }
 
     private companion object {
         const val NOTICE_BUFFER = 4

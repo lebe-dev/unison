@@ -116,6 +116,12 @@ selects the handler, and the capability of the peer must allow the action before
 | `gossip-records` | `introduce` | the trust data a peer lacks |
 | `set-peer-policy` | `set-remote-policy` | asks a device to change a confirmation flag |
 | `peer-policy` | `set-remote-policy` | reports the confirmation flags of the sender |
+| `mediated-offer` | authorized by the mediate service | offers an introduction through the sender |
+| `mediated-ready` | authorized by the mediate service | one device accepted before the other sent its keys |
+| `mediated-commit` | authorized by the mediate service | ephemeral keys of the device with the lower ID |
+| `mediated-finish` | authorized by the mediate service | ephemeral keys of the device with the higher ID |
+| `mediated-cancel` | authorized by the mediate service | ends an introduction |
+| `mediated-result` | authorized by the mediate service | reports that the new device was stored |
 
 The authentication proof is not a control message: it is a fixed frame that the transport reads
 before the session starts, and the `auth-proof` kind exists only to reserve the slot.
@@ -131,6 +137,7 @@ The capability matrix lives in `core/trust`. A role decides each action:
 | receive-share | allow | confirm | confirm |
 | receive-files | allow | confirm | confirm |
 | introduce, revoke, set-remote-policy | allow | allow | deny |
+| mediated-pair | confirm | confirm | confirm |
 
 A message that the matrix denies is dropped and counted as a violation. Three violations end the
 session. Clip announcements are also rate limited to 5 per second with a burst of 10.
@@ -308,6 +315,55 @@ Only Personal sessions take part in gossip and history synchronization. A record
 when its issuer is a stored, non-revoked Personal device and its signature and timestamp verify, so
 an introduction or a revocation cannot be forged by a Friends device.
 
+### Introduction through a trusted device
+
+`core/mediate` introduces two devices through a paired device that knows both of them. The messages
+travel over the two existing sessions, so the exchange needs neither discovery nor a pairing
+window. A node announces the capability `mediated-pair/1` in Hello, and a mediator refuses an
+endpoint that does not announce it with `ErrUnsupportedPeer`. The protocol version stays `1`, so an
+older client keeps working and simply cannot take part.
+
+The endpoints are put in a canonical order by their 32 byte device IDs: the lower one is `X`, the
+higher one is `Y`. Both offers carry the same transcript, so the mediator signs it once. Lengths are
+explicit big-endian integers, a string is a `uint16` length and its bytes, and the addresses are a
+`uint16` count of `uint16` length prefixed strings:
+
+```
+offer  = version(1) || session_id(16) || idB(32) || idX(32) || idY(32) || role(1) || expires_at(8)
+commit = offer || x25519_X(32) || mlkem_ek_X(1184) || platform_X(1) || name_X || addrs_X
+finish = offer || x25519_X(32) || mlkem_ek_X(1184) || x25519_Y(32) || mlkem_ct_Y(1088)
+         || platform_Y(1) || name_Y || addrs_Y
+```
+
+`X` signs the commit with `mediated-pair-commit`, `Y` signs the finish with
+`mediated-pair-finish`, and the mediator signs the offer with `mediated-pair-offer`. Every signature
+is hybrid Ed25519 and ML-DSA-65. The finish repeats the ephemeral keys of `X`, so the mediator
+cannot replace them on the way, and each endpoint verifies the signature of the other one over the
+full transcript before it stores anything.
+
+`X` generates an ephemeral X25519 pair and an ML-KEM-768 key pair, and `Y` generates an X25519 pair
+and encapsulates to the ML-KEM key of `X`. Both derive the 32 byte rendezvous key:
+
+```
+BLAKE3("unison/1 mediated-rendezvous" || offer || x25519_X || mlkem_ek_X ||
+       x25519_Y || mlkem_ct_Y || ss_x25519 || ss_mlkem)
+```
+
+The mediator carries the public keys and the transcript but never sees either shared secret, so it
+cannot derive the key. The ephemeral private keys and both shared secrets are wiped when the key is
+derived or the exchange ends.
+
+The verification code is `BLAKE3("unison/1 mediated-sas" || version || session_id || idB || PK_X ||
+PK_Y || role)`, formatted as six digits and four emoji with the table of the pairing code. It covers
+both full identity keys, so the two endpoints show the same code only when they agree on the
+mediator, on each other and on the role.
+
+The exchange ends with `mediated-result` from `X` after `X` stored the new peer. A refusal, the
+deadline or a closed session sends `mediated-cancel` with a reason, and nothing is written to the
+trust store. A message that fails validation is dropped, and the exchange then ends at its deadline.
+The protocol carries no discovery key, relay address or relay token, and it has no message that lists
+the peers of the mediator.
+
 ## Limits
 
 | Limit | Value |
@@ -321,3 +377,9 @@ an introduction or a revocation cannot be forged by a Friends device.
 | Stream header timeout | 10 s |
 | Hello timeout | 10 s |
 | Session events buffered | 16 |
+| Mediated exchanges per mediator | 4, one per pair |
+| Pending mediated offers | 4, 2 per mediator |
+| Mediated offers from one mediator | 1 per 15 s, burst 2 |
+| Mediated exchange lifetime | 3 min |
+| Remembered exchange ids | 256 for 10 min |
+| Address hints in a mediated message | 4, 64 bytes each |

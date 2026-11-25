@@ -21,11 +21,11 @@ const (
 	// DefaultEchoWindow is how long own writes are ignored by the watcher.
 	DefaultEchoWindow = 2 * time.Second
 	// DefaultTextTTL is the lifetime of a captured text item.
-	DefaultTextTTL = 7 * 24 * time.Hour
+	DefaultTextTTL = 24 * time.Hour
 	// DefaultImageTTL is the lifetime of a captured image item.
-	DefaultImageTTL = 3 * 24 * time.Hour
+	DefaultImageTTL = 7 * 24 * time.Hour
 	// DefaultFilesTTL is the lifetime of a captured file item.
-	DefaultFilesTTL = 24 * time.Hour
+	DefaultFilesTTL = 7 * 24 * time.Hour
 	// MaxInlineText is the largest payload carried inside an item. Bigger
 	// payloads are stored as blobs and announced by hash.
 	MaxInlineText = 64 << 10

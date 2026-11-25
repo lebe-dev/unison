@@ -2,8 +2,12 @@ package node
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"io"
 
+	"github.com/lebe-dev/unison/core/clip"
+	"github.com/lebe-dev/unison/core/history"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/policy"
 	"github.com/lebe-dev/unison/core/session"
@@ -20,7 +24,10 @@ type shareEvents struct {
 var _ share.EventSink = shareEvents{}
 
 // Report delivers one transfer event to the subscribers.
-func (s shareEvents) Report(_ context.Context, event share.Event) {
+func (s shareEvents) Report(ctx context.Context, event share.Event) {
+	if event.Kind == share.EventDone && event.Transfer.Direction == share.DirectionIncoming {
+		s.node.recordSharedTransfer(ctx, event.Transfer)
+	}
 	s.node.publish(Event{
 		Kind:     EventTransfer,
 		Peer:     event.Peer,
@@ -87,4 +94,87 @@ func (n *Node) installShare(_ context.Context, sess *session.Session) error {
 // Share returns the file transfer service of the node. It is nil before Start.
 func (n *Node) Share() *share.Service {
 	return n.share
+}
+
+// recordSharedTransfer stores a completed incoming file transfer in history so
+// it appears on the dashboard and history views.
+func (n *Node) recordSharedTransfer(ctx context.Context, transfer share.Transfer) {
+	if n.history == nil || len(transfer.Files) == 0 {
+		return
+	}
+
+	kind, reps := n.shareHistoryEntry(ctx, transfer.Files)
+	if len(reps) == 0 {
+		return
+	}
+
+	var id model.ClipID
+	if _, err := rand.Read(id[:]); err != nil {
+		n.log.Warn("allocating history id for shared transfer failed", "transfer", transfer.ID, "error", err)
+		return
+	}
+
+	now := n.clock.Now()
+	ttl := n.TTLs().For(kind)
+	if ttl <= 0 {
+		ttl = history.DefaultTTLs().For(kind)
+	}
+
+	item := model.ClipItem{
+		ID:              id,
+		CreatedAt:       now,
+		ExpiresAt:       now.Add(ttl),
+		Kind:            kind,
+		Representations: reps,
+		Source:          model.SourceShare,
+	}
+	if _, err := n.history.AppendLocal(ctx, item); err != nil {
+		n.log.Warn("recording shared transfer in history failed", "transfer", transfer.ID, "error", err)
+	}
+}
+
+// shareHistoryEntry maps received share files to a history kind and its
+// representations. A single decodable image within clip limits is recorded as
+// an image item; all other transfers are recorded as files.
+func (n *Node) shareHistoryEntry(ctx context.Context, files []share.File) (model.Kind, []model.Representation) {
+	if len(files) == 1 {
+		if mediaType, ok := n.shareImageMIME(ctx, files[0]); ok {
+			return model.KindImage, []model.Representation{{
+				MIME:     mediaType,
+				Size:     uint64(max(files[0].Size, 0)),
+				Hash:     files[0].Hash,
+				FileName: files[0].Name,
+			}}
+		}
+	}
+
+	limit := min(len(files), history.MaxRepresentations)
+	reps := make([]model.Representation, 0, limit)
+	for _, file := range files[:limit] {
+		if file.Hash == ([32]byte{}) {
+			continue
+		}
+		reps = append(reps, model.Representation{
+			MIME:     clip.MIMEUnisonFile,
+			Size:     uint64(max(file.Size, 0)),
+			Hash:     file.Hash,
+			FileName: file.Name,
+		})
+	}
+	return model.KindFiles, reps
+}
+
+// shareImageMIME reports the detected image MIME type when a shared file can
+// be decoded as an image entry by clip.Thumbnail, regardless of the MIME label
+// or extension announced by the sender.
+func (n *Node) shareImageMIME(ctx context.Context, file share.File) (string, bool) {
+	if n.blobs == nil || file.Hash == ([32]byte{}) || file.Size <= 0 || file.Size > clip.MaxImageBytes {
+		return "", false
+	}
+	reader, err := n.blobs.Open(ctx, file.Hash)
+	if err != nil {
+		return "", false
+	}
+	defer func() { _ = reader.Close() }()
+	return clip.SniffImage(io.NewSectionReader(reader, 0, reader.Size()), reader.Size())
 }

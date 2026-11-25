@@ -76,8 +76,11 @@ import app.unison.ui.pathLabel
 import app.unison.ui.pauseLabel
 import app.unison.ui.platformLabel
 import app.unison.ui.roleLabel
+import app.unison.ui.shortId
 import app.unison.ui.state.CoreState
 import app.unison.ui.state.DeviceNames
+import app.unison.ui.state.Introductions
+import app.unison.ui.state.MediatedState
 import app.unison.ui.state.NetworkIssues
 import unison.local.v1.Local
 import java.util.Date
@@ -97,11 +100,15 @@ fun DevicesScreen(
     modifier: Modifier = Modifier,
     onPause: (PauseRequest) -> Unit = {},
     onAdd: () -> Unit = {},
+    mediated: MediatedState = MediatedState(),
+    onIntroduce: (peerA: String, peerB: String, role: Local.Role) -> Unit = { _, _, _ -> },
+    onCancelMediated: (Local.MediatedPair) -> Unit = {},
 ) {
     var openKey by rememberSaveable { mutableStateOf<String?>(null) }
     var revokeTarget by remember { mutableStateOf<Local.Device?>(null) }
     var renameTarget by remember { mutableStateOf<Local.Device?>(null) }
     var renameDraft by remember { mutableStateOf("") }
+    var introduceTarget by remember { mutableStateOf<Local.Device?>(null) }
     val startRename = { device: Local.Device ->
         renameTarget = device
         renameDraft = device.name
@@ -117,6 +124,7 @@ fun DevicesScreen(
             onSetRemoteSettings = onSetRemoteSettings,
             onRename = startRename,
             onRemove = { revokeTarget = it },
+            onIntroduce = { introduceTarget = it },
             modifier = modifier,
         )
     } else {
@@ -129,6 +137,8 @@ fun DevicesScreen(
                 onDismissClipboard = onDismissClipboard,
                 onPause = onPause,
                 onOpen = { openKey = keyOf(it) },
+                mediated = mediated,
+                onCancelMediated = onCancelMediated,
             )
             ExtendedFloatingActionButton(
                 onClick = onAdd,
@@ -187,6 +197,22 @@ fun DevicesScreen(
             },
         )
     }
+
+    introduceTarget?.let { target ->
+        IntroduceDialog(
+            target = target,
+            candidates = state.introducibleDevices().filter { it.deviceId != target.deviceId },
+            starting = mediated.starting,
+            deviceSummary = { candidate ->
+                stringResource(R.string.device_row_summary, statusLabel(candidate), detailLabel(candidate))
+            },
+            onStart = { peer, role ->
+                introduceTarget = null
+                onIntroduce(target.deviceId, peer.deviceId, role)
+            },
+            onDismiss = { introduceTarget = null },
+        )
+    }
 }
 
 /** This device on top, then the paired devices by role. */
@@ -199,6 +225,8 @@ private fun DeviceList(
     onDismissClipboard: () -> Unit,
     onPause: (PauseRequest) -> Unit,
     onOpen: (Local.Device) -> Unit,
+    mediated: MediatedState,
+    onCancelMediated: (Local.MediatedPair) -> Unit,
 ) {
     Column(
         modifier =
@@ -228,6 +256,15 @@ private fun DeviceList(
             ) {
                 CircularProgressIndicator()
             }
+        }
+
+        mediated.outgoing.forEach { pair ->
+            IntroduceProgressCard(
+                pair = pair,
+                canceling = pair.sessionId in mediated.canceling,
+                onCancel = { onCancelMediated(pair) },
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         state.status?.let { status ->
@@ -510,6 +547,7 @@ private fun DeviceDetail(
     onSetRemoteSettings: (Local.Device, Boolean) -> Unit,
     onRename: (Local.Device) -> Unit,
     onRemove: (Local.Device) -> Unit,
+    onIntroduce: (Local.Device) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -594,8 +632,24 @@ private fun DeviceDetail(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+        val canIntroduce = Introductions.canIntroduce(device) && device.deviceId.isNotEmpty()
+        val actions = if (canIntroduce) 3 else 2
         ItemGroup {
-            GroupItem(index = 0, count = 2, onClick = { onRename(device) }) {
+            if (canIntroduce) {
+                GroupItem(index = 0, count = actions, onClick = { onIntroduce(device) }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_nav_devices),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = stringResource(R.string.devices_introduce_action),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            GroupItem(index = actions - 2, count = actions, onClick = { onRename(device) }) {
                 Icon(
                     painter = painterResource(R.drawable.ic_edit),
                     contentDescription = null,
@@ -607,7 +661,7 @@ private fun DeviceDetail(
                     modifier = Modifier.weight(1f),
                 )
             }
-            GroupItem(index = 1, count = 2, onClick = { onRemove(device) }) {
+            GroupItem(index = actions - 1, count = actions, onClick = { onRemove(device) }) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete),
                     contentDescription = null,
@@ -849,13 +903,10 @@ private fun platformIcon(platform: Local.Platform): Int =
     }
 
 /** Name of a device, or the start of its ID when the name is empty. */
-private fun displayName(device: Local.Device): String = device.name.ifEmpty { device.deviceId.take(SHORT_ID_LENGTH) }
+private fun displayName(device: Local.Device): String = device.name.ifEmpty { shortId(device.deviceId) }
 
 /** Key of a device that survives a configuration change. */
 private fun keyOf(device: Local.Device): String = device.deviceId.ifEmpty { device.name }
-
-/** Characters of the device ID shown when the name is empty. */
-private const val SHORT_ID_LENGTH = 8
 
 /** Rows in the group of confirmation flags: two headings and four switches. */
 private const val FLAG_ROWS = 6

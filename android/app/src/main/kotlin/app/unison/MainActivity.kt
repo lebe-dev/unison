@@ -22,11 +22,16 @@ import app.unison.clipboard.ClipboardRead
 import app.unison.clipboard.ClipboardReader
 import app.unison.clipboard.ClipboardSender
 import app.unison.clipboard.HeldItems
+import app.unison.core.CoreException
 import app.unison.core.LocalAddresses
 import app.unison.core.RunningCore
 import app.unison.core.coreEvents
 import app.unison.diagnostics.Diagnostics
+import app.unison.diagnostics.Journal
 import app.unison.history.HistoryDownloads
+import app.unison.history.HistoryOutbox
+import app.unison.history.HistoryThumbnailCache
+import app.unison.history.HistoryThumbnails
 import app.unison.history.HistoryTtlDefaults
 import app.unison.history.HistoryTtlProto
 import app.unison.pairing.PairingLink
@@ -38,27 +43,49 @@ import app.unison.service.NotificationSettings
 import app.unison.service.OperatingMode
 import app.unison.service.UnisonService
 import app.unison.service.UnisonSettings
+import app.unison.settingsfile.SettingsFile
+import app.unison.settingsfile.SettingsFileTransfer
 import app.unison.storage.DownloadsFolder
 import app.unison.ui.Destination
 import app.unison.ui.PromptAnswer
 import app.unison.ui.UnisonRoot
+import app.unison.ui.UpdatePanel
+import app.unison.ui.screens.AppSettingsPanel
+import app.unison.ui.screens.ClipboardSettingsPanel
+import app.unison.ui.screens.DashboardPanel
+import app.unison.ui.screens.DeviceSettingsPanel
+import app.unison.ui.screens.FilesSettingsPanel
+import app.unison.ui.screens.HistorySettingsPanel
+import app.unison.ui.screens.NetworkSettingsPanel
 import app.unison.ui.screens.OnboardingScreen
+import app.unison.ui.screens.SettingsPanel
 import app.unison.ui.state.AppState
+import app.unison.ui.state.CoreState
+import app.unison.ui.state.DashboardLimit
 import app.unison.ui.theme.UnisonTheme
+import app.unison.updater.ApkInstaller
+import app.unison.updater.UpdateManager
+import app.unison.updater.UpdateUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import unison.local.v1.Local
+import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
 /** Single screen of the app: devices, pairing, requests, history and settings. */
 class MainActivity : ComponentActivity() {
     private lateinit var appState: AppState
     private lateinit var core: RunningCore
+    private lateinit var thumbnails: HistoryThumbnailCache
+    private lateinit var outbox: HistoryOutbox
     private var onboarded by mutableStateOf(false)
     private var deviceName by mutableStateOf("")
     private var operatingMode by mutableStateOf(OperatingMode.DEFAULT)
+    private var dashboardLimit by mutableStateOf(DashboardLimit.DEFAULT)
     private var downloadsFolder by mutableStateOf<String?>(null)
     private var policy by mutableStateOf(PolicyDefaults.config)
     private var historyTtl by mutableStateOf(HistoryTtlDefaults.values)
@@ -77,16 +104,27 @@ class MainActivity : ComponentActivity() {
             requestNotificationOrFinish()
         }
 
+    private val installPermission =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            UpdateManager.onInstallPermissionResult(this)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         core = RunningCore(this)
+        dashboardLimit = UnisonSettings.dashboardLimit(this)
+        thumbnails = HistoryThumbnails.cache(core::historyThumbnail)
+        outbox = HistoryOutbox(this)
+        lifecycleScope.launch(Dispatchers.IO) { outbox.clearExpired() }
         appState =
             AppState(
                 core = core,
                 events = coreEvents.events,
                 saver = HistoryDownloads(this),
+                sender = outbox,
                 localAddresses = LocalAddresses(this)::ipv4,
+                dashboardLimit = dashboardLimit,
             )
         onboarded = UnisonSettings.onboarded(this)
         deviceName = UnisonSettings.deviceName(this)
@@ -97,6 +135,11 @@ class MainActivity : ComponentActivity() {
         diagnosticsEnabled = UnisonSettings.sentryEnabled(this)
         notificationSettings = NotificationSettings.load(this)
         requestedScreen.value = Destination.ofScreen(intent?.getStringExtra(EXTRA_SCREEN))
+        lifecycleScope.launch {
+            UpdateManager.pendingInstallIntent.collect { confirmation ->
+                runCatching { startActivity(confirmation) }
+            }
+        }
         // A recreated activity has already taken the code of its intent; a code
         // that still waits for the user is kept across the recreation.
         if (savedInstanceState == null) {
@@ -109,30 +152,49 @@ class MainActivity : ComponentActivity() {
             UnisonTheme {
                 val state by appState.state.collectAsState()
                 val history by appState.history.collectAsState()
+                val dashboard by appState.dashboard.collectAsState()
                 val pairing by appState.pairing.collectAsState()
                 val requests by appState.requests.collectAsState()
+                val mediated by appState.mediated.collectAsState()
                 val held by HeldItems.shared.ids.collectAsState()
                 val prompts by appState.prompts.collectAsState()
+                val updates by UpdateManager.state.collectAsState()
                 if (onboarded) {
+                    val updatePanel = buildUpdatePanel(updates)
+                    val settingsPanel = buildSettingsPanel(state, updatePanel)
                     UnisonRoot(
                         state = state,
                         history = history,
+                        dashboard =
+                            DashboardPanel(
+                                state = dashboard,
+                                thumbnail = thumbnails::thumbnail,
+                                devices = state.sendTargets,
+                                onRefresh = appState::refreshDashboard,
+                                onCopy = { appState.copyHistoryItem(it.item.id) },
+                                onSend = { entry, deviceId -> appState.sendHistoryItem(entry.item.id, deviceId) },
+                                onApply = { appState.applyHistoryItem(it.item.id) },
+                                onDownload = { appState.downloadHistoryItem(it.item.id) },
+                                onDelete = { appState.deleteHistoryItem(it.item.id) },
+                                updates = updatePanel,
+                            ),
+                        settings = settingsPanel,
                         pairing = pairing,
                         requests = requests,
+                        mediated = mediated,
                         held = held,
                         prompts = prompts,
                         onAnswerPrompt = { prompt, answer ->
                             when (answer) {
-                                PromptAnswer.APPLY -> appState.applyHistoryItem(prompt.id)
-                                PromptAnswer.SKIP -> appState.skipHeldItem(prompt.id)
-                                PromptAnswer.ACCEPT -> appState.decideRequest(prompt.id, accept = true)
-                                PromptAnswer.DECLINE -> appState.decideRequest(prompt.id, accept = false)
+                                PromptAnswer.Apply -> appState.applyHistoryItem(prompt.id)
+                                PromptAnswer.Skip -> appState.skipHeldItem(prompt.id)
+                                PromptAnswer.Accept -> appState.decideRequest(prompt.id, accept = true)
+                                PromptAnswer.Decline -> appState.decideRequest(prompt.id, accept = false)
+                                is PromptAnswer.AcceptMediated ->
+                                    appState.confirmMediatedPair(prompt.id, answer.enableFriendsDiscovery)
+                                PromptAnswer.DeclineMediated -> appState.rejectMediatedPair(prompt.id)
                             }
                         },
-                        deviceName = deviceName,
-                        operatingMode = operatingMode,
-                        policy = policy,
-                        ttl = historyTtl,
                         clipboardOffer = pending,
                         notices = appState.notices,
                         requestedScreen = requestedScreen,
@@ -140,31 +202,6 @@ class MainActivity : ComponentActivity() {
                         onRefresh = ::refresh,
                         onSendClipboard = ::send,
                         onDismissClipboard = { pending = null },
-                        onDeviceNameChange = ::saveDeviceName,
-                        onOperatingModeChange = ::saveOperatingMode,
-                        onPolicyChange = ::savePolicy,
-                        onPolicyReset = ::resetPolicy,
-                        onTtlSave = ::saveHistoryTtl,
-                        onTtlReset = ::resetHistoryTtl,
-                        downloadsFolder = downloadsFolder,
-                        onDownloadsFolderPick = ::saveDownloadsFolder,
-                        onDownloadsFolderReset = ::resetDownloadsFolder,
-                        onPause = appState::setPause,
-                        onRelaySave = appState::setRelay,
-                        onRelayOff = appState::relayOff,
-                        onRefreshRelay = appState::refreshRelay,
-                        onRelayCheck = appState::testRelay,
-                        onSelfConfirmationChange = appState::setSelfConfirmation,
-                        onAllowRemoteSettingsChange = appState::setAllowRemoteSettings,
-                        onLeaveGroup = appState::leaveGroup,
-                        diagnosticsEnabled = diagnosticsEnabled,
-                        onDiagnosticsChange = ::saveDiagnostics,
-                        notifications = notificationSettings,
-                        onNotificationsChange = ::saveNotificationSettings,
-                        journalEnabled = state.journalEnabled,
-                        onJournalChange = appState::setJournalEnabled,
-                        stripTracking = state.stripTracking,
-                        onStripTrackingChange = appState::setStripTracking,
                         onSetDeviceConfirmation = { device, scope, side, require ->
                             appState.setDeviceConfirmation(device.deviceId, scope, side, require)
                         },
@@ -184,6 +221,13 @@ class MainActivity : ComponentActivity() {
                         onRefreshRequests = appState::refreshRequests,
                         onAcceptRequest = { appState.decideRequest(it.id, accept = true) },
                         onDeclineRequest = { appState.decideRequest(it.id, accept = false) },
+                        onIntroduceDevices = appState::startMediatedPair,
+                        onCancelMediated = { appState.cancelMediatedPair(it.sessionId) },
+                        onAcceptMediated = { pair, discovery ->
+                            appState.confirmMediatedPair(pair.sessionId, discovery)
+                        },
+                        onDeclineMediated = { appState.rejectMediatedPair(it.sessionId) },
+                        onRefreshMediated = appState::refreshMediated,
                         onPairingRoleChange = appState::setPairingRole,
                         onOpenPairingWindow = appState::openPairingWindow,
                         onExtendPairingWindow = appState::extendPairingWindow,
@@ -205,6 +249,84 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun buildUpdatePanel(updates: UpdateUiState): UpdatePanel =
+        UpdatePanel(
+            state = updates,
+            onOpenDialog = UpdateManager::openDialog,
+            onCloseDialog = UpdateManager::closeDialog,
+            onDismissBanner = { UpdateManager.dismiss(this) },
+            onCheckNow = { UpdateManager.checkNow(this) },
+            onInstall = { UpdateManager.install(this) },
+            onCancel = UpdateManager::cancel,
+            onRequestInstallPermission = {
+                installPermission.launch(ApkInstaller.unknownSourcesIntent(this))
+            },
+            onSetEnabled = { UpdateManager.setEnabled(this, it) },
+            onSetBetaChannel = { UpdateManager.setBetaChannel(this, it) },
+            onSetInterval = { UpdateManager.setInterval(this, it) },
+        )
+
+    private fun buildSettingsPanel(
+        state: CoreState,
+        updatePanel: UpdatePanel,
+    ): SettingsPanel =
+        SettingsPanel(
+            device =
+                DeviceSettingsPanel(
+                    deviceName = deviceName,
+                    operatingMode = operatingMode,
+                    dashboardLimit = dashboardLimit,
+                    onDeviceNameChange = ::saveDeviceName,
+                    onOperatingModeChange = ::saveOperatingMode,
+                    onDashboardLimitChange = ::saveDashboardLimit,
+                    onFriendsDiscoveryChange = appState::setFriendsDiscovery,
+                    onLeaveGroup = appState::leaveGroup,
+                ),
+            clipboard =
+                ClipboardSettingsPanel(
+                    stripTracking = state.stripTracking,
+                    onPause = appState::setPause,
+                    onSelfConfirmationChange = appState::setSelfConfirmation,
+                    onAllowRemoteSettingsChange = appState::setAllowRemoteSettings,
+                    onStripTrackingChange = appState::setStripTracking,
+                ),
+            files =
+                FilesSettingsPanel(
+                    downloadsFolder = downloadsFolder,
+                    onDownloadsFolderPick = ::saveDownloadsFolder,
+                    onDownloadsFolderReset = ::resetDownloadsFolder,
+                ),
+            history =
+                HistorySettingsPanel(
+                    ttl = historyTtl,
+                    onTtlSave = ::saveHistoryTtl,
+                    onTtlReset = ::resetHistoryTtl,
+                ),
+            network =
+                NetworkSettingsPanel(
+                    policy = policy,
+                    onPolicyChange = ::savePolicy,
+                    onPolicyReset = ::resetPolicy,
+                    onRelaySave = appState::setRelay,
+                    onRelayOff = appState::relayOff,
+                    onRefreshRelay = appState::refreshRelay,
+                    onRelayCheck = appState::testRelay,
+                ),
+            app =
+                AppSettingsPanel(
+                    notifications = notificationSettings,
+                    onNotificationsChange = ::saveNotificationSettings,
+                    diagnosticsEnabled = diagnosticsEnabled,
+                    onDiagnosticsChange = ::saveDiagnostics,
+                    journalEnabled = state.journalEnabled,
+                    onJournalChange = appState::setJournalEnabled,
+                    onExportSettings = ::exportSettings,
+                    onImportSettings = ::importSettings,
+                    updates = updatePanel,
+                ),
+            onRefresh = ::refresh,
+        )
+
     override fun onStart() {
         super.onStart()
         appState.setVisible(true)
@@ -212,8 +334,11 @@ class MainActivity : ComponentActivity() {
             UnisonService.start(this)
             refresh()
             appState.refreshHistory()
+            appState.refreshDashboard()
             appState.refreshRequests()
+            appState.refreshMediated()
             startRequestsPoll()
+            UpdateManager.checkIfDue(this)
         }
     }
 
@@ -243,7 +368,9 @@ class MainActivity : ComponentActivity() {
         refresh()
         if (onboarded) {
             appState.refreshHistory()
+            appState.refreshDashboard()
             appState.refreshRequests()
+            appState.refreshMediated()
         }
     }
 
@@ -277,7 +404,9 @@ class MainActivity : ComponentActivity() {
         UnisonService.start(this)
         refresh()
         appState.refreshHistory()
+        appState.refreshDashboard()
         appState.refreshRequests()
+        appState.refreshMediated()
         startRequestsPoll()
         offerPairingLink()
     }
@@ -407,12 +536,84 @@ class MainActivity : ComponentActivity() {
         downloadsFolder = null
     }
 
+    /** Writes the settings document to the file the user picked. */
+    private fun exportSettings(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val response =
+                    core.exportSettings(
+                        SettingsFile.appSection(
+                            operatingMode = operatingMode,
+                            notifications = notificationSettings,
+                            updates = UpdateManager.state.value.config,
+                        ),
+                    )
+                withContext(Dispatchers.IO) {
+                    SettingsFileTransfer.writeDocument(contentResolver, uri, response.document.toByteArray())
+                }
+                Toast.makeText(this@MainActivity, R.string.settings_file_exported, Toast.LENGTH_SHORT).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                reportSettingsFileFailure(R.string.settings_file_export_failed, e)
+            } catch (e: SecurityException) {
+                reportSettingsFileFailure(R.string.settings_file_export_failed, e)
+            } catch (e: CoreException) {
+                reportSettingsFileFailure(R.string.settings_file_export_failed, e)
+            }
+        }
+    }
+
+    /** Applies the settings document of the file the user picked. */
+    private fun importSettings(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val document = withContext(Dispatchers.IO) { SettingsFileTransfer.readDocument(contentResolver, uri) }
+                val response = core.importSettings(document)
+                val section = SettingsFile.appSectionOf(document.decodeToString())
+                section.operatingMode?.let(::saveOperatingMode)
+                section.notifications?.let { patch -> saveNotificationSettings(patch.applyTo(notificationSettings)) }
+                section.updates?.let { patch ->
+                    UpdateManager.applyConfig(this@MainActivity, patch.applyTo(UpdateManager.state.value.config))
+                }
+                refresh()
+                val notice = SettingsFileTransfer.importNotice(this@MainActivity, response)
+                Toast.makeText(this@MainActivity, notice, Toast.LENGTH_LONG).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                reportSettingsFileFailure(R.string.settings_file_import_failed, e)
+            } catch (e: SecurityException) {
+                reportSettingsFileFailure(R.string.settings_file_import_failed, e)
+            } catch (e: CoreException) {
+                reportSettingsFileFailure(R.string.settings_file_import_failed, e)
+            }
+        }
+    }
+
+    /** reportSettingsFileFailure writes the failure to the log and tells the user. */
+    private fun reportSettingsFileFailure(
+        message: Int,
+        error: Exception,
+    ) {
+        Journal.warn("the settings file failed", "error" to error.message)
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
     private fun saveOperatingMode(mode: OperatingMode) {
         UnisonSettings.setOperatingMode(this, mode)
         operatingMode = mode
         if (mode != OperatingMode.APP_OPEN) {
             UnisonService.start(this)
         }
+    }
+
+    /** Stores the number of items each tab of the dashboard shows. */
+    private fun saveDashboardLimit(limit: Int) {
+        val normalized = DashboardLimit.normalize(limit)
+        UnisonSettings.setDashboardLimit(this, normalized)
+        dashboardLimit = normalized
+        appState.setDashboardLimit(normalized)
     }
 
     /** Stores the network policy in the core. */
@@ -497,6 +698,7 @@ class MainActivity : ComponentActivity() {
                 while (true) {
                     delay(REQUESTS_POLL_MS)
                     appState.refreshRequests()
+                    appState.refreshMediated()
                 }
             }
     }

@@ -3,7 +3,7 @@
 # dimensions are literals rather than constants.
 complexity:
   LongMethod:
-    threshold: 150
+    threshold: 200
   LongParameterList:
     functionThreshold: 12
     constructorThreshold: 10
@@ -11,6 +11,7 @@ complexity:
   TooManyFunctions:
     thresholdInFiles: 30
     thresholdInClasses: 70
+    thresholdInObjects: 30
   LargeClass:
     threshold: 1000
 naming:
@@ -21,6 +22,8 @@ style:
   MaxLineLength:
     maxLineLength: 140
   MagicNumber:
-    excludes: ['**/test/**', '**/androidTest/**', '**/*.kts', '**/ui/**']
+    # Screens use literal dimensions, and the updater carries the constants of
+    # the GitHub API and of the installation protocol.
+    excludes: ['**/test/**', '**/androidTest/**', '**/*.kts', '**/ui/**', '**/updater/**']
   ReturnCount:
     max: 6

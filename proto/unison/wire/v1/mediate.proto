@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package unison.wire.v1;
+
+option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
+
+import "unison/wire/v1/types.proto";
+
+// Why a mediated pairing exchange ended without a new pair.
+enum MediatedCancelReason {
+  MEDIATED_CANCEL_REASON_UNSPECIFIED = 0;
+  MEDIATED_CANCEL_REASON_USER_REJECTED = 1;
+  MEDIATED_CANCEL_REASON_MEDIATOR_CANCELED = 2;
+  MEDIATED_CANCEL_REASON_EXPIRED = 3;
+  MEDIATED_CANCEL_REASON_REVOKED = 4;
+  MEDIATED_CANCEL_REASON_ROLE_MISMATCH = 5;
+  MEDIATED_CANCEL_REASON_ALREADY_PAIRED = 6;
+  MEDIATED_CANCEL_REASON_BUSY = 7;
+  MEDIATED_CANCEL_REASON_PEER_OFFLINE = 8;
+  MEDIATED_CANCEL_REASON_FAILED = 9;
+}
+
+// Invitation of the mediator to one endpoint of the introduction.
+message MediatedOffer {
+  // Random 16 byte identifier of the exchange.
+  bytes session_id = 1;
+  // Ed25519 identity public key of the other endpoint, 32 bytes.
+  bytes peer_ed25519 = 2;
+  // ML-DSA-65 identity public key of the other endpoint, 1952 bytes.
+  bytes peer_mldsa = 3;
+  // Display name of the other endpoint as known to the mediator.
+  string peer_name = 4;
+  Platform peer_platform = 5;
+  Role role = 6;
+  // Deadline of the exchange set by the mediator, unix milliseconds.
+  int64 expires_at_unix_ms = 7;
+  // Hybrid signature of the mediator over the canonical offer transcript.
+  bytes ed25519_sig = 8;
+  bytes mldsa_sig = 9;
+}
+
+// Sent by an endpoint whose user accepted before the commit of the other
+// endpoint arrived.
+message MediatedReady {
+  bytes session_id = 1;
+}
+
+// Sent by the endpoint with the lower device ID after its user accepted.
+message MediatedCommit {
+  bytes session_id = 1;
+  // Ephemeral X25519 public key, 32 bytes.
+  bytes x25519_pub = 2;
+  // Ephemeral ML-KEM-768 encapsulation key, 1184 bytes.
+  bytes mlkem_ek = 3;
+  // Self-announced display name and platform of the sender.
+  string name = 4;
+  Platform platform = 5;
+  // Up to 4 local listen addresses of the sender, ip:port.
+  repeated string addrs = 6;
+  // Hybrid signature of the sender over the canonical commit transcript.
+  bytes ed25519_sig = 7;
+  bytes mldsa_sig = 8;
+}
+
+// Sent by the endpoint with the higher device ID after it verified the commit.
+message MediatedFinish {
+  bytes session_id = 1;
+  // Ephemeral X25519 public key, 32 bytes.
+  bytes x25519_pub = 2;
+  // ML-KEM-768 ciphertext encapsulated to the encapsulation key of the
+  // commit, 1088 bytes.
+  bytes mlkem_ct = 3;
+  // Self-announced display name and platform of the sender.
+  string name = 4;
+  Platform platform = 5;
+  // Up to 4 local listen addresses of the sender, ip:port.
+  repeated string addrs = 6;
+  // Hybrid signature of the sender over the canonical finish transcript.
+  bytes ed25519_sig = 7;
+  bytes mldsa_sig = 8;
+}
+
+// Ends the exchange on every side. Any side sends it to the mediator, which
+// forwards it to the other endpoint.
+message MediatedCancel {
+  bytes session_id = 1;
+  MediatedCancelReason reason = 2;
+}
+
+// Confirms that the sender verified the finish and stored the new peer.
+message MediatedResult {
+  bytes session_id = 1;
+  bool committed = 2;
+}

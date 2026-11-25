@@ -87,7 +87,7 @@ build_daemon() {
         cc_arch=x86_64
     fi
     echo "package-macos: building unisond for darwin/$arch"
-    GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build \
+    MACOSX_DEPLOYMENT_TARGET=13.0 GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 CC="clang -arch $cc_arch" go build \
         -trimpath -ldflags "$daemon_ldflags" \
         -o "$target" "$root/cmd/unisond"
 }

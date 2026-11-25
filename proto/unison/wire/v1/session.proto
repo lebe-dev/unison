@@ -6,6 +6,7 @@ option go_package = "github.com/lebe-dev/unison/proto/unison/wire/v1;wirev1";
 
 import "unison/wire/v1/blob.proto";
 import "unison/wire/v1/clip.proto";
+import "unison/wire/v1/mediate.proto";
 import "unison/wire/v1/trust.proto";
 import "unison/wire/v1/types.proto";
 
@@ -70,5 +71,11 @@ message ControlMessage {
     // Confirmation flags of the sender for the receiver, sent when a session
     // opens and whenever they change.
     PeerPolicy peer_policy = 17;
+    MediatedOffer mediated_offer = 18;
+    MediatedReady mediated_ready = 19;
+    MediatedCommit mediated_commit = 20;
+    MediatedFinish mediated_finish = 21;
+    MediatedCancel mediated_cancel = 22;
+    MediatedResult mediated_result = 23;
   }
 }

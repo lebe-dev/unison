@@ -1,7 +1,7 @@
 //! Discovery and startup of the daemon.
 
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
@@ -517,7 +517,7 @@ fn unix_data_dir(
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 fn linux_data_root(xdg_data_home: Option<OsString>) -> PathBuf {
     match xdg_data_home {
-        Some(xdg) if Path::new(&xdg).is_absolute() => PathBuf::from(xdg),
+        Some(xdg) if std::path::Path::new(&xdg).is_absolute() => PathBuf::from(xdg),
         _ => PathBuf::from(".local/share"),
     }
 }

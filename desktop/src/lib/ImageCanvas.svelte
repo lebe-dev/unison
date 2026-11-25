@@ -9,21 +9,26 @@
     maxSide: number;
     /** Accessible name of the image. */
     label?: string;
-    /** Content shown while there are no pixels. */
+    /** Content shown while the thumbnail is loading. */
+    loading?: Snippet;
+    /** Content shown when loading finished without pixels. */
     fallback?: Snippet;
   }
 
-  let { id, maxSide, label = "", fallback }: Props = $props();
+  let { id, maxSide, label = "", loading, fallback }: Props = $props();
 
   let canvas: HTMLCanvasElement | null = $state(null);
   let pixels = $state<Pixels | null>(null);
+  let pending = $state(true);
 
   $effect(() => {
     let current = true;
     pixels = null;
+    pending = true;
     void loadThumbnail(id, maxSide).then((loaded) => {
       if (current) {
         pixels = loaded;
+        pending = false;
       }
     });
     return () => {
@@ -48,6 +53,10 @@
 
 {#if pixels}
   <canvas bind:this={canvas} aria-label={label}>{label}</canvas>
+{:else if pending}
+  {#if loading}
+    {@render loading()}
+  {/if}
 {:else if fallback}
   {@render fallback()}
 {/if}

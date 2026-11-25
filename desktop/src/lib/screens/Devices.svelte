@@ -1,13 +1,21 @@
 <script lang="ts">
-  import { Platform, Role, type Device } from "../api/gen/unison/local/v1/local_pb";
+  import {
+    Platform,
+    Role,
+    type Device,
+    type MediatedPair,
+  } from "../api/gen/unison/local/v1/local_pb";
   import Icon, { type IconName } from "../Icon.svelte";
   import { client } from "../api/client";
   import { confirmation, type Scope, type Side } from "../confirmation.svelte";
   import { daemon } from "../daemon.svelte";
+  import DaemonState from "../DaemonState.svelte";
   import { errorText } from "../errors";
   import { t } from "../i18n";
+  import { mediated } from "../mediated.svelte";
   import NetworkIssue from "../NetworkIssue.svelte";
-  import Spinner from "../Spinner.svelte";
+  import Notice from "../Notice.svelte";
+  import IntroduceDialog from "./IntroduceDialog.svelte";
   import { deviceNameKey } from "../platform";
   import { deviceProtocolIssue, unreachableDeviceIssue } from "../network";
   import {
@@ -91,27 +99,36 @@
     draftName = "";
   }
 
+  async function runBusy(
+    fallbackError: string,
+    action: () => Promise<string | null>,
+  ): Promise<void> {
+    busy = true;
+    notice = null;
+    try {
+      const info = await action();
+      if (info) {
+        notice = { kind: "info", text: info };
+      }
+    } catch (error) {
+      notice = { kind: "error", text: errorText(error, fallbackError) };
+    } finally {
+      busy = false;
+    }
+  }
+
   async function rename(device: Device): Promise<void> {
     const name = draftName.trim();
     if (!name) {
       notice = { kind: "error", text: t("devices.renameEmpty") };
       return;
     }
-    busy = true;
-    notice = null;
-    try {
+    await runBusy(t("devices.renameFailed"), async () => {
       await client.renameDevice({ deviceId: device.deviceId, name });
       editing = null;
       await daemon.refresh();
-      notice = { kind: "info", text: t("devices.renamed", { name }) };
-    } catch (error) {
-      notice = {
-        kind: "error",
-        text: errorText(error, t("devices.renameFailed")),
-      };
-    } finally {
-      busy = false;
-    }
+      return t("devices.renamed", { name });
+    });
   }
 
   /** Switches of the confirmation flags, in the order of the grid. */
@@ -166,54 +183,83 @@
 
   /** reconnect asks the daemon to dial an offline device again. */
   async function reconnect(device: Device): Promise<void> {
-    busy = true;
-    notice = null;
-    try {
+    await runBusy(t("devices.reconnectFailed"), async () => {
       await client.retryDevice({ deviceId: device.deviceId });
-      notice = {
-        kind: "info",
-        text: t("devices.reconnecting", { name: device.name || t("common.theDeviceGenitive") }),
-      };
-    } catch (error) {
-      notice = { kind: "error", text: errorText(error, t("devices.reconnectFailed")) };
-    } finally {
-      busy = false;
-    }
+      return t("devices.reconnecting", { name: device.name || t("common.theDeviceGenitive") });
+    });
   }
 
   async function revoke(device: Device): Promise<void> {
-    busy = true;
-    notice = null;
-    try {
+    await runBusy(t("devices.revokeFailed"), async () => {
       await client.revokeDevice({ deviceId: device.deviceId });
       revoking = null;
       await daemon.refresh();
-      notice = {
-        kind: "info",
-        text: t("devices.revoked", {
-          name: device.name || t("common.theDeviceGenitive"),
-        }),
-      };
-    } catch (error) {
-      notice = { kind: "error", text: errorText(error, t("devices.revokeFailed")) };
-    } finally {
-      busy = false;
+      return t("devices.revoked", { name: device.name || t("common.theDeviceGenitive") });
+    });
+  }
+
+  /** Devices this one can be introduced to: online and able to take part. */
+  function partnersOf(device: Device): Device[] {
+    return daemon.devices.filter(
+      (other) => other.online && other.supportsMediatedPair && other.deviceId !== device.deviceId,
+    );
+  }
+
+  const selectedPartners = $derived(selected ? partnersOf(selected) : []);
+
+  // The dialog stays with the device it was opened from, so another click in
+  // the list does not move a running exchange to another device.
+  let introducing = $state(false);
+  let introduceFrom = $state<string | null>(null);
+  let initialPartnerID = $state("");
+  let initialSessionID = $state<string | null>(null);
+
+  const introducingDevice = $derived(
+    daemon.devices.find((device) => device.deviceId === introduceFrom) ?? null,
+  );
+  const dialogPartners = $derived(introducingDevice ? partnersOf(introducingDevice) : []);
+
+  function beginIntroduce(device: Device): void {
+    const running = mediated.outgoing.find((pair) => otherEnd(pair, device) !== null);
+    const partnerID = running ? otherEnd(running, device) : null;
+    const partners = partnersOf(device);
+    const partner =
+      partners.find((current) => current.deviceId === partnerID) ?? partners[0] ?? null;
+    introducing = true;
+    introduceFrom = device.deviceId;
+    initialPartnerID = partnerID ?? partner?.deviceId ?? "";
+    initialSessionID = running?.sessionId ?? null;
+    mediated.clearNotice();
+  }
+
+  /** otherEnd returns the device a mediator exchange introduces besides this
+   * one, absent when the exchange does not involve it. */
+  function otherEnd(pair: MediatedPair, device: Device): string | null {
+    if (pair.peerA?.deviceId === device.deviceId) {
+      return pair.peerB?.deviceId ?? null;
     }
+    if (pair.peerB?.deviceId === device.deviceId) {
+      return pair.peerA?.deviceId ?? null;
+    }
+    return null;
+  }
+
+  /** runningExchange reports a mediator exchange this device takes part in. */
+  function runningExchange(device: Device): boolean {
+    return mediated.outgoing.some((pair) => otherEnd(pair, device) !== null);
+  }
+
+  function closeIntroduce(): void {
+    introducing = false;
+    introduceFrom = null;
+    initialPartnerID = "";
+    initialSessionID = null;
+    mediated.clearNotice();
   }
 </script>
 
 {#if !daemon.connected}
-  <section class="state">
-    {#if daemon.loading}
-      <Spinner />
-      <p class="muted">{t("devices.connecting")}</p>
-    {:else}
-      <p class="notice error">{t("devices.daemonNotRunning")}</p>
-      <button class="button" type="button" onclick={() => void daemon.retry()}>
-        {t("common.tryAgain")}
-      </button>
-    {/if}
-  </section>
+  <DaemonState message={t("devices.daemonNotRunning")} />
 {:else}
   <div class="devices">
     <section class="column" aria-label={t("devices.deviceListAria")}>
@@ -295,11 +341,7 @@
     </section>
 
     <section class="detail" aria-label={t("devices.deviceDetailsAria")}>
-      {#if notice}
-        <p class="notice" class:error={notice.kind === "error"} class:info={notice.kind === "info"}>
-          {notice.text}
-        </p>
-      {/if}
+      <Notice {notice} />
 
       {#if !selected}
         <div class="state">
@@ -369,6 +411,16 @@
           {#if protocolIssue}
             <NetworkIssue summary={protocolIssue.summary} hint={protocolIssue.hint} />
           {/if}
+        {/if}
+
+        {#if introducing && introducingDevice}
+          <IntroduceDialog
+            device={introducingDevice}
+            partners={dialogPartners}
+            {initialPartnerID}
+            {initialSessionID}
+            onClose={closeIntroduce}
+          />
         {/if}
 
         {#if device.role === Role.PERSONAL}
@@ -500,6 +552,11 @@
                 disabled={busy}
               >
                 {t("devices.reconnect")}
+              </button>
+            {/if}
+            {#if !introducing && device.online && device.supportsMediatedPair && (selectedPartners.length > 0 || runningExchange(device))}
+              <button class="button" type="button" onclick={() => beginIntroduce(device)}>
+                {t("mediated.introduce")}
               </button>
             {/if}
             <button class="button" type="button" onclick={() => beginRename(device)}>
@@ -751,10 +808,6 @@
   dd {
     margin: 0;
     color: var(--secondary);
-  }
-
-  .toolbar.end {
-    justify-content: flex-end;
   }
 
   .revoke p {

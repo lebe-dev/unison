@@ -86,7 +86,7 @@ func FuzzHistoryBatch(f *testing.F) {
 			if item.ID.IsZero() || item.Origin.IsZero() || item.Seq == 0 {
 				t.Fatalf("accepted an item without an id, an origin or a sequence")
 			}
-			if len(item.Representations) > maxRepresentations {
+			if len(item.Representations) > MaxRepresentations {
 				t.Fatalf("accepted %d representations", len(item.Representations))
 			}
 		}

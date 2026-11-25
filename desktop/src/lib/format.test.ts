@@ -11,11 +11,16 @@ import {
   TransferState,
 } from "./api/gen/unison/local/v1/local_pb";
 import {
+  deviceLabel,
+  downloadPercent,
+  fileCategory,
+  fileExtension,
   formatBytes,
   formatTime,
   historyTitle,
   itemSize,
   kindLabel,
+  originLabel,
   pathLabel,
   platformLabel,
   progressPercent,
@@ -57,6 +62,21 @@ describe("shortDeviceID", () => {
     expect(shortDeviceID("0123456789abcdef")).toBe("0123 4567 89AB");
     expect(shortDeviceID("abc")).toBe("ABC");
     expect(shortDeviceID("")).toBe("");
+  });
+});
+
+describe("deviceLabel and originLabel", () => {
+  it("falls back to the short device ID when unnamed", () => {
+    expect(deviceLabel({ deviceId: "0123456789abcdef", name: "MacBook" })).toBe("MacBook");
+    expect(deviceLabel({ deviceId: "0123456789abcdef", name: "" })).toBe("0123 4567 89AB");
+  });
+
+  it("resolves self, known devices and unknown origins", () => {
+    const devices = [{ deviceId: "peer-1", name: "Pixel" }];
+    expect(originLabel("", "self", devices)).toBe("");
+    expect(originLabel("self", "self", devices)).toBe("This device");
+    expect(originLabel("peer-1", "self", devices)).toBe("Pixel");
+    expect(originLabel("0123456789abcdef", "self", devices)).toBe("0123 4567 89AB");
   });
 });
 
@@ -123,6 +143,15 @@ describe("historyTitle", () => {
   });
 });
 
+describe("downloadPercent", () => {
+  it("clamps the percentage between 0 and 100", () => {
+    expect(downloadPercent(512, 1024)).toBe(50);
+    expect(downloadPercent(0, 0)).toBe(0);
+    expect(downloadPercent(-10, 100)).toBe(0);
+    expect(downloadPercent(200, 100)).toBe(100);
+  });
+});
+
 describe("progressPercent", () => {
   it("shares the transferred bytes with the size", () => {
     expect(progressPercent(transfer({ bytes: 50n, totalBytes: 200n }))).toBe(25);
@@ -138,6 +167,29 @@ describe("transfer labels", () => {
     expect(transferStateLabel(TransferState.DONE)).toBe("Done");
     expect(transferDirectionLabel(TransferDirection.INCOMING)).toBe("Received");
     expect(transferDirectionLabel(TransferDirection.OUTGOING)).toBe("Sent");
+  });
+});
+
+describe("fileExtension", () => {
+  it("returns short uppercase extensions and ignores invalid ones", () => {
+    expect(fileExtension("photo.jpg")).toBe("JPG");
+    expect(fileExtension("docs/report.PDF")).toBe("PDF");
+    expect(fileExtension("archive.tar.gz")).toBe("GZ");
+    expect(fileExtension("README")).toBe("");
+    expect(fileExtension(".env")).toBe("");
+    expect(fileExtension("notes.markdown")).toBe("");
+  });
+});
+
+describe("fileCategory", () => {
+  it("classifies files by extension and falls back to MIME type", () => {
+    expect(fileCategory("photo.jpg")).toBe("image");
+    expect(fileCategory("report.pdf")).toBe("document");
+    expect(fileCategory("bundle.zip")).toBe("archive");
+    expect(fileCategory("clip.mp4")).toBe("media");
+    expect(fileCategory("main.go")).toBe("code");
+    expect(fileCategory("blob", "image/png")).toBe("image");
+    expect(fileCategory("blob", "application/octet-stream")).toBe("other");
   });
 });
 

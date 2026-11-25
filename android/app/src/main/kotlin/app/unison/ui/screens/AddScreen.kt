@@ -395,7 +395,7 @@ private fun CandidateSection(
             CandidateRow(
                 index = index,
                 count = candidates.size,
-                addr = candidate.addr,
+                candidate = candidate,
                 dialing = dialing == candidate.addr,
                 enabled = !busy,
                 onPair = { onPairWith(candidate.addr) },
@@ -409,18 +409,27 @@ private fun CandidateSection(
 private fun CandidateRow(
     index: Int,
     count: Int,
-    addr: String,
+    candidate: Local.PairingCandidate,
     dialing: Boolean,
     enabled: Boolean,
     onPair: () -> Unit,
 ) {
+    val viaRelay = isRelayCandidate(candidate)
     GroupItem(index = index, count = count) {
         IconTile(icon = R.drawable.ic_nav_devices)
-        Text(
-            text = addr,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = candidate.addr,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            if (viaRelay) {
+                Text(
+                    text = stringResource(R.string.pairing_via_relay),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         FilledTonalButton(onClick = onPair, enabled = enabled && !dialing) {
             Text(
                 text =
@@ -431,6 +440,9 @@ private fun CandidateRow(
         }
     }
 }
+
+private fun isRelayCandidate(candidate: Local.PairingCandidate): Boolean =
+    candidate.txtMap["transport"] == "relay" || candidate.addr.startsWith("relay:")
 
 /** A scanned code that waits for the other device. */
 @Composable

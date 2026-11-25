@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,14 +38,20 @@ import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.history.HistoryText
 import app.unison.ui.ErrorCard
+import app.unison.ui.FriendsDiscoveryChoice
 import app.unison.ui.IconTile
+import app.unison.ui.MediatedOfferDetails
 import app.unison.ui.ScreenTitle
 import app.unison.ui.groupItemColor
+import app.unison.ui.mediatedStateLabel
+import app.unison.ui.shortId
 import app.unison.ui.sizeUnits
+import app.unison.ui.state.MediatedState
 import app.unison.ui.state.RequestsState
+import app.unison.ui.state.isInProgress
 import unison.local.v1.Local
 
-/** File offers of Friends that wait for an answer. */
+/** Offers of Friends and introductions through a trusted device that wait for an answer. */
 @Composable
 fun RequestsScreen(
     requests: RequestsState,
@@ -48,6 +59,9 @@ fun RequestsScreen(
     onAccept: (Local.ShareRequest) -> Unit,
     onDecline: (Local.ShareRequest) -> Unit,
     modifier: Modifier = Modifier,
+    mediated: MediatedState = MediatedState(),
+    onAcceptMediated: (Local.MediatedPair, Boolean) -> Unit = { _, _ -> },
+    onDeclineMediated: (Local.MediatedPair) -> Unit = {},
 ) {
     Column(
         modifier =
@@ -61,12 +75,13 @@ fun RequestsScreen(
             }
         }
 
-        requests.failure?.let { failure ->
+        val failure = requests.failure ?: mediated.failure
+        if (failure != null) {
             Spacer(modifier = Modifier.height(16.dp))
             ErrorCard(message = stringResource(failure.message), onRetry = onRefresh)
         }
 
-        if (requests.loading && !requests.loaded) {
+        if (requests.loading && !requests.loaded && mediated.incoming.isEmpty()) {
             Box(
                 modifier =
                     Modifier
@@ -79,9 +94,11 @@ fun RequestsScreen(
             return@Column
         }
 
-        if (requests.isEmpty) {
-            EmptyRequests()
-            return@Column
+        if (requests.isEmpty && mediated.incoming.isEmpty()) {
+            if (requests.loaded || (mediated.loaded && !requests.loading)) {
+                EmptyRequests()
+                return@Column
+            }
         }
 
         LazyColumn(
@@ -89,7 +106,15 @@ fun RequestsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            items(requests.requests, key = { it.id }) { request ->
+            items(mediated.incoming, key = { "mediated:${it.sessionId}" }) { pair ->
+                MediatedOfferRow(
+                    pair = pair,
+                    answering = pair.sessionId in mediated.answering,
+                    onAccept = { discovery -> onAcceptMediated(pair, discovery) },
+                    onDecline = { onDeclineMediated(pair) },
+                )
+            }
+            items(requests.requests, key = { "request:${it.id}" }) { request ->
                 RequestRow(
                     request = request,
                     answering = request.id in requests.answering,
@@ -101,6 +126,69 @@ fun RequestsScreen(
     }
 }
 
+/** One introduction with its devices, its code and the answer buttons. */
+@Composable
+private fun MediatedOfferRow(
+    pair: Local.MediatedPair,
+    answering: Boolean,
+    onAccept: (Boolean) -> Unit,
+    onDecline: () -> Unit,
+) {
+    var discovery by rememberSaveable(pair.sessionId) {
+        mutableStateOf(pair.role == Local.Role.ROLE_FRIENDS)
+    }
+    val waiting = pair.state == Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING
+    val name = pair.peer.name.ifBlank { shortId(pair.peer.deviceId) }
+    val mediator = pair.mediator.name.ifBlank { shortId(pair.mediator.deviceId) }
+
+    OfferCard {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            IconTile(
+                icon = R.drawable.ic_nav_devices,
+                container = MaterialTheme.colorScheme.secondaryContainer,
+                content = MaterialTheme.colorScheme.onSecondaryContainer,
+                size = 40.dp,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(R.string.mediated_offer_title, name), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.mediated_offer_from, mediator),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (answering || pair.isInProgress) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+        }
+
+        MediatedOfferDetails(pair = pair)
+
+        if (!waiting) {
+            Text(
+                text = mediatedStateLabel(pair.state),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@OfferCard
+        }
+
+        if (pair.role == Local.Role.ROLE_FRIENDS) {
+            FriendsDiscoveryChoice(checked = discovery, onChange = { discovery = it })
+        }
+
+        OfferExpiryText(expiresAtUnixMs = pair.expiresAtUnixMs)
+        OfferActionButtons(
+            enabled = !answering,
+            onDecline = onDecline,
+            onAccept = { onAccept(discovery) },
+        )
+    }
+}
+
 /** One offer with its files, its deadline and the answer buttons. */
 @Composable
 private fun RequestRow(
@@ -109,15 +197,7 @@ private fun RequestRow(
     onAccept: () -> Unit,
     onDecline: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(groupItemColor)
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    OfferCard {
         val files = request.filesList
         val size = HistoryText.formatSize(request.totalBytes, sizeUnits())
         Row(
@@ -132,7 +212,7 @@ private fun RequestRow(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = request.deviceName.ifBlank { request.deviceId.take(SHORT_ID_LENGTH) },
+                    text = request.deviceName.ifBlank { shortId(request.deviceId) },
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
@@ -162,44 +242,79 @@ private fun RequestRow(
             )
         }
 
-        if (request.expiresAtUnixMs > 0) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.requests_expires,
-                        DateUtils
-                            .getRelativeTimeSpanString(
-                                request.expiresAtUnixMs,
-                                System.currentTimeMillis(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                            ).toString(),
-                    ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        OfferExpiryText(expiresAtUnixMs = request.expiresAtUnixMs)
+        OfferActionButtons(
+            enabled = !answering,
+            onDecline = onDecline,
+            onAccept = onAccept,
+        )
+    }
+}
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = onDecline,
-                enabled = !answering,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-            ) {
-                Text(text = stringResource(R.string.action_decline))
-            }
-            Button(
-                onClick = onAccept,
-                enabled = !answering,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-            ) {
-                Text(text = stringResource(R.string.action_accept))
-            }
+/** Shared card container for file and introduction offers. */
+@Composable
+private fun OfferCard(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(groupItemColor)
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        content = content,
+    )
+}
+
+/** Relative expiration label of an offer. */
+@Composable
+private fun OfferExpiryText(expiresAtUnixMs: Long) {
+    if (expiresAtUnixMs <= 0) {
+        return
+    }
+    Text(
+        text =
+            stringResource(
+                R.string.requests_expires,
+                DateUtils
+                    .getRelativeTimeSpanString(
+                        expiresAtUnixMs,
+                        System.currentTimeMillis(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                    ).toString(),
+            ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** Decline and accept button row of an offer card. */
+@Composable
+private fun OfferActionButtons(
+    enabled: Boolean,
+    onDecline: () -> Unit,
+    onAccept: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = onDecline,
+            enabled = enabled,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+        ) {
+            Text(text = stringResource(R.string.action_decline))
+        }
+        Button(
+            onClick = onAccept,
+            enabled = enabled,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+        ) {
+            Text(text = stringResource(R.string.action_accept))
         }
     }
 }
@@ -227,6 +342,3 @@ private fun EmptyRequests() {
         )
     }
 }
-
-/** Characters of a device ID shown when the name is unknown. */
-private const val SHORT_ID_LENGTH = 8

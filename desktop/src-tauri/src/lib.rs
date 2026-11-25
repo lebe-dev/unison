@@ -1,5 +1,6 @@
 pub mod agent;
 mod daemon;
+mod dragout;
 mod files;
 mod i18n;
 pub mod install;
@@ -8,11 +9,15 @@ pub mod observability;
 mod prompt;
 mod proxy;
 mod redact;
+mod settings;
 mod share;
 mod streams;
-#[cfg(all(test, unix))]
+#[cfg(test)]
 mod testutil;
 mod tray;
+pub mod updater;
+#[cfg(any(windows, test))]
+mod winutil;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -241,6 +246,15 @@ pub fn run() {
         // start the app.
         .manage(share::Inbox::default())
         .setup(|app| {
+            // Copies that a user dragged out of the window expire after a day.
+            dragout::purge_staging(app.handle());
+            // A download of a previous run is never installed.
+            updater::purge_stale(app.handle());
+            app.manage(updater::Updater::new());
+            let updater_app = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                updater::scheduler::run(updater_app).await;
+            });
             if let Some(Err(err)) = agent::register_at_launch() {
                 eprintln!("unison: the login item could not be registered: {err}");
                 observability::capture_error("the login item could not be registered");
@@ -282,6 +296,8 @@ pub fn run() {
             api_stream,
             api_stream_cancel,
             daemon_status,
+            dragout::drag_staging_dir,
+            dragout::start_file_drag,
             open_local_network_settings,
             files::show_in_folder,
             files::open_files,
@@ -297,13 +313,21 @@ pub fn run() {
             install_daemon,
             set_login_item,
             set_sentry_enabled,
+            settings::settings_read,
+            settings::settings_write,
             share::take_shared_files,
             show_window,
             tray::set_tray_state,
             tray::pick_files,
             tray::pick_folder,
             prompt::show_prompt,
-            prompt::hide_prompt
+            prompt::hide_prompt,
+            updater::updater_get_state,
+            updater::updater_set_config,
+            updater::updater_check_now,
+            updater::updater_dismiss_update,
+            updater::updater_install,
+            updater::updater_cancel
         ])
         .on_page_load(|webview, payload| {
             // A page that loads again has lost the streams of the previous

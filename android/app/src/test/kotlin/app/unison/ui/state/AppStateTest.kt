@@ -6,6 +6,8 @@ import app.unison.clipboard.PauseRequest
 import app.unison.core.CoreApi
 import app.unison.core.CoreException
 import app.unison.history.HistorySaver
+import app.unison.history.HistorySender
+import com.google.protobuf.ByteString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -35,6 +37,7 @@ class AppStateTest {
         var history: List<Local.HistoryItem> = emptyList()
         var historyFailure: Exception? = null
         val historyCalls = mutableListOf<Pair<Local.Kind, String>>()
+        val historyLimits = mutableListOf<Int>()
         val copied = mutableListOf<String>()
         val deleted = mutableListOf<String>()
         val applied = mutableListOf<String>()
@@ -85,10 +88,28 @@ class AppStateTest {
             limit: Int,
         ): Local.ListHistoryResponse {
             historyCalls += kind to deviceId
+            historyLimits += limit
             historyFailure?.let { throw it }
+            val selected =
+                history.filter { item ->
+                    kind == Local.Kind.KIND_UNSPECIFIED || item.item.kind == kind
+                }
             return Local.ListHistoryResponse
                 .newBuilder()
-                .addAllItems(history)
+                .addAllItems(selected)
+                .build()
+        }
+
+        override suspend fun historyThumbnail(
+            id: String,
+            maxSide: Int,
+        ): Local.GetHistoryThumbnailResponse {
+            historyFailure?.let { throw it }
+            return Local.GetHistoryThumbnailResponse
+                .newBuilder()
+                .setWidth(1)
+                .setHeight(1)
+                .setRgba(ByteString.copyFrom(byteArrayOf(0, 0, 0, 0)))
                 .build()
         }
 
@@ -239,6 +260,16 @@ class AppStateTest {
             path: String,
         ): Local.FetchHistoryItemResponse = Local.FetchHistoryItemResponse.getDefaultInstance()
 
+        val sentFiles = mutableListOf<Pair<List<String>, List<String>>>()
+
+        override suspend fun sendFiles(
+            paths: List<String>,
+            deviceIds: List<String>,
+        ): Local.SendFilesResponse {
+            sentFiles += paths to deviceIds
+            return Local.SendFilesResponse.getDefaultInstance()
+        }
+
         override suspend fun listTransfers(): Local.ListTransfersResponse = Local.ListTransfersResponse.getDefaultInstance()
 
         override suspend fun cancelTransfer(id: String) = Unit
@@ -317,6 +348,94 @@ class AppStateTest {
         override suspend fun rejectPairing(deviceId: String) {
             rejected += deviceId
         }
+
+        var friendsDiscovery: Local.FriendsDiscovery = Local.FriendsDiscovery.getDefaultInstance()
+        val friendsDiscoveryChanges = mutableListOf<Boolean>()
+
+        override suspend fun setFriendsDiscovery(on: Boolean): Local.FriendsDiscovery {
+            friendsDiscoveryChanges += on
+            friendsDiscovery =
+                if (on) {
+                    Local.FriendsDiscovery
+                        .newBuilder()
+                        .setOn(true)
+                        .setUntilUnixMs(System.currentTimeMillis() + DISCOVERY_MS)
+                        .build()
+                } else {
+                    Local.FriendsDiscovery.getDefaultInstance()
+                }
+            response = response.toBuilder().setFriendsDiscovery(friendsDiscovery).build()
+            return friendsDiscovery
+        }
+
+        var mediated: List<Local.MediatedPair> = emptyList()
+        var mediatedFailure: Exception? = null
+        val startedMediated = mutableListOf<Triple<String, String, Local.Role>>()
+        val confirmedMediated = mutableListOf<Pair<String, Boolean>>()
+        val rejectedMediated = mutableListOf<String>()
+        val canceledMediated = mutableListOf<String>()
+
+        override suspend fun mediatedPairs(): List<Local.MediatedPair> {
+            mediatedFailure?.let { throw it }
+            return mediated
+        }
+
+        override suspend fun startMediatedPair(
+            peerA: String,
+            peerB: String,
+            role: Local.Role,
+        ): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            startedMediated += Triple(peerA, peerB, role)
+            val pair =
+                Local.MediatedPair
+                    .newBuilder()
+                    .setSessionId("started")
+                    .setDirection(Local.MediatedPairDirection.MEDIATED_PAIR_DIRECTION_MEDIATOR)
+                    .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING)
+                    .setRole(role)
+                    .setPeerA(mediatedDevice(peerA, "Mac"))
+                    .setPeerB(mediatedDevice(peerB, "Windows"))
+                    .build()
+            mediated = mediated + pair
+            return pair
+        }
+
+        override suspend fun confirmMediatedPair(
+            sessionId: String,
+            enableFriendsDiscovery: Boolean,
+        ): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            confirmedMediated += sessionId to enableFriendsDiscovery
+            mediated = mediated.filter { it.sessionId != sessionId }
+            return Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_AWAITING_FINISH)
+                .build()
+        }
+
+        override suspend fun rejectMediatedPair(sessionId: String): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            rejectedMediated += sessionId
+            mediated = mediated.filter { it.sessionId != sessionId }
+            return Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_CANCELED)
+                .build()
+        }
+
+        override suspend fun cancelMediatedPair(sessionId: String): Local.MediatedPair {
+            mediatedFailure?.let { throw it }
+            canceledMediated += sessionId
+            mediated = mediated.filter { it.sessionId != sessionId }
+            return Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_CANCELED)
+                .build()
+        }
     }
 
     private class FakeSaver(
@@ -329,6 +448,19 @@ class AppStateTest {
             ids += id
             failure?.let { throw it }
             return saved
+        }
+    }
+
+    private class FakeSender : HistorySender {
+        var failure: Exception? = null
+        val sent = mutableListOf<Pair<String, String>>()
+
+        override suspend fun send(
+            id: String,
+            deviceId: String,
+        ) {
+            sent += id to deviceId
+            failure?.let { throw it }
         }
     }
 
@@ -717,6 +849,54 @@ class AppStateTest {
         }
 
     @Test
+    fun sendStagesTheEntryAndReloadsTheDashboard() =
+        runTest {
+            val core = FakeCore()
+            val sender = FakeSender()
+            val state = appState(core, sender = sender)
+            val notices = mutableListOf<Int>()
+            val collector = launch { state.notices.collect { notices += it } }
+            runCurrent()
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            state.sendHistoryItem("item", "device")
+            advanceUntilIdle()
+
+            assertEquals(listOf("item" to "device"), sender.sent)
+            assertTrue(R.string.dashboard_sent in notices)
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            assertTrue(
+                state.history.value.busy
+                    .isEmpty(),
+            )
+            collector.cancel()
+        }
+
+    @Test
+    fun failedSendEmitsNotice() =
+        runTest {
+            val core = FakeCore()
+            val sender = FakeSender()
+            sender.failure = IllegalStateException("the device is offline")
+            val state = appState(core, sender = sender)
+            val notices = mutableListOf<Int>()
+            val collector = launch { state.notices.collect { notices += it } }
+            runCurrent()
+
+            state.sendHistoryItem("item", "device")
+            advanceUntilIdle()
+
+            assertEquals(listOf(R.string.dashboard_send_failed), notices)
+            assertTrue(
+                state.history.value.busy
+                    .isEmpty(),
+            )
+            collector.cancel()
+        }
+
+    @Test
     fun deleteCallsTheCore() =
         runTest {
             val core = FakeCore()
@@ -791,6 +971,152 @@ class AppStateTest {
             advanceUntilIdle()
 
             assertTrue(core.historyCalls.size > before)
+        }
+
+    @Test
+    fun dashboardLoadsTheNewestItemsOfEachKind() =
+        runTest {
+            val core = FakeCore()
+            core.history =
+                listOf(
+                    entry("img1", Local.Kind.KIND_IMAGE),
+                    entry("img2", Local.Kind.KIND_IMAGE),
+                    entry("file1", Local.Kind.KIND_FILES),
+                    entry("txt1", Local.Kind.KIND_TEXT),
+                )
+            val state = appState(core, dashboardLimit = 24)
+
+            state.refreshDashboard()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(
+                    Local.Kind.KIND_IMAGE to "",
+                    Local.Kind.KIND_FILES to "",
+                    Local.Kind.KIND_TEXT to "",
+                ),
+                core.historyCalls,
+            )
+            assertEquals(listOf(24, 24, 24), core.historyLimits)
+            val dashboard = state.dashboard.value
+            assertTrue(dashboard.loaded)
+            assertNull(dashboard.failure)
+            assertEquals(listOf("img1", "img2"), dashboard.images.map { it.item.id })
+            assertEquals(listOf("file1"), dashboard.files.map { it.item.id })
+            assertEquals(listOf("txt1"), dashboard.text.map { it.item.id })
+            state.close()
+        }
+
+    @Test
+    fun dashboardKeepsAtMostTheConfiguredNumber() =
+        runTest {
+            val core = FakeCore()
+            core.history = (1..8).map { entry("img$it", Local.Kind.KIND_IMAGE) }
+            val state = appState(core, dashboardLimit = 6)
+
+            state.refreshDashboard()
+            advanceUntilIdle()
+
+            assertEquals(6, state.dashboard.value.images.size)
+            state.close()
+        }
+
+    @Test
+    fun dashboardLimitIsNormalizedAndReloadsTheLists() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core, dashboardLimit = 12)
+
+            state.setDashboardLimit(48)
+            advanceUntilIdle()
+            assertEquals(48, state.dashboard.value.limit)
+            assertEquals(48, core.historyLimits.last())
+
+            state.setDashboardLimit(7)
+            advanceUntilIdle()
+
+            assertEquals(DashboardLimit.DEFAULT, state.dashboard.value.limit)
+            assertEquals(DashboardLimit.DEFAULT, core.historyLimits.last())
+            state.close()
+        }
+
+    @Test
+    fun dashboardLimitThatDoesNotChangeSkipsTheReload() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core, dashboardLimit = 12)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = core.historyCalls.size
+
+            state.setDashboardLimit(12)
+            advanceUntilIdle()
+
+            assertEquals(before, core.historyCalls.size)
+            state.close()
+        }
+
+    @Test
+    fun failedDashboardLoadIsReported() =
+        runTest {
+            val core = FakeCore()
+            core.historyFailure = IllegalStateException("core is busy")
+            val state = appState(core)
+
+            state.refreshDashboard()
+            advanceUntilIdle()
+
+            assertEquals(CoreFailure.UNAVAILABLE, state.dashboard.value.failure)
+            assertFalse(state.dashboard.value.loaded)
+            state.close()
+        }
+
+    @Test
+    fun dashboardEventReloadsEveryTab() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            events.emit(historyEvent(Local.EventKind.EVENT_KIND_CLIPBOARD))
+            advanceUntilIdle()
+
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            state.close()
+        }
+
+    @Test
+    fun historyActionsReloadTheDashboard() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            state.copyHistoryItem("item")
+            advanceUntilIdle()
+
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            state.close()
+        }
+
+    @Test
+    fun clearReloadsTheDashboard() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshDashboard()
+            advanceUntilIdle()
+            val before = dashboardCalls(core)
+
+            state.clearHistory()
+            advanceUntilIdle()
+
+            assertEquals(before + DASHBOARD_TABS, dashboardCalls(core))
+            state.close()
         }
 
     @Test
@@ -1475,6 +1801,44 @@ class AppStateTest {
         }
 
     @Test
+    fun relayCandidateIsListedAndPassedToStartPairing() =
+        runTest {
+            val relayAddr = "relay:0123456789abcdef"
+            val core = FakeCore()
+            core.candidates =
+                listOf(
+                    Local.PairingCandidate
+                        .newBuilder()
+                        .setAddr(relayAddr)
+                        .putTxt("transport", "relay")
+                        .build(),
+                )
+            val state = appState(core)
+
+            state.openPairingWindow()
+            runCurrent()
+
+            assertEquals(
+                listOf(relayAddr),
+                state.pairing.value.candidates
+                    .map { it.addr },
+            )
+            assertEquals(
+                "relay",
+                state.pairing.value.candidates
+                    .single()
+                    .txtMap["transport"],
+            )
+
+            state.startPairing(relayAddr)
+            runCurrent()
+
+            assertEquals(listOf(relayAddr), core.started)
+            assertEquals(relayAddr, state.pairing.value.dialing)
+            state.close()
+        }
+
+    @Test
     fun requestIsConfirmedThroughTheCore() =
         runTest {
             val core = FakeCore()
@@ -1666,17 +2030,191 @@ class AppStateTest {
             state.close()
         }
 
+    @Test
+    fun friendsDiscoveryComesFromTheStatus() =
+        runTest {
+            val core = FakeCore()
+            core.response =
+                sampleStatus()
+                    .toBuilder()
+                    .setFriendsDiscovery(
+                        Local.FriendsDiscovery
+                            .newBuilder()
+                            .setOn(true)
+                            .setUntilUnixMs(4_000L)
+                            .build(),
+                    ).build()
+            val state = appState(core)
+
+            state.refresh()
+            advanceUntilIdle()
+
+            assertTrue(state.state.value.friendsDiscoveryOn)
+            assertEquals(4_000L, state.state.value.friendsDiscoveryUntilUnixMs)
+        }
+
+    @Test
+    fun friendsDiscoveryIsSwitchedThroughTheCore() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+
+            state.setFriendsDiscovery(true)
+            advanceUntilIdle()
+
+            assertEquals(listOf(true), core.friendsDiscoveryChanges)
+            assertTrue(state.state.value.friendsDiscoveryOn)
+        }
+
+    @Test
+    fun incomingOfferIsAsked() =
+        runTest {
+            val core = FakeCore()
+            core.mediated = listOf(mediatedOffer("session-one"))
+            val state = appState(core)
+
+            state.refreshMediated()
+            runCurrent()
+
+            val prompt =
+                state.prompts.value
+                    .firstOrNull { it.kind == PendingPrompt.Kind.MEDIATED }
+            assertEquals("session-one", prompt?.id)
+            assertEquals("session-one", prompt?.mediated?.sessionId)
+            assertEquals("Trusted Mac", prompt?.device)
+            state.close()
+        }
+
+    @Test
+    fun acceptedOfferIsForwarded() =
+        runTest {
+            val core = FakeCore()
+            core.mediated = listOf(mediatedOffer("session-one"))
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+
+            state.confirmMediatedPair("session-one", enableFriendsDiscovery = true)
+            advanceUntilIdle()
+
+            assertEquals(listOf("session-one" to true), core.confirmedMediated)
+            assertTrue(
+                state.prompts.value.none { it.kind == PendingPrompt.Kind.MEDIATED },
+            )
+            state.close()
+        }
+
+    @Test
+    fun rejectedOfferLeavesTheList() =
+        runTest {
+            val core = FakeCore()
+            core.mediated = listOf(mediatedOffer("session-one"))
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+
+            state.rejectMediatedPair("session-one")
+            advanceUntilIdle()
+
+            assertEquals(listOf("session-one"), core.rejectedMediated)
+            assertTrue(state.prompts.value.isEmpty())
+            state.close()
+        }
+
+    @Test
+    fun startedIntroductionIsExposed() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+
+            state.startMediatedPair("mac", "windows", Local.Role.ROLE_FRIENDS)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(Triple("mac", "windows", Local.Role.ROLE_FRIENDS)),
+                core.startedMediated,
+            )
+            assertEquals(1, state.mediated.value.outgoing.size)
+            assertFalse(state.mediated.value.starting)
+            state.close()
+        }
+
+    @Test
+    fun canceledIntroductionLeavesTheList() =
+        runTest {
+            val core = FakeCore()
+            core.mediated =
+                listOf(
+                    mediatedOffer("session-one")
+                        .toBuilder()
+                        .setDirection(Local.MediatedPairDirection.MEDIATED_PAIR_DIRECTION_MEDIATOR)
+                        .build(),
+                )
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+
+            state.cancelMediatedPair("session-one")
+            advanceUntilIdle()
+
+            assertEquals(listOf("session-one"), core.canceledMediated)
+            assertTrue(
+                state.mediated.value.outgoing
+                    .isEmpty(),
+            )
+            state.close()
+        }
+
+    @Test
+    fun mediatedOfferEventReloadsTheList() =
+        runTest {
+            val core = FakeCore()
+            val state = appState(core)
+            state.refreshMediated()
+            runCurrent()
+            core.mediated = listOf(mediatedOffer("session-two"))
+
+            events.emit(
+                Mobile.Event
+                    .newBuilder()
+                    .setType(Mobile.EventType.EVENT_TYPE_MEDIATED_PAIR_OFFER)
+                    .setEvent(
+                        Local.Event
+                            .newBuilder()
+                            .setKind(Local.EventKind.EVENT_KIND_MEDIATED_PAIR_OFFER)
+                            .build(),
+                    ).build(),
+            )
+            runCurrent()
+
+            assertEquals(
+                "session-two",
+                state.mediated.value
+                    .offers
+                    .single()
+                    .sessionId,
+            )
+            state.close()
+        }
+
+    /** Calls that only the dashboard makes, one per tab. */
+    private fun dashboardCalls(core: FakeCore): Int = core.historyCalls.count { (kind, _) -> kind != Local.Kind.KIND_UNSPECIFIED }
+
     private fun TestScope.appState(
         core: CoreApi,
         saver: HistorySaver = FakeSaver(),
+        sender: HistorySender = FakeSender(),
         held: HeldItems = HeldItems(),
+        dashboardLimit: Int = DashboardLimit.DEFAULT,
     ): AppState =
         AppState(
             core = core,
             events = events,
             saver = saver,
+            sender = sender,
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
             held = held,
+            dashboardLimit = dashboardLimit,
         )
 
     /** One call of setDeviceConfirmation. */
@@ -1689,6 +2227,10 @@ class AppStateTest {
 
     private companion object {
         const val WINDOW_MS = 180_000L
+        const val DISCOVERY_MS = 900_000L
+
+        /** Number of tabs the dashboard loads at once. */
+        const val DASHBOARD_TABS = 3
 
         fun sampleStatus(): Local.GetStatusResponse =
             Local.GetStatusResponse
@@ -1743,6 +2285,38 @@ class AppStateTest {
                         .setSize(11)
                         .build(),
                 ).setTotalBytes(11)
+                .build()
+
+        fun mediatedDevice(
+            deviceId: String,
+            name: String,
+        ): Local.MediatedDevice =
+            Local.MediatedDevice
+                .newBuilder()
+                .setDeviceId(deviceId)
+                .setName(name)
+                .setPlatform(Local.Platform.PLATFORM_MACOS)
+                .build()
+
+        fun mediatedOffer(
+            sessionId: String,
+            role: Local.Role = Local.Role.ROLE_FRIENDS,
+        ): Local.MediatedPair =
+            Local.MediatedPair
+                .newBuilder()
+                .setSessionId(sessionId)
+                .setDirection(Local.MediatedPairDirection.MEDIATED_PAIR_DIRECTION_INCOMING)
+                .setState(Local.MediatedPairState.MEDIATED_PAIR_STATE_WAITING)
+                .setRole(role)
+                .setMediator(mediatedDevice("mediator", "Trusted Mac"))
+                .setPeer(mediatedDevice("new-device", "New Windows"))
+                .setSas(
+                    Local.Sas
+                        .newBuilder()
+                        .setDigits("123456")
+                        .addEmoji("A")
+                        .build(),
+                ).setExpiresAtUnixMs(System.currentTimeMillis() + WINDOW_MS)
                 .build()
     }
 }

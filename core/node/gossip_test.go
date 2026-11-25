@@ -444,3 +444,43 @@ func testIdentity(t *testing.T, seed byte) *identity.Identity {
 	}
 	return id
 }
+
+// TestGossipTrustsIntroducedDeviceWhenExistingGroupInitiates checks the same
+// introduction when the device that already has a group starts the pairing: the
+// device that starts an exchange used to send no introductions, so its group
+// never learned the new device.
+func TestGossipTrustsIntroducedDeviceWhenExistingGroupInitiates(t *testing.T) {
+	network := vnet.NewNetwork()
+	t.Cleanup(func() { _ = network.Close() })
+	bus := fake.NewBus()
+
+	a := newTestNode(t, network, bus, 47000)
+	b := newTestNode(t, network, bus, 48000)
+	n := newTestNode(t, network, bus, 49000)
+	for _, node := range []*testNode{a, b, n} {
+		node.start(t)
+	}
+
+	a.pair(t, b)
+	b.pair(t, a)
+	waitOnline(t, a, b.DeviceID())
+	waitOnline(t, b, a.DeviceID())
+
+	pairThroughWindow(t, a, n)
+
+	record := waitTrusted(t, b, n.DeviceID())
+	if record.Role != model.RolePersonal {
+		t.Fatalf("the introduced device has role %s", record.Role)
+	}
+	if record.IntroducedBy != a.DeviceID() {
+		t.Fatalf("the introduced device came from %s, want %s", record.IntroducedBy, a.DeviceID())
+	}
+
+	known := waitTrusted(t, n, b.DeviceID())
+	if known.IntroducedBy != a.DeviceID() {
+		t.Fatalf("the known device came from %s, want %s", known.IntroducedBy, a.DeviceID())
+	}
+
+	waitOnline(t, n, b.DeviceID())
+	waitOnline(t, b, n.DeviceID())
+}

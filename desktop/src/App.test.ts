@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, within } from "@testing-library/svelte";
 import {
   DeviceSchema,
   EventKind,
@@ -45,6 +45,24 @@ vi.mock("./lib/history.svelte", () => ({
   history: { start: vi.fn(), stop: vi.fn(), copy: vi.fn(), notice: null },
 }));
 
+vi.mock("./lib/dashboard.svelte", () => ({
+  dashboard: {
+    start: vi.fn(),
+    stop: vi.fn(),
+    limit: 12,
+    items: { images: [], files: [], text: [] },
+    loading: [],
+    error: null,
+    notice: null,
+    load: vi.fn(),
+    loadAll: vi.fn(),
+    loadSettings: vi.fn(),
+    setLimit: vi.fn(),
+    copy: vi.fn(),
+    download: vi.fn(),
+  },
+}));
+
 vi.mock("./lib/pairing.svelte", () => ({
   pairing: {
     start: vi.fn(),
@@ -66,9 +84,26 @@ vi.mock("./lib/requests.svelte", () => ({
   requests: { start: vi.fn(), stop: vi.fn(), pending: 0 },
 }));
 
+vi.mock("./lib/mediated.svelte", () => ({
+  mediated: { start: vi.fn(), stop: vi.fn(), pending: 0 },
+}));
+
 vi.mock("./lib/prompts.svelte", () => ({
   prompts: { start: vi.fn(), stop: vi.fn(), queue: [], answer: vi.fn() },
 }));
+
+describe("startup screen", () => {
+  it("shows the dashboard as the first section and opens it", () => {
+    daemon.status = null;
+    daemon.error = null;
+
+    render(App);
+
+    const navigation = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(navigation).getAllByRole("button")[0].textContent).toContain("Dashboard");
+    expect(screen.getByRole("heading", { name: "Dashboard" })).toBeTruthy();
+  });
+});
 
 describe("protocol banner", () => {
   beforeEach(() => {

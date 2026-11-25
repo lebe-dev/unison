@@ -299,3 +299,46 @@ func TestGetHistoryThumbnail(t *testing.T) {
 	_, err = client.GetHistoryThumbnail(ctx, connect.NewRequest(&localv1.GetHistoryThumbnailRequest{Id: "bad"}))
 	requireCode(t, err, connect.CodeInvalidArgument)
 }
+
+func TestGetHistoryThumbnailMaxSize(t *testing.T) {
+	client, n := historyClient(t)
+	ctx := callTimeout(t)
+
+	source := image.NewNRGBA(image.Rect(0, 0, clip.MaxThumbnailSide, clip.MaxThumbnailSide))
+	var buffer bytes.Buffer
+	if err := png.Encode(&buffer, source); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	n.clipboard.Emit(ports.Snapshot{Content: ports.Content{
+		Representations: []ports.Representation{{MIME: clip.MIMEImagePNG, Data: buffer.Bytes()}},
+	}})
+	var id string
+	deadline := time.Now().Add(testTimeout)
+	for id == "" && time.Now().Before(deadline) {
+		response, err := client.ListHistory(ctx, connect.NewRequest(&localv1.ListHistoryRequest{Kind: localv1.Kind_KIND_IMAGE}))
+		if err != nil {
+			t.Fatalf("list history: %v", err)
+		}
+		if items := response.Msg.GetItems(); len(items) > 0 {
+			id = items[0].GetItem().GetId()
+			break
+		}
+		n.clock.Advance(clip.DefaultDebounce)
+		time.Sleep(5 * time.Millisecond)
+	}
+	if id == "" {
+		t.Fatal("the image did not reach the history")
+	}
+
+	thumb, err := client.GetHistoryThumbnail(ctx, connect.NewRequest(&localv1.GetHistoryThumbnailRequest{
+		Id:      id,
+		MaxSide: clip.MaxThumbnailSide,
+	}))
+	if err != nil {
+		t.Fatalf("get max-size thumbnail: %v", err)
+	}
+	wantBytes := clip.MaxThumbnailSide * clip.MaxThumbnailSide * 4
+	if len(thumb.Msg.GetRgba()) != wantBytes {
+		t.Fatalf("thumbnail holds %d bytes, want %d", len(thumb.Msg.GetRgba()), wantBytes)
+	}
+}

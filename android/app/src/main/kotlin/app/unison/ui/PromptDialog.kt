@@ -1,5 +1,6 @@
 package app.unison.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
@@ -16,30 +17,17 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import app.unison.R
 import app.unison.history.HistoryText
 import app.unison.ui.state.PendingPrompt
 import unison.local.v1.Local
 
-/** Answer to a question of [PromptDialog]. */
-enum class PromptAnswer {
-    /** Writes a held clipboard item to the clipboard. */
-    APPLY,
-
-    /** Lets a held clipboard item go; it stays in the history. */
-    SKIP,
-
-    /** Accepts a file offer. */
-    ACCEPT,
-
-    /** Declines a file offer. */
-    DECLINE,
-}
-
 /**
- * Asks about the oldest question that waits: a held clipboard item or a file
- * offer. Later puts the question away until the app is opened again; it stays
- * on the History or the Requests screen and in the notification.
+ * Asks about the oldest question that waits: a held clipboard item, a file
+ * offer or an introduction. Later puts the question away until the app is
+ * opened again; it stays on the History or the Requests screen and in the
+ * notification.
  */
 @Composable
 fun PromptDialog(
@@ -49,8 +37,12 @@ fun PromptDialog(
     var later by rememberSaveable { mutableStateOf(listOf<String>()) }
     val waiting = prompts.filter { it.id !in later }
     val prompt = waiting.firstOrNull() ?: return
+    val pair = prompt.mediated
     val device = prompt.device.ifBlank { stringResource(R.string.prompt_unknown_device) }
     val dismiss = { later = later + prompt.id }
+    var discovery by rememberSaveable(prompt.id) {
+        mutableStateOf(pair?.role == Local.Role.ROLE_FRIENDS)
+    }
 
     AlertDialog(
         onDismissRequest = dismiss,
@@ -58,20 +50,39 @@ fun PromptDialog(
         title = {
             Text(
                 text =
-                    stringResource(
-                        if (prompt.kind == PendingPrompt.Kind.FILES) R.string.prompt_files_title else R.string.prompt_clipboard_title,
-                        device,
-                    ),
+                    if (pair != null) {
+                        stringResource(
+                            R.string.mediated_offer_title,
+                            pair.peer.name.ifBlank { shortId(pair.peer.deviceId) },
+                        )
+                    } else {
+                        stringResource(
+                            if (prompt.kind == PendingPrompt.Kind.FILES) {
+                                R.string.prompt_files_title
+                            } else {
+                                R.string.prompt_clipboard_title
+                            },
+                            device,
+                        )
+                    },
             )
         },
         text = {
             Column {
-                Text(text = question(prompt), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    text = HistoryText.formatSize(prompt.sizeBytes, sizeUnits()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (pair != null) {
+                    MediatedOfferBody(
+                        pair = pair,
+                        discovery = discovery,
+                        onDiscoveryChange = { discovery = it },
+                    )
+                } else {
+                    Text(text = question(prompt), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = HistoryText.formatSize(prompt.sizeBytes, sizeUnits()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (waiting.size > 1) {
                     Text(
                         text = stringResource(R.string.prompt_position, waiting.size),
@@ -82,14 +93,20 @@ fun PromptDialog(
             }
         },
         confirmButton = {
-            val answer = if (prompt.kind == PendingPrompt.Kind.FILES) PromptAnswer.ACCEPT else PromptAnswer.APPLY
-            TextButton(onClick = { onAnswer(prompt, answer) }) {
-                Text(
-                    text =
-                        stringResource(
-                            if (answer == PromptAnswer.ACCEPT) R.string.action_accept else R.string.action_apply,
-                        ),
-                )
+            if (pair != null) {
+                TextButton(onClick = { onAnswer(prompt, PromptAnswer.AcceptMediated(discovery)) }) {
+                    Text(text = stringResource(R.string.action_accept))
+                }
+            } else {
+                val answer = if (prompt.kind == PendingPrompt.Kind.FILES) PromptAnswer.Accept else PromptAnswer.Apply
+                TextButton(onClick = { onAnswer(prompt, answer) }) {
+                    Text(
+                        text =
+                            stringResource(
+                                if (answer == PromptAnswer.Accept) R.string.action_accept else R.string.action_apply,
+                            ),
+                    )
+                }
             }
         },
         dismissButton = {
@@ -97,18 +114,47 @@ fun PromptDialog(
                 TextButton(onClick = dismiss) {
                     Text(text = stringResource(R.string.action_later))
                 }
-                val answer = if (prompt.kind == PendingPrompt.Kind.FILES) PromptAnswer.DECLINE else PromptAnswer.SKIP
-                TextButton(onClick = { onAnswer(prompt, answer) }) {
-                    Text(
-                        text =
-                            stringResource(
-                                if (answer == PromptAnswer.DECLINE) R.string.action_decline else R.string.action_skip,
-                            ),
-                    )
+                if (pair != null) {
+                    TextButton(onClick = { onAnswer(prompt, PromptAnswer.DeclineMediated) }) {
+                        Text(text = stringResource(R.string.action_decline))
+                    }
+                } else {
+                    val answer = if (prompt.kind == PendingPrompt.Kind.FILES) PromptAnswer.Decline else PromptAnswer.Skip
+                    TextButton(onClick = { onAnswer(prompt, answer) }) {
+                        Text(
+                            text =
+                                stringResource(
+                                    if (answer == PromptAnswer.Decline) R.string.action_decline else R.string.action_skip,
+                                ),
+                        )
+                    }
                 }
             }
         },
     )
+}
+
+/** Details of an offer to introduce this device to another one. */
+@Composable
+private fun MediatedOfferBody(
+    pair: Local.MediatedPair,
+    discovery: Boolean,
+    onDiscoveryChange: (Boolean) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text =
+                stringResource(
+                    R.string.mediated_offer_from,
+                    pair.mediator.name.ifBlank { shortId(pair.mediator.deviceId) },
+                ),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        MediatedOfferDetails(pair = pair, showSasHint = true)
+        if (pair.role == Local.Role.ROLE_FRIENDS) {
+            FriendsDiscoveryChoice(checked = discovery, onChange = onDiscoveryChange)
+        }
+    }
 }
 
 /** The question of a prompt in plain English. */

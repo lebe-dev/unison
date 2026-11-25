@@ -20,6 +20,14 @@ enum EventType {
   EVENT_TYPE_PAIRING_FAILED = 9;
   EVENT_TYPE_PAIRING_CLOSED = 10;
   EVENT_TYPE_HISTORY = 11;
+  // A trusted device offers to introduce this one to another one.
+  EVENT_TYPE_MEDIATED_PAIR_OFFER = 12;
+  // A mediated pairing exchange changed its state.
+  EVENT_TYPE_MEDIATED_PAIR_UPDATED = 13;
+  // A mediated pairing exchange added a new device.
+  EVENT_TYPE_MEDIATED_PAIR_COMPLETED = 14;
+  // A mediated pairing exchange ended without a new device.
+  EVENT_TYPE_MEDIATED_PAIR_CANCELED = 15;
 }
 
 // Event delivered to the mobile host.

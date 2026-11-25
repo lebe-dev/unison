@@ -23,6 +23,20 @@ class HistoryTextTest {
     }
 
     @Test
+    fun fullTextIsNotCut() {
+        val item = textItem("y".repeat(500))
+
+        assertEquals("y".repeat(500), HistoryText.fullText(item))
+    }
+
+    @Test
+    fun fullTextKeepsTheLineBreaks() {
+        val item = textItem("first\nsecond")
+
+        assertEquals("first\nsecond", HistoryText.fullText(item))
+    }
+
+    @Test
     fun fileNamesAreJoined() {
         val item =
             Local.ClipItem

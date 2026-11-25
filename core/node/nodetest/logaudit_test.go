@@ -232,3 +232,53 @@ func textChunk(keyword, text string) []byte {
 	chunk = append(chunk, data...)
 	return binary.BigEndian.AppendUint32(chunk, crc32.ChecksumIEEE(chunk[4:]))
 }
+
+// TestMediatedPairLogsCarryNoSecrets checks that an introduction never puts the
+// verification code or the rendezvous key into the logs.
+func TestMediatedPairLogsCarryNoSecrets(t *testing.T) {
+	logs := &logBuffer{}
+	logger := slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	h := New(t, WithLogger(logger))
+	alpha := h.NewNode("alpha")
+	beta := h.NewNode("beta")
+	gamma := h.NewNode("gamma")
+	h.Pair(alpha, beta)
+	h.Pair(beta, gamma)
+
+	ctx, cancel := context.WithTimeout(context.Background(), h.Timeout())
+	defer cancel()
+	if _, err := beta.StartMediatedPair(ctx, alpha.DeviceID(), gamma.DeviceID(), model.RolePersonal); err != nil {
+		t.Fatalf("start the exchange: %v", err)
+	}
+	offerAlpha := waitIncoming(t, alpha, beta)
+	offerGamma := waitIncoming(t, gamma, beta)
+	if err := alpha.ConfirmMediatedPair(ctx, offerAlpha.SessionID, false); err != nil {
+		t.Fatalf("alpha confirms: %v", err)
+	}
+	if err := gamma.ConfirmMediatedPair(ctx, offerGamma.SessionID, false); err != nil {
+		t.Fatalf("gamma confirms: %v", err)
+	}
+	waitTrustedBy(t, alpha, gamma, model.RolePersonal)
+
+	key, err := alpha.Trust().RendezvousKey(ctx, gamma.DeviceID())
+	if err != nil {
+		t.Fatalf("read the rendezvous key: %v", err)
+	}
+	if len(key) == 0 {
+		t.Fatal("the pair has no rendezvous key")
+	}
+
+	output := logs.String()
+	if lines := strings.Count(output, "\n"); lines < 2 {
+		t.Fatalf("the capture holds %d log lines, so the check proves nothing", lines)
+	}
+	for _, secret := range []string{
+		hex.EncodeToString(key),
+		offerAlpha.SAS.String(),
+		offerAlpha.SAS.Digits,
+	} {
+		if strings.Contains(output, secret) {
+			t.Fatalf("the log carries %q", secret)
+		}
+	}
+}

@@ -20,6 +20,7 @@ func TestDecisionMatrix(t *testing.T) {
 		{ActionIntroduce, Allow, Allow, Allow, Deny},
 		{ActionRevoke, Allow, Allow, Allow, Deny},
 		{ActionSetRemotePolicy, Allow, Allow, Allow, Deny},
+		{ActionMediatedPair, Confirm, Confirm, Confirm, Confirm},
 	}
 
 	for _, test := range tests {
@@ -49,10 +50,10 @@ func TestDecisionMatrix(t *testing.T) {
 }
 
 func TestMatrixCoversEveryAction(t *testing.T) {
-	if len(matrix) != int(ActionSetRemotePolicy) {
-		t.Errorf("matrix has %d rows, want %d", len(matrix), int(ActionSetRemotePolicy))
+	if len(matrix) != int(ActionMediatedPair) {
+		t.Errorf("matrix has %d rows, want %d", len(matrix), int(ActionMediatedPair))
 	}
-	for action := ActionNone; action <= ActionSetRemotePolicy; action++ {
+	for action := ActionNone; action <= ActionMediatedPair; action++ {
 		if action == ActionNone {
 			if action.String() != "none" {
 				t.Errorf("zero action name %q, want none", action.String())

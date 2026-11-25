@@ -243,4 +243,14 @@ describe("PairingStore", () => {
     expect(pairing.dialing).toBeNull();
     expect(pairing.error).toBe("The daemon is not reachable.");
   });
+
+  it("starts SAS pairing with a relay candidate address", async () => {
+    mocked.startSas.mockResolvedValue({} as Awaited<ReturnType<typeof client.startSas>>);
+
+    await pairing.pairWith("relay:0123456789abcdef");
+
+    expect(client.startSas).toHaveBeenCalledWith({ addr: "relay:0123456789abcdef" });
+    expect(pairing.dialing).toBe("relay:0123456789abcdef");
+    expect(pairing.error).toBeNull();
+  });
 });

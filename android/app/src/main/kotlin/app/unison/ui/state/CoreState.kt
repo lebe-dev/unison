@@ -54,6 +54,14 @@ data class CoreState(
     val journalEnabled: Boolean
         get() = settings?.journalEnabled ?: Journal.enabled()
 
+    /** This device looks for Friends devices right now. */
+    val friendsDiscoveryOn: Boolean
+        get() = status?.friendsDiscovery?.on == true
+
+    /** End of the search for Friends devices, zero while it is off. */
+    val friendsDiscoveryUntilUnixMs: Long
+        get() = status?.friendsDiscovery?.untilUnixMs ?: 0
+
     /** Paired devices of [role], the online ones first. */
     fun devices(role: Local.Role): List<Local.Device> =
         status
@@ -61,4 +69,17 @@ data class CoreState(
             .orEmpty()
             .filter { !it.revoked && it.role == role }
             .sortedWith(compareByDescending<Local.Device> { it.online }.thenBy { it.name.lowercase() })
+
+    /** Paired devices that can receive files now. */
+    val sendTargets: List<Local.Device>
+        get() =
+            status
+                ?.devicesList
+                .orEmpty()
+                .filter { it.online && !it.revoked }
+
+    /** Online devices that can take part in an introduction through a trusted device. */
+    fun introducibleDevices(): List<Local.Device> =
+        (devices(Local.Role.ROLE_PERSONAL) + devices(Local.Role.ROLE_FRIENDS))
+            .filter(Introductions::canIntroduce)
 }

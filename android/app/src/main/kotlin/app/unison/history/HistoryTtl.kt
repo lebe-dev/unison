@@ -36,13 +36,13 @@ data class HistoryTtl(
 /** Defaults and limits of the lifetimes. */
 object HistoryTtlDefaults {
     /** Lifetime of a text item. */
-    const val TEXT = 7 * DAY
+    const val TEXT = DAY
 
     /** Lifetime of an image item. */
-    const val IMAGE = 3 * DAY
+    const val IMAGE = 7 * DAY
 
     /** Lifetime of a file item. */
-    const val FILES = DAY
+    const val FILES = 7 * DAY
 
     /** Longest lifetime the core accepts. */
     const val MAX = 365 * DAY

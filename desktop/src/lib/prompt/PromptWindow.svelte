@@ -3,6 +3,7 @@
   import { onDestroy, onMount } from "svelte";
   import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { t } from "../i18n";
+  import SasCode from "../pairing/SasCode.svelte";
   import {
     PROMPT_ANSWER_EVENT,
     PROMPT_READY_EVENT,
@@ -16,6 +17,9 @@
   let queue = $state<Prompt[]>([]);
   /** Questions answered in this window whose removal has not arrived yet. */
   let answered = $state<string[]>([]);
+  // The search for friends is on after a Friends pair unless the user turns it
+  // off here.
+  let friendsDiscovery = $state(true);
   let unlisten: UnlistenFn | null = null;
 
   const waiting = $derived(queue.filter((prompt) => !answered.includes(prompt.id)));
@@ -43,6 +47,9 @@
       answered = [...answered, prompt.id];
     }
     const payload: PromptAnswer = { id: prompt.id, action };
+    if (prompt.kind === "mediated") {
+      payload.enableFriendsDiscovery = friendsDiscovery;
+    }
     void emit(PROMPT_ANSWER_EVENT, payload);
   }
 </script>
@@ -50,33 +57,73 @@
 <main class="prompt">
   {#if current}
     <header>
-      <span class="app-icon"><Icon name={current.kind === "files" ? "file" : "clipboard"} /></span>
+      <span class="app-icon"
+        ><Icon
+          name={current.kind === "files"
+            ? "file"
+            : current.kind === "mediated"
+              ? "add"
+              : "clipboard"}
+        /></span
+      >
       <span class="title">
-        {current.kind === "files"
-          ? t("prompt.filesFrom", { device: current.device })
-          : t("prompt.clipboardFrom", { device: current.device })}
+        {#if current.kind === "files"}
+          {t("prompt.filesFrom", { device: current.device })}
+        {:else if current.kind === "mediated"}
+          {t("prompt.introductionFrom", { device: current.device })}
+        {:else}
+          {t("prompt.clipboardFrom", { device: current.device })}
+        {/if}
       </span>
       {#if waiting.length > 1}
         <span class="count">{t("prompt.countOf", { total: waiting.length })}</span>
       {/if}
     </header>
 
-    <p class="question">
-      {#if current.kind === "files"}
-        {t("prompt.acceptPrefix")} <strong>{current.summary}</strong>{t("prompt.acceptSuffix")}
-      {:else}
-        {t("prompt.applyPrefix")} <strong>{current.summary}</strong>{t("prompt.applySuffix")}
-      {/if}
-      {#if current.size}
-        <span class="size">{current.size}</span>
-      {/if}
-    </p>
+    {#if current.mediated}
+      <div class="question mediated">
+        <span class="peer">
+          <strong>{current.summary}</strong>
+          <span class="muted">{current.mediated.platform} · {current.mediated.deviceId}</span>
+        </span>
+        <span class="muted">{t("mediated.role")}: {current.mediated.role}</span>
+        {#if current.mediated.digits}
+          <SasCode
+            layout="inline"
+            grouped
+            digits={current.mediated.digits}
+            emoji={current.mediated.emoji}
+            ariaLabel={t("mediated.sasAria")}
+          />
+        {/if}
+        {#if current.mediated.alreadyPaired}
+          <span class="small">{t("mediated.alreadyPaired")}</span>
+        {/if}
+        {#if current.mediated.friends}
+          <label class="check small">
+            <input type="checkbox" bind:checked={friendsDiscovery} />
+            {t("mediated.friendsDiscovery")}
+          </label>
+        {/if}
+      </div>
+    {:else}
+      <p class="question">
+        {#if current.kind === "files"}
+          {t("prompt.acceptPrefix")} <strong>{current.summary}</strong>{t("prompt.acceptSuffix")}
+        {:else}
+          {t("prompt.applyPrefix")} <strong>{current.summary}</strong>{t("prompt.applySuffix")}
+        {/if}
+        {#if current.size}
+          <span class="size">{current.size}</span>
+        {/if}
+      </p>
+    {/if}
 
     <div class="actions">
       <button class="button ghost" type="button" onclick={() => answer(current, "later")}>
         {t("common.later")}
       </button>
-      {#if current.kind === "files"}
+      {#if current.kind === "files" || current.kind === "mediated"}
         <button class="button danger" type="button" onclick={() => answer(current, "decline")}>
           {t("common.decline")}
         </button>
@@ -153,6 +200,36 @@
     overflow: hidden;
     overflow-wrap: anywhere;
     color: var(--secondary);
+  }
+
+  .mediated {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12px;
+  }
+
+  .peer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .small {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .check {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--secondary);
+  }
+
+  .check input {
+    margin: 2px 0 0;
   }
 
   .size {

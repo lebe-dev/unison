@@ -1,20 +1,26 @@
 import {
   EventKind,
+  Platform,
+  Role,
   type Event as DaemonEvent,
+  type MediatedPair,
   type ShareRequest,
 } from "./api/gen/unison/local/v1/local_pb";
 import { daemon } from "./daemon.svelte";
-import { formatBytes, kindLabel } from "./format";
+import { formatBytes, kindLabel, platformLabel, roleLabel, shortDeviceID } from "./format";
 import { history } from "./history.svelte";
 import { translate } from "./i18n";
+import { mediated } from "./mediated.svelte";
+import { groupDigits, sasEmoji } from "./pairing/countdown";
 import type { Prompt, PromptAction } from "./prompt/types";
 import { requests } from "./requests.svelte";
 
 /**
  * PromptStore keeps the questions the user has to answer: the clipboard items
- * a device holds for confirmation and the file offers that wait for a
- * decision. The offers come from the requests and the held items from the
- * history, so an answer given on another screen removes the question too.
+ * a device holds for confirmation, the file offers that wait for a decision and
+ * the introductions another device offers. The offers come from the requests
+ * and the held items from the history, so an answer given on another screen
+ * removes the question too.
  */
 class PromptStore {
   /** Questions with an answer in flight. */
@@ -29,7 +35,8 @@ class PromptStore {
   get queue(): Prompt[] {
     const held = this.#clips.filter((prompt) => history.held.includes(prompt.id));
     const files = [...requests.requests].reverse().map(filesPrompt);
-    return [...held, ...files];
+    const introductions = mediated.incoming.map(introductionPrompt);
+    return [...held, ...files, ...introductions];
   }
 
   /** start follows the events of the daemon. */
@@ -49,10 +56,11 @@ class PromptStore {
   }
 
   /** answer applies the answer of the user to a question. */
-  async answer(id: string, action: PromptAction): Promise<void> {
+  async answer(id: string, action: PromptAction, enableFriendsDiscovery = true): Promise<void> {
     if (action === "later" || this.answering.includes(id)) {
       return;
     }
+    const prompt = this.queue.find((current) => current.id === id);
     this.answering = [...this.answering, id];
     try {
       switch (action) {
@@ -64,10 +72,18 @@ class PromptStore {
           history.release(id);
           break;
         case "accept":
-          await requests.decide(id, true);
+          if (prompt?.kind === "mediated") {
+            await mediated.confirm(id, enableFriendsDiscovery);
+          } else {
+            await requests.decide(id, true);
+          }
           break;
         case "decline":
-          await requests.decide(id, false);
+          if (prompt?.kind === "mediated") {
+            await mediated.reject(id);
+          } else {
+            await requests.decide(id, false);
+          }
           break;
       }
     } finally {
@@ -129,6 +145,28 @@ function deviceName(name: string, deviceId: string): string {
     daemon.devices.find((device) => device.deviceId === deviceId)?.name ||
     translate("common.aDevice")
   );
+}
+
+/** introductionPrompt describes an offer to introduce this device to another
+ * one. The mediator is the device the question comes from. */
+function introductionPrompt(pair: MediatedPair): Prompt {
+  const peer = pair.peer;
+  return {
+    id: pair.sessionId,
+    kind: "mediated",
+    device: pair.mediator?.name || translate("common.aDevice"),
+    summary: peer?.name || translate("common.unnamedDevice"),
+    size: "",
+    mediated: {
+      platform: platformLabel(peer?.platform ?? Platform.UNSPECIFIED),
+      deviceId: shortDeviceID(peer?.deviceId ?? ""),
+      role: roleLabel(pair.role),
+      digits: groupDigits(pair.sas?.digits ?? ""),
+      emoji: sasEmoji(pair.sas?.emoji ?? []),
+      alreadyPaired: pair.alreadyPaired,
+      friends: pair.role === Role.FRIENDS,
+    },
+  };
 }
 
 /** prompts is the question state of the app. */

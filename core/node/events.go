@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lebe-dev/unison/core/mediate"
 	"github.com/lebe-dev/unison/core/model"
 	"github.com/lebe-dev/unison/core/pairing"
 	"github.com/lebe-dev/unison/core/share"
@@ -55,6 +56,16 @@ const (
 	// answering on its known addresses. Err lists the addresses and the
 	// failures.
 	EventPeerUnreachable
+	// EventMediatedPairOffer reports an offer of a trusted device to introduce
+	// this one to another device.
+	EventMediatedPairOffer
+	// EventMediatedPairUpdated reports a change of a mediated pairing exchange.
+	EventMediatedPairUpdated
+	// EventMediatedPairCompleted reports an exchange that added a new device.
+	EventMediatedPairCompleted
+	// EventMediatedPairCanceled reports an exchange that ended without a new
+	// device.
+	EventMediatedPairCanceled
 )
 
 // String returns the name of the event kind.
@@ -90,6 +101,14 @@ func (k EventKind) String() string {
 		return "device-updated"
 	case EventPeerUnreachable:
 		return "peer-unreachable"
+	case EventMediatedPairOffer:
+		return "mediated-pair-offer"
+	case EventMediatedPairUpdated:
+		return "mediated-pair-updated"
+	case EventMediatedPairCompleted:
+		return "mediated-pair-completed"
+	case EventMediatedPairCanceled:
+		return "mediated-pair-canceled"
 	default:
 		return "unknown"
 	}
@@ -131,6 +150,9 @@ type Event struct {
 	ProtocolNewer bool
 	// Transfer is the file transfer, set on EventTransfer.
 	Transfer share.Transfer
+	// Mediated is the mediated pairing exchange, set on the mediated pair
+	// events.
+	Mediated *mediate.Exchange
 	// Err reports a failure.
 	Err error
 	// At is when the event happened.
