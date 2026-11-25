@@ -13,6 +13,7 @@ the interfaces to the operating system, so everything else builds and runs on an
 | `identity` | key pair, device ID, hybrid signatures, the TLS certificate |
 | `trust` | peer records, roles, the capability matrix, group secrets |
 | `store` | SQLite with encryption at rest, migrations, settings |
+| `protocol` | the protocol version shared by the sessions and the relay |
 | `session` | the peer protocol over QUIC streams |
 | `transport` | QUIC with mutual TLS and the authentication proof |
 | `discovery` | mDNS/DNS-SD announcements and browsing |
@@ -20,6 +21,7 @@ the interfaces to the operating system, so everything else builds and runs on an
 | `mediate` | introductions of two devices through a third one |
 | `policy` | role, network and size to an action |
 | `clip` | the clipboard pipeline in both directions |
+| `tracking` | removal of advertising and campaign parameters from URLs |
 | `blob` | content addressed storage with encryption and verification |
 | `blob/transfer` | the blob request streams between peers |
 | `history` | the append-only log, its version vector and its TTLs |
@@ -27,6 +29,7 @@ the interfaces to the operating system, so everything else builds and runs on an
 | `download` | safe names and the mark of a downloaded file |
 | `gossip` | spreading trust records and group data over sessions |
 | `relay` | the relay client and its virtual packet connection |
+| `settingsfile` | the settings document, its versions and its migrations |
 | `api` | the local API service, `api/localconn` its endpoint |
 | `ports` | the interfaces to the operating system |
 | `node` | the composition of all of the above |
@@ -112,6 +115,7 @@ Settings are typed values addressed by key. The keys that core reads:
 | `policy.network.<condition>.relay` | the relay is allowed on the condition |
 | `policy.relay.max_size`, `policy.relay.files_on_request` | relay limits |
 | `clip.pause.active`, `clip.pause.until` | the clipboard pause |
+| `clipboard.strip_tracking` | remove advertising parameters from the URLs in text |
 | `sentry.enabled` | consent to report errors |
 
 ## Identity and trust
@@ -183,8 +187,10 @@ Capture:
 - a change is merged with changes closer than 250 ms and created as one item;
 - own writes are ignored for 2 s after they are written;
 - content the platform marks as sensitive is dropped before its payload is read;
-- text keeps plain text and HTML, an image is normalized to PNG, and the original format travels as
-  a second representation while it stays below twice the size of the PNG;
+- text keeps plain text and HTML, and the advertising parameters of its URLs are removed when the
+  setting asks for it;
+- an image is normalized to PNG, and the original format travels as a second representation while
+  it stays below twice the size of the PNG;
 - images above 56 megapixels, 8192 pixels on a side or 64 MiB are skipped;
 - a payload up to 64 KiB travels inside the announcement, a bigger one goes to the blob store;
 - a file is hashed on a background queue and announced once its hash is ready.

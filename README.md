@@ -33,5 +33,6 @@ macOS and Android are supported. Linux has a package for Ubuntu. Windows is not 
 - [Windows](docs/architecture/windows.md) - the windows ports and the installer
 - [Android](docs/architecture/android.md) - the mobile binding, the service and the app
 - [Application log](docs/architecture/application-log.md) - the log the user can turn on and share
+- [Settings file](docs/architecture/settings-file.md) - the JSON document the user keeps and restores
 
 Building the code and running the tests is described in `DEV.md`.

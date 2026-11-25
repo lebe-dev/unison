@@ -35,5 +35,6 @@ Unison переносит буфер обмена, изображения и ф�
 - [Windows](docs/architecture/windows.ru.md) - порты windows и установщик
 - [Android](docs/architecture/android.ru.md) - мобильная привязка, сервис и приложение
 - [Журнал приложения](docs/architecture/application-log.ru.md) - журнал, который пользователь может включить и отправить
+- [Файл настроек](docs/architecture/settings-file.ru.md) - документ JSON, который пользователь сохраняет и восстанавливает
 
 Как собрать код и запустить тесты, описано в `DEV.md`.
